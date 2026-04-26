@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BRVM Analyser</string>
+    <string name="app_description">Analyse complète des titres BRVM</string>
+    <string name="update_notification_channel">Mises à jour BRVM</string>
+    <string name="update_notification_title">Recommandations du jour</string>
+    <string name="update_notification_text">Nouvelles recommandations disponibles</string>
+    <string name="market_open_notification">Séance BRVM ouverte</string>
+    <string name="loading">Chargement des données...</string>
+    <string name="no_connection">Connexion indisponible - données en cache</string>
+    <string name="pdf_saved">Rapport PDF enregistré</string>
+    <string name="pdf_error">Erreur lors de la génération du PDF</string>
+</resources>

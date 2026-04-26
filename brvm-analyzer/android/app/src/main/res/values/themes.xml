@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.BRVMAnalyzer" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brvm_blue</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/brvm_green</item>
+        <item name="android:statusBarColor">@color/primary_dark</item>
+        <item name="android:navigationBarColor">@color/brvm_dark</item>
+        <item name="android:windowBackground">@color/brvm_dark</item>
+    </style>
+
+    <style name="Theme.BRVMAnalyzer.Splash" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/brvm_dark</item>
+        <item name="android:statusBarColor">@color/brvm_dark</item>
+        <item name="android:navigationBarColor">@color/brvm_dark</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>
