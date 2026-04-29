@@ -528,7 +528,7 @@ function psyAnalyze(s){
      desc:`Volume moyen: ${fmt(s.volume)} titres/jour — ${s.volume>500?'Bonne liquidité':s.volume>100?'Liquidité moyenne':'Titre peu liquide — spread élevé possible'}`,
      impact:s.volume>500?1:s.volume<100?-1:0, impactText:s.volume>500?'Liquide':s.volume<100?'Illiquide':'Moyen'},
     {icon:'🌍',title:'Stabilité CFA / Zone UEMOA',
-     desc:'Le Franc CFA (arrimé à l'Euro) offre une stabilité monétaire rare en Afrique Sub-Saharienne.',
+     desc:'Le Franc CFA (arrimé à l’Euro) offre une stabilité monétaire rare en Afrique Sub-Saharienne.',
      impact:1, impactText:'Favorable'},
     {icon:'🐑',title:'Comportement grégaire BRVM',
      desc:`Variation du jour ${sign(s.changePct)}${fmt(s.changePct,2)}%. Sur la BRVM, les titres en hausse attirent davantage d'acheteurs (effet momentum).`,
@@ -560,7 +560,7 @@ function verdict(s,profile='balanced'){
   const sc=globalScore(s,profile);
   const f=fundScore(s),t=techScore(s),p=psyScore(s);
   const rsi=calcRSI(s.history||[]);
-  const settings=JSON.parse(localStorage.getItem('brvm_settings')||'{}')||{};
+  const settings=JSON.parse((()=>{try{return localStorage.getItem('brvm_settings');}catch(e){return null;}})()||'{}')||{};
   const rsiH=+((settings.rsiOverbought)||70);
   const rsiL=+((settings.rsiOversold)||30);
   let action,conf,summary;
@@ -789,7 +789,7 @@ function generateRecoPDF(stocks, profile){
 // ════════════════════════════════════════════════════════════════
 //  CONTRÔLEUR PRINCIPAL
 // ════════════════════════════════════════════════════════════════
-let profile = localStorage.getItem('brvm_profile')||'balanced';
+let profile = (()=>{try{return localStorage.getItem('brvm_profile');}catch(e){return null;}})()||'balanced';
 let curTicker = null;
 let curPage = 'dashboard';
 
@@ -1127,22 +1127,32 @@ const Portfolio = {
 };
 
 // ── INIT ──────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', ()=>{
-  // Restaurer profil sauvegardé
-  profile=localStorage.getItem('brvm_profile')||'balanced';
-  document.querySelectorAll('.pb').forEach(b=>b.classList.toggle('active',b.dataset.p===profile));
-  // Rendu immédiat — pas de réseau
-  UI.renderDashboard();
-  // Masquer splash
-  setTimeout(()=>{
+function hideSplash(){
+  try{
     const sp=document.getElementById('splash');
-    sp.classList.add('hide');
-    setTimeout(()=>sp.remove(),600);
-  },1200);
+    if(!sp)return;
+    sp.style.transition='opacity .5s';
+    sp.style.opacity='0';
+    sp.style.pointerEvents='none';
+    setTimeout(()=>{try{sp.remove();}catch(e){}},600);
+  }catch(e){}
+}
+window.addEventListener('DOMContentLoaded', ()=>{
+  // Masquer splash dans tous les cas (même si renderDashboard échoue)
+  setTimeout(hideSplash, 1200);
+  try{
+    // Restaurer profil sauvegardé
+    try{profile=localStorage.getItem('brvm_profile')||'balanced';}catch(e){profile='balanced';}
+    document.querySelectorAll('.pb').forEach(b=>b.classList.toggle('active',b.dataset.p===profile));
+    // Rendu immédiat — pas de réseau
+    UI.renderDashboard();
+  }catch(e){console.error('Init error:',e);}
   // Modal fermeture
-  document.getElementById('addModal').addEventListener('click',e=>{
-    if(e.target.id==='addModal')e.target.style.display='none';
-  });
+  try{
+    document.getElementById('addModal').addEventListener('click',e=>{
+      if(e.target.id==='addModal')e.target.style.display='none';
+    });
+  }catch(e){}
 });
 </script>
 </body>
