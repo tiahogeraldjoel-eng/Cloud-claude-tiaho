@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.brvm.alerte.BuildConfig
 import com.brvm.alerte.data.api.BRVMApiService
+import com.brvm.alerte.data.api.BRVMScraper
 import com.brvm.alerte.data.db.BRVMDatabase
 import com.brvm.alerte.data.db.dao.AlertDao
 import com.brvm.alerte.data.db.dao.StockDao
@@ -12,6 +13,7 @@ import com.brvm.alerte.data.repository.StockRepositoryImpl
 import com.brvm.alerte.domain.repository.AlertRepository
 import com.brvm.alerte.domain.repository.StockRepository
 import com.brvm.alerte.service.AlertNotificationService
+import com.brvm.alerte.service.EmailService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -40,6 +42,7 @@ object AppModule {
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
             .build()
     }
 
@@ -52,6 +55,11 @@ object AppModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(BRVMApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideBRVMScraper(okHttpClient: OkHttpClient): BRVMScraper =
+        BRVMScraper(okHttpClient)
 
     @Provides
     @Singleton
@@ -80,4 +88,8 @@ object AppModule {
     @Singleton
     fun provideAlertNotificationService(@ApplicationContext context: Context): AlertNotificationService =
         AlertNotificationService(context)
+
+    @Provides
+    @Singleton
+    fun provideEmailService(): EmailService = EmailService()
 }

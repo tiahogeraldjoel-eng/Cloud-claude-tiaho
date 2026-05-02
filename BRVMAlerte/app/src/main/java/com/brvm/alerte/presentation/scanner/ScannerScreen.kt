@@ -16,6 +16,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.brvm.alerte.domain.model.AlertPriority
+import com.brvm.alerte.presentation.navigation.navigateToChart
 import com.brvm.alerte.presentation.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,7 +68,8 @@ fun ScannerScreen(
                 items(state.items, key = { it.stock.ticker }) { item ->
                     ScannerItemCard(
                         item = item,
-                        onToggleWatchlist = { viewModel.toggleWatchlist(item.stock.ticker) }
+                        onToggleWatchlist = { viewModel.toggleWatchlist(item.stock.ticker) },
+                        onOpenChart = { navigateToChart(navController, item.stock.ticker) }
                     )
                 }
             }
@@ -124,7 +126,7 @@ private fun FilterChips(current: ScannerFilter, onSelect: (ScannerFilter) -> Uni
 }
 
 @Composable
-private fun ScannerItemCard(item: ScannerItem, onToggleWatchlist: () -> Unit) {
+private fun ScannerItemCard(item: ScannerItem, onToggleWatchlist: () -> Unit, onOpenChart: () -> Unit) {
     val stock = item.stock
     val result = item.result
     val priorityColor = when (result.priority) {
@@ -136,7 +138,7 @@ private fun ScannerItemCard(item: ScannerItem, onToggleWatchlist: () -> Unit) {
     val changeColor = if (stock.changePercent >= 0) BRVMGreenLight else BRVMRedLight
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable { onOpenChart() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {

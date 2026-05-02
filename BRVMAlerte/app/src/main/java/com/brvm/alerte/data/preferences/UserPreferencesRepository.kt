@@ -21,7 +21,12 @@ data class UserPreferences(
     val autoScanEnabled: Boolean = true,
     val preEarningsEnabled: Boolean = true,
     val dividendAlertEnabled: Boolean = true,
-    val emailAddress: String = ""
+    val emailSender: String = "",
+    val emailPassword: String = "",
+    val emailRecipients: String = "",
+    val smtpHost: String = "smtp.gmail.com",
+    val smtpPort: Int = 587,
+    val phoneNumber: String = ""
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "brvm_prefs")
@@ -40,7 +45,12 @@ class UserPreferencesRepository @Inject constructor(
         val AUTO_SCAN = booleanPreferencesKey("auto_scan_enabled")
         val PRE_EARNINGS = booleanPreferencesKey("pre_earnings_enabled")
         val DIVIDEND_ALERT = booleanPreferencesKey("dividend_alert_enabled")
-        val EMAIL_ADDRESS = stringPreferencesKey("email_address")
+        val EMAIL_SENDER = stringPreferencesKey("email_sender")
+        val EMAIL_PASSWORD = stringPreferencesKey("email_password")
+        val EMAIL_RECIPIENTS = stringPreferencesKey("email_recipients")
+        val SMTP_HOST = stringPreferencesKey("smtp_host")
+        val SMTP_PORT = intPreferencesKey("smtp_port")
+        val PHONE_NUMBER = stringPreferencesKey("phone_number")
     }
 
     val preferences: Flow<UserPreferences> = context.dataStore.data
@@ -56,7 +66,12 @@ class UserPreferencesRepository @Inject constructor(
                 autoScanEnabled = p[Keys.AUTO_SCAN] ?: true,
                 preEarningsEnabled = p[Keys.PRE_EARNINGS] ?: true,
                 dividendAlertEnabled = p[Keys.DIVIDEND_ALERT] ?: true,
-                emailAddress = p[Keys.EMAIL_ADDRESS] ?: ""
+                emailSender = p[Keys.EMAIL_SENDER] ?: "",
+                emailPassword = p[Keys.EMAIL_PASSWORD] ?: "",
+                emailRecipients = p[Keys.EMAIL_RECIPIENTS] ?: "",
+                smtpHost = p[Keys.SMTP_HOST] ?: "smtp.gmail.com",
+                smtpPort = p[Keys.SMTP_PORT] ?: 587,
+                phoneNumber = p[Keys.PHONE_NUMBER] ?: ""
             )
         }
 
@@ -69,4 +84,10 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setAutoScanEnabled(v: Boolean) = context.dataStore.edit { it[Keys.AUTO_SCAN] = v }
     suspend fun setPreEarningsEnabled(v: Boolean) = context.dataStore.edit { it[Keys.PRE_EARNINGS] = v }
     suspend fun setDividendAlertEnabled(v: Boolean) = context.dataStore.edit { it[Keys.DIVIDEND_ALERT] = v }
+    suspend fun setEmailSender(v: String) = context.dataStore.edit { it[Keys.EMAIL_SENDER] = v }
+    suspend fun setEmailPassword(v: String) = context.dataStore.edit { it[Keys.EMAIL_PASSWORD] = v }
+    suspend fun setEmailRecipients(v: String) = context.dataStore.edit { it[Keys.EMAIL_RECIPIENTS] = v }
+    suspend fun setSmtpHost(v: String) = context.dataStore.edit { it[Keys.SMTP_HOST] = v }
+    suspend fun setSmtpPort(v: Int) = context.dataStore.edit { it[Keys.SMTP_PORT] = v }
+    suspend fun setPhoneNumber(v: String) = context.dataStore.edit { it[Keys.PHONE_NUMBER] = v }
 }

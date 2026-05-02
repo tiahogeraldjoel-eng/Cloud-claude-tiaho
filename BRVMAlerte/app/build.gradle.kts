@@ -50,6 +50,9 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/NOTICE.md"
+            excludes += "/META-INF/LICENSE.md"
+            excludes += "/META-INF/DEPENDENCIES"
         }
     }
 }
@@ -95,6 +98,9 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.coil.compose)
     implementation(libs.biometric)
+    implementation(libs.jsoup)
+    implementation(libs.javamail.android)
+    implementation(libs.javaactivation.android)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
