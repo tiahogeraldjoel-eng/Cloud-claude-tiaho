@@ -50,9 +50,18 @@ jobs:
 
       - name: Build Debug APK
         working-directory: BRVMAlerte
-        run: gradle assembleDebug --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/gradle-build.log
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
+
+      - name: Show build errors on failure
+        if: failure()
+        run: |
+          echo "=== DERNIÈRES ERREURS DU BUILD ==="
+          grep -E "(error:|ERROR:|FAILED|Exception|Caused by)" /tmp/gradle-build.log | tail -60 || true
+          echo "=== FIN DES ERREURS ==="
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

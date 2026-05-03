@@ -53,6 +53,13 @@ android {
             excludes += "/META-INF/NOTICE.md"
             excludes += "/META-INF/LICENSE.md"
             excludes += "/META-INF/DEPENDENCIES"
+            excludes += "/META-INF/LICENSE"
+            excludes += "/META-INF/NOTICE"
+            excludes += "/META-INF/mailcap"
+            excludes += "/META-INF/mailcap.default"
+            excludes += "/META-INF/mimetypes.default"
+            excludes += "/META-INF/javamail.default.providers"
+            excludes += "/META-INF/javamail.default.address.map"
         }
     }
 }
