@@ -28,7 +28,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
       - name: Accept Android SDK licenses
         run: |
@@ -42,11 +41,15 @@ jobs:
             '84831b9409646a918e30573bab4c9c91346d8abd' \
             > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+          cache-read-only: false
+
       - name: Build Debug APK
         working-directory: BRVMAlerte
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+        run: gradle assembleDebug --no-daemon --stacktrace
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
 
@@ -67,5 +70,5 @@ jobs:
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Taille | $SIZE |" >> $GITHUB_STEP_SUMMARY
           echo "| Application ID | \`com.brvm.alerte\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Version | 1.0.0 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | 1.0.0 (compileSdk 34) |" >> $GITHUB_STEP_SUMMARY
           echo "APK disponible dans les **Artifacts** (30 jours)." >> $GITHUB_STEP_SUMMARY
