@@ -34,6 +34,9 @@ fun ScannerScreen(
                 TopAppBar(
                     title = { Text("Scanner BRVM", fontWeight = FontWeight.Bold) },
                     actions = {
+                        IconButton(onClick = { viewModel.refresh() }) {
+                            Icon(Icons.Filled.Refresh, "Actualiser")
+                        }
                         IconButton(onClick = { searchActive = !searchActive }) {
                             Icon(if (searchActive) Icons.Filled.Close else Icons.Filled.Search, "Rechercher")
                         }
