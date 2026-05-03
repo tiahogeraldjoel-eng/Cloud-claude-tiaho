@@ -48,7 +48,10 @@ jobs:
           mkdir -p gradle/wrapper
           curl -sSLo /tmp/gradle.zip \
             https://services.gradle.org/distributions/gradle-8.7-bin.zip
-          unzip -j /tmp/gradle.zip "*/gradle-wrapper.jar" -d gradle/wrapper/
+          # Extraire le jar avec son chemin exact dans le zip (grade-8.7/lib/)
+          unzip -p /tmp/gradle.zip \
+            "gradle-8.7/lib/gradle-wrapper-8.7.jar" \
+            > gradle/wrapper/gradle-wrapper.jar
           chmod +x gradlew
 
       - name: Build Debug APK
