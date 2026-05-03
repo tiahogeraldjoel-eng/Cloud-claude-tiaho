@@ -42,21 +42,11 @@ jobs:
             '84831b9409646a918e30573bab4c9c91346d8abd' \
             > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
-      - name: Bootstrap gradle-wrapper.jar
-        working-directory: BRVMAlerte
-        run: |
-          mkdir -p gradle/wrapper
-          curl -sSLo /tmp/gradle.zip \
-            https://services.gradle.org/distributions/gradle-8.7-bin.zip
-          # Extraire le jar avec son chemin exact dans le zip (grade-8.7/lib/)
-          unzip -p /tmp/gradle.zip \
-            "gradle-8.7/lib/plugins/gradle-wrapper-8.7.jar" \
-            > gradle/wrapper/gradle-wrapper.jar
-          chmod +x gradlew
-
       - name: Build Debug APK
         working-directory: BRVMAlerte
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
 
