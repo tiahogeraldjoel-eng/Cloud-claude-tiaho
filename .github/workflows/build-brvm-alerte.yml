@@ -50,7 +50,7 @@ jobs:
             https://services.gradle.org/distributions/gradle-8.7-bin.zip
           # Extraire le jar avec son chemin exact dans le zip (grade-8.7/lib/)
           unzip -p /tmp/gradle.zip \
-            "gradle-8.7/lib/gradle-wrapper-8.7.jar" \
+            "gradle-8.7/lib/plugins/gradle-wrapper-8.7.jar" \
             > gradle/wrapper/gradle-wrapper.jar
           chmod +x gradlew
 
