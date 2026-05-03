@@ -11,9 +11,11 @@ import com.brvm.alerte.domain.model.PricePoint
 import com.brvm.alerte.domain.model.Stock
 import com.brvm.alerte.domain.model.TechnicalIndicators
 import com.brvm.alerte.domain.repository.StockRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -37,9 +39,9 @@ class StockRepositoryImpl @Inject constructor(
     override fun observeStock(ticker: String): Flow<Stock?> =
         stockDao.observeStock(ticker).map { it?.toDomain() }
 
-    override suspend fun refreshAllStocks() {
+    override suspend fun refreshAllStocks() = withContext(Dispatchers.IO) {
         val apiStocks = tryApiRefresh()
-        val scraperStocks = if (apiStocks.isEmpty()) tryScraperRefresh() else emptyList()
+        val scraperStocks = if (apiStocks.isEmpty()) tryScraperRefresh() else emptyList<StockEntity>()
         val entities = when {
             apiStocks.isNotEmpty() -> apiStocks
             scraperStocks.isNotEmpty() -> mergeWithSeed(scraperStocks)
@@ -110,7 +112,7 @@ class StockRepositoryImpl @Inject constructor(
         if (stockDao.getAllStocks().isEmpty()) stockDao.insertStocks(BRVMSeedData.stocks)
     }
 
-    override suspend fun refreshPriceHistory(ticker: String) {
+    override suspend fun refreshPriceHistory(ticker: String) = withContext(Dispatchers.IO) {
         val apiHistory = tryApiHistory(ticker)
         if (apiHistory.isNotEmpty()) {
             stockDao.insertPriceHistory(apiHistory)
