@@ -46,6 +46,7 @@ jobs:
         with:
           gradle-version: '8.7'
           cache-read-only: false
+          validate-wrappers: false
 
       - name: Build Debug APK
         working-directory: BRVMAlerte
