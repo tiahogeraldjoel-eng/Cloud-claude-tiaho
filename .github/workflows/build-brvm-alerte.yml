@@ -7,9 +7,11 @@ on:
       - main
     paths:
       - 'BRVMAlerte/**'
+      - '.github/workflows/build-brvm-alerte.yml'
   pull_request:
     paths:
       - 'BRVMAlerte/**'
+      - '.github/workflows/build-brvm-alerte.yml'
   workflow_dispatch:
 
 jobs:
@@ -26,28 +28,22 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: gradle
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('BRVMAlerte/**/*.gradle*', 'BRVMAlerte/**/libs.versions.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK components
+      - name: Set up Android SDK (API 35 + build-tools 35)
         run: |
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+          # GitHub runners ship with Android SDK at $ANDROID_SDK_ROOT
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" \
+            "platform-tools" > /dev/null
 
       - name: Bootstrap gradle-wrapper.jar
         working-directory: BRVMAlerte
         run: |
-          curl -sSLo /tmp/gradle.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          mkdir -p gradle/wrapper
+          curl -sSLo /tmp/gradle.zip \
+            https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -j /tmp/gradle.zip "*/gradle-wrapper.jar" -d gradle/wrapper/
           chmod +x gradlew
 
@@ -55,7 +51,7 @@ jobs:
         working-directory: BRVMAlerte
         run: ./gradlew assembleDebug --no-daemon --stacktrace
         env:
-          ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -67,15 +63,14 @@ jobs:
       - name: Build Summary
         if: success()
         run: |
-          APK_PATH="BRVMAlerte/app/build/outputs/apk/debug/app-debug.apk"
-          APK_SIZE=$(du -sh "$APK_PATH" | cut -f1)
-          echo "## ✅ BRVM Alerte APK compilé avec succès" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          APK="BRVMAlerte/app/build/outputs/apk/debug/app-debug.apk"
+          SIZE=$(du -sh "$APK" | cut -f1)
+          echo "## BRVM Alerte APK compilé avec succès" >> $GITHUB_STEP_SUMMARY
           echo "| Propriété | Valeur |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Fichier | \`app-debug.apk\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Taille | $APK_SIZE |" >> $GITHUB_STEP_SUMMARY
+          echo "| Taille | $SIZE |" >> $GITHUB_STEP_SUMMARY
           echo "| Application ID | \`com.brvm.alerte\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Version | 1.0.0 (build 1) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | 1.0.0 |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "L'APK est disponible dans les **Artifacts** de cette exécution (30 jours)." >> $GITHUB_STEP_SUMMARY
+          echo "APK disponible dans les **Artifacts** (30 jours)." >> $GITHUB_STEP_SUMMARY
