@@ -59,9 +59,12 @@ jobs:
       - name: Show build errors on failure
         if: failure()
         run: |
-          echo "=== DERNIÈRES ERREURS DU BUILD ==="
-          grep -E "(error:|ERROR:|FAILED|Exception|Caused by)" /tmp/gradle-build.log | tail -60 || true
-          echo "=== FIN DES ERREURS ==="
+          echo "=== ERREURS KOTLIN (e:) ==="
+          grep "^e: " /tmp/gradle-build.log || true
+          echo "=== ERREURS AAPT ==="
+          grep -E "(error: |ERROR:|aapt)" /tmp/gradle-build.log || true
+          echo "=== STACK TRACE ==="
+          grep -E "(FAILED|Exception|Caused by)" /tmp/gradle-build.log | tail -30 || true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
