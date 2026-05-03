@@ -30,13 +30,10 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Set up Android SDK (API 35 + build-tools 35)
+      - name: Accept Android SDK licenses
         run: |
-          # GitHub runners ship with Android SDK at $ANDROID_SDK_ROOT
-          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" \
-            "platform-tools" > /dev/null
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses \
+            > /dev/null 2>&1 || true
 
       - name: Bootstrap gradle-wrapper.jar
         working-directory: BRVMAlerte
@@ -52,6 +49,7 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon --stacktrace
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
+          ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -68,9 +66,8 @@ jobs:
           echo "## BRVM Alerte APK compilé avec succès" >> $GITHUB_STEP_SUMMARY
           echo "| Propriété | Valeur |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Fichier | \`app-debug.apk\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Taille | $SIZE |" >> $GITHUB_STEP_SUMMARY
           echo "| Application ID | \`com.brvm.alerte\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Version | 1.0.0 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | 1.0.0 (compileSdk 34) |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "APK disponible dans les **Artifacts** (30 jours)." >> $GITHUB_STEP_SUMMARY
