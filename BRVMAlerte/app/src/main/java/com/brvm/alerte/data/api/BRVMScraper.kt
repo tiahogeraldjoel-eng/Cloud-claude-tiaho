@@ -21,13 +21,21 @@ class BRVMScraper @Inject constructor(
         private const val BRVM_BASE = "https://www.brvm.org"
         private const val SIKA_BASE = "https://www.sikafinance.com"
 
+        // URL confirmed working in brvm-analyzer fetcher.js — includes /all suffix
         private val BRVM_STOCKS_URLS = listOf(
-            "$BRVM_BASE/fr/cours-actions/0",
-            "$BRVM_BASE/en/stocks/0"
+            "$BRVM_BASE/fr/cours-des-actions/0/all",
+            "$BRVM_BASE/en/cours-des-actions/0/all"
         )
         private val BRVM_HISTORY_URLS = listOf(
             "$BRVM_BASE/fr/cours/0/",
             "$BRVM_BASE/en/cours/0/"
+        )
+
+        // CORS proxies — same fallback list as brvm-analyzer; useful if direct fetch is blocked
+        private val CORS_PROXIES = listOf(
+            "https://api.allorigins.win/raw?url=",
+            "https://corsproxy.io/?",
+            "https://cors-anywhere.herokuapp.com/"
         )
         private const val SIKA_ALL_STOCKS_URL = "$SIKA_BASE/marches/aaz"
         private const val SIKA_HISTORY_API = "$SIKA_BASE/api/general/GetHistos"
@@ -36,7 +44,7 @@ class BRVMScraper @Inject constructor(
     }
 
     fun scrapeAllStocks(): List<StockDto> {
-        // 1. Try brvm.org (Chrome mobile headers — works from Android residential IPs)
+        // 1. Direct fetch brvm.org with Chrome mobile headers
         for (url in BRVM_STOCKS_URLS) {
             try {
                 val html = fetchChrome(url)
@@ -46,7 +54,18 @@ class BRVMScraper @Inject constructor(
             } catch (_: Exception) { continue }
         }
 
-        // 2. Fallback: sikafinance AàZ page (Firefox desktop + same-origin headers)
+        // 2. CORS proxy fallback — mirrors brvm-analyzer fetcher.js strategy
+        val targetUrl = BRVM_STOCKS_URLS.first()
+        for (proxy in CORS_PROXIES) {
+            try {
+                val html = fetchChrome("$proxy${java.net.URLEncoder.encode(targetUrl, "UTF-8")}")
+                if (html.length < 500) continue
+                val result = parseBrvmStocksTable(html)
+                if (result.isNotEmpty()) return result
+            } catch (_: Exception) { continue }
+        }
+
+        // 3. Fallback: sikafinance AàZ page (Firefox desktop + same-origin headers)
         try {
             val html = fetchSikaPage(SIKA_ALL_STOCKS_URL)
             if (html.length >= 500) {
@@ -155,36 +174,31 @@ class BRVMScraper @Inject constructor(
 
     private fun parseBrvmStocksTable(html: String): List<StockDto> {
         val doc = Jsoup.parse(html)
-        val rows = doc.select("table.table tbody tr")
-            .ifEmpty { doc.select("table tbody tr") }
+        // Selector from brvm-analyzer fetcher.js: "table tbody tr, .views-table tbody tr"
+        val rows = doc.select("table tbody tr, .views-table tbody tr")
             .ifEmpty { doc.select("tr") }
 
         return rows.mapNotNull { row ->
             val cells = row.select("td")
-            // brvm.org : N° | TICKER | NOM | VOLUME | PREV | OPEN | LAST | CHANGE%
-            // → 8 colonnes avec N°, 7 sans
-            val hasNum = cells.size >= 8
-            if (cells.size < 7) return@mapNotNull null
-
-            val tickerIdx  = if (hasNum) 1 else 0
-            val nameIdx    = if (hasNum) 2 else 1
-            val volIdx     = if (hasNum) 3 else 2
-            val prevIdx    = if (hasNum) 4 else 3
-            val lastIdx    = if (hasNum) 6 else 5   // "Dernier cours"
-            val changeIdx  = if (hasNum) 7 else 6
-
-            val ticker = cells[tickerIdx].text().trim()
-            if (ticker.isEmpty() || ticker.length > 8 || !ticker[0].isLetter()) return@mapNotNull null
-            val name = cells.getOrNull(nameIdx)?.text()?.trim() ?: ticker
+            // brvm.org /fr/cours-des-actions/0/all layout (from fetcher.js):
+            // cells[0]=TICKER, cells[1]=NOM, cells[2]=PRICE, cells[3]=PREV, cells[4]=CHANGE%, cells[5]=VOLUME
+            if (cells.size < 3) return@mapNotNull null
 
             fun clean(idx: Int) = cells.getOrNull(idx)?.text()
-                ?.replace("\\s+".toRegex(), "")?.replace(",", ".")?.replace(" ", "") ?: ""
+                ?.replace("\\s+".toRegex(), "")?.replace(",", ".")?.replace(" ", "") ?: ""
 
-            val last    = clean(lastIdx).toDoubleOrNull() ?: return@mapNotNull null
-            if (last <= 0 || last > 10_000_000) return@mapNotNull null   // sanity check
-            val prev    = clean(prevIdx).toDoubleOrNull() ?: last
-            val change  = clean(changeIdx).replace("%","").toDoubleOrNull() ?: 0.0
-            val volume  = clean(volIdx).replace(".","").toLongOrNull() ?: 0L
+            val ticker = cells[0].text().trim().uppercase()
+            if (ticker.isEmpty() || ticker.length > 10 || !ticker[0].isLetter()) return@mapNotNull null
+
+            val name = cells.getOrNull(1)?.text()?.trim() ?: ticker
+
+            val last = clean(2).toDoubleOrNull() ?: return@mapNotNull null
+            if (last <= 0 || last > 10_000_000) return@mapNotNull null
+
+            val changePct = clean(4).replace("%", "").toDoubleOrNull() ?: 0.0
+            val prev = if (changePct != 0.0) last / (1.0 + changePct / 100.0) else last
+
+            val volume = clean(5).replace(".", "").toLongOrNull() ?: 0L
 
             StockDto(
                 ticker = ticker, name = name, sector = null, country = null,
