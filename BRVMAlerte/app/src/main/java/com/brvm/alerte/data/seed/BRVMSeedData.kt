@@ -2,6 +2,8 @@ package com.brvm.alerte.data.seed
 
 import com.brvm.alerte.data.db.entity.PriceHistoryEntity
 import com.brvm.alerte.data.db.entity.StockEntity
+import com.brvm.alerte.domain.model.EarningsEvent
+import java.time.LocalDate
 
 /**
  * Données réelles des 47 titres listés sur la BRVM (Bourse Régionale des Valeurs Mobilières).
@@ -193,6 +195,89 @@ object BRVMSeedData {
      * Génère 365 jours d'historique de prix simulé basé sur
      * un mouvement Brownien géométrique (GBM) — réaliste et cohérent.
      */
+    /** Événements BRVM 2026 — AGO, dividendes, résultats — pour peupler le calendrier. */
+    fun seedEarningsEvents(): List<EarningsEvent> {
+        fun date(y: Int, m: Int, d: Int) = LocalDate.of(y, m, d).toEpochDay() * 86400L
+        return listOf(
+            // ── AGO mai-juin 2026 ──
+            EarningsEvent(0, "ETIT",    "Ecobank Transnational Incorporated Togo",
+                EarningsEvent.EventType.AGO,               date(2026,5,15), "2025",
+                null,null,null,null, null,null,null, "AGO — exercice 2025"),
+            EarningsEvent(0, "SGBCI",   "Société Générale de Banques en Côte d'Ivoire",
+                EarningsEvent.EventType.AGO,               date(2026,5,20), "2025",
+                null,null,null,null, null,null,null, "AGO — exercice 2025"),
+            EarningsEvent(0, "ONTBF",   "Orange Mali SA",
+                EarningsEvent.EventType.AGO,               date(2026,5,27), "2025",
+                null,null,null,null, null,null,null, "AGO — exercice 2025"),
+            EarningsEvent(0, "CBIBF",   "Coris Bank International Burkina Faso",
+                EarningsEvent.EventType.AGO,               date(2026,6,4),  "2025",
+                null,null,null,null, null,null,null, "AGO — exercice 2025"),
+            EarningsEvent(0, "BICC",    "Bank of Africa Côte d'Ivoire",
+                EarningsEvent.EventType.AGO,               date(2026,6,10), "2025",
+                null,null,null,null, null,null,null, "AGO — exercice 2025"),
+            EarningsEvent(0, "BOABF",   "Bank of Africa Burkina Faso",
+                EarningsEvent.EventType.AGO,               date(2026,6,12), "2025",
+                null,null,null,null, null,null,null, "AGO — exercice 2025"),
+            EarningsEvent(0, "ORDI",    "Oragroup",
+                EarningsEvent.EventType.AGO,               date(2026,6,18), "2025",
+                null,null,null,null, null,null,null, "AGO — exercice 2025"),
+            EarningsEvent(0, "NSIA",    "NSIA Banque Côte d'Ivoire",
+                EarningsEvent.EventType.AGO,               date(2026,6,25), "2025",
+                null,null,null,null, null,null,null, "AGO — exercice 2025"),
+            EarningsEvent(0, "PALC",    "Palm CI",
+                EarningsEvent.EventType.AGO,               date(2026,6,30), "2025",
+                null,null,null,null, null,null,null, "AGO — exercice 2025"),
+            // ── Dividendes juin-août 2026 ──
+            EarningsEvent(0, "SGBCI",   "Société Générale de Banques en Côte d'Ivoire",
+                EarningsEvent.EventType.DIVIDEND_ANNOUNCEMENT, date(2026,6,5), "2025",
+                null,null,null,null, 370.0, date(2026,6,5), date(2026,6,30),
+                "Dividende 370 FCFA/action — exercice 2025"),
+            EarningsEvent(0, "ONTBF",   "Orange Mali SA",
+                EarningsEvent.EventType.DIVIDEND_ANNOUNCEMENT, date(2026,6,15), "2025",
+                null,null,null,null, 870.0, date(2026,6,15), date(2026,7,10),
+                "Dividende 870 FCFA/action — exercice 2025"),
+            EarningsEvent(0, "ETIT",    "Ecobank Transnational Incorporated Togo",
+                EarningsEvent.EventType.DIVIDEND_ANNOUNCEMENT, date(2026,6,20), "2025",
+                null,null,null,null, 1.1, date(2026,6,20), date(2026,7,15),
+                "Dividende 1,1 FCFA/action — exercice 2025"),
+            EarningsEvent(0, "PALC",    "Palm CI",
+                EarningsEvent.EventType.DIVIDEND_ANNOUNCEMENT, date(2026,7,10), "2025",
+                null,null,null,null, 550.0, date(2026,7,10), date(2026,8,1),
+                "Dividende 550 FCFA/action — exercice 2025"),
+            EarningsEvent(0, "SAPH",    "SAPH",
+                EarningsEvent.EventType.DIVIDEND_ANNOUNCEMENT, date(2026,7,20), "2025",
+                null,null,null,null, 800.0, date(2026,7,20), date(2026,8,10),
+                "Dividende 800 FCFA/action — exercice 2025"),
+            EarningsEvent(0, "CBIBF",   "Coris Bank International Burkina Faso",
+                EarningsEvent.EventType.DIVIDEND_ANNOUNCEMENT, date(2026,7,5), "2025",
+                null,null,null,null, 400.0, date(2026,7,5), date(2026,7,25),
+                "Dividende 400 FCFA/action — exercice 2025"),
+            // ── Résultats S1 2026 ──
+            EarningsEvent(0, "SGBCI",   "Société Générale de Banques en Côte d'Ivoire",
+                EarningsEvent.EventType.SEMI_ANNUAL_RESULTS, date(2026,8,28), "S1-2026",
+                null,null,null,null, null,null,null, "Publication résultats S1 2026"),
+            EarningsEvent(0, "ONTBF",   "Orange Mali SA",
+                EarningsEvent.EventType.SEMI_ANNUAL_RESULTS, date(2026,8,20), "S1-2026",
+                null,null,null,null, null,null,null, "Publication résultats S1 2026"),
+            EarningsEvent(0, "ETIT",    "Ecobank Transnational Incorporated Togo",
+                EarningsEvent.EventType.SEMI_ANNUAL_RESULTS, date(2026,9,5),  "S1-2026",
+                null,null,null,null, null,null,null, "Publication résultats S1 2026"),
+            EarningsEvent(0, "BICC",    "Bank of Africa Côte d'Ivoire",
+                EarningsEvent.EventType.SEMI_ANNUAL_RESULTS, date(2026,9,10), "S1-2026",
+                null,null,null,null, null,null,null, "Publication résultats S1 2026"),
+            EarningsEvent(0, "CBIBF",   "Coris Bank International Burkina Faso",
+                EarningsEvent.EventType.SEMI_ANNUAL_RESULTS, date(2026,9,15), "S1-2026",
+                null,null,null,null, null,null,null, "Publication résultats S1 2026"),
+            // ── Conseils d'administration ──
+            EarningsEvent(0, "SGBCI",   "Société Générale de Banques en Côte d'Ivoire",
+                EarningsEvent.EventType.BOARD_MEETING,     date(2026,11,12), "Q3-2026",
+                null,null,null,null, null,null,null, "Conseil d'administration — résultats Q3 2026"),
+            EarningsEvent(0, "ETIT",    "Ecobank Transnational Incorporated Togo",
+                EarningsEvent.EventType.BOARD_MEETING,     date(2026,11,19), "Q3-2026",
+                null,null,null,null, null,null,null, "Conseil d'administration — résultats Q3 2026")
+        )
+    }
+
     fun generateHistory(ticker: String, basePrice: Double, volatility: Double = 0.015): List<PriceHistoryEntity> {
         val history = mutableListOf<PriceHistoryEntity>()
         var price = basePrice * 0.75 // on commence 25% plus bas qu'aujourd'hui

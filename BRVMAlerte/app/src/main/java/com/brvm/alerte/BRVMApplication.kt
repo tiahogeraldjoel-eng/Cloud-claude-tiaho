@@ -6,6 +6,8 @@ import android.app.NotificationManager
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.*
 import com.brvm.alerte.data.preferences.UserPreferencesRepository
+import com.brvm.alerte.data.seed.BRVMSeedData
+import com.brvm.alerte.domain.repository.AlertRepository
 import com.brvm.alerte.service.EmailService
 import com.brvm.alerte.worker.BRVMAnalysisWorker
 import dagger.hilt.android.HiltAndroidApp
@@ -22,6 +24,7 @@ class BRVMApplication : Application(), Configuration.Provider {
     @Inject lateinit var workerFactory: HiltWorkerFactory
     @Inject lateinit var prefsRepo: UserPreferencesRepository
     @Inject lateinit var emailService: EmailService
+    @Inject lateinit var alertRepo: AlertRepository
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -35,6 +38,7 @@ class BRVMApplication : Application(), Configuration.Provider {
         schedulePeriodicAnalysis()
         runImmediateAnalysisOnFirstLaunch()
         initEmailService()
+        seedCalendarEvents()
     }
 
     private fun createNotificationChannels() {
@@ -86,6 +90,19 @@ class BRVMApplication : Application(), Configuration.Provider {
                     smtpPort = prefs.smtpPort
                 )
             }
+        }
+    }
+
+    /** Peuple le calendrier si aucun événement n'est encore enregistré. */
+    private fun seedCalendarEvents() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val nowSec = System.currentTimeMillis() / 1000
+                val existing = alertRepo.observeUpcomingEvents(nowSec).first()
+                if (existing.isEmpty()) {
+                    alertRepo.saveEarningsEvents(BRVMSeedData.seedEarningsEvents())
+                }
+            } catch (_: Exception) {}
         }
     }
 

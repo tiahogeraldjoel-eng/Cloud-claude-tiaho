@@ -58,6 +58,33 @@ class BRVMScraper @Inject constructor(
         return emptyList()
     }
 
+    /**
+     * Récupère le dernier prix connu d'un titre via l'API JSON SikaFinance.
+     * Utilisé en dernier recours pour peupler les prix quand le scraping bulk échoue.
+     * Retourne null si la requête échoue.
+     */
+    fun scrapeCurrentPrice(ticker: String): StockDto? {
+        return try {
+            val today = LocalDate.now()
+            // Fenêtre de 10 jours pour capturer le dernier jour de cotation
+            val history = fetchSikaHistoryApi(ticker, today.minusDays(10), today)
+            val latest = history.maxByOrNull { it.date } ?: return null
+            val close = latest.close ?: return null
+            StockDto(
+                ticker = ticker, name = ticker,
+                sector = null, country = null,
+                closingPrice = close,
+                previousClosingPrice = latest.open ?: close,
+                openingPrice = latest.open,
+                highest = latest.high,
+                lowest = latest.low,
+                volume = latest.volume,
+                marketCap = null, per = null, dividendYield = null,
+                eps = null, bookValue = null, priceToBook = null, roe = null, lastTradeDate = null
+            )
+        } catch (_: Exception) { null }
+    }
+
     fun scrapeHistory(ticker: String): List<PriceHistoryDto> {
         // 1. SikaFinance JSON API (most reliable)
         try {
@@ -78,9 +105,12 @@ class BRVMScraper @Inject constructor(
         return emptyList()
     }
 
-    private fun fetchSikaHistoryApi(ticker: String): List<PriceHistoryDto> {
-        val today = LocalDate.now()
-        val body = """{"ticker":"$ticker","datedeb":"${today.minusYears(1)}","datefin":"$today","xperiod":0}"""
+    private fun fetchSikaHistoryApi(
+        ticker: String,
+        from: LocalDate = LocalDate.now().minusYears(1),
+        to: LocalDate = LocalDate.now()
+    ): List<PriceHistoryDto> {
+        val body = """{"ticker":"$ticker","datedeb":"$from","datefin":"$to","xperiod":0}"""
             .toRequestBody(JSON_MEDIA_TYPE)
 
         val request = Request.Builder()

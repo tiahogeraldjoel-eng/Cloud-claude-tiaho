@@ -10,6 +10,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -187,7 +190,15 @@ private fun ScannerItemCard(item: ScannerItem, onToggleWatchlist: () -> Unit, on
                     )
                 }
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
+            // Mini sparkline : prevClose → open → low → high → lastPrice
+            MiniSparkline(
+                prices = listOf(stock.previousClose, stock.openPrice, stock.lowPrice, stock.highPrice, stock.lastPrice)
+                    .filter { it > 0 },
+                color = changeColor,
+                modifier = Modifier.fillMaxWidth().height(28.dp).padding(vertical = 2.dp)
+            )
+            Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ScoreBar(result.totalScore, priorityColor)
                 Spacer(Modifier.weight(1f))
@@ -212,6 +223,29 @@ private fun ScannerItemCard(item: ScannerItem, onToggleWatchlist: () -> Unit, on
                 Text(it, style = MaterialTheme.typography.labelSmall, color = priorityColor, maxLines = 1)
             }
         }
+    }
+}
+
+/** Mini graphique de prix en ligne (sparkline) dessiné sur Canvas Compose. */
+@Composable
+private fun MiniSparkline(prices: List<Double>, color: Color, modifier: Modifier = Modifier) {
+    if (prices.size < 2) return
+    val min = prices.min()
+    val max = prices.max()
+    val range = (max - min).coerceAtLeast(0.001)
+    Canvas(modifier = modifier) {
+        val path = Path()
+        val xStep = size.width / (prices.size - 1)
+        prices.forEachIndexed { i, price ->
+            val x = i * xStep
+            val y = size.height * (1f - ((price - min) / range).toFloat())
+            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        drawPath(path, color, style = Stroke(width = 1.8.dp.toPx(), cap = StrokeCap.Round))
+        // Point final (dernier prix)
+        val lastX = (prices.size - 1) * xStep
+        val lastY = size.height * (1f - ((prices.last() - min) / range).toFloat())
+        drawCircle(color, radius = 2.5.dp.toPx(), center = androidx.compose.ui.geometry.Offset(lastX, lastY))
     }
 }
 

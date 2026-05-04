@@ -12,6 +12,8 @@ import com.brvm.alerte.domain.model.Stock
 import com.brvm.alerte.domain.model.TechnicalIndicators
 import com.brvm.alerte.domain.repository.StockRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -40,14 +42,38 @@ class StockRepositoryImpl @Inject constructor(
         stockDao.observeStock(ticker).map { it?.toDomain() }
 
     override suspend fun refreshAllStocks() = withContext(Dispatchers.IO) {
+        // 1. REST API officielle
         val apiStocks = tryApiRefresh()
-        val scraperStocks = if (apiStocks.isEmpty()) tryScraperRefresh() else emptyList<StockEntity>()
-        val entities = when {
-            apiStocks.isNotEmpty() -> apiStocks
-            scraperStocks.isNotEmpty() -> mergeWithSeed(scraperStocks)
-            else -> null
-        }
-        if (entities != null) stockDao.insertStocks(entities) else ensureSeedData()
+        if (apiStocks.isNotEmpty()) { stockDao.insertStocks(apiStocks); return@withContext }
+
+        // 2. Scraping HTML brvm.org / sikafinance bulk
+        val scraperStocks = tryScraperRefresh()
+        if (scraperStocks.isNotEmpty()) { stockDao.insertStocks(mergeWithSeed(scraperStocks)); return@withContext }
+
+        // 3. Dernier recours : API JSON SikaFinance ticker par ticker en parallèle
+        ensureSeedData() // s'assure qu'on a des données de base
+        val sikaStocks = tryParallelSikaRefresh()
+        if (sikaStocks.isNotEmpty()) stockDao.insertStocks(sikaStocks)
+    }
+
+    /** Récupère en parallèle le dernier prix de chaque titre via l'API JSON SikaFinance. */
+    private suspend fun tryParallelSikaRefresh(): List<StockEntity> = coroutineScope {
+        BRVMSeedData.stocks.map { seed ->
+            async {
+                try {
+                    val dto = scraper.scrapeCurrentPrice(seed.ticker) ?: return@async null
+                    seed.copy(
+                        lastPrice = dto.closingPrice ?: seed.lastPrice,
+                        previousClose = dto.previousClosingPrice ?: seed.previousClose,
+                        openPrice = dto.openingPrice ?: seed.openPrice,
+                        highPrice = dto.highest ?: seed.highPrice,
+                        lowPrice = dto.lowest ?: seed.lowPrice,
+                        volume = dto.volume ?: seed.volume,
+                        lastUpdated = System.currentTimeMillis()
+                    )
+                } catch (_: Exception) { null }
+            }
+        }.mapNotNull { it.await() }
     }
 
     private suspend fun tryApiRefresh(): List<StockEntity> {
