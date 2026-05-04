@@ -44,13 +44,6 @@
             </intent-filter>
         </service>
 
-        <!-- Alert Foreground Service -->
-        <service
-            android:name=".service.AlertNotificationService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
         <!-- Boot receiver to restart analysis worker -->
         <receiver
             android:name=".receiver.BootReceiver"

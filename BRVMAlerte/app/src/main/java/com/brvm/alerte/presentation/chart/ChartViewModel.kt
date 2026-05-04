@@ -9,8 +9,10 @@ import com.brvm.alerte.domain.model.TechnicalIndicators
 import com.brvm.alerte.domain.repository.StockRepository
 import com.brvm.alerte.domain.usecase.ComputeTechnicalIndicatorsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 enum class ChartPeriod(val label: String, val days: Int) {
@@ -62,7 +64,9 @@ class ChartViewModel @Inject constructor(
             try {
                 stockRepo.refreshPriceHistory(ticker)
                 val history = stockRepo.getPriceHistory(ticker, 365)
-                val indicators = computeIndicators.compute(ticker, history)
+                val indicators = withContext(Dispatchers.Default) {
+                    computeIndicators.compute(ticker, history)
+                }
                 if (indicators != null) stockRepo.saveTechnicalIndicators(indicators)
 
                 val periodHistory = history.takeLast(_state.value.period.days)

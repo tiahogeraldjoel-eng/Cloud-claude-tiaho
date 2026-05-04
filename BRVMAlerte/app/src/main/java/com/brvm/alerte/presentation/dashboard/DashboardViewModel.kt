@@ -73,11 +73,13 @@ class DashboardViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+            _state.update { it.copy(isLoading = true, error = null) }
             try {
                 stockRepo.refreshAllStocks()
             } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = "Erreur de connexion: ${e.message}") }
+                _state.update { it.copy(error = "Erreur de connexion: ${e.message}") }
+            } finally {
+                _state.update { it.copy(isLoading = false) }
             }
         }
     }

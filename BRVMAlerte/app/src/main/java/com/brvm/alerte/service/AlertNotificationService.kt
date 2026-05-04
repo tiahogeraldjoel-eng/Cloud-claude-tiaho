@@ -1,6 +1,5 @@
 package com.brvm.alerte.service
 
-import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
@@ -11,6 +10,7 @@ import com.brvm.alerte.MainActivity
 import com.brvm.alerte.R
 import com.brvm.alerte.domain.model.Alert
 import com.brvm.alerte.domain.model.AlertPriority
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,7 +19,7 @@ class AlertNotificationService @Inject constructor(
     private val context: Context
 ) {
     private val manager = context.getSystemService(NotificationManager::class.java)
-    private var notifId = 1000
+    private val notifId = AtomicInteger(1000)
 
     fun showAlert(alert: Alert) {
         val channel = when (alert.priority) {
@@ -51,7 +51,7 @@ class AlertNotificationService @Inject constructor(
             .setContentIntent(pendingIntent)
             .build()
 
-        manager.notify(notifId++, notification)
+        manager.notify(notifId.getAndIncrement(), notification)
     }
 
     fun showBatchSummary(count: Int, topTicker: String) {
@@ -63,7 +63,7 @@ class AlertNotificationService @Inject constructor(
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .build()
-        manager.notify(notifId++, notification)
+        manager.notify(notifId.getAndIncrement(), notification)
     }
 
     private fun buildShortText(alert: Alert): String {

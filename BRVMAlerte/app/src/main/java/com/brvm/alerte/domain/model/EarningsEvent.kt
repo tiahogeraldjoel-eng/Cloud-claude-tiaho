@@ -17,8 +17,8 @@ data class EarningsEvent(
     val description: String = ""
 ) {
     val epsSurprise: Double?
-        get() = if (estimatedEPS != null && actualEPS != null)
-            ((actualEPS - estimatedEPS) / Math.abs(estimatedEPS)) * 100 else null
+        get() = if (estimatedEPS != null && actualEPS != null && estimatedEPS != 0.0)
+            ((actualEPS - estimatedEPS) / kotlin.math.abs(estimatedEPS)) * 100 else null
 
     val isPositiveSurprise: Boolean get() = epsSurprise?.let { it > 5.0 } ?: false
     val isNegativeSurprise: Boolean get() = epsSurprise?.let { it < -5.0 } ?: false

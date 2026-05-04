@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import com.brvm.alerte.data.preferences.UserPreferencesRepository
 import com.brvm.alerte.domain.model.AlertChannel
+import com.brvm.alerte.domain.model.AlertPriority
 import com.brvm.alerte.domain.repository.AlertRepository
 import com.brvm.alerte.domain.repository.StockRepository
 import com.brvm.alerte.domain.usecase.ComputeTechnicalIndicatorsUseCase
@@ -81,7 +82,7 @@ class BRVMAnalysisWorker @AssistedInject constructor(
             // 4. Email automatique — rapport quotidien si alertes URGENT/FORT
             if (prefs.emailEnabled && newAlerts.isNotEmpty()) {
                 val urgentAlerts = newAlerts.filter {
-                    it.priority.name in listOf("URGENT", "STRONG")
+                    it.priority == AlertPriority.URGENT || it.priority == AlertPriority.STRONG
                 }
                 if (urgentAlerts.isNotEmpty()) {
                     val date = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.FRANCE)
