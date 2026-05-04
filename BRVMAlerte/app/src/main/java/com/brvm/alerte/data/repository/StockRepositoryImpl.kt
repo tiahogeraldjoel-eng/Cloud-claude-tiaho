@@ -16,6 +16,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -51,8 +52,9 @@ class StockRepositoryImpl @Inject constructor(
         if (scraperStocks.isNotEmpty()) { stockDao.insertStocks(mergeWithSeed(scraperStocks)); return@withContext }
 
         // 3. Dernier recours : API JSON SikaFinance ticker par ticker en parallèle
-        ensureSeedData() // s'assure qu'on a des données de base
-        val sikaStocks = tryParallelSikaRefresh()
+        //    (max 18s — chaque requête est déjà limitée à 12s via callTimeout OkHttp)
+        ensureSeedData()
+        val sikaStocks = withTimeoutOrNull(18_000L) { tryParallelSikaRefresh() } ?: emptyList()
         if (sikaStocks.isNotEmpty()) stockDao.insertStocks(sikaStocks)
     }
 

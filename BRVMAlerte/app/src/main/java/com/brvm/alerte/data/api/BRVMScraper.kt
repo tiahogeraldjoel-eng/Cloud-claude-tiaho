@@ -161,30 +161,36 @@ class BRVMScraper @Inject constructor(
 
         return rows.mapNotNull { row ->
             val cells = row.select("td")
-            if (cells.size < 4) return@mapNotNull null
-            val tickerIdx = if (cells.size >= 6) 1 else 0
-            val nameIdx = tickerIdx + 1
-            val closeIdx = nameIdx + 1
-            val changeIdx = closeIdx + 1
-            val volumeIdx = if (cells.size > changeIdx + 1) changeIdx + 1 else changeIdx
+            // brvm.org : N° | TICKER | NOM | VOLUME | PREV | OPEN | LAST | CHANGE%
+            // → 8 colonnes avec N°, 7 sans
+            val hasNum = cells.size >= 8
+            if (cells.size < 7) return@mapNotNull null
+
+            val tickerIdx  = if (hasNum) 1 else 0
+            val nameIdx    = if (hasNum) 2 else 1
+            val volIdx     = if (hasNum) 3 else 2
+            val prevIdx    = if (hasNum) 4 else 3
+            val lastIdx    = if (hasNum) 6 else 5   // "Dernier cours"
+            val changeIdx  = if (hasNum) 7 else 6
 
             val ticker = cells[tickerIdx].text().trim()
-            if (ticker.isEmpty() || ticker.length > 10) return@mapNotNull null
+            if (ticker.isEmpty() || ticker.length > 8 || !ticker[0].isLetter()) return@mapNotNull null
             val name = cells.getOrNull(nameIdx)?.text()?.trim() ?: ticker
-            val closeText = cells[closeIdx].text().replace(",", ".").replace("\\s+".toRegex(), "").replace(" ", "")
-            val changeText = cells.getOrNull(changeIdx)?.text()?.replace(",", ".")?.replace("%", "")?.trim() ?: "0"
-            val volumeText = cells.getOrNull(volumeIdx)?.text()?.replace("\\s+".toRegex(), "")?.replace(",", "") ?: "0"
-            val close = closeText.toDoubleOrNull() ?: return@mapNotNull null
-            if (close <= 0) return@mapNotNull null
-            val changePct = changeText.toDoubleOrNull() ?: 0.0
-            val prevClose = if (changePct != 0.0) close / (1 + changePct / 100) else close
+
+            fun clean(idx: Int) = cells.getOrNull(idx)?.text()
+                ?.replace("\\s+".toRegex(), "")?.replace(",", ".")?.replace(" ", "") ?: ""
+
+            val last    = clean(lastIdx).toDoubleOrNull() ?: return@mapNotNull null
+            if (last <= 0 || last > 10_000_000) return@mapNotNull null   // sanity check
+            val prev    = clean(prevIdx).toDoubleOrNull() ?: last
+            val change  = clean(changeIdx).replace("%","").toDoubleOrNull() ?: 0.0
+            val volume  = clean(volIdx).replace(".","").toLongOrNull() ?: 0L
 
             StockDto(
                 ticker = ticker, name = name, sector = null, country = null,
-                closingPrice = close, previousClosingPrice = prevClose,
+                closingPrice = last, previousClosingPrice = prev,
                 openingPrice = null, highest = null, lowest = null,
-                volume = volumeText.toLongOrNull(),
-                marketCap = null, per = null, dividendYield = null,
+                volume = volume, marketCap = null, per = null, dividendYield = null,
                 eps = null, bookValue = null, priceToBook = null, roe = null, lastTradeDate = null
             )
         }

@@ -37,10 +37,11 @@ object AppModule {
         }
         return OkHttpClient.Builder()
             .addInterceptor(logging)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(true)
+            .callTimeout(12, TimeUnit.SECONDS)   // timeout global par requête
+            .connectTimeout(8, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
+            .writeTimeout(10, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(false)     // pas de retry silencieux qui rallonge
             .build()
     }
 

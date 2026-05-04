@@ -8,6 +8,7 @@ import com.brvm.alerte.domain.usecase.ScoreStockUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 enum class ScannerFilter {
@@ -69,11 +70,15 @@ class ScannerViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+            _state.update { it.copy(isLoading = true, error = null) }
             try {
-                stockRepo.refreshAllStocks()
+                // 25s max — évite le spinner infini si toutes les sources réseau sont lentes
+                withTimeoutOrNull(25_000L) { stockRepo.refreshAllStocks() }
             } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = e.message) }
+                _state.update { it.copy(error = e.message) }
+            } finally {
+                // Garantit que le spinner s'arrête dans tous les cas
+                _state.update { it.copy(isLoading = false) }
             }
         }
     }
