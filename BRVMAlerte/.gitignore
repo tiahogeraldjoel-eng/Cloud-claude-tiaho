@@ -1,0 +1,23 @@
+# Gradle
+.gradle/
+build/
+**/build/
+*.apk
+*.aab
+*.ap_
+
+# Android
+local.properties
+*.keystore
+*.jks
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Generated
+**/generated/
+
+# Firebase (ne pas versionner les vraies clés)
+# app/google-services.json  # décommentez si vous utilisez un vrai projet Firebase
