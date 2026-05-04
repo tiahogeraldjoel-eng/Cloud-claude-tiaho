@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brvm_green">#00A651</color>
+    <color name="brvm_red">#E63946</color>
+    <color name="brvm_blue">#1B4F72</color>
+    <color name="brvm_gold">#F4A261</color>
+    <color name="brvm_dark">#0D1B2A</color>
+    <color name="brvm_light">#F8F9FA</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="primary">#1B4F72</color>
+    <color name="primary_dark">#0D2E45</color>
+    <color name="accent">#00A651</color>
+</resources>

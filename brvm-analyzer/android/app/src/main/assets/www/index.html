@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0D1B2A">
+<title>BRVM Analyser</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-btn active" data-page="dashboard" onclick="BRVMApp.navigate('dashboard')">
+    <span class="nav-icon">📊</span><span class="nav-label">Marché</span>
+  </button>
+  <button class="nav-btn" data-page="screener" onclick="BRVMApp.navigate('screener')">
+    <span class="nav-icon">🔍</span><span class="nav-label">Screener</span>
+  </button>
+  <button class="nav-btn" data-page="recommendations" onclick="BRVMApp.navigate('recommendations')">
+    <span class="nav-icon">⭐</span><span class="nav-label">Reco.</span>
+  </button>
+  <button class="nav-btn" data-page="portfolio" onclick="BRVMApp.navigate('portfolio')">
+    <span class="nav-icon">💼</span><span class="nav-label">Portefeuille</span>
+  </button>
+  <button class="nav-btn" data-page="settings" onclick="BRVMApp.navigate('settings')">
+    <span class="nav-icon">⚙️</span><span class="nav-label">Profil</span>
+  </button>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div id="appContent">
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <div id="page-dashboard" class="page active">
+    <div class="page-header">
+      <div>
+        <div class="header-title">BRVM ANALYSER</div>
+        <div class="header-subtitle" id="marketStatus">Chargement...</div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="BRVMApp.refreshData()" title="Actualiser">🔄</button>
+        <span class="last-update" id="lastUpdate"></span>
+      </div>
+    </div>
+
+    <!-- Indices Summary -->
+    <div class="indices-strip" id="indicesStrip">
+      <div class="index-card">
+        <div class="index-name">BRVM Composite</div>
+        <div class="index-value" id="brvmComposite">--</div>
+        <div class="index-change" id="brvmCompositeChange">--</div>
+      </div>
+      <div class="index-card">
+        <div class="index-name">BRVM 10</div>
+        <div class="index-value" id="brvm10">--</div>
+        <div class="index-change" id="brvm10Change">--</div>
+      </div>
+      <div class="index-card">
+        <div class="index-name">BRVM Prestige</div>
+        <div class="index-value" id="brvmPrestige">--</div>
+        <div class="index-change" id="brvmPrestigeChange">--</div>
+      </div>
+    </div>
+
+    <!-- Market Summary -->
+    <div class="market-summary card">
+      <div class="summary-item">
+        <div class="summary-label">Hausses</div>
+        <div class="summary-value green" id="summaryUp">-</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Stables</div>
+        <div class="summary-value neutral" id="summaryFlat">-</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Baisses</div>
+        <div class="summary-value red" id="summaryDown">-</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Volume (M FCFA)</div>
+        <div class="summary-value" id="summaryVolume">-</div>
+      </div>
+    </div>
+
+    <!-- Ticker tape -->
+    <div class="ticker-container">
+      <div class="ticker-tape" id="tickerTape"></div>
+    </div>
+
+    <!-- Top movers -->
+    <div class="section-title">📈 Meilleures Performances</div>
+    <div id="topGainers" class="movers-list"></div>
+
+    <div class="section-title">📉 Plus Fortes Baisses</div>
+    <div id="topLosers" class="movers-list"></div>
+
+    <!-- All stocks table -->
+    <div class="section-title">📋 Tous les Titres</div>
+    <div class="search-bar">
+      <input type="text" id="stockSearch" placeholder="🔍 Rechercher un titre..." oninput="BRVMApp.filterStocks(this.value)">
+    </div>
+    <div id="stocksTable" class="stocks-table"></div>
+  </div>
+
+  <!-- ===================== STOCK ANALYSIS ===================== -->
+  <div id="page-analysis" class="page">
+    <div class="page-header">
+      <button class="back-btn" onclick="BRVMApp.goBack()">← Retour</button>
+      <div id="analysisTitle" class="header-title">Analyse</div>
+      <button class="icon-btn" onclick="BRVMApp.generatePDF()" title="PDF">📄</button>
+    </div>
+
+    <!-- Stock header -->
+    <div class="stock-header card" id="stockHeader"></div>
+
+    <!-- Score overview -->
+    <div class="score-overview card" id="scoreOverview"></div>
+
+    <!-- Tab navigation for analysis -->
+    <div class="analysis-tabs">
+      <button class="tab-btn active" onclick="BRVMApp.showTab('fundamental')">Fondamentale</button>
+      <button class="tab-btn" onclick="BRVMApp.showTab('technical')">Technique</button>
+      <button class="tab-btn" onclick="BRVMApp.showTab('psychological')">Psychologique</button>
+      <button class="tab-btn" onclick="BRVMApp.showTab('verdict')">Verdict</button>
+    </div>
+
+    <!-- Fundamental Tab -->
+    <div id="tab-fundamental" class="tab-content active">
+      <div class="analysis-section card" id="fundamentalContent"></div>
+    </div>
+
+    <!-- Technical Tab -->
+    <div id="tab-technical" class="tab-content">
+      <div class="chart-container">
+        <canvas id="priceChart" height="200"></canvas>
+      </div>
+      <div class="analysis-section card" id="technicalContent"></div>
+    </div>
+
+    <!-- Psychological Tab -->
+    <div id="tab-psychological" class="tab-content">
+      <div class="analysis-section card" id="psychologicalContent"></div>
+    </div>
+
+    <!-- Verdict Tab -->
+    <div id="tab-verdict" class="tab-content">
+      <div class="verdict-section" id="verdictContent"></div>
+    </div>
+  </div>
+
+  <!-- ===================== SCREENER ===================== -->
+  <div id="page-screener" class="page">
+    <div class="page-header">
+      <div class="header-title">🔍 Screener</div>
+    </div>
+    <div class="screener-filters card">
+      <div class="filter-group">
+        <label>Secteur</label>
+        <select id="filterSector" onchange="BRVMApp.applyScreener()">
+          <option value="">Tous</option>
+          <option value="Banque">Banque</option>
+          <option value="Agriculture">Agriculture</option>
+          <option value="Industrie">Industrie</option>
+          <option value="Telecom">Telecom</option>
+          <option value="Distribution">Distribution</option>
+          <option value="Transport">Transport</option>
+          <option value="Assurance">Assurance</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Pays</label>
+        <select id="filterCountry" onchange="BRVMApp.applyScreener()">
+          <option value="">Tous</option>
+          <option value="CI">Côte d'Ivoire</option>
+          <option value="SN">Sénégal</option>
+          <option value="BF">Burkina Faso</option>
+          <option value="BJ">Bénin</option>
+          <option value="ML">Mali</option>
+          <option value="TG">Togo</option>
+          <option value="GW">Guinée-Bissau</option>
+          <option value="GN">Guinée</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Score min (%)</label>
+        <input type="range" id="filterScore" min="0" max="100" value="0" oninput="BRVMApp.applyScreener(); document.getElementById('filterScoreVal').textContent=this.value+'%'">
+        <span id="filterScoreVal">0%</span>
+      </div>
+      <div class="filter-group">
+        <label>Signal technique</label>
+        <select id="filterSignal" onchange="BRVMApp.applyScreener()">
+          <option value="">Tous</option>
+          <option value="BUY">Achat</option>
+          <option value="HOLD">Conservation</option>
+          <option value="SELL">Vente</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Dividende min (%)</label>
+        <input type="number" id="filterDividend" min="0" max="20" step="0.5" value="0" placeholder="0" oninput="BRVMApp.applyScreener()">
+      </div>
+      <div class="filter-group">
+        <label>PER max</label>
+        <input type="number" id="filterPER" min="0" max="100" step="1" placeholder="∞" oninput="BRVMApp.applyScreener()">
+      </div>
+    </div>
+    <div id="screenerResults" class="screener-results"></div>
+  </div>
+
+  <!-- ===================== RECOMMENDATIONS ===================== -->
+  <div id="page-recommendations" class="page">
+    <div class="page-header">
+      <div>
+        <div class="header-title">⭐ Recommandations</div>
+        <div class="header-subtitle" id="recoDate"></div>
+      </div>
+      <button class="icon-btn" onclick="BRVMApp.generateRecommendationsPDF()">📄</button>
+    </div>
+
+    <!-- Investor Profile Selector -->
+    <div class="profile-selector card">
+      <div class="profile-label">Votre profil :</div>
+      <div class="profile-buttons" id="profileButtons">
+        <button class="profile-btn active" data-profile="conservative" onclick="BRVMApp.setProfile('conservative')">
+          🛡️ Prudent
+        </button>
+        <button class="profile-btn" data-profile="balanced" onclick="BRVMApp.setProfile('balanced')">
+          ⚖️ Équilibré
+        </button>
+        <button class="profile-btn" data-profile="growth" onclick="BRVMApp.setProfile('growth')">
+          🚀 Croissance
+        </button>
+        <button class="profile-btn" data-profile="speculative" onclick="BRVMApp.setProfile('speculative')">
+          ⚡ Spéculatif
+        </button>
+      </div>
+    </div>
+
+    <!-- Market Sentiment -->
+    <div class="sentiment-card card" id="sentimentCard"></div>
+
+    <!-- Daily Recommendations -->
+    <div class="section-title">🟢 Achats Recommandés</div>
+    <div id="buyRecommendations"></div>
+
+    <div class="section-title">🟡 Titres à Conserver</div>
+    <div id="holdRecommendations"></div>
+
+    <div class="section-title">🔴 Titres à Alléger</div>
+    <div id="sellRecommendations"></div>
+
+    <!-- Market Commentary -->
+    <div class="section-title">📝 Commentaire du Marché</div>
+    <div class="market-commentary card" id="marketCommentary"></div>
+  </div>
+
+  <!-- ===================== PORTFOLIO ===================== -->
+  <div id="page-portfolio" class="page">
+    <div class="page-header">
+      <div class="header-title">💼 Mon Portefeuille</div>
+      <button class="icon-btn" onclick="BRVMApp.showAddPosition()">➕</button>
+    </div>
+
+    <!-- Portfolio Summary -->
+    <div class="portfolio-summary card" id="portfolioSummary"></div>
+
+    <!-- Performance Chart -->
+    <div class="chart-container">
+      <canvas id="portfolioChart" height="160"></canvas>
+    </div>
+
+    <!-- Positions -->
+    <div id="portfolioPositions"></div>
+
+    <!-- Add Position Modal -->
+    <div id="addPositionModal" class="modal" style="display:none">
+      <div class="modal-content card">
+        <div class="modal-title">Ajouter une position</div>
+        <select id="addTicker">
+          <option value="">Sélectionner un titre...</option>
+        </select>
+        <input type="number" id="addQty" placeholder="Quantité" min="1">
+        <input type="number" id="addPrice" placeholder="Prix d'achat (FCFA)" min="0" step="0.01">
+        <input type="date" id="addDate">
+        <div class="modal-actions">
+          <button class="btn-secondary" onclick="document.getElementById('addPositionModal').style.display='none'">Annuler</button>
+          <button class="btn-primary" onclick="BRVMApp.addPosition()">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SETTINGS ===================== -->
+  <div id="page-settings" class="page">
+    <div class="page-header">
+      <div class="header-title">⚙️ Paramètres & Profil</div>
+    </div>
+
+    <div class="settings-section card">
+      <div class="settings-title">Profil Investisseur</div>
+      <div class="profile-detail" id="profileDetail"></div>
+    </div>
+
+    <div class="settings-section card">
+      <div class="settings-title">Horizon d'investissement</div>
+      <select id="horizon" onchange="BRVMApp.saveSetting('horizon', this.value)">
+        <option value="short">Court terme (< 6 mois)</option>
+        <option value="medium" selected>Moyen terme (6-24 mois)</option>
+        <option value="long">Long terme (> 24 mois)</option>
+      </select>
+    </div>
+
+    <div class="settings-section card">
+      <div class="settings-title">Critères de filtrage</div>
+      <div class="setting-row">
+        <label>PER max acceptable</label>
+        <input type="number" id="settingPER" value="20" min="5" max="50" onchange="BRVMApp.saveSetting('maxPER', this.value)">
+      </div>
+      <div class="setting-row">
+        <label>Rendement dividende min (%)</label>
+        <input type="number" id="settingDividend" value="3" min="0" max="15" step="0.5" onchange="BRVMApp.saveSetting('minDividend', this.value)">
+      </div>
+      <div class="setting-row">
+        <label>RSI surachat (vente)</label>
+        <input type="number" id="settingRSIHigh" value="70" min="60" max="85" onchange="BRVMApp.saveSetting('rsiOverbought', this.value)">
+      </div>
+      <div class="setting-row">
+        <label>RSI survente (achat)</label>
+        <input type="number" id="settingRSILow" value="30" min="15" max="40" onchange="BRVMApp.saveSetting('rsiOversold', this.value)">
+      </div>
+    </div>
+
+    <div class="settings-section card">
+      <div class="settings-title">Alertes</div>
+      <div class="setting-row">
+        <label>Recommandations quotidiennes</label>
+        <label class="toggle"><input type="checkbox" id="alertReco" checked onchange="BRVMApp.saveSetting('alertReco', this.checked)"><span class="slider"></span></label>
+      </div>
+      <div class="setting-row">
+        <label>Alerte variation > 3%</label>
+        <label class="toggle"><input type="checkbox" id="alertVariation" checked onchange="BRVMApp.saveSetting('alertVariation', this.checked)"><span class="slider"></span></label>
+      </div>
+      <div class="setting-row">
+        <label>Ouverture de séance</label>
+        <label class="toggle"><input type="checkbox" id="alertOpen" onchange="BRVMApp.saveSetting('alertOpen', this.checked)"><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div class="settings-section card">
+      <div class="settings-title">Application</div>
+      <div class="setting-row">
+        <span>Version</span><span>1.0.0</span>
+      </div>
+      <div class="setting-row">
+        <span>Dernière mise à jour données</span>
+        <span id="lastUpdateSetting">-</span>
+      </div>
+      <div class="setting-row">
+        <span>Données en cache</span>
+        <span id="cacheSize">-</span>
+      </div>
+      <button class="btn-outline full-width" onclick="BRVMApp.clearCache()">Vider le cache</button>
+      <button class="btn-outline full-width mt-8" onclick="BRVMApp.forceUpdate()">Forcer la mise à jour</button>
+    </div>
+  </div>
+
+</div><!-- /appContent -->
+
+<!-- Toast notification -->
+<div id="toast" class="toast"></div>
+
+<!-- Loading spinner -->
+<div id="spinner" class="spinner" style="display:none">
+  <div class="spinner-ring"></div>
+</div>
+
+<script src="js/data/brvm-stocks.js"></script>
+<script src="js/data/fetcher.js"></script>
+<script src="js/analysis/fundamental.js"></script>
+<script src="js/analysis/technical.js"></script>
+<script src="js/analysis/psychological.js"></script>
+<script src="js/analysis/scoring.js"></script>
+<script src="js/reports/pdf-generator.js"></script>
+<script src="js/ui/charts.js"></script>
+<script src="js/app-core.js"></script>
+<script src="js/app-ui.js"></script>
+<script src="js/app-portfolio.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

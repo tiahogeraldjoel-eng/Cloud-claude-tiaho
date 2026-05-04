@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">brvm.org</domain>
+        <domain includeSubdomains="true">www.brvm.org</domain>
+        <domain includeSubdomains="true">api.brvm.org</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
