@@ -52,12 +52,14 @@ class AlertRepositoryImpl @Inject constructor(
 
     private fun AlertEntity.toDomain() = Alert(
         id = id, ticker = ticker, stockName = stockName,
-        type = AlertType.valueOf(type), priority = AlertPriority.valueOf(priority),
-        title = title, message = message, recommendation = Recommendation.valueOf(recommendation),
+        type = runCatching { AlertType.valueOf(type) }.getOrElse { AlertType.TECHNICAL_BREAKOUT },
+        priority = runCatching { AlertPriority.valueOf(priority) }.getOrElse { AlertPriority.INFO },
+        title = title, message = message,
+        recommendation = runCatching { Recommendation.valueOf(recommendation) }.getOrElse { Recommendation.HOLD },
         score = score, targetPrice = targetPrice, currentPrice = currentPrice,
         createdAt = createdAt, isRead = isRead,
         sentChannels = if (sentChannels.isEmpty()) emptySet()
-        else sentChannels.split(",").mapNotNull { runCatching { AlertChannel.valueOf(it) }.getOrNull() }.toSet()
+        else sentChannels.split(",").mapNotNull { runCatching { AlertChannel.valueOf(it.trim()) }.getOrNull() }.toSet()
     )
 
     private fun Alert.toEntity() = AlertEntity(

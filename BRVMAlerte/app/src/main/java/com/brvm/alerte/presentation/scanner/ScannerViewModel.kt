@@ -53,7 +53,7 @@ class ScannerViewModel @Inject constructor(
                     ScannerItem(
                         stock = stock,
                         result = scoreStock.score(stock, indicators),
-                        isWatchlisted = false
+                        isWatchlisted = stock.isWatchlisted
                     )
                 }.sortedByDescending { it.result.totalScore }
 
@@ -117,7 +117,7 @@ class ScannerViewModel @Inject constructor(
             ScannerFilter.ALL -> items
             ScannerFilter.HIGH_SCORE -> items.filter { it.result.totalScore >= 65 }
             ScannerFilter.VOLUME_ANOMALY -> items.filter { it.stock.isVolumeAnomaly }
-            ScannerFilter.OVERSOLD -> items.filter { it.result.totalScore in 40..60 }
+            ScannerFilter.OVERSOLD -> items.filter { it.result.technicalScore <= 25 }
             ScannerFilter.DIVIDEND -> items.filter { (it.stock.dividendYield ?: 0.0) >= 3.0 }
             ScannerFilter.WATCHLIST -> items.filter { it.isWatchlisted }
         }

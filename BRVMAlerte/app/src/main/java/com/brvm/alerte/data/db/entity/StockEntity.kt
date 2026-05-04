@@ -1,6 +1,7 @@
 package com.brvm.alerte.data.db.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "stocks")
@@ -30,7 +31,7 @@ data class StockEntity(
     val isWatchlisted: Boolean = false
 )
 
-@Entity(tableName = "price_history")
+@Entity(tableName = "price_history", indices = [Index(value = ["ticker", "date"], unique = true)])
 data class PriceHistoryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val ticker: String,

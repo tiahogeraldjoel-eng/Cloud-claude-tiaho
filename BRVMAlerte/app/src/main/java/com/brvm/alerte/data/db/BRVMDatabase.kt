@@ -14,7 +14,7 @@ import com.brvm.alerte.data.db.entity.*
         AlertEntity::class,
         EarningsEventEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class BRVMDatabase : RoomDatabase() {

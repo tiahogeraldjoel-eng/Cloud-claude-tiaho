@@ -8,7 +8,8 @@ data class Stock(
     val peRatio: Double?, val dividendYield: Double?, val eps: Double?,
     val bookValue: Double?, val priceToBook: Double?, val roe: Double?,
     val debtToEquity: Double?, val revenueGrowth: Double?, val netIncomeGrowth: Double?,
-    val lastUpdated: Long, val priceHistory: List<PricePoint> = emptyList()
+    val lastUpdated: Long, val isWatchlisted: Boolean = false,
+    val priceHistory: List<PricePoint> = emptyList()
 ) {
     val changePercent: Double get() = if (previousClose > 0) ((lastPrice - previousClose) / previousClose) * 100 else 0.0
     val changeAbsolute: Double get() = lastPrice - previousClose

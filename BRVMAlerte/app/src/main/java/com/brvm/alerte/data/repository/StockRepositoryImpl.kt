@@ -219,7 +219,8 @@ class StockRepositoryImpl @Inject constructor(
         averageVolume20d = averageVolume20d, marketCap = marketCap, peRatio = peRatio,
         dividendYield = dividendYield, eps = eps, bookValue = bookValue,
         priceToBook = priceToBook, roe = roe, debtToEquity = debtToEquity,
-        revenueGrowth = revenueGrowth, netIncomeGrowth = netIncomeGrowth, lastUpdated = lastUpdated
+        revenueGrowth = revenueGrowth, netIncomeGrowth = netIncomeGrowth,
+        lastUpdated = lastUpdated, isWatchlisted = isWatchlisted
     )
 
     private fun TechnicalIndicatorsEntity.toDomain() = TechnicalIndicators(

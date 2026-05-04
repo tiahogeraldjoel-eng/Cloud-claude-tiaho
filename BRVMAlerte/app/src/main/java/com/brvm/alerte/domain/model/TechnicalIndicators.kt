@@ -11,7 +11,8 @@ data class TechnicalIndicators(
     val isBullishMACD: Boolean get() = macdLine > macdSignal
     val isOversold: Boolean get() = rsi14 < 30
     val isOverbought: Boolean get() = rsi14 > 70
-    val isBelowBollingerLower: Boolean get() = false
+    // Nécessite le prix courant — vérification réelle dans ScoreStockUseCase via position < 0.2
+    fun isBelowBollingerLower(currentPrice: Double): Boolean = currentPrice < bollingerLower && bollingerLower > 0
     val isGoldenCross: Boolean get() = sma50 > sma200
     val isDeathCross: Boolean get() = sma50 < sma200
     val isTrendStrong: Boolean get() = adx14 > 25
