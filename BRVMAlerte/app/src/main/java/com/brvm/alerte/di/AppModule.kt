@@ -30,12 +30,10 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    @Provides
-    @Singleton
+    @Provides @Singleton
     fun provideOkHttpClient(): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC
-            else HttpLoggingInterceptor.Level.NONE
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC else HttpLoggingInterceptor.Level.NONE
         }
         return OkHttpClient.Builder()
             .addInterceptor(logging)
@@ -46,8 +44,7 @@ object AppModule {
             .build()
     }
 
-    @Provides
-    @Singleton
+    @Provides @Singleton
     fun provideBRVMApiService(okHttpClient: OkHttpClient): BRVMApiService =
         Retrofit.Builder()
             .baseUrl(BuildConfig.BRVM_API_BASE_URL)
@@ -56,40 +53,24 @@ object AppModule {
             .build()
             .create(BRVMApiService::class.java)
 
-    @Provides
-    @Singleton
-    fun provideBRVMScraper(okHttpClient: OkHttpClient): BRVMScraper =
-        BRVMScraper(okHttpClient)
+    @Provides @Singleton
+    fun provideBRVMScraper(okHttpClient: OkHttpClient): BRVMScraper = BRVMScraper(okHttpClient)
 
-    @Provides
-    @Singleton
+    @Provides @Singleton
     fun provideBRVMDatabase(@ApplicationContext context: Context): BRVMDatabase =
         Room.databaseBuilder(context, BRVMDatabase::class.java, "brvm_alerte.db")
             .fallbackToDestructiveMigration()
             .build()
 
-    @Provides
-    @Singleton
-    fun provideStockDao(db: BRVMDatabase): StockDao = db.stockDao()
+    @Provides @Singleton fun provideStockDao(db: BRVMDatabase): StockDao = db.stockDao()
+    @Provides @Singleton fun provideAlertDao(db: BRVMDatabase): AlertDao = db.alertDao()
+    @Provides @Singleton fun provideStockRepository(impl: StockRepositoryImpl): StockRepository = impl
+    @Provides @Singleton fun provideAlertRepository(impl: AlertRepositoryImpl): AlertRepository = impl
 
-    @Provides
-    @Singleton
-    fun provideAlertDao(db: BRVMDatabase): AlertDao = db.alertDao()
-
-    @Provides
-    @Singleton
-    fun provideStockRepository(impl: StockRepositoryImpl): StockRepository = impl
-
-    @Provides
-    @Singleton
-    fun provideAlertRepository(impl: AlertRepositoryImpl): AlertRepository = impl
-
-    @Provides
-    @Singleton
+    @Provides @Singleton
     fun provideAlertNotificationService(@ApplicationContext context: Context): AlertNotificationService =
         AlertNotificationService(context)
 
-    @Provides
-    @Singleton
+    @Provides @Singleton
     fun provideEmailService(): EmailService = EmailService()
 }

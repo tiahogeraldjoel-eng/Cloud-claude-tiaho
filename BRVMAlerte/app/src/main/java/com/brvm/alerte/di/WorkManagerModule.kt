@@ -13,8 +13,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object WorkManagerModule {
 
-    @Provides
-    @Singleton
+    @Provides @Singleton
     fun provideWorkManagerHelper(@ApplicationContext context: Context): WorkManagerHelper =
         WorkManagerHelper(context)
 }

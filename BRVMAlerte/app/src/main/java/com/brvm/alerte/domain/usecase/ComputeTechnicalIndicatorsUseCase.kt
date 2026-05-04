@@ -89,8 +89,9 @@ class ComputeTechnicalIndicatorsUseCase @Inject constructor() {
     }
 
     private fun computeStochasticK(highs: List<Double>, lows: List<Double>, closes: List<Double>, period: Int): Double {
-        val recent = closes.indices.takeLast(period)
-        if (recent.isEmpty()) return 50.0
+        if (closes.size < period) return 50.0
+        val startIdx = closes.size - period
+        val recent = startIdx until closes.size
         val highestHigh = recent.maxOf { highs[it] }
         val lowestLow = recent.minOf { lows[it] }
         val currentClose = closes.last()

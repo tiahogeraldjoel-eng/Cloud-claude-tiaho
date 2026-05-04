@@ -33,6 +33,7 @@ class BRVMApplication : Application(), Configuration.Provider {
         super.onCreate()
         createNotificationChannels()
         schedulePeriodicAnalysis()
+        runImmediateAnalysisOnFirstLaunch()
         initEmailService()
     }
 
@@ -61,6 +62,14 @@ class BRVMApplication : Application(), Configuration.Provider {
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
                 .build()
+        )
+    }
+
+    private fun runImmediateAnalysisOnFirstLaunch() {
+        WorkManager.getInstance(this).enqueueUniqueWork(
+            "${BRVMAnalysisWorker.WORK_NAME}_startup",
+            androidx.work.ExistingWorkPolicy.KEEP,
+            BRVMAnalysisWorker.oneTimeRequest()
         )
     }
 

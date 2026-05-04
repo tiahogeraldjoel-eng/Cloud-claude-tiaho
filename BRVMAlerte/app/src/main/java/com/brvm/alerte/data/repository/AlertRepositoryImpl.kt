@@ -51,73 +51,37 @@ class AlertRepositoryImpl @Inject constructor(
     }
 
     private fun AlertEntity.toDomain() = Alert(
-        id = id,
-        ticker = ticker,
-        stockName = stockName,
-        type = AlertType.valueOf(type),
-        priority = AlertPriority.valueOf(priority),
-        title = title,
-        message = message,
-        recommendation = Recommendation.valueOf(recommendation),
-        score = score,
-        targetPrice = targetPrice,
-        currentPrice = currentPrice,
-        createdAt = createdAt,
-        isRead = isRead,
+        id = id, ticker = ticker, stockName = stockName,
+        type = AlertType.valueOf(type), priority = AlertPriority.valueOf(priority),
+        title = title, message = message, recommendation = Recommendation.valueOf(recommendation),
+        score = score, targetPrice = targetPrice, currentPrice = currentPrice,
+        createdAt = createdAt, isRead = isRead,
         sentChannels = if (sentChannels.isEmpty()) emptySet()
-        else sentChannels.split(",").mapNotNull {
-            runCatching { AlertChannel.valueOf(it) }.getOrNull()
-        }.toSet()
+        else sentChannels.split(",").mapNotNull { runCatching { AlertChannel.valueOf(it) }.getOrNull() }.toSet()
     )
 
     private fun Alert.toEntity() = AlertEntity(
-        id = id,
-        ticker = ticker,
-        stockName = stockName,
-        type = type.name,
-        priority = priority.name,
-        title = title,
-        message = message,
-        recommendation = recommendation.name,
-        score = score,
-        targetPrice = targetPrice,
-        currentPrice = currentPrice,
-        createdAt = createdAt,
-        isRead = isRead,
+        id = id, ticker = ticker, stockName = stockName,
+        type = type.name, priority = priority.name, title = title, message = message,
+        recommendation = recommendation.name, score = score, targetPrice = targetPrice,
+        currentPrice = currentPrice, createdAt = createdAt, isRead = isRead,
         sentChannels = sentChannels.joinToString(",") { it.name }
     )
 
     private fun EarningsEventEntity.toDomain() = EarningsEvent(
-        id = id,
-        ticker = ticker,
-        stockName = stockName,
-        eventType = EarningsEvent.EventType.valueOf(eventType),
-        eventDate = eventDate,
-        fiscalPeriod = fiscalPeriod,
-        estimatedEPS = estimatedEPS,
-        actualEPS = actualEPS,
-        estimatedRevenue = estimatedRevenue,
-        actualRevenue = actualRevenue,
-        dividendAmount = dividendAmount,
-        exDividendDate = exDividendDate,
-        paymentDate = paymentDate,
-        description = description
+        id = id, ticker = ticker, stockName = stockName,
+        eventType = EarningsEvent.EventType.valueOf(eventType), eventDate = eventDate,
+        fiscalPeriod = fiscalPeriod, estimatedEPS = estimatedEPS, actualEPS = actualEPS,
+        estimatedRevenue = estimatedRevenue, actualRevenue = actualRevenue,
+        dividendAmount = dividendAmount, exDividendDate = exDividendDate,
+        paymentDate = paymentDate, description = description
     )
 
     private fun EarningsEvent.toEntity() = EarningsEventEntity(
-        id = id,
-        ticker = ticker,
-        stockName = stockName,
-        eventType = eventType.name,
-        eventDate = eventDate,
-        fiscalPeriod = fiscalPeriod,
-        estimatedEPS = estimatedEPS,
-        actualEPS = actualEPS,
-        estimatedRevenue = estimatedRevenue,
-        actualRevenue = actualRevenue,
-        dividendAmount = dividendAmount,
-        exDividendDate = exDividendDate,
-        paymentDate = paymentDate,
-        description = description
+        id = id, ticker = ticker, stockName = stockName, eventType = eventType.name,
+        eventDate = eventDate, fiscalPeriod = fiscalPeriod, estimatedEPS = estimatedEPS,
+        actualEPS = actualEPS, estimatedRevenue = estimatedRevenue, actualRevenue = actualRevenue,
+        dividendAmount = dividendAmount, exDividendDate = exDividendDate,
+        paymentDate = paymentDate, description = description
     )
 }

@@ -20,16 +20,9 @@ data class Alert(
 )
 
 enum class AlertType {
-    VOLUME_ANOMALY,
-    TECHNICAL_BREAKOUT,
-    FUNDAMENTAL_OPPORTUNITY,
-    PRE_EARNINGS_SIGNAL,
-    DIVIDEND_APPROACHING,
-    SMART_MONEY_FLOW,
-    EARNINGS_SURPRISE_POSITIVE,
-    EARNINGS_SURPRISE_NEGATIVE,
-    SUPPORT_BOUNCE,
-    RESISTANCE_BREAK
+    VOLUME_ANOMALY, TECHNICAL_BREAKOUT, FUNDAMENTAL_OPPORTUNITY,
+    PRE_EARNINGS_SIGNAL, DIVIDEND_APPROACHING, SMART_MONEY_FLOW,
+    EARNINGS_SURPRISE_POSITIVE, EARNINGS_SURPRISE_NEGATIVE, SUPPORT_BOUNCE, RESISTANCE_BREAK
 }
 
 enum class AlertPriority(val label: String, val emoji: String) {
@@ -39,10 +32,6 @@ enum class AlertPriority(val label: String, val emoji: String) {
     INFO("INFO", "🔵")
 }
 
-enum class Recommendation {
-    STRONG_BUY, BUY, HOLD, SELL, STRONG_SELL
-}
+enum class Recommendation { STRONG_BUY, BUY, HOLD, SELL, STRONG_SELL }
 
-enum class AlertChannel {
-    WHATSAPP, SMS, EMAIL, PUSH
-}
+enum class AlertChannel { WHATSAPP, SMS, EMAIL, PUSH }

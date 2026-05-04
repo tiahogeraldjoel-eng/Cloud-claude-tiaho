@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "000000000000",
+    "project_number": "460610224431",
     "project_id": "brvm-alerte",
-    "storage_bucket": "brvm-alerte.appspot.com"
+    "storage_bucket": "brvm-alerte.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+        "mobilesdk_app_id": "1:460610224431:android:800261963f18cc5249e1da",
         "android_client_info": {
           "package_name": "com.brvm.alerte"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "REPLACE_WITH_YOUR_FIREBASE_API_KEY"
+          "current_key": "AIzaSyB4a5IkZxP2rR0aF0IUk56jY5Eg_a9dqRk"
         }
       ],
       "services": {

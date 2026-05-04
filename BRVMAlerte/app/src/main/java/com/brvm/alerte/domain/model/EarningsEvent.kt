@@ -20,19 +20,11 @@ data class EarningsEvent(
         get() = if (estimatedEPS != null && actualEPS != null)
             ((actualEPS - estimatedEPS) / Math.abs(estimatedEPS)) * 100 else null
 
-    val isPositiveSurprise: Boolean
-        get() = epsSurprise?.let { it > 5.0 } ?: false
-
-    val isNegativeSurprise: Boolean
-        get() = epsSurprise?.let { it < -5.0 } ?: false
+    val isPositiveSurprise: Boolean get() = epsSurprise?.let { it > 5.0 } ?: false
+    val isNegativeSurprise: Boolean get() = epsSurprise?.let { it < -5.0 } ?: false
 
     enum class EventType {
-        ANNUAL_RESULTS,
-        SEMI_ANNUAL_RESULTS,
-        QUARTERLY_RESULTS,
-        DIVIDEND_ANNOUNCEMENT,
-        AGO,
-        AGE,
-        BOARD_MEETING
+        ANNUAL_RESULTS, SEMI_ANNUAL_RESULTS, QUARTERLY_RESULTS,
+        DIVIDEND_ANNOUNCEMENT, AGO, AGE, BOARD_MEETING
     }
 }

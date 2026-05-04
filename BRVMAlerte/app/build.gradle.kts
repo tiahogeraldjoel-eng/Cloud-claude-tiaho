@@ -9,12 +9,12 @@ plugins {
 
 android {
     namespace = "com.brvm.alerte"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.brvm.alerte"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -53,6 +53,13 @@ android {
             excludes += "/META-INF/NOTICE.md"
             excludes += "/META-INF/LICENSE.md"
             excludes += "/META-INF/DEPENDENCIES"
+            excludes += "/META-INF/LICENSE"
+            excludes += "/META-INF/NOTICE"
+            excludes += "/META-INF/mailcap"
+            excludes += "/META-INF/mailcap.default"
+            excludes += "/META-INF/mimetypes.default"
+            excludes += "/META-INF/javamail.default.providers"
+            excludes += "/META-INF/javamail.default.address.map"
         }
     }
 }

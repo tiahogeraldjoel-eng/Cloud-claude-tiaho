@@ -11,9 +11,11 @@ import com.brvm.alerte.domain.model.PricePoint
 import com.brvm.alerte.domain.model.Stock
 import com.brvm.alerte.domain.model.TechnicalIndicators
 import com.brvm.alerte.domain.repository.StockRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -37,34 +39,22 @@ class StockRepositoryImpl @Inject constructor(
     override fun observeStock(ticker: String): Flow<Stock?> =
         stockDao.observeStock(ticker).map { it?.toDomain() }
 
-    override suspend fun refreshAllStocks() {
-        // 1. Essayer l'API officielle
+    override suspend fun refreshAllStocks() = withContext(Dispatchers.IO) {
         val apiStocks = tryApiRefresh()
-
-        // 2. Fallback: scraping de brvm.org
-        val scraperStocks = if (apiStocks.isEmpty()) tryScraperRefresh() else emptyList()
-
+        val scraperStocks = if (apiStocks.isEmpty()) tryScraperRefresh() else emptyList<StockEntity>()
         val entities = when {
             apiStocks.isNotEmpty() -> apiStocks
             scraperStocks.isNotEmpty() -> mergeWithSeed(scraperStocks)
             else -> null
         }
-
-        if (entities != null) {
-            stockDao.insertStocks(entities)
-        } else {
-            // Fallback final: seed data si la DB est vide
-            ensureSeedData()
-        }
+        if (entities != null) stockDao.insertStocks(entities) else ensureSeedData()
     }
 
     private suspend fun tryApiRefresh(): List<StockEntity> {
         return try {
-            val response = api.getAllStocks()
-            response.data.map { dto ->
+            api.getAllStocks().data.map { dto ->
                 StockEntity(
-                    ticker = dto.ticker,
-                    name = dto.name,
+                    ticker = dto.ticker, name = dto.name,
                     sector = dto.sector ?: sectorFromSeed(dto.ticker),
                     country = dto.country ?: countryFromSeed(dto.ticker),
                     lastPrice = dto.closingPrice ?: 0.0,
@@ -75,21 +65,14 @@ class StockRepositoryImpl @Inject constructor(
                     volume = dto.volume ?: 0L,
                     averageVolume20d = 0L,
                     marketCap = dto.marketCap ?: 0.0,
-                    peRatio = dto.per,
-                    dividendYield = dto.dividendYield,
-                    eps = dto.eps,
-                    bookValue = dto.bookValue,
-                    priceToBook = dto.priceToBook,
-                    roe = dto.roe,
-                    debtToEquity = null,
-                    revenueGrowth = null,
-                    netIncomeGrowth = null,
+                    peRatio = dto.per, dividendYield = dto.dividendYield,
+                    eps = dto.eps, bookValue = dto.bookValue,
+                    priceToBook = dto.priceToBook, roe = dto.roe,
+                    debtToEquity = null, revenueGrowth = null, netIncomeGrowth = null,
                     lastUpdated = System.currentTimeMillis()
                 )
             }
-        } catch (e: Exception) {
-            emptyList()
-        }
+        } catch (e: Exception) { emptyList() }
     }
 
     private fun tryScraperRefresh(): List<StockEntity> {
@@ -111,113 +94,71 @@ class StockRepositoryImpl @Inject constructor(
                     marketCap = dto.marketCap ?: seed?.marketCap ?: 0.0,
                     peRatio = dto.per ?: seed?.peRatio,
                     dividendYield = dto.dividendYield ?: seed?.dividendYield,
-                    eps = dto.eps ?: seed?.eps,
-                    bookValue = dto.bookValue ?: seed?.bookValue,
-                    priceToBook = dto.priceToBook ?: seed?.priceToBook,
-                    roe = dto.roe ?: seed?.roe,
+                    eps = dto.eps ?: seed?.eps, bookValue = dto.bookValue ?: seed?.bookValue,
+                    priceToBook = dto.priceToBook ?: seed?.priceToBook, roe = dto.roe ?: seed?.roe,
                     debtToEquity = null, revenueGrowth = null, netIncomeGrowth = null,
                     lastUpdated = System.currentTimeMillis()
                 )
             }
-        } catch (e: Exception) {
-            emptyList()
-        }
+        } catch (e: Exception) { emptyList() }
     }
 
     private fun mergeWithSeed(scraped: List<StockEntity>): List<StockEntity> {
         val scrapedTickers = scraped.map { it.ticker }.toSet()
-        val missingFromSeed = BRVMSeedData.stocks.filter { it.ticker !in scrapedTickers }
-        return scraped + missingFromSeed
+        return scraped + BRVMSeedData.stocks.filter { it.ticker !in scrapedTickers }
     }
 
     private suspend fun ensureSeedData() {
-        val existing = stockDao.getAllStocks()
-        if (existing.isEmpty()) {
-            stockDao.insertStocks(BRVMSeedData.stocks)
-        }
+        if (stockDao.getAllStocks().isEmpty()) stockDao.insertStocks(BRVMSeedData.stocks)
     }
 
-    override suspend fun refreshPriceHistory(ticker: String) {
-        // 1. Essayer l'API officielle
+    override suspend fun refreshPriceHistory(ticker: String) = withContext(Dispatchers.IO) {
         val apiHistory = tryApiHistory(ticker)
-
         if (apiHistory.isNotEmpty()) {
             stockDao.insertPriceHistory(apiHistory)
         } else {
-            // 2. Scraper
             val scraperHistory = tryScraperHistory(ticker)
             if (scraperHistory.isNotEmpty()) {
                 stockDao.insertPriceHistory(scraperHistory)
             } else {
-                // 3. Générer un historique GBM réaliste depuis le seed
                 val existing = stockDao.getPriceHistory(ticker, 1)
                 if (existing.isEmpty()) {
-                    val stock = stockDao.getStock(ticker)
-                        ?: BRVMSeedData.stocks.find { it.ticker == ticker }
-                    if (stock != null) {
-                        val generated = BRVMSeedData.generateHistory(ticker, stock.lastPrice)
-                        stockDao.insertPriceHistory(generated)
-                    }
+                    val stock = stockDao.getStock(ticker) ?: BRVMSeedData.stocks.find { it.ticker == ticker }
+                    if (stock != null) stockDao.insertPriceHistory(BRVMSeedData.generateHistory(ticker, stock.lastPrice))
                 }
             }
         }
-
-        // Calculer la moyenne de volume sur 20j
         val recentHistory = stockDao.getPriceHistory(ticker, 20)
-        if (recentHistory.isNotEmpty()) {
-            val avgVol = recentHistory.map { it.volume }.average().toLong()
-            stockDao.updateAverageVolume(ticker, avgVol)
-        }
-
-        val cutoff = System.currentTimeMillis() - (400L * 24 * 3600 * 1000)
-        stockDao.pruneOldHistory(ticker, cutoff)
+        if (recentHistory.isNotEmpty()) stockDao.updateAverageVolume(ticker, recentHistory.map { it.volume }.average().toLong())
+        stockDao.pruneOldHistory(ticker, System.currentTimeMillis() - (400L * 24 * 3600 * 1000))
     }
 
     private suspend fun tryApiHistory(ticker: String): List<PriceHistoryEntity> {
         return try {
             val endDate = LocalDate.now().format(dateFormatter)
             val startDate = LocalDate.now().minusYears(1).format(dateFormatter)
-            val response = api.getPriceHistory(ticker, startDate, endDate)
-            response.data.mapNotNull { dto ->
+            api.getPriceHistory(ticker, startDate, endDate).data.mapNotNull { dto ->
                 if (dto.close == null) return@mapNotNull null
-                PriceHistoryEntity(
-                    ticker = ticker,
-                    date = parseDate(dto.date),
-                    open = dto.open ?: dto.close,
-                    high = dto.high ?: dto.close,
-                    low = dto.low ?: dto.close,
-                    close = dto.close,
-                    volume = dto.volume ?: 0L
-                )
+                PriceHistoryEntity(ticker = ticker, date = parseDate(dto.date),
+                    open = dto.open ?: dto.close, high = dto.high ?: dto.close,
+                    low = dto.low ?: dto.close, close = dto.close, volume = dto.volume ?: 0L)
             }
-        } catch (e: Exception) {
-            emptyList()
-        }
+        } catch (e: Exception) { emptyList() }
     }
 
     private fun tryScraperHistory(ticker: String): List<PriceHistoryEntity> {
         return try {
             scraper.scrapeHistory(ticker).mapNotNull { dto ->
                 if (dto.close == null) return@mapNotNull null
-                PriceHistoryEntity(
-                    ticker = ticker,
-                    date = parseDate(dto.date),
-                    open = dto.open ?: dto.close,
-                    high = dto.high ?: dto.close,
-                    low = dto.low ?: dto.close,
-                    close = dto.close,
-                    volume = dto.volume ?: 0L
-                )
+                PriceHistoryEntity(ticker = ticker, date = parseDate(dto.date),
+                    open = dto.open ?: dto.close, high = dto.high ?: dto.close,
+                    low = dto.low ?: dto.close, close = dto.close, volume = dto.volume ?: 0L)
             }
-        } catch (e: Exception) {
-            emptyList()
-        }
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun getPriceHistory(ticker: String, limit: Int): List<PricePoint> =
-        stockDao.getPriceHistory(ticker, limit).map {
-            PricePoint(it.date, it.open, it.high, it.low, it.close, it.volume)
-        }
+        stockDao.getPriceHistory(ticker, limit).map { PricePoint(it.date, it.open, it.high, it.low, it.close, it.volume) }
 
     override suspend fun saveTechnicalIndicators(indicators: TechnicalIndicators) =
         stockDao.insertTechnicalIndicators(indicators.toEntity())
@@ -228,37 +169,29 @@ class StockRepositoryImpl @Inject constructor(
     override suspend fun updateWatchlistStatus(ticker: String, watchlisted: Boolean) =
         stockDao.updateWatchlistStatus(ticker, watchlisted)
 
-    private fun sectorFromSeed(ticker: String) =
-        BRVMSeedData.stocks.find { it.ticker == ticker }?.sector ?: "Divers"
-
-    private fun countryFromSeed(ticker: String) =
-        BRVMSeedData.stocks.find { it.ticker == ticker }?.country ?: "CI"
+    private fun sectorFromSeed(ticker: String) = BRVMSeedData.stocks.find { it.ticker == ticker }?.sector ?: "Divers"
+    private fun countryFromSeed(ticker: String) = BRVMSeedData.stocks.find { it.ticker == ticker }?.country ?: "CI"
 
     private fun parseDate(dateStr: String): Long {
         return try {
             LocalDate.parse(dateStr, dateFormatter).toEpochDay() * 86400L
         } catch (e: Exception) {
             try {
-                // Format alternatif dd/MM/yyyy
                 val parts = dateStr.split("/")
-                if (parts.size == 3) {
-                    LocalDate.of(parts[2].toInt(), parts[1].toInt(), parts[0].toInt()).toEpochDay() * 86400L
-                } else System.currentTimeMillis() / 1000
-            } catch (e2: Exception) {
-                System.currentTimeMillis() / 1000
-            }
+                if (parts.size == 3) LocalDate.of(parts[2].toInt(), parts[1].toInt(), parts[0].toInt()).toEpochDay() * 86400L
+                else System.currentTimeMillis() / 1000
+            } catch (e2: Exception) { System.currentTimeMillis() / 1000 }
         }
     }
 
     private fun StockEntity.toDomain() = Stock(
         ticker = ticker, name = name, sector = sector, country = country,
-        lastPrice = lastPrice, previousClose = previousClose,
-        openPrice = openPrice, highPrice = highPrice, lowPrice = lowPrice,
-        volume = volume, averageVolume20d = averageVolume20d,
-        marketCap = marketCap, peRatio = peRatio, dividendYield = dividendYield,
-        eps = eps, bookValue = bookValue, priceToBook = priceToBook, roe = roe,
-        debtToEquity = debtToEquity, revenueGrowth = revenueGrowth,
-        netIncomeGrowth = netIncomeGrowth, lastUpdated = lastUpdated
+        lastPrice = lastPrice, previousClose = previousClose, openPrice = openPrice,
+        highPrice = highPrice, lowPrice = lowPrice, volume = volume,
+        averageVolume20d = averageVolume20d, marketCap = marketCap, peRatio = peRatio,
+        dividendYield = dividendYield, eps = eps, bookValue = bookValue,
+        priceToBook = priceToBook, roe = roe, debtToEquity = debtToEquity,
+        revenueGrowth = revenueGrowth, netIncomeGrowth = netIncomeGrowth, lastUpdated = lastUpdated
     )
 
     private fun TechnicalIndicatorsEntity.toDomain() = TechnicalIndicators(

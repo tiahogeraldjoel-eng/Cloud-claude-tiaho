@@ -15,7 +15,7 @@ enum class ScannerFilter {
 }
 
 data class ScannerUiState(
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val items: List<ScannerItem> = emptyList(),
     val filter: ScannerFilter = ScannerFilter.ALL,
     val searchQuery: String = "",
@@ -34,11 +34,14 @@ class ScannerViewModel @Inject constructor(
     private val scoreStock: ScoreStockUseCase
 ) : ViewModel() {
 
+    // Source of truth séparée — jamais écrasée par les filtres
+    private val _allItems = MutableStateFlow<List<ScannerItem>>(emptyList())
     private val _state = MutableStateFlow(ScannerUiState())
     val state: StateFlow<ScannerUiState> = _state.asStateFlow()
 
     init {
         observeStocks()
+        refresh()
     }
 
     private fun observeStocks() {
@@ -53,19 +56,33 @@ class ScannerViewModel @Inject constructor(
                     )
                 }.sortedByDescending { it.result.totalScore }
 
+                _allItems.value = items
                 _state.update { state ->
-                    state.copy(items = applyFilter(items, state.filter, state.searchQuery))
+                    state.copy(
+                        isLoading = false,
+                        items = applyFilter(items, state.filter, state.searchQuery)
+                    )
                 }
+            }
+        }
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+            try {
+                stockRepo.refreshAllStocks()
+            } catch (e: Exception) {
+                _state.update { it.copy(isLoading = false, error = e.message) }
             }
         }
     }
 
     fun setFilter(filter: ScannerFilter) {
         _state.update { state ->
-            val allItems = state.items
             state.copy(
                 filter = filter,
-                items = applyFilter(allItems, filter, state.searchQuery)
+                items = applyFilter(_allItems.value, filter, state.searchQuery)
             )
         }
     }
@@ -74,14 +91,14 @@ class ScannerViewModel @Inject constructor(
         _state.update { state ->
             state.copy(
                 searchQuery = query,
-                items = applyFilter(state.items, state.filter, query)
+                items = applyFilter(_allItems.value, state.filter, query)
             )
         }
     }
 
     fun toggleWatchlist(ticker: String) {
         viewModelScope.launch {
-            val item = _state.value.items.find { it.stock.ticker == ticker } ?: return@launch
+            val item = _allItems.value.find { it.stock.ticker == ticker } ?: return@launch
             stockRepo.updateWatchlistStatus(ticker, !item.isWatchlisted)
         }
     }

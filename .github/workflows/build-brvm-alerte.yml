@@ -3,13 +3,15 @@ name: Build BRVM Alerte APK
 on:
   push:
     branches:
-      - claude/brvm-alert-compilation-YtS27
+      - feat/brvm-alerte-compilation
       - main
     paths:
       - 'BRVMAlerte/**'
+      - '.github/workflows/build-brvm-alerte.yml'
   pull_request:
     paths:
       - 'BRVMAlerte/**'
+      - '.github/workflows/build-brvm-alerte.yml'
   workflow_dispatch:
 
 jobs:
@@ -27,32 +29,42 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('BRVMAlerte/**/*.gradle*', 'BRVMAlerte/**/libs.versions.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK components
+      - name: Accept Android SDK licenses
         run: |
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+          mkdir -p "$ANDROID_HOME/licenses"
+          printf '%s\n' \
+            '8933bad161af4178b1185d1a37fbf41ea5269c55' \
+            'd56f5187479451eabf01fb78af6dfcb131a6481e' \
+            '24333f8a63b6825ea9c5514f83c2829b004d1fee' \
+            > "$ANDROID_HOME/licenses/android-sdk-license"
+          printf '%s\n' \
+            '84831b9409646a918e30573bab4c9c91346d8abd' \
+            > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
-      - name: Grant execute permission for gradlew
-        working-directory: BRVMAlerte
-        run: chmod +x gradlew
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+          cache-read-only: false
+          validate-wrappers: false
 
       - name: Build Debug APK
         working-directory: BRVMAlerte
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/gradle-build.log
         env:
-          ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
+
+      - name: Show build errors on failure
+        if: failure()
+        run: |
+          echo "=== ERREURS KOTLIN (e:) ==="
+          grep "^e: " /tmp/gradle-build.log || true
+          echo "=== ERREURS AAPT ==="
+          grep -E "(error: |ERROR:|aapt)" /tmp/gradle-build.log || true
+          echo "=== STACK TRACE ==="
+          grep -E "(FAILED|Exception|Caused by)" /tmp/gradle-build.log | tail -30 || true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -64,15 +76,12 @@ jobs:
       - name: Build Summary
         if: success()
         run: |
-          APK_PATH="BRVMAlerte/app/build/outputs/apk/debug/app-debug.apk"
-          APK_SIZE=$(du -sh "$APK_PATH" | cut -f1)
-          echo "## ✅ BRVM Alerte APK compilé avec succès" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          APK="BRVMAlerte/app/build/outputs/apk/debug/app-debug.apk"
+          SIZE=$(du -sh "$APK" | cut -f1)
+          echo "## BRVM Alerte APK compilé avec succès" >> $GITHUB_STEP_SUMMARY
           echo "| Propriété | Valeur |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Fichier | \`app-debug.apk\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Taille | $APK_SIZE |" >> $GITHUB_STEP_SUMMARY
+          echo "| Taille | $SIZE |" >> $GITHUB_STEP_SUMMARY
           echo "| Application ID | \`com.brvm.alerte\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Version | 1.0.0 (build 1) |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "L'APK est disponible dans les **Artifacts** de cette exécution (30 jours)." >> $GITHUB_STEP_SUMMARY
+          echo "| Version | 1.0.0 (compileSdk 34) |" >> $GITHUB_STEP_SUMMARY
+          echo "APK disponible dans les **Artifacts** (30 jours)." >> $GITHUB_STEP_SUMMARY
