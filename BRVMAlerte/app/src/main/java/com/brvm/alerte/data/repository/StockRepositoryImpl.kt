@@ -4,6 +4,7 @@ import android.util.Log
 import com.brvm.alerte.data.api.BRVMApiService
 import com.brvm.alerte.data.api.BRVMScraper
 import com.brvm.alerte.data.api.GithubStockService
+import com.brvm.alerte.data.api.WorkerStockService
 import com.brvm.alerte.data.db.dao.StockDao
 import com.brvm.alerte.data.db.entity.PriceHistoryEntity
 import com.brvm.alerte.data.db.entity.StockEntity
@@ -31,6 +32,7 @@ private const val TAG = "StockRepo"
 class StockRepositoryImpl @Inject constructor(
     private val api: BRVMApiService,
     private val scraper: BRVMScraper,
+    private val workerService: WorkerStockService,
     private val githubService: GithubStockService,
     private val stockDao: StockDao
 ) : StockRepository {
@@ -47,25 +49,34 @@ class StockRepositoryImpl @Inject constructor(
         stockDao.observeStock(ticker).map { it?.toDomain() }
 
     /**
-     * Stratégie en 4 phases — s'arrête dès qu'une phase réussit.
+     * Stratégie en 5 phases — s'arrête dès qu'une phase réussit.
      *
-     * Phase 0 : JSON statique publié par GitHub Actions (scraping côté serveur)
-     *           → raw.githubusercontent.com, toujours accessible depuis Android
-     * Phase 1 : brvm.org + SikaFinance bulk en PARALLÈLE (1 requête chacun)
-     * Phase 2 : SikaFinance par lots de 5 (rate-limit friendly)
-     * Phase 3 : seed data garantie en dernier recours
+     * Phase 0 : Cloudflare Worker (API dédiée, scraping serveur, toujours dispo)
+     * Phase 1 : GitHub Actions JSON (fallback si Worker non encore déployé)
+     * Phase 2 : brvm.org + SikaFinance bulk en PARALLÈLE
+     * Phase 3 : SikaFinance par lots de 5 (rate-limit friendly)
+     * Phase 4 : seed data garantie en dernier recours
      */
     override suspend fun refreshAllStocks() = withContext(Dispatchers.IO) {
         ensureSeedData()
 
-        // ── Phase 0 : GitHub Actions JSON (source la plus fiable) ────────────
+        // ── Phase 0 : Cloudflare Worker ───────────────────────────────────────
+        val workerStocks = tryWorkerRefresh()
+        if (workerStocks.size >= 10) {
+            Log.d(TAG, "Phase 0 OK — ${workerStocks.size} titres depuis Cloudflare Worker")
+            stockDao.insertStocks(mergeWithSeed(workerStocks))
+            return@withContext
+        }
+        Log.w(TAG, "Phase 0 KO (${workerStocks.size}), tentative GitHub JSON")
+
+        // ── Phase 1 : GitHub Actions JSON ────────────────────────────────────
         val githubStocks = tryGithubRefresh()
         if (githubStocks.size >= 10) {
-            Log.d(TAG, "Phase 0 OK — ${githubStocks.size} titres depuis GitHub")
+            Log.d(TAG, "Phase 1 OK — ${githubStocks.size} titres depuis GitHub")
             stockDao.insertStocks(mergeWithSeed(githubStocks))
             return@withContext
         }
-        Log.w(TAG, "Phase 0 KO (${githubStocks.size}), tentative scraping direct")
+        Log.w(TAG, "Phase 1 KO (${githubStocks.size}), tentative scraping direct")
 
         // ── Phase 1 : bulk en parallèle ──────────────────────────────────────
         val (brvmStocks, sikaStocks) = coroutineScope {
@@ -100,7 +111,43 @@ class StockRepositoryImpl @Inject constructor(
         }
     }
 
-    // ── Phase 0 : GitHub Actions JSON ────────────────────────────────────────
+    // ── Phase 0 : Cloudflare Worker ───────────────────────────────────────────
+
+    private suspend fun tryWorkerRefresh(): List<StockEntity> {
+        return try {
+            val response = workerService.getLatestStocks()
+            Log.d(TAG, "Cloudflare Worker: ${response.count} titres — ${response.lastUpdated}")
+            response.stocks.mapNotNull { entry ->
+                val close = entry.closingPrice?.takeIf { it > 0 } ?: return@mapNotNull null
+                val seed = BRVMSeedData.stocks.find { it.ticker == entry.ticker }
+                StockEntity(
+                    ticker = entry.ticker,
+                    name = seed?.name ?: entry.ticker,
+                    sector = seed?.sector ?: "Divers",
+                    country = seed?.country ?: "CI",
+                    lastPrice = close,
+                    previousClose = entry.previousClosingPrice?.takeIf { it > 0 } ?: close,
+                    openPrice = seed?.openPrice ?: close,
+                    highPrice = seed?.highPrice ?: close,
+                    lowPrice = seed?.lowPrice ?: close,
+                    volume = entry.volume ?: seed?.volume ?: 0L,
+                    averageVolume20d = seed?.averageVolume20d ?: 0L,
+                    marketCap = seed?.marketCap ?: 0.0,
+                    peRatio = seed?.peRatio, dividendYield = seed?.dividendYield,
+                    eps = seed?.eps, bookValue = seed?.bookValue,
+                    priceToBook = seed?.priceToBook, roe = seed?.roe,
+                    debtToEquity = null, revenueGrowth = null, netIncomeGrowth = null,
+                    lastUpdated = System.currentTimeMillis(),
+                    isWatchlisted = seed?.isWatchlisted ?: false
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Cloudflare Worker KO: ${e.message}")
+            emptyList()
+        }
+    }
+
+    // ── Phase 1 : GitHub Actions JSON ────────────────────────────────────────
 
     private suspend fun tryGithubRefresh(): List<StockEntity> {
         return try {

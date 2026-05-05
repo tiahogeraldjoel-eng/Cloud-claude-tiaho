@@ -6,6 +6,7 @@ import com.brvm.alerte.BuildConfig
 import com.brvm.alerte.data.api.BRVMApiService
 import com.brvm.alerte.data.api.BRVMScraper
 import com.brvm.alerte.data.api.GithubStockService
+import com.brvm.alerte.data.api.WorkerStockService
 import com.brvm.alerte.data.db.BRVMDatabase
 import com.brvm.alerte.data.db.dao.AlertDao
 import com.brvm.alerte.data.db.dao.StockDao
@@ -57,6 +58,15 @@ object AppModule {
 
     @Provides @Singleton
     fun provideBRVMScraper(okHttpClient: OkHttpClient): BRVMScraper = BRVMScraper(okHttpClient)
+
+    @Provides @Singleton
+    fun provideWorkerStockService(okHttpClient: OkHttpClient): WorkerStockService =
+        Retrofit.Builder()
+            .baseUrl(BuildConfig.WORKER_BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(WorkerStockService::class.java)
 
     @Provides @Singleton
     fun provideGithubStockService(okHttpClient: OkHttpClient): GithubStockService =
