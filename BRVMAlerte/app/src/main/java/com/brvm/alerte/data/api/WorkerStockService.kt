@@ -10,6 +10,6 @@ interface WorkerStockService {
      * Scrape SikaFinance côté serveur, renvoie JSON identique au format GitHub.
      * URL : https://brvm-prices.<compte>.workers.dev/
      */
-    @GET(".")
+    @GET("")
     suspend fun getLatestStocks(): GithubStockResponse
 }

@@ -26,29 +26,40 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    @Provides @Singleton
+    @Named("default") @Provides @Singleton
     fun provideOkHttpClient(): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC else HttpLoggingInterceptor.Level.NONE
         }
         return OkHttpClient.Builder()
             .addInterceptor(logging)
-            .callTimeout(12, TimeUnit.SECONDS)   // timeout global par requête
+            .callTimeout(12, TimeUnit.SECONDS)
             .connectTimeout(8, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
             .writeTimeout(10, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(false)     // pas de retry silencieux qui rallonge
+            .retryOnConnectionFailure(false)
             .build()
     }
 
+    // Timeout long dédié au Cloudflare Worker (peut prendre jusqu'à 30s)
+    @Named("worker") @Provides @Singleton
+    fun provideWorkerOkHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .callTimeout(45, TimeUnit.SECONDS)
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(40, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(false)
+            .build()
+
     @Provides @Singleton
-    fun provideBRVMApiService(okHttpClient: OkHttpClient): BRVMApiService =
+    fun provideBRVMApiService(@Named("default") okHttpClient: OkHttpClient): BRVMApiService =
         Retrofit.Builder()
             .baseUrl(BuildConfig.BRVM_API_BASE_URL)
             .client(okHttpClient)
@@ -57,19 +68,20 @@ object AppModule {
             .create(BRVMApiService::class.java)
 
     @Provides @Singleton
-    fun provideBRVMScraper(okHttpClient: OkHttpClient): BRVMScraper = BRVMScraper(okHttpClient)
+    fun provideBRVMScraper(@Named("default") okHttpClient: OkHttpClient): BRVMScraper =
+        BRVMScraper(okHttpClient)
 
     @Provides @Singleton
-    fun provideWorkerStockService(okHttpClient: OkHttpClient): WorkerStockService =
+    fun provideWorkerStockService(@Named("worker") workerClient: OkHttpClient): WorkerStockService =
         Retrofit.Builder()
             .baseUrl(BuildConfig.WORKER_BASE_URL)
-            .client(okHttpClient)
+            .client(workerClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(WorkerStockService::class.java)
 
     @Provides @Singleton
-    fun provideGithubStockService(okHttpClient: OkHttpClient): GithubStockService =
+    fun provideGithubStockService(@Named("default") okHttpClient: OkHttpClient): GithubStockService =
         Retrofit.Builder()
             .baseUrl("https://raw.githubusercontent.com/")
             .client(okHttpClient)
