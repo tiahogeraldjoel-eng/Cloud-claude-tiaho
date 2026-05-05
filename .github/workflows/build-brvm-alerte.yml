@@ -12,12 +12,53 @@ on:
     paths:
       - 'BRVMAlerte/**'
       - '.github/workflows/build-brvm-alerte.yml'
+  schedule:
+    - cron: '0,30 8-15 * * 1-5'
   workflow_dispatch:
+    inputs:
+      action:
+        description: 'Choisir une action'
+        required: false
+        default: 'fetch-data'
+        type: choice
+        options:
+          - fetch-data
+          - build-apk
 
 jobs:
+  fetch-data:
+    name: Fetch BRVM Stock Data
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if: |
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'fetch-data')
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install requests beautifulsoup4 lxml
+
+      - run: python scripts/fetch_brvm_data.py
+
+      - name: Commit and push data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/brvm_stocks.json
+          git diff --cached --quiet || (git commit -m "data: BRVM prices update" && git push)
+
   build:
     name: Compile APK Debug
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'build-apk')
 
     steps:
       - name: Checkout code
@@ -78,8 +119,8 @@ jobs:
         run: |
           APK="BRVMAlerte/app/build/outputs/apk/debug/app-debug.apk"
           SIZE=$(du -sh "$APK" | cut -f1)
-          echo "## BRVM Alerte APK compilé avec succès" >> $GITHUB_STEP_SUMMARY
-          echo "| Propriété | Valeur |" >> $GITHUB_STEP_SUMMARY
+          echo "## BRVM Alerte APK compile avec succes" >> $GITHUB_STEP_SUMMARY
+          echo "| Propriete | Valeur |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Taille | $SIZE |" >> $GITHUB_STEP_SUMMARY
           echo "| Application ID | \`com.brvm.alerte\` |" >> $GITHUB_STEP_SUMMARY
