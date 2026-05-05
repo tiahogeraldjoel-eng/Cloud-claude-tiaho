@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.brvm.alerte.BuildConfig
 import com.brvm.alerte.data.api.BRVMApiService
 import com.brvm.alerte.data.api.BRVMScraper
+import com.brvm.alerte.data.api.GithubStockService
 import com.brvm.alerte.data.db.BRVMDatabase
 import com.brvm.alerte.data.db.dao.AlertDao
 import com.brvm.alerte.data.db.dao.StockDao
@@ -56,6 +57,15 @@ object AppModule {
 
     @Provides @Singleton
     fun provideBRVMScraper(okHttpClient: OkHttpClient): BRVMScraper = BRVMScraper(okHttpClient)
+
+    @Provides @Singleton
+    fun provideGithubStockService(okHttpClient: OkHttpClient): GithubStockService =
+        Retrofit.Builder()
+            .baseUrl("https://raw.githubusercontent.com/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(GithubStockService::class.java)
 
     @Provides @Singleton
     fun provideBRVMDatabase(@ApplicationContext context: Context): BRVMDatabase =
