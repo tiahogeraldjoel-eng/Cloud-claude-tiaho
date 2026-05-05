@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BRVM Alerte</string>
+    <string name="app_description">Détection algorithmique des titres à fort potentiel sur la BRVM</string>
+    <string name="notification_channel_urgent">Alertes Urgentes BRVM</string>
+    <string name="notification_channel_strong">Signaux Forts BRVM</string>
+    <string name="notification_channel_info">Informations Marché</string>
+    <string name="biometric_title">BRVM Alerte</string>
+    <string name="biometric_subtitle">Identifiez-vous pour accéder à vos alertes</string>
+    <string name="error_network">Erreur de connexion. Vérifiez votre réseau.</string>
+    <string name="error_no_data">Aucune donnée disponible.</string>
+</resources>
