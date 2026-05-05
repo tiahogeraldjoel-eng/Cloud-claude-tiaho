@@ -1,20 +1,44 @@
 name: Fetch BRVM Stock Data
+
 on:
+  schedule:
+    # Toutes les 4h en semaine (lundi-vendredi) entre 6h et 18h UTC
+    - cron: '0 6,10,14,18 * * 1-5'
   workflow_dispatch:
+
 jobs:
   fetch:
+    name: Fetch BRVM prices via cloudscraper
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
-      - uses: actions/checkout@v4.2.2
-      - uses: actions/setup-python@v5
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install requests beautifulsoup4 lxml
-      - run: python scripts/fetch_brvm_data.py
-      - run: |
+
+      - name: Install dependencies
+        run: pip install requests cloudscraper beautifulsoup4 lxml
+
+      - name: Fetch BRVM stock prices
+        run: python scripts/fetch_brvm_data.py
+
+      - name: Commit updated prices
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/brvm_stocks.json
-          git diff --cached --quiet || (git commit -m "data: BRVM prices update" && git push)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          if git diff --cached --quiet; then
+            echo "Aucune modification detectee"
+          else
+            git commit -m "data: cours BRVM mis a jour [$(date -u '+%Y-%m-%d %H:%M UTC')]"
+            git push origin main
+            echo "Cours pousses sur main"
+          fi
