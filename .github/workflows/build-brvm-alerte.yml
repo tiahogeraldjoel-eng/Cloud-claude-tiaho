@@ -12,12 +12,54 @@ on:
     paths:
       - 'BRVMAlerte/**'
       - '.github/workflows/build-brvm-alerte.yml'
+  schedule:
+    # Toutes les 4h en semaine (lundi–vendredi) 06h-20h UTC
+    - cron: '0 6,10,14,18 * * 1-5'
   workflow_dispatch:
 
 jobs:
+  fetch-data:
+    name: Fetch BRVM Stock Prices
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests cloudscraper beautifulsoup4 lxml
+
+      - name: Fetch BRVM stock prices
+        run: python scripts/fetch_brvm_data.py
+
+      - name: Commit updated prices
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/brvm_stocks.json
+          if git diff --cached --quiet; then
+            echo "Aucune modification — cours inchangés"
+          else
+            git commit -m "data: mise à jour cours BRVM [$(date -u '+%Y-%m-%d %H:%M UTC')]"
+            git push origin main
+            echo "Cours mis à jour et poussés sur main"
+          fi
+
   build:
     name: Compile APK Debug
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
 
     steps:
       - name: Checkout code
