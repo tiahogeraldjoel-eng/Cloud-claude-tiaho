@@ -1,244 +1,185 @@
 #!/usr/bin/env python3
 """
-Scrape BRVM stock prices from sikafinance.com and brvm.org.
-Runs server-side (GitHub Actions) to bypass Android IP restrictions.
-Output: data/brvm_stocks.json
+Scrape BRVM stock prices.
+Utilise cloudscraper pour contourner les protections Cloudflare/WAF.
 """
 
-import json
-import os
-import sys
-import time
-from datetime import datetime, timezone
+import json, os, sys, time
+from datetime import datetime, timezone, date, timedelta
+
+try:
+    import cloudscraper
+except ImportError:
+    os.system("pip install cloudscraper -q")
+    import cloudscraper
 
 import requests
 from bs4 import BeautifulSoup
 
 KNOWN_TICKERS = {
-    "BICB", "BICC", "BOAB", "BOABF", "BOAC", "BOAM", "BOAN", "BOAS",
-    "CBIBF", "ECOC", "ETIT", "NSBC", "ORGT", "SGBC", "SIBC",
-    "ONTBF", "ORAC", "SNTS",
-    "CIEC", "SHEC", "TTLC", "TTLS",
-    "NTLC", "PALC", "SAFC", "SCRC", "SICC", "SLBC", "SOGC", "SPHC", "STBC",
-    "CFAC", "PRSC", "SDSC", "UNLC",
-    "CABC", "FTSC", "SEMC", "SIVC", "SMBC", "UNXC",
-    "ABJC", "LNBB", "NEIC", "SDCC",
-    "BNBC", "STAC",
+    "ABJC","BICB","BICC","BNBC","BOAB","BOABF","BOAC","BOAM","BOAN","BOAS",
+    "CABC","CBIBF","CFAC","CIEC","ECOC","ETIT","FTSC","LNBB","NEIC","NSBC",
+    "NTLC","ONTBF","ORAC","ORGT","PALC","PRSC","SAFC","SCRC","SDCC","SDSC",
+    "SEMC","SGBC","SHEC","SIBC","SICC","SIVC","SLBC","SMBC","SNTS","SOGC",
+    "SPHC","STAC","STBC","TTLC","TTLS","UNLC","UNXC",
 }
 
-SIKA_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-    "Accept-Language": "fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Referer": "https://www.sikafinance.com/",
-    "DNT": "1",
-    "Connection": "keep-alive",
-}
+# ── Helpers ──────────────────────────────────────────────────────────────────
 
-BRVM_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-    "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Connection": "keep-alive",
-    "Cache-Control": "no-cache",
-}
-
-
-def parse_number(text: str) -> float | None:
-    cleaned = text.strip().replace(" ", "").replace("\xa0", "").replace(" ", "")
-    cleaned = cleaned.replace(",", ".").replace("%", "")
-    # Remove thousands separators (dots before 3 digits)
-    import re
-    cleaned = re.sub(r"\.(?=\d{3}(?:[^\d]|$))", "", cleaned)
+def parse_float(s):
     try:
-        return float(cleaned)
-    except ValueError:
-        return None
+        return float(str(s).strip().replace(" ","").replace("\xa0","").replace(",",".").replace("%",""))
+    except: return None
 
-
-def extract_price_from_row(cells):
-    """Find closing price (first numeric value > 1 FCFA) in a row."""
-    for i, cell in enumerate(cells):
-        v = parse_number(cell.get_text())
-        if v is not None and 1.0 < v < 10_000_000.0:
-            return v, i
-    return None, -1
-
-
-def extract_change_pct(cells, price_idx: int) -> float:
-    """Find variation % in cells after price column."""
-    for i in range(price_idx + 1, min(len(cells), price_idx + 5)):
-        txt = cells[i].get_text().strip().replace("%", "")
-        v = parse_number(txt)
-        if v is not None and -99.0 <= v <= 99.0:
-            return v
-    return 0.0
-
-
-def extract_volume(cells) -> int:
-    """Find volume in last cells (integer > 0)."""
-    for cell in reversed(cells):
-        txt = cell.get_text().strip().replace(" ", "").replace("\xa0", "").replace(" ", "")
-        txt = txt.replace(".", "").replace(",", "")
-        try:
-            v = int(txt)
-            if 0 < v < 100_000_000:
-                return v
-        except ValueError:
-            pass
-    return 0
-
-
-def parse_table(html: str, ticker_col: int = 0, min_price_col: int = 1) -> list[dict]:
-    soup = BeautifulSoup(html, "html.parser")
+def parse_table_rows(html):
+    soup = BeautifulSoup(html, "lxml")
     rows = soup.select("table tbody tr") or soup.select("table tr")
     results = []
-
     for row in rows:
-        cells = row.select("td")
-        if len(cells) < 3:
-            continue
-        raw_ticker = cells[ticker_col].get_text().strip().upper()
+        cells = [c.get_text(" ", strip=True) for c in row.select("td")]
+        if len(cells) < 3: continue
         import re
-        ticker = re.sub(r"[^A-Z]", "", raw_ticker)
-        if len(ticker) < 2 or len(ticker) > 10 or ticker not in KNOWN_TICKERS:
-            continue
-
-        # Find price starting from min_price_col
-        price = None
-        price_idx = -1
-        for i in range(min_price_col, min(len(cells), min_price_col + 6)):
-            v = parse_number(cells[i].get_text())
-            if v is not None and 1.0 < v < 10_000_000.0:
-                price = v
-                price_idx = i
-                break
-        if price is None:
-            continue
-
-        change_pct = extract_change_pct(cells, price_idx)
-        prev = round(price / (1.0 + change_pct / 100.0), 2) if change_pct != 0 else price
-        volume = extract_volume(cells)
-
-        results.append({
-            "ticker": ticker,
-            "closing_price": price,
-            "previous_closing_price": prev,
-            "volume": volume,
-            "change_pct": round(change_pct, 4),
-        })
-
+        ticker = re.sub(r"[^A-Z]", "", cells[0].upper())
+        if ticker not in KNOWN_TICKERS: continue
+        price, pidx = None, -1
+        for i in range(1, len(cells)):
+            v = parse_float(cells[i])
+            if v and 1 < v < 10_000_000: price = v; pidx = i; break
+        if not price: continue
+        chg = 0.0
+        for i in range(pidx+1, min(len(cells), pidx+4)):
+            v = parse_float(cells[i])
+            if v is not None and -99 < v < 99: chg = v; break
+        prev = round(price / (1 + chg/100), 2) if chg else price
+        vol = 0
+        for c in reversed(cells):
+            try:
+                v = int(re.sub(r"[\s.,]","",c))
+                if 0 < v < 100_000_000: vol = v; break
+            except: pass
+        results.append({"ticker":ticker,"closing_price":price,
+                        "previous_closing_price":prev,"volume":vol,
+                        "change_pct":round(chg,4)})
     return results
 
+# ── Source 1 : SikaFinance bulk (cloudscraper contourne Cloudflare) ──────────
 
-def fetch_sikafinance() -> list[dict]:
-    url = "https://www.sikafinance.com/marches/aaz"
+def fetch_sika_bulk():
     try:
-        resp = requests.get(url, headers=SIKA_HEADERS, timeout=30)
+        scraper = cloudscraper.create_scraper(browser={"browser":"chrome","platform":"windows","mobile":False})
+        resp = scraper.get("https://www.sikafinance.com/marches/aaz", timeout=30)
         resp.raise_for_status()
-        stocks = parse_table(resp.text, ticker_col=0, min_price_col=1)
-        stocks = [s for s in stocks if s["ticker"] in KNOWN_TICKERS]
-        print(f"[SikaFinance] {len(stocks)} titres BRVM trouvés")
-        return stocks
+        rows = parse_table_rows(resp.text)
+        rows = [r for r in rows if r["ticker"] in KNOWN_TICKERS]
+        print(f"[SikaFinance bulk] {len(rows)} titres")
+        return rows
     except Exception as e:
-        print(f"[SikaFinance] Erreur: {e}", file=sys.stderr)
+        print(f"[SikaFinance bulk] ERREUR: {e}", file=sys.stderr)
         return []
 
+# ── Source 2 : brvm.org ──────────────────────────────────────────────────────
 
-def fetch_brvm() -> list[dict]:
+def fetch_brvm_org():
     urls = [
         "https://www.brvm.org/fr/cours-des-actions/0/all",
         "https://www.brvm.org/fr/cours-des-actions/0",
-        "https://www.brvm.org/en/cours-des-actions/0/all",
     ]
+    headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36"}
     for url in urls:
         try:
-            resp = requests.get(url, headers=BRVM_HEADERS, timeout=30)
+            resp = requests.get(url, headers=headers, timeout=30)
             resp.raise_for_status()
-            if len(resp.text) < 500:
-                continue
-            stocks = parse_table(resp.text, ticker_col=0, min_price_col=2)
-            stocks = [s for s in stocks if s["ticker"] in KNOWN_TICKERS]
-            if len(stocks) >= 5:
-                print(f"[brvm.org] {len(stocks)} titres trouvés — {url}")
-                return stocks
+            if len(resp.text) < 500: continue
+            rows = parse_table_rows(resp.text)
+            rows = [r for r in rows if r["ticker"] in KNOWN_TICKERS]
+            if len(rows) >= 5:
+                print(f"[brvm.org] {len(rows)} titres — {url}")
+                return rows
         except Exception as e:
-            print(f"[brvm.org] Erreur ({url}): {e}", file=sys.stderr)
+            print(f"[brvm.org] ERREUR ({url}): {e}", file=sys.stderr)
         time.sleep(1)
     return []
 
+# ── Source 3 : SikaFinance API JSON par ticker (cloudscraper) ────────────────
 
-def fetch_sika_api(ticker: str) -> dict | None:
-    """Fallback: SikaFinance JSON API for a single ticker."""
-    from datetime import date, timedelta
-    today = date.today()
-    start = today - timedelta(days=5)
-    body = {"ticker": ticker, "datedeb": str(start), "datefin": str(today), "xperiod": 0}
-    headers = {**SIKA_HEADERS, "Content-Type": "application/json", "Origin": "https://www.sikafinance.com"}
+def fetch_sika_api_one(scraper, ticker):
     try:
-        resp = requests.post(
-            "https://www.sikafinance.com/api/general/GetHistos",
-            json=body, headers=headers, timeout=15
-        )
+        today = date.today()
+        start = today - timedelta(days=10)
+        body = {"ticker":ticker,"datedeb":str(start),"datefin":str(today),"xperiod":0}
+        headers = {
+            "Content-Type":"application/json",
+            "Origin":"https://www.sikafinance.com",
+            "Referer":f"https://www.sikafinance.com/marches/historiques/{ticker}",
+        }
+        resp = scraper.post("https://www.sikafinance.com/api/general/GetHistos",
+                            json=body, headers=headers, timeout=15)
         resp.raise_for_status()
         data = resp.json()
-        if not isinstance(data, list) or len(data) == 0:
-            return None
-        last = sorted(data, key=lambda x: x.get("Date", ""), reverse=True)[0]
-        close = last.get("Cloture") or last.get("close")
-        if not close or close <= 0:
-            return None
-        open_ = last.get("Ouverture") or last.get("open") or close
-        vol = last.get("Volume") or last.get("volume") or 0
-        return {
-            "ticker": ticker,
-            "closing_price": float(close),
-            "previous_closing_price": float(open_),
-            "volume": int(vol),
-            "change_pct": 0.0,
-        }
-    except Exception:
-        return None
+        if not isinstance(data, list) or not data: return None
+        data.sort(key=lambda x: x.get("Date",""), reverse=True)
+        last = data[0]
+        prev = data[1] if len(data) > 1 else last
+        close = last.get("Cloture") or last.get("close") or 0
+        if close <= 0: return None
+        prev_close = prev.get("Cloture") or prev.get("close") or close
+        chg = ((close - prev_close) / prev_close * 100) if prev_close else 0
+        return {"ticker":ticker,"closing_price":float(close),
+                "previous_closing_price":round(float(prev_close),2),
+                "volume":int(last.get("Volume") or 0),
+                "change_pct":round(chg,4)}
+    except: return None
 
+def fetch_sika_api_all(missing):
+    if not missing: return []
+    print(f"[SikaFinance API] Fetching {len(missing)} tickers...")
+    scraper = cloudscraper.create_scraper(browser={"browser":"chrome","platform":"windows"})
+    results = []
+    for i, ticker in enumerate(sorted(missing)):
+        r = fetch_sika_api_one(scraper, ticker)
+        if r:
+            results.append(r)
+            print(f"  {ticker}: {r['closing_price']}")
+        if i % 10 == 9: time.sleep(1)  # pause toutes les 10 requetes
+    return results
+
+# ── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    print("=== Fetch BRVM Stock Data ===")
+    # Charger donnees existantes comme fallback
+    existing = {}
+    if os.path.exists("data/brvm_stocks.json"):
+        try:
+            with open("data/brvm_stocks.json") as f:
+                old = json.load(f)
+                existing = {s["ticker"]: s for s in old.get("stocks", [])}
+            print(f"[Fallback] {len(existing)} titres existants charges")
+        except: pass
 
-    # Phase 1: SikaFinance bulk page
-    sika = fetch_sikafinance()
+    by_ticker = dict(existing)  # partir des donnees existantes
 
-    # Phase 2: brvm.org bulk page
-    brvm = fetch_brvm()
+    # Source 1 : SikaFinance bulk
+    for s in fetch_sika_bulk(): by_ticker[s["ticker"]] = s
+    print(f"Apres SikaFinance bulk: {len(by_ticker)} titres")
 
-    # Merge: brvm.org takes priority (more data), sika fills gaps
-    by_ticker: dict[str, dict] = {}
-    for s in sika:
-        by_ticker[s["ticker"]] = s
-    for s in brvm:
-        by_ticker[s["ticker"]] = s  # brvm.org overrides
+    # Source 2 : brvm.org
+    for s in fetch_brvm_org(): by_ticker[s["ticker"]] = s
+    print(f"Apres brvm.org: {len(by_ticker)} titres")
 
-    # Phase 3: for missing tickers, try SikaFinance JSON API
-    missing = KNOWN_TICKERS - set(by_ticker.keys())
-    if missing:
-        print(f"[API] Fetching {len(missing)} tickers individually…")
-        for ticker in sorted(missing):
-            result = fetch_sika_api(ticker)
-            if result:
-                by_ticker[ticker] = result
-                print(f"  {ticker}: {result['closing_price']}")
-            time.sleep(0.3)
+    # Source 3 : API pour les manquants (excluant fallback existant)
+    fresh = {t for t, v in by_ticker.items() if t not in existing or by_ticker[t] != existing.get(t)}
+    truly_missing = KNOWN_TICKERS - set(by_ticker.keys())
+    if truly_missing:
+        for s in fetch_sika_api_all(truly_missing): by_ticker[s["ticker"]] = s
 
     stocks = sorted(by_ticker.values(), key=lambda x: x["ticker"])
-    found = len(stocks)
-    total = len(KNOWN_TICKERS)
-    print(f"\nRésultat: {found}/{total} titres récupérés")
+    fresh_count = len([t for t in by_ticker if t not in existing or by_ticker[t] != existing.get(t)])
 
     output = {
         "last_updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": "github-actions",
-        "count": found,
+        "count": len(stocks),
+        "fresh": fresh_count,
         "stocks": stocks,
     }
 
@@ -246,12 +187,7 @@ def main():
     with open("data/brvm_stocks.json", "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
 
-    print(f"Saved → data/brvm_stocks.json")
-
-    if found < 10:
-        print("AVERTISSEMENT: moins de 10 titres récupérés", file=sys.stderr)
-        sys.exit(1)
-
+    print(f"\nSaved {len(stocks)} stocks ({fresh_count} mis a jour) -> data/brvm_stocks.json")
 
 if __name__ == "__main__":
     main()

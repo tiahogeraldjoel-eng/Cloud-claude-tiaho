@@ -30,9 +30,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - run: pip install requests beautifulsoup4 lxml
+      - name: Install dependencies
+        run: pip install requests cloudscraper beautifulsoup4 lxml
 
-      - run: python scripts/fetch_brvm_data.py
+      - name: Fetch BRVM data
+        run: python scripts/fetch_brvm_data.py
 
       - name: Commit and push
         run: |
@@ -44,14 +46,12 @@ jobs:
   build:
     name: Compile APK Debug
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'build-apk')
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -68,8 +68,7 @@ jobs:
             '84831b9409646a918e30573bab4c9c91346d8abd' \
             > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
-      - name: Set up Gradle 8.7
-        uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
           cache-read-only: false
@@ -83,15 +82,12 @@ jobs:
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
 
-      - name: Show build errors on failure
-        if: failure()
+      - if: failure()
         run: |
           grep "^e: " /tmp/gradle-build.log || true
-          grep -E "(error: |ERROR:|aapt)" /tmp/gradle-build.log || true
-          grep -E "(FAILED|Exception|Caused by)" /tmp/gradle-build.log | tail -30 || true
+          grep -E "(FAILED|Exception|Caused by)" /tmp/gradle-build.log | tail -20 || true
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: BRVM-Alerte-debug-apk
           path: BRVMAlerte/app/build/outputs/apk/debug/app-debug.apk
