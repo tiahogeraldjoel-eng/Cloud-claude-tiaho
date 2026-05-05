@@ -1,5 +1,6 @@
 package com.brvm.alerte.data.repository
 
+import android.util.Log
 import com.brvm.alerte.data.api.BRVMApiService
 import com.brvm.alerte.data.api.BRVMScraper
 import com.brvm.alerte.data.db.dao.StockDao
@@ -14,15 +15,16 @@ import com.brvm.alerte.domain.repository.StockRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private const val TAG = "StockRepo"
 
 @Singleton
 class StockRepositoryImpl @Inject constructor(
@@ -42,70 +44,56 @@ class StockRepositoryImpl @Inject constructor(
     override fun observeStock(ticker: String): Flow<Stock?> =
         stockDao.observeStock(ticker).map { it?.toDomain() }
 
+    /**
+     * Stratégie en 3 phases — s'arrête dès qu'une phase réussit.
+     *
+     * Phase 1 : brvm.org + SikaFinance bulk en PARALLÈLE (1 requête chacun)
+     * Phase 2 : SikaFinance par lots de 5 (rate-limit friendly, aucun timeout global)
+     * Phase 3 : seed data garantie en dernier recours
+     */
     override suspend fun refreshAllStocks() = withContext(Dispatchers.IO) {
-        // 1. REST API officielle
-        val apiStocks = tryApiRefresh()
-        if (apiStocks.isNotEmpty()) { stockDao.insertStocks(apiStocks); return@withContext }
-
-        // 2. Scraping HTML brvm.org / sikafinance bulk
-        val scraperStocks = tryScraperRefresh()
-        if (scraperStocks.isNotEmpty()) { stockDao.insertStocks(mergeWithSeed(scraperStocks)); return@withContext }
-
-        // 3. Dernier recours : API JSON SikaFinance ticker par ticker en parallèle
-        //    (max 18s — chaque requête est déjà limitée à 12s via callTimeout OkHttp)
         ensureSeedData()
-        val sikaStocks = withTimeoutOrNull(18_000L) { tryParallelSikaRefresh() } ?: emptyList()
-        if (sikaStocks.isNotEmpty()) stockDao.insertStocks(sikaStocks)
+
+        // ── Phase 1 : bulk en parallèle ──────────────────────────────────────
+        val (brvmStocks, sikaStocks) = coroutineScope {
+            val brvm = async { tryBrvmBulkRefresh() }
+            val sika = async { trySikaBulkRefresh() }
+            brvm.await() to sika.await()
+        }
+
+        val phase1 = (brvmStocks + sikaStocks).distinctBy { it.ticker }
+        if (phase1.size >= 10) {
+            Log.d(TAG, "Phase 1 OK — ${phase1.size} titres")
+            stockDao.insertStocks(mergeWithSeed(phase1))
+            return@withContext
+        }
+        Log.w(TAG, "Phase 1 partielle (${phase1.size}), tentative phase 2")
+
+        // ── Phase 2 : SikaFinance par lots de 5 ──────────────────────────────
+        val chunkedStocks = tryChunkedSikaRefresh()
+        if (chunkedStocks.size >= 10) {
+            Log.d(TAG, "Phase 2 OK — ${chunkedStocks.size} titres")
+            stockDao.insertStocks(mergeWithSeed(chunkedStocks))
+            return@withContext
+        }
+
+        // ── Phase 3 : les données partielles sont quand même sauvegardées ────
+        val best = (phase1 + chunkedStocks).distinctBy { it.ticker }
+        if (best.isNotEmpty()) {
+            Log.w(TAG, "Résultat partiel — ${best.size} titres mis à jour")
+            stockDao.insertStocks(mergeWithSeed(best))
+        } else {
+            Log.e(TAG, "Toutes les sources ont échoué — seed data conservé")
+        }
     }
 
-    /** Récupère en parallèle le dernier prix de chaque titre via l'API JSON SikaFinance. */
-    private suspend fun tryParallelSikaRefresh(): List<StockEntity> = coroutineScope {
-        BRVMSeedData.stocks.map { seed ->
-            async {
-                try {
-                    val dto = scraper.scrapeCurrentPrice(seed.ticker) ?: return@async null
-                    seed.copy(
-                        lastPrice = dto.closingPrice ?: seed.lastPrice,
-                        previousClose = dto.previousClosingPrice ?: seed.previousClose,
-                        openPrice = dto.openingPrice ?: seed.openPrice,
-                        highPrice = dto.highest ?: seed.highPrice,
-                        lowPrice = dto.lowest ?: seed.lowPrice,
-                        volume = dto.volume ?: seed.volume,
-                        lastUpdated = System.currentTimeMillis()
-                    )
-                } catch (_: Exception) { null }
-            }
-        }.mapNotNull { it.await() }
-    }
+    // ── Phase 1a : brvm.org (direct + proxies CORS) ──────────────────────────
 
-    private suspend fun tryApiRefresh(): List<StockEntity> {
+    private fun tryBrvmBulkRefresh(): List<StockEntity> {
         return try {
-            api.getAllStocks().data.map { dto ->
-                StockEntity(
-                    ticker = dto.ticker, name = dto.name,
-                    sector = dto.sector ?: sectorFromSeed(dto.ticker),
-                    country = dto.country ?: countryFromSeed(dto.ticker),
-                    lastPrice = dto.closingPrice ?: 0.0,
-                    previousClose = dto.previousClosingPrice ?: 0.0,
-                    openPrice = dto.openingPrice ?: 0.0,
-                    highPrice = dto.highest ?: 0.0,
-                    lowPrice = dto.lowest ?: 0.0,
-                    volume = dto.volume ?: 0L,
-                    averageVolume20d = 0L,
-                    marketCap = dto.marketCap ?: 0.0,
-                    peRatio = dto.per, dividendYield = dto.dividendYield,
-                    eps = dto.eps, bookValue = dto.bookValue,
-                    priceToBook = dto.priceToBook, roe = dto.roe,
-                    debtToEquity = null, revenueGrowth = null, netIncomeGrowth = null,
-                    lastUpdated = System.currentTimeMillis()
-                )
-            }
-        } catch (e: Exception) { emptyList() }
-    }
-
-    private fun tryScraperRefresh(): List<StockEntity> {
-        return try {
-            scraper.scrapeAllStocks().map { dto ->
+            val dtos = scraper.scrapeAllStocks()
+            Log.d(TAG, "brvm.org → ${dtos.size} titres")
+            dtos.map { dto ->
                 val seed = BRVMSeedData.stocks.find { it.ticker == dto.ticker }
                 StockEntity(
                     ticker = dto.ticker,
@@ -122,13 +110,89 @@ class StockRepositoryImpl @Inject constructor(
                     marketCap = dto.marketCap ?: seed?.marketCap ?: 0.0,
                     peRatio = dto.per ?: seed?.peRatio,
                     dividendYield = dto.dividendYield ?: seed?.dividendYield,
-                    eps = dto.eps ?: seed?.eps, bookValue = dto.bookValue ?: seed?.bookValue,
-                    priceToBook = dto.priceToBook ?: seed?.priceToBook, roe = dto.roe ?: seed?.roe,
+                    eps = dto.eps ?: seed?.eps,
+                    bookValue = dto.bookValue ?: seed?.bookValue,
+                    priceToBook = dto.priceToBook ?: seed?.priceToBook,
+                    roe = dto.roe ?: seed?.roe,
                     debtToEquity = null, revenueGrowth = null, netIncomeGrowth = null,
-                    lastUpdated = System.currentTimeMillis()
+                    lastUpdated = System.currentTimeMillis(),
+                    isWatchlisted = seed?.isWatchlisted ?: false
                 )
-            }
-        } catch (e: Exception) { emptyList() }
+            }.filter { it.lastPrice > 0 }
+        } catch (e: Exception) {
+            Log.e(TAG, "brvm.org bulk échoué: ${e.message}")
+            emptyList()
+        }
+    }
+
+    // ── Phase 1b : SikaFinance page AàZ (une seule requête) ──────────────────
+
+    private fun trySikaBulkRefresh(): List<StockEntity> {
+        return try {
+            val dtos = scraper.scrapeSikaBulk()
+            Log.d(TAG, "SikaFinance bulk → ${dtos.size} titres")
+            dtos.map { dto ->
+                val seed = BRVMSeedData.stocks.find { it.ticker == dto.ticker }
+                StockEntity(
+                    ticker = dto.ticker,
+                    name = dto.name.ifEmpty { seed?.name ?: dto.ticker },
+                    sector = seed?.sector ?: "Divers",
+                    country = seed?.country ?: "CI",
+                    lastPrice = dto.closingPrice ?: seed?.lastPrice ?: 0.0,
+                    previousClose = dto.previousClosingPrice ?: seed?.previousClose ?: 0.0,
+                    openPrice = seed?.openPrice ?: 0.0,
+                    highPrice = seed?.highPrice ?: 0.0,
+                    lowPrice = seed?.lowPrice ?: 0.0,
+                    volume = dto.volume ?: seed?.volume ?: 0L,
+                    averageVolume20d = seed?.averageVolume20d ?: 0L,
+                    marketCap = seed?.marketCap ?: 0.0,
+                    peRatio = seed?.peRatio,
+                    dividendYield = dto.dividendYield ?: seed?.dividendYield,
+                    eps = seed?.eps, bookValue = seed?.bookValue,
+                    priceToBook = seed?.priceToBook, roe = seed?.roe,
+                    debtToEquity = null, revenueGrowth = null, netIncomeGrowth = null,
+                    lastUpdated = System.currentTimeMillis(),
+                    isWatchlisted = seed?.isWatchlisted ?: false
+                )
+            }.filter { it.lastPrice > 0 }
+        } catch (e: Exception) {
+            Log.e(TAG, "SikaFinance bulk échoué: ${e.message}")
+            emptyList()
+        }
+    }
+
+    // ── Phase 2 : SikaFinance par lots de 5 (rate-limit friendly) ────────────
+
+    private suspend fun tryChunkedSikaRefresh(): List<StockEntity> = coroutineScope {
+        val results = mutableListOf<StockEntity>()
+        val chunks = BRVMSeedData.stocks.chunked(5)
+
+        for ((index, chunk) in chunks.withIndex()) {
+            val chunkResults = chunk.map { seed ->
+                async {
+                    try {
+                        val dto = scraper.scrapeCurrentPrice(seed.ticker) ?: return@async null
+                        seed.copy(
+                            lastPrice = dto.closingPrice ?: seed.lastPrice,
+                            previousClose = dto.previousClosingPrice ?: seed.previousClose,
+                            openPrice = dto.openingPrice ?: seed.openPrice,
+                            highPrice = dto.highest ?: seed.highPrice,
+                            lowPrice = dto.lowest ?: seed.lowPrice,
+                            volume = dto.volume ?: seed.volume,
+                            lastUpdated = System.currentTimeMillis()
+                        ).takeIf { (dto.closingPrice ?: 0.0) > 0 }
+                    } catch (_: Exception) { null }
+                }
+            }.mapNotNull { it.await() }
+
+            results.addAll(chunkResults)
+            Log.d(TAG, "Lot ${index + 1}/${chunks.size}: ${chunkResults.size}/${chunk.size} OK")
+
+            // 300ms entre chaque lot pour éviter le rate-limiting
+            if (index < chunks.size - 1) delay(300)
+        }
+        Log.d(TAG, "Phase 2 total: ${results.size} titres")
+        results
     }
 
     private fun mergeWithSeed(scraped: List<StockEntity>): List<StockEntity> {
@@ -141,48 +205,47 @@ class StockRepositoryImpl @Inject constructor(
     }
 
     override suspend fun refreshPriceHistory(ticker: String) = withContext(Dispatchers.IO) {
-        val apiHistory = tryApiHistory(ticker)
-        if (apiHistory.isNotEmpty()) {
-            stockDao.insertPriceHistory(apiHistory)
-        } else {
-            val scraperHistory = tryScraperHistory(ticker)
-            if (scraperHistory.isNotEmpty()) {
-                stockDao.insertPriceHistory(scraperHistory)
-            } else {
-                val existing = stockDao.getPriceHistory(ticker, 1)
-                if (existing.isEmpty()) {
-                    val stock = stockDao.getStock(ticker) ?: BRVMSeedData.stocks.find { it.ticker == ticker }
-                    if (stock != null) stockDao.insertPriceHistory(BRVMSeedData.generateHistory(ticker, stock.lastPrice))
-                }
-            }
-        }
-        val recentHistory = stockDao.getPriceHistory(ticker, 20)
-        if (recentHistory.isNotEmpty()) stockDao.updateAverageVolume(ticker, recentHistory.map { it.volume }.average().toLong())
-        stockDao.pruneOldHistory(ticker, System.currentTimeMillis() - (400L * 24 * 3600 * 1000))
-    }
-
-    private suspend fun tryApiHistory(ticker: String): List<PriceHistoryEntity> {
-        return try {
+        try {
             val endDate = LocalDate.now().format(dateFormatter)
             val startDate = LocalDate.now().minusYears(1).format(dateFormatter)
-            api.getPriceHistory(ticker, startDate, endDate).data.mapNotNull { dto ->
-                if (dto.close == null) return@mapNotNull null
-                PriceHistoryEntity(ticker = ticker, date = parseDate(dto.date),
-                    open = dto.open ?: dto.close, high = dto.high ?: dto.close,
-                    low = dto.low ?: dto.close, close = dto.close, volume = dto.volume ?: 0L)
-            }
-        } catch (e: Exception) { emptyList() }
-    }
+            val apiHistory = try {
+                api.getPriceHistory(ticker, startDate, endDate).data.mapNotNull { dto ->
+                    if (dto.close == null) return@mapNotNull null
+                    PriceHistoryEntity(ticker = ticker, date = parseDate(dto.date),
+                        open = dto.open ?: dto.close, high = dto.high ?: dto.close,
+                        low = dto.low ?: dto.close, close = dto.close, volume = dto.volume ?: 0L)
+                }
+            } catch (_: Exception) { emptyList() }
 
-    private fun tryScraperHistory(ticker: String): List<PriceHistoryEntity> {
-        return try {
-            scraper.scrapeHistory(ticker).mapNotNull { dto ->
-                if (dto.close == null) return@mapNotNull null
-                PriceHistoryEntity(ticker = ticker, date = parseDate(dto.date),
-                    open = dto.open ?: dto.close, high = dto.high ?: dto.close,
-                    low = dto.low ?: dto.close, close = dto.close, volume = dto.volume ?: 0L)
+            if (apiHistory.isNotEmpty()) {
+                stockDao.insertPriceHistory(apiHistory)
+            } else {
+                val scraperHistory = try {
+                    scraper.scrapeHistory(ticker).mapNotNull { dto ->
+                        if (dto.close == null) return@mapNotNull null
+                        PriceHistoryEntity(ticker = ticker, date = parseDate(dto.date),
+                            open = dto.open ?: dto.close, high = dto.high ?: dto.close,
+                            low = dto.low ?: dto.close, close = dto.close, volume = dto.volume ?: 0L)
+                    }
+                } catch (_: Exception) { emptyList() }
+
+                if (scraperHistory.isNotEmpty()) {
+                    stockDao.insertPriceHistory(scraperHistory)
+                } else {
+                    val existing = stockDao.getPriceHistory(ticker, 1)
+                    if (existing.isEmpty()) {
+                        val stock = stockDao.getStock(ticker) ?: BRVMSeedData.stocks.find { it.ticker == ticker }
+                        if (stock != null) stockDao.insertPriceHistory(BRVMSeedData.generateHistory(ticker, stock.lastPrice))
+                    }
+                }
             }
-        } catch (e: Exception) { emptyList() }
+
+            val recentHistory = stockDao.getPriceHistory(ticker, 20)
+            if (recentHistory.isNotEmpty()) {
+                stockDao.updateAverageVolume(ticker, recentHistory.map { it.volume }.average().toLong())
+            }
+            stockDao.pruneOldHistory(ticker, System.currentTimeMillis() - (400L * 24 * 3600 * 1000))
+        } catch (_: Exception) {}
     }
 
     override suspend fun getPriceHistory(ticker: String, limit: Int): List<PricePoint> =
@@ -197,18 +260,15 @@ class StockRepositoryImpl @Inject constructor(
     override suspend fun updateWatchlistStatus(ticker: String, watchlisted: Boolean) =
         stockDao.updateWatchlistStatus(ticker, watchlisted)
 
-    private fun sectorFromSeed(ticker: String) = BRVMSeedData.stocks.find { it.ticker == ticker }?.sector ?: "Divers"
-    private fun countryFromSeed(ticker: String) = BRVMSeedData.stocks.find { it.ticker == ticker }?.country ?: "CI"
-
     private fun parseDate(dateStr: String): Long {
         return try {
             LocalDate.parse(dateStr, dateFormatter).toEpochDay() * 86400L
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             try {
                 val parts = dateStr.split("/")
                 if (parts.size == 3) LocalDate.of(parts[2].toInt(), parts[1].toInt(), parts[0].toInt()).toEpochDay() * 86400L
                 else System.currentTimeMillis() / 1000
-            } catch (e2: Exception) { System.currentTimeMillis() / 1000 }
+            } catch (_: Exception) { System.currentTimeMillis() / 1000 }
         }
     }
 

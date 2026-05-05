@@ -72,8 +72,8 @@ class ScannerViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
-                // 25s max — évite le spinner infini si toutes les sources réseau sont lentes
-                withTimeoutOrNull(25_000L) { stockRepo.refreshAllStocks() }
+                // 90s max — chunked SikaFinance phase 2 can take up to 30s
+                withTimeoutOrNull(90_000L) { stockRepo.refreshAllStocks() }
             } catch (e: Exception) {
                 _state.update { it.copy(error = e.message) }
             } finally {
