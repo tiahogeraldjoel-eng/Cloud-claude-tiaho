@@ -24,15 +24,14 @@ android {
         debug {
             isMinifyEnabled = false
             buildConfigField("String", "BRVM_API_BASE_URL", "\"https://openapi.brvm.org/\"")
-            // Remplacer par l'URL réelle après déploiement du Cloudflare Worker
-            buildConfigField("String", "WORKER_BASE_URL", "\"https://brvm-prices.VOTRE_COMPTE.workers.dev/\"")
+            buildConfigField("String", "WORKER_BASE_URL", "\"https://brvm-prices.tiahogeraldjoel.workers.dev/\"")
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "BRVM_API_BASE_URL", "\"https://openapi.brvm.org/\"")
-            buildConfigField("String", "WORKER_BASE_URL", "\"https://brvm-prices.VOTRE_COMPTE.workers.dev/\"")
+            buildConfigField("String", "WORKER_BASE_URL", "\"https://brvm-prices.tiahogeraldjoel.workers.dev/\"")
         }
     }
 
