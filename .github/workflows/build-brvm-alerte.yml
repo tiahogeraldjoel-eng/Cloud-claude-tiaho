@@ -15,15 +15,6 @@ on:
   schedule:
     - cron: '0,30 8-15 * * 1-5'
   workflow_dispatch:
-    inputs:
-      action:
-        description: 'Choisir une action'
-        required: false
-        default: 'fetch-data'
-        type: choice
-        options:
-          - fetch-data
-          - build-apk
 
 jobs:
   fetch-data:
@@ -31,9 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    if: |
-      github.event_name == 'schedule' ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'fetch-data')
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4.2.2
 
@@ -45,20 +34,17 @@ jobs:
 
       - run: python scripts/fetch_brvm_data.py
 
-      - name: Commit and push data
+      - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/brvm_stocks.json
-          git diff --cached --quiet || (git commit -m "data: BRVM prices update" && git push)
+          git diff --cached --quiet || (git commit -m "data: BRVM prices $(date -u '+%Y-%m-%d %H:%M UTC')" && git push)
 
   build:
     name: Compile APK Debug
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'push' ||
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'build-apk')
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'build-apk')
 
     steps:
       - name: Checkout code
@@ -100,11 +86,8 @@ jobs:
       - name: Show build errors on failure
         if: failure()
         run: |
-          echo "=== ERREURS KOTLIN (e:) ==="
           grep "^e: " /tmp/gradle-build.log || true
-          echo "=== ERREURS AAPT ==="
           grep -E "(error: |ERROR:|aapt)" /tmp/gradle-build.log || true
-          echo "=== STACK TRACE ==="
           grep -E "(FAILED|Exception|Caused by)" /tmp/gradle-build.log | tail -30 || true
 
       - name: Upload APK artifact
@@ -113,16 +96,3 @@ jobs:
           name: BRVM-Alerte-debug-apk
           path: BRVMAlerte/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
-
-      - name: Build Summary
-        if: success()
-        run: |
-          APK="BRVMAlerte/app/build/outputs/apk/debug/app-debug.apk"
-          SIZE=$(du -sh "$APK" | cut -f1)
-          echo "## BRVM Alerte APK compile avec succes" >> $GITHUB_STEP_SUMMARY
-          echo "| Propriete | Valeur |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Taille | $SIZE |" >> $GITHUB_STEP_SUMMARY
-          echo "| Application ID | \`com.brvm.alerte\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Version | 1.0.0 (compileSdk 34) |" >> $GITHUB_STEP_SUMMARY
-          echo "APK disponible dans les **Artifacts** (30 jours)." >> $GITHUB_STEP_SUMMARY
