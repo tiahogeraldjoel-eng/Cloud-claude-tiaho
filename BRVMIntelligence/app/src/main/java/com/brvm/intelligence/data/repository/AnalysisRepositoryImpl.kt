@@ -8,9 +8,9 @@ import com.brvm.intelligence.data.ml.MarketSentimentAnalyzer
 import com.brvm.intelligence.data.ml.TechnicalIndicatorCalculator
 import com.brvm.intelligence.domain.model.*
 import com.brvm.intelligence.domain.repository.AnalysisRepository
-import com.brvm.intelligence.domain.repository.AnalysisRepository.PortfolioAnalysis
-import com.brvm.intelligence.domain.repository.AnalysisRepository.RebalancingAction
-import com.brvm.intelligence.domain.repository.AnalysisRepository.RebalancingSuggestion
+import com.brvm.intelligence.domain.repository.PortfolioAnalysis
+import com.brvm.intelligence.domain.repository.RebalancingAction
+import com.brvm.intelligence.domain.repository.RebalancingSuggestion
 import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton

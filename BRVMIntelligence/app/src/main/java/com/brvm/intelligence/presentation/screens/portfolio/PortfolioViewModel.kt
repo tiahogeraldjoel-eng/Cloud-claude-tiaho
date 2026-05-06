@@ -3,7 +3,7 @@ package com.brvm.intelligence.presentation.screens.portfolio
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.brvm.intelligence.domain.model.*
-import com.brvm.intelligence.domain.repository.AnalysisRepository.PortfolioAnalysis
+import com.brvm.intelligence.domain.repository.PortfolioAnalysis
 import com.brvm.intelligence.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*

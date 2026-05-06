@@ -14,7 +14,7 @@ data class ChatUiState(
     val messages: List<ChatMessage> = emptyList(),
     val inputText: String = "",
     val isLoading: Boolean = false,
-    val suggestedQuestions: List<String> = DEFAULT_SUGGESTIONS
+    val suggestedQuestions: List<String> = ChatViewModel.DEFAULT_SUGGESTIONS
 )
 
 @HiltViewModel

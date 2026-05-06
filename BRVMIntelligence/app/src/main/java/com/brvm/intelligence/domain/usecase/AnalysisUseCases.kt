@@ -2,7 +2,7 @@ package com.brvm.intelligence.domain.usecase
 
 import com.brvm.intelligence.domain.model.*
 import com.brvm.intelligence.domain.repository.AnalysisRepository
-import com.brvm.intelligence.domain.repository.AnalysisRepository.PortfolioAnalysis
+import com.brvm.intelligence.domain.repository.PortfolioAnalysis
 import javax.inject.Inject
 
 class GetTechnicalAnalysisUseCase @Inject constructor(
