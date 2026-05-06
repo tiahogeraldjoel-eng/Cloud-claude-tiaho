@@ -22,6 +22,7 @@ android {
 
         // Clés de configuration (à remplacer par des valeurs réelles)
         buildConfigField("String", "BRVM_BASE_URL", "\"https://www.brvm.org\"")
+        buildConfigField("String", "BRVM_WORKER_URL", "\"https://brvm-prices.tiahogeraldjoel.workers.dev\"")
         buildConfigField("String", "APP_VERSION", "\"1.0.0\"")
     }
 

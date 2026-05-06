@@ -1,6 +1,7 @@
 package com.brvm.intelligence.data.repository
 
 import android.content.Context
+import com.brvm.intelligence.BuildConfig
 import com.brvm.intelligence.data.local.dao.PriceAlertDao
 import com.brvm.intelligence.data.local.dao.PriceHistoryDao
 import com.brvm.intelligence.data.local.dao.StockDao
@@ -14,11 +15,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONObject
 import timber.log.Timber
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -81,44 +85,82 @@ class StockRepositoryImpl @Inject constructor(
     }
 
     override suspend fun refreshMarketData(): Result<Unit> {
-        return try {
-            val result = scraper.scrapeAllStocks()
-            result.onSuccess { stocks ->
-                val entities = stocks.map { dto ->
+        // Priorité 1 : Cloudflare Worker (pas de blocage réseau)
+        if (fetchFromWorker()) return Result.success(Unit)
+        // Priorité 2 : scraper brvm.org
+        try {
+            scraper.scrapeAllStocks().onSuccess { stocks ->
+                stockDao.insertStocks(stocks.map { dto ->
                     StockEntity(
-                        symbol = dto.symbol,
-                        name = dto.name,
+                        symbol = dto.symbol, name = dto.name,
                         sector = inferSector(dto.symbol).name,
                         country = inferCountry(dto.symbol).name,
-                        currentPrice = dto.lastPrice,
-                        previousClose = dto.previousClose,
-                        change = dto.change,
-                        changePercent = dto.changePercent,
-                        volume = dto.volume,
-                        marketCap = dto.marketCap,
-                        per = dto.per,
-                        dividendYield = dto.dividendYield,
-                        high52Week = dto.high52Week,
-                        low52Week = dto.low52Week,
-                        openPrice = dto.openPrice,
-                        highPrice = dto.highPrice,
+                        currentPrice = dto.lastPrice, previousClose = dto.previousClose,
+                        change = dto.change, changePercent = dto.changePercent,
+                        volume = dto.volume, marketCap = dto.marketCap,
+                        per = dto.per, dividendYield = dto.dividendYield,
+                        high52Week = dto.high52Week, low52Week = dto.low52Week,
+                        openPrice = dto.openPrice, highPrice = dto.highPrice,
                         lowPrice = dto.lowPrice,
                         lastUpdateEpoch = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC),
                         liquidityLevel = inferLiquidity(dto.volume).name
                     )
-                }
-                stockDao.insertStocks(entities)
-                Timber.i("${entities.size} actions mises à jour en base locale")
+                })
+                return Result.success(Unit)
             }
-            if (result.isFailure) {
-                Timber.w("Scraper échoué — chargement des données depuis l'asset embarqué")
-                seedFromAssets()
-            }
-            Result.success(Unit)
         } catch (e: Exception) {
-            Timber.e(e, "Erreur rafraîchissement — fallback asset")
-            seedFromAssets()
-            Result.success(Unit)
+            Timber.w(e, "Scraper brvm.org échoué")
+        }
+        // Priorité 3 : asset embarqué
+        seedFromAssets()
+        return Result.success(Unit)
+    }
+
+    private fun fetchFromWorker(): Boolean {
+        return try {
+            val client = OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(15, TimeUnit.SECONDS)
+                .build()
+            val request = Request.Builder()
+                .url("${BuildConfig.BRVM_WORKER_URL}/stocks")
+                .header("Accept", "application/json")
+                .build()
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) return false
+            val body = response.body?.string() ?: return false
+            val root = JSONObject(body)
+            val arr = root.optJSONArray("stocks") ?: return false
+            val entities = mutableListOf<StockEntity>()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                val ticker = o.optString("ticker").takeIf { it.isNotBlank() } ?: continue
+                val price = o.optDouble("closing_price", 0.0).takeIf { it > 0 } ?: continue
+                val prev = o.optDouble("previous_closing_price", price)
+                val vol = o.optLong("volume", 0L)
+                val chgPct = o.optDouble("change_pct", 0.0)
+                entities.add(StockEntity(
+                    symbol = ticker, name = ticker,
+                    sector = inferSector(ticker).name,
+                    country = inferCountry(ticker).name,
+                    currentPrice = price, previousClose = prev,
+                    change = price - prev, changePercent = chgPct,
+                    volume = vol, marketCap = (price * 1_000_000L).toLong(),
+                    per = null, dividendYield = null,
+                    high52Week = price, low52Week = price,
+                    openPrice = prev, highPrice = price, lowPrice = price,
+                    lastUpdateEpoch = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC),
+                    liquidityLevel = inferLiquidity(vol).name
+                ))
+            }
+            if (entities.isEmpty()) return false
+            // Utiliser runBlocking car fetchFromWorker est appelé depuis une coroutine
+            kotlinx.coroutines.runBlocking { stockDao.insertStocks(entities) }
+            Timber.i("[Worker] ${entities.size} cours mis à jour depuis Cloudflare")
+            true
+        } catch (e: Exception) {
+            Timber.w(e, "[Worker] Échec appel Cloudflare Worker")
+            false
         }
     }
 
