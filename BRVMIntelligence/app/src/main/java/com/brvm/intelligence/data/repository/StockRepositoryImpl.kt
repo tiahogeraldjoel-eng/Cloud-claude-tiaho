@@ -1,5 +1,6 @@
 package com.brvm.intelligence.data.repository
 
+import android.content.Context
 import com.brvm.intelligence.data.local.dao.PriceAlertDao
 import com.brvm.intelligence.data.local.dao.PriceHistoryDao
 import com.brvm.intelligence.data.local.dao.StockDao
@@ -8,10 +9,12 @@ import com.brvm.intelligence.data.remote.scraper.BRVMScraper
 import com.brvm.intelligence.data.remote.dto.StockDto
 import com.brvm.intelligence.domain.model.*
 import com.brvm.intelligence.domain.repository.StockRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import org.json.JSONObject
 import timber.log.Timber
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -21,6 +24,7 @@ import javax.inject.Singleton
 
 @Singleton
 class StockRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val stockDao: StockDao,
     private val priceHistoryDao: PriceHistoryDao,
     private val priceAlertDao: PriceAlertDao,
@@ -97,10 +101,61 @@ class StockRepositoryImpl @Inject constructor(
                 stockDao.insertStocks(entities)
                 Timber.i("${entities.size} actions mises à jour en base locale")
             }
-            result.map { Unit }
+            if (result.isFailure) {
+                Timber.w("Scraper échoué — chargement des données depuis l'asset embarqué")
+                seedFromAssets()
+            }
+            Result.success(Unit)
         } catch (e: Exception) {
-            Timber.e(e, "Erreur lors du rafraîchissement des données de marché")
-            Result.failure(e)
+            Timber.e(e, "Erreur rafraîchissement — fallback asset")
+            seedFromAssets()
+            Result.success(Unit)
+        }
+    }
+
+    private suspend fun seedFromAssets() {
+        try {
+            val existing = stockDao.countStocks()
+            if (existing > 0) return
+            val json = context.assets.open("brvm_stocks_seed.json")
+                .bufferedReader().use { it.readText() }
+            val root = JSONObject(json)
+            val arr = root.getJSONArray("stocks")
+            val entities = mutableListOf<StockEntity>()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                val ticker = o.getString("ticker")
+                val price = o.getDouble("closing_price")
+                val prev = o.getDouble("previous_closing_price")
+                val vol = o.getLong("volume")
+                val chgPct = o.getDouble("change_pct")
+                val chg = price - prev
+                entities.add(StockEntity(
+                    symbol = ticker,
+                    name = ticker,
+                    sector = inferSector(ticker).name,
+                    country = inferCountry(ticker).name,
+                    currentPrice = price,
+                    previousClose = prev,
+                    change = chg,
+                    changePercent = chgPct,
+                    volume = vol,
+                    marketCap = price * 1_000_000L,
+                    per = null,
+                    dividendYield = null,
+                    high52Week = null,
+                    low52Week = null,
+                    openPrice = prev,
+                    highPrice = price,
+                    lowPrice = price,
+                    lastUpdateEpoch = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC),
+                    liquidityLevel = inferLiquidity(vol).name
+                ))
+            }
+            stockDao.insertStocks(entities)
+            Timber.i("${entities.size} actions chargées depuis l'asset embarqué")
+        } catch (e: Exception) {
+            Timber.e(e, "Erreur chargement asset brvm_stocks_seed.json")
         }
     }
 

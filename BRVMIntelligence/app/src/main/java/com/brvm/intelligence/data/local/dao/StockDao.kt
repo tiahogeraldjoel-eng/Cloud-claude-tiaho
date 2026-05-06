@@ -10,6 +10,9 @@ interface StockDao {
     @Query("SELECT * FROM stocks WHERE isActive = 1 ORDER BY marketCap DESC")
     fun getAllStocks(): Flow<List<StockEntity>>
 
+    @Query("SELECT COUNT(*) FROM stocks")
+    suspend fun countStocks(): Int
+
     @Query("SELECT * FROM stocks WHERE symbol = :symbol LIMIT 1")
     suspend fun getStockBySymbol(symbol: String): StockEntity?
 
