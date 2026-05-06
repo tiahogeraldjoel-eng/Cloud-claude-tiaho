@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
-    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.kotlin.ksp)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.google.services)
 }
@@ -86,13 +86,13 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
     implementation(libs.hilt.work)
-    kapt(libs.hilt.compiler)
-    kapt(libs.hilt.work.compiler)
+    ksp(libs.hilt.compiler)
+    ksp(libs.hilt.work.compiler)
 
     // Room - Base de données locale
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
-    kapt(libs.room.compiler)
+    ksp(libs.room.compiler)
 
     // Réseau
     implementation(libs.retrofit)
@@ -155,7 +155,3 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 }
 
-// Autoriser les références aux classes générées par Hilt
-kapt {
-    correctErrorTypes = true
-}
