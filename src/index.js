@@ -1,17 +1,21 @@
 /**
  * Cloudflare Worker — BRVM Prices API
  *
- * Sert les cours des actions BRVM depuis data/brvm_stocks.json,
- * mis à jour automatiquement par GitHub Actions (fetch-brvm-data.yml).
+ * Fetches stock data dynamically from GitHub raw content (updated by GitHub
+ * Actions every 30 min during BRVM trading hours). Edge-cached for 25 min so
+ * the Worker always serves fresh prices without needing redeployment.
  *
  * Routes :
- *   GET /             → { meta, stocks[] }  (tous les titres)
+ *   GET /             → { meta, stocks[] }
  *   GET /stocks       → idem
  *   GET /stocks/:sym  → cours d'un titre (ex: /stocks/SGBC)
  *   GET /health       → { status, last_updated, count }
  */
 
-import stockData from '../data/brvm_stocks.json';
+const GITHUB_RAW_URL =
+  'https://raw.githubusercontent.com/tiahogeraldjoel-eng/Cloud-claude-tiaho/main/data/brvm_stocks.json';
+
+const CACHE_TTL_SECONDS = 1500; // 25 min
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -23,7 +27,7 @@ const CORS = {
 const JSON_HEADERS = {
   ...CORS,
   'Content-Type': 'application/json; charset=UTF-8',
-  'Cache-Control': 'public, max-age=300, stale-while-revalidate=60',
+  'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}, stale-while-revalidate=60`,
 };
 
 function jsonResponse(data, status = 200) {
@@ -33,9 +37,45 @@ function jsonResponse(data, status = 200) {
   });
 }
 
+async function getStockData(ctx) {
+  const cache = caches.default;
+  const cacheKey = new Request('https://brvm-edge-cache/stocks-v1');
+
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    return await cached.json();
+  }
+
+  let data;
+  try {
+    const resp = await fetch(GITHUB_RAW_URL, {
+      cf: { cacheTtl: CACHE_TTL_SECONDS, cacheEverything: true },
+      headers: { 'Accept': 'application/json' },
+    });
+    if (!resp.ok) throw new Error(`GitHub raw: HTTP ${resp.status}`);
+    data = await resp.json();
+  } catch (err) {
+    console.error('Failed to fetch from GitHub:', err.message);
+    return { last_updated: null, source: 'error', count: 0, stocks: [] };
+  }
+
+  ctx.waitUntil(
+    cache.put(
+      cacheKey,
+      new Response(JSON.stringify(data), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': `max-age=${CACHE_TTL_SECONDS}`,
+        },
+      })
+    )
+  );
+
+  return data;
+}
+
 export default {
-  async fetch(request) {
-    // Preflight CORS
+  async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS });
     }
@@ -47,22 +87,22 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/$/, '') || '/';
 
-    // GET /health
+    const stockData = await getStockData(ctx);
+
     if (path === '/health') {
       return jsonResponse({
         status: 'ok',
         last_updated: stockData.last_updated ?? null,
         count: stockData.stocks?.length ?? 0,
-        source: stockData.source ?? 'github-actions',
+        source: stockData.source ?? 'unknown',
+        cache_ttl: CACHE_TTL_SECONDS,
       });
     }
 
-    // GET / ou /stocks  → liste complète
     if (path === '/' || path === '/stocks') {
       return jsonResponse(stockData);
     }
 
-    // GET /stocks/:ticker
     const tickerMatch = path.match(/^\/stocks\/([A-Za-z0-9]+)$/);
     if (tickerMatch) {
       const sym = tickerMatch[1].toUpperCase();
