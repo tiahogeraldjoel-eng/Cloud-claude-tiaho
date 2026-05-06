@@ -7,14 +7,14 @@ import com.brvm.intelligence.data.local.dao.PriceHistoryDao
 import com.brvm.intelligence.data.local.dao.StockDao
 import com.brvm.intelligence.data.local.entity.*
 import com.brvm.intelligence.data.remote.scraper.BRVMScraper
-import com.brvm.intelligence.data.remote.dto.StockDto
 import com.brvm.intelligence.domain.model.*
 import com.brvm.intelligence.domain.repository.StockRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -25,6 +25,7 @@ import java.time.ZoneOffset
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.abs
 
 @Singleton
 class StockRepositoryImpl @Inject constructor(
@@ -34,6 +35,11 @@ class StockRepositoryImpl @Inject constructor(
     private val priceAlertDao: PriceAlertDao,
     private val scraper: BRVMScraper
 ) : StockRepository {
+
+    companion object {
+        private const val GITHUB_RAW_URL =
+            "https://raw.githubusercontent.com/tiahogeraldjoel-eng/Cloud-claude-tiaho/main/data/brvm_stocks.json"
+    }
 
     override fun getAllStocks(): Flow<List<Stock>> =
         stockDao.getAllStocks().map { entities -> entities.map { it.toDomain() } }
@@ -50,8 +56,6 @@ class StockRepositoryImpl @Inject constructor(
     override suspend fun getPriceHistory(symbol: String, period: HistoryPeriod): PriceHistory {
         val fromDate = LocalDate.now().minusDays(period.days.toLong())
         val fromEpochDay = fromDate.toEpochDay()
-
-        // Vérifier si on a des données locales suffisantes
         val localCount = priceHistoryDao.getHistoryCount(symbol)
         val latestDate = priceHistoryDao.getLatestDateEpoch(symbol)?.let { LocalDate.ofEpochDay(it) }
 
@@ -60,34 +64,32 @@ class StockRepositoryImpl @Inject constructor(
             latestDate.isBefore(LocalDate.now().minusDays(1))
 
         if (needsRefresh) {
-            Timber.d("Rafraîchissement historique $symbol depuis la BRVM")
-            scraper.scrapePriceHistory(symbol, fromDate).onSuccess { points ->
-                val entities = points.map { it.toEntity() }
-                priceHistoryDao.insertPricePoints(entities)
+            val scraped = scraper.scrapePriceHistory(symbol, fromDate)
+            if (scraped.isSuccess) {
+                scraped.onSuccess { points ->
+                    priceHistoryDao.insertPricePoints(points.map { it.toEntity() })
+                }
+            } else {
+                val stock = stockDao.getStockBySymbol(symbol)
+                val currentPrice = stock?.currentPrice ?: 1000.0
+                priceHistoryDao.insertPricePoints(
+                    generateSyntheticHistory(symbol, currentPrice, period.days)
+                )
             }
         }
 
-        // Fallback synthétique : si aucune donnée locale après la tentative de scraping
-        if (localCount == 0 && priceHistoryDao.getHistoryCount(symbol) == 0) {
-            Timber.w("Aucun historique local pour $symbol — génération d'un historique synthétique")
-            val stock = stockDao.getStockBySymbol(symbol)
-            val currentPrice = stock?.currentPrice ?: 1000.0
-            val syntheticEntities = generateSyntheticHistory(symbol, currentPrice, period.days)
-            priceHistoryDao.insertPricePoints(syntheticEntities)
-        }
-
         val entities = priceHistoryDao.getPriceHistory(symbol, fromEpochDay)
-        return PriceHistory(
-            symbol = symbol,
-            prices = entities.map { it.toDomain() },
-            period = period
-        )
+        return PriceHistory(symbol = symbol, prices = entities.map { it.toDomain() }, period = period)
     }
 
     override suspend fun refreshMarketData(): Result<Unit> {
-        // Priorité 1 : Cloudflare Worker (pas de blocage réseau)
+        // Priorité 1 : Cloudflare Worker (réseau mobile OK)
         if (fetchFromWorker()) return Result.success(Unit)
-        // Priorité 2 : scraper brvm.org
+
+        // Priorité 2 : GitHub raw (données toujours fraîches, sans Worker)
+        if (fetchFromGithubRaw()) return Result.success(Unit)
+
+        // Priorité 3 : Scraper brvm.org
         try {
             scraper.scrapeAllStocks().onSuccess { stocks ->
                 stockDao.insertStocks(stocks.map { dto ->
@@ -111,19 +113,28 @@ class StockRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Timber.w(e, "Scraper brvm.org échoué")
         }
-        // Priorité 3 : asset embarqué
+
+        // Priorité 4 : asset embarqué (seed)
         seedFromAssets()
         return Result.success(Unit)
     }
 
-    private fun fetchFromWorker(): Boolean {
+    private suspend fun fetchFromWorker(): Boolean = withContext(Dispatchers.IO) {
+        fetchJson("${BuildConfig.BRVM_WORKER_URL}/stocks", "[Worker] Cloudflare")
+    }
+
+    private suspend fun fetchFromGithubRaw(): Boolean = withContext(Dispatchers.IO) {
+        fetchJson(GITHUB_RAW_URL, "[GitHub]")
+    }
+
+    private suspend fun fetchJson(url: String, tag: String): Boolean {
         return try {
             val client = OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(15, TimeUnit.SECONDS)
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(20, TimeUnit.SECONDS)
                 .build()
             val request = Request.Builder()
-                .url("${BuildConfig.BRVM_WORKER_URL}/stocks")
+                .url(url)
                 .header("Accept", "application/json")
                 .build()
             val response = client.newCall(request).execute()
@@ -154,20 +165,18 @@ class StockRepositoryImpl @Inject constructor(
                 ))
             }
             if (entities.isEmpty()) return false
-            // Utiliser runBlocking car fetchFromWorker est appelé depuis une coroutine
-            kotlinx.coroutines.runBlocking { stockDao.insertStocks(entities) }
-            Timber.i("[Worker] ${entities.size} cours mis à jour depuis Cloudflare")
+            stockDao.insertStocks(entities)
+            Timber.i("$tag ${entities.size} cours mis à jour")
             true
         } catch (e: Exception) {
-            Timber.w(e, "[Worker] Échec appel Cloudflare Worker")
+            Timber.w(e, "$tag Échec")
             false
         }
     }
 
     private suspend fun seedFromAssets() {
         try {
-            val existing = stockDao.countStocks()
-            if (existing > 0) return
+            if (stockDao.getStockCount() > 0) return
             val json = context.assets.open("brvm_stocks_seed.json")
                 .bufferedReader().use { it.readText() }
             val root = JSONObject(json)
@@ -180,117 +189,112 @@ class StockRepositoryImpl @Inject constructor(
                 val prev = o.getDouble("previous_closing_price")
                 val vol = o.getLong("volume")
                 val chgPct = o.getDouble("change_pct")
-                val chg = price - prev
                 entities.add(StockEntity(
-                    symbol = ticker,
-                    name = ticker,
+                    symbol = ticker, name = ticker,
                     sector = inferSector(ticker).name,
                     country = inferCountry(ticker).name,
-                    currentPrice = price,
-                    previousClose = prev,
-                    change = chg,
-                    changePercent = chgPct,
-                    volume = vol,
-                    marketCap = (price * 1_000_000L).toLong(),
-                    per = null,
-                    dividendYield = null,
-                    high52Week = price,
-                    low52Week = price,
-                    openPrice = prev,
-                    highPrice = price,
-                    lowPrice = price,
+                    currentPrice = price, previousClose = prev,
+                    change = price - prev, changePercent = chgPct,
+                    volume = vol, marketCap = (price * 1_000_000L).toLong(),
+                    per = null, dividendYield = null,
+                    high52Week = price, low52Week = price,
+                    openPrice = prev, highPrice = price, lowPrice = price,
                     lastUpdateEpoch = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC),
                     liquidityLevel = inferLiquidity(vol).name
                 ))
             }
             stockDao.insertStocks(entities)
-            Timber.i("${entities.size} actions chargées depuis l'asset embarqué")
+            Timber.i("[Seed] ${entities.size} actions chargées depuis l'asset embarqué")
         } catch (e: Exception) {
-            Timber.e(e, "Erreur chargement asset brvm_stocks_seed.json")
+            Timber.e(e, "[Seed] Erreur chargement brvm_stocks_seed.json")
         }
     }
 
+    private fun generateSyntheticHistory(
+        symbol: String,
+        currentPrice: Double,
+        days: Int
+    ): List<PriceHistoryEntity> {
+        val rng = java.util.Random(abs(symbol.hashCode()).toLong())
+        val result = mutableListOf<PriceHistoryEntity>()
+        var price = currentPrice
+        val today = LocalDate.now()
+        for (i in days downTo 0) {
+            val date = today.minusDays(i.toLong())
+            if (date.dayOfWeek == java.time.DayOfWeek.SATURDAY ||
+                date.dayOfWeek == java.time.DayOfWeek.SUNDAY) continue
+            val change = price * (rng.nextGaussian() * 0.015)
+            price = maxOf(price + change, price * 0.5)
+            val open = price * (1 + rng.nextGaussian() * 0.005)
+            val high = maxOf(price, open) * (1 + rng.nextDouble() * 0.01)
+            val low = minOf(price, open) * (1 - rng.nextDouble() * 0.01)
+            result.add(PriceHistoryEntity(
+                symbol = symbol, dateEpoch = date.toEpochDay(),
+                open = open, high = high, low = low, close = price,
+                volume = (rng.nextInt(10000) + 100).toLong()
+            ))
+        }
+        return result
+    }
+
     override fun getMarketSummary(): Flow<MarketSummary> = flow {
-        val allStocksFlow = stockDao.getAllStocks()
-        allStocksFlow.collect { entities ->
+        stockDao.getAllStocks().collect { entities ->
             val stocks = entities.map { it.toDomain() }
             val totalCap = entities.sumOf { it.marketCap }
             val totalVol = entities.sumOf { it.volume }
-            val topGainers = stocks.sortedByDescending { it.changePercent }.take(5)
-            val topLosers = stocks.sortedBy { it.changePercent }.take(5)
-            val mostActive = stocks.sortedByDescending { it.volume }.take(5)
-
-            // Calcul simplifié des indices (basé sur les actions disponibles)
             val composite = MarketIndex(
                 name = "BRVM Composite",
                 value = calculateCompositeIndex(stocks),
-                change = stocks.map { it.change }.average(),
-                changePercent = stocks.map { it.changePercent }.average(),
-                totalVolume = totalVol,
-                totalMarketCap = totalCap,
-                numberOfTransactions = stocks.size,
-                lastUpdate = LocalDateTime.now()
+                change = if (stocks.isEmpty()) 0.0 else stocks.map { it.change }.average(),
+                changePercent = if (stocks.isEmpty()) 0.0 else stocks.map { it.changePercent }.average(),
+                totalVolume = totalVol, totalMarketCap = totalCap,
+                numberOfTransactions = stocks.size, lastUpdate = LocalDateTime.now()
             )
-
-            val brvm10Stocks = stocks.sortedByDescending { it.marketCap }.take(10)
-            val brvm10 = MarketIndex(
-                name = "BRVM 10",
-                value = calculateCompositeIndex(brvm10Stocks) * 1.5,
-                change = brvm10Stocks.map { it.change }.average(),
-                changePercent = brvm10Stocks.map { it.changePercent }.average(),
-                totalVolume = brvm10Stocks.sumOf { it.volume },
-                totalMarketCap = brvm10Stocks.sumOf { it.marketCap },
-                numberOfTransactions = brvm10Stocks.size,
-                lastUpdate = LocalDateTime.now()
-            )
-
+            val brvm10 = stocks.sortedByDescending { it.marketCap }.take(10).let { top ->
+                MarketIndex(
+                    name = "BRVM 10",
+                    value = calculateCompositeIndex(top) * 1.5,
+                    change = if (top.isEmpty()) 0.0 else top.map { it.change }.average(),
+                    changePercent = if (top.isEmpty()) 0.0 else top.map { it.changePercent }.average(),
+                    totalVolume = top.sumOf { it.volume }, totalMarketCap = top.sumOf { it.marketCap },
+                    numberOfTransactions = top.size, lastUpdate = LocalDateTime.now()
+                )
+            }
             emit(MarketSummary(
-                brvmComposite = composite,
-                brvmTen = brvm10,
-                topGainers = topGainers,
-                topLosers = topLosers,
-                mostActive = mostActive,
-                marketStatus = getMarketStatus(),
-                lastUpdate = LocalDateTime.now()
+                brvmComposite = composite, brvmTen = brvm10,
+                topGainers = stocks.sortedByDescending { it.changePercent }.take(5),
+                topLosers = stocks.sortedBy { it.changePercent }.take(5),
+                mostActive = stocks.sortedByDescending { it.volume }.take(5),
+                marketStatus = getMarketStatus(), lastUpdate = LocalDateTime.now()
             ))
         }
     }
 
-    override suspend fun getUpcomingEvents(): List<MarketEvent> {
-        // Calendrier des événements BRVM (dividendes, résultats, AG)
-        // À enrichir avec des données réelles depuis le site BRVM
-        return listOf(
-            MarketEvent(
-                date = LocalDate.now().plusDays(7),
-                type = EventType.DIVIDEND_DETACHMENT,
-                title = "Détachement dividende SONR-CI",
-                description = "Détachement du dividende annuel de Sonatel CI",
-                affectedSymbols = listOf("SONR-CI"),
-                expectedImpact = EventImpact.POSITIVE
-            ),
-            MarketEvent(
-                date = LocalDate.now().plusDays(14),
-                type = EventType.RESULTS_PUBLICATION,
-                title = "Résultats semestriels SGBCI",
-                description = "Publication des résultats du 1er semestre de SGBCI",
-                affectedSymbols = listOf("SGBCI"),
-                expectedImpact = EventImpact.NEUTRAL
-            ),
-            MarketEvent(
-                date = LocalDate.now().plusDays(30),
-                type = EventType.BCEAO_DECISION,
-                title = "Décision taux BCEAO",
-                description = "Réunion du Comité de Politique Monétaire de la BCEAO",
-                expectedImpact = EventImpact.NEUTRAL
-            )
+    override suspend fun getUpcomingEvents(): List<MarketEvent> = listOf(
+        MarketEvent(
+            date = LocalDate.now().plusDays(7), type = EventType.DIVIDEND_DETACHMENT,
+            title = "Détachement dividende SONR-CI",
+            description = "Détachement du dividende annuel de Sonatel CI",
+            affectedSymbols = listOf("SONR-CI"), expectedImpact = EventImpact.POSITIVE
+        ),
+        MarketEvent(
+            date = LocalDate.now().plusDays(14), type = EventType.RESULTS_PUBLICATION,
+            title = "Résultats semestriels SGBCI",
+            description = "Publication des résultats du 1er semestre de SGBCI",
+            affectedSymbols = listOf("SGBCI"), expectedImpact = EventImpact.NEUTRAL
+        ),
+        MarketEvent(
+            date = LocalDate.now().plusDays(30), type = EventType.BCEAO_DECISION,
+            title = "Décision taux BCEAO",
+            description = "Réunion du Comité de Politique Monétaire de la BCEAO",
+            expectedImpact = EventImpact.NEUTRAL
         )
-    }
+    )
 
     override fun getWatchlist(): Flow<List<Stock>> =
         stockDao.getWatchlist().map { entities -> entities.map { it.toDomain() } }
 
     override suspend fun addToWatchlist(symbol: String) = stockDao.addToWatchlist(symbol)
-
     override suspend fun removeFromWatchlist(symbol: String) = stockDao.removeFromWatchlist(symbol)
 
     override fun getPriceAlerts(): Flow<List<PriceAlert>> =
@@ -302,42 +306,33 @@ class StockRepositoryImpl @Inject constructor(
     override suspend fun deletePriceAlert(alertId: Long) =
         priceAlertDao.deleteAlert(alertId)
 
-    // --- Fonctions d'inférence ---
-
-    private fun inferSector(symbol: String): BRVMSector {
-        return when {
-            symbol.contains("BCI") || symbol.contains("BOA") ||
-            symbol.contains("BNI") || symbol.contains("BIS") ||
-            symbol.contains("SGBCI") || symbol.contains("BICC") -> BRVMSector.FINANCE
-            symbol.contains("PALC") || symbol.contains("SIVC") ||
-            symbol.contains("PALM") || symbol.contains("CAFF") -> BRVMSector.AGRICULTURE
-            symbol.contains("SONR") || symbol.contains("ONTEL") ||
-            symbol.contains("ONT") -> BRVMSector.SERVICES_PUBLICS
-            symbol.contains("CFAC") || symbol.contains("SDSC") -> BRVMSector.DISTRIBUTION
-            symbol.contains("SMB") || symbol.contains("SLBC") -> BRVMSector.INDUSTRIE
-            else -> BRVMSector.AUTRES
-        }
+    private fun inferSector(symbol: String): BRVMSector = when {
+        symbol.contains("BCI") || symbol.contains("BOA") || symbol.contains("BNI") ||
+        symbol.contains("BIS") || symbol.contains("SGBC") || symbol.contains("BICC") -> BRVMSector.FINANCE
+        symbol.contains("PALC") || symbol.contains("SIVC") ||
+        symbol.contains("PALM") || symbol.contains("CAFF") -> BRVMSector.AGRICULTURE
+        symbol.contains("SONR") || symbol.contains("ONTBF") ||
+        symbol.contains("SNTS") -> BRVMSector.SERVICES_PUBLICS
+        symbol.contains("CFAC") || symbol.contains("SDSC") -> BRVMSector.DISTRIBUTION
+        symbol.contains("SMB") || symbol.contains("SLBC") -> BRVMSector.INDUSTRIE
+        else -> BRVMSector.AUTRES
     }
 
-    private fun inferCountry(symbol: String): BRVMCountry {
-        return when {
-            symbol.endsWith("-CI") || symbol.endsWith("CI") -> BRVMCountry.COTE_IVOIRE
-            symbol.endsWith("-SN") || symbol.endsWith("SN") -> BRVMCountry.SENEGAL
-            symbol.endsWith("BF") -> BRVMCountry.BURKINA_FASO
-            symbol.endsWith("TG") -> BRVMCountry.TOGO
-            symbol.endsWith("ML") -> BRVMCountry.MALI
-            symbol.endsWith("BJ") -> BRVMCountry.BENIN
-            else -> BRVMCountry.COTE_IVOIRE
-        }
+    private fun inferCountry(symbol: String): BRVMCountry = when {
+        symbol.endsWith("-CI") || symbol.endsWith("CI") -> BRVMCountry.COTE_IVOIRE
+        symbol.endsWith("-SN") || symbol.endsWith("SN") -> BRVMCountry.SENEGAL
+        symbol.endsWith("BF") -> BRVMCountry.BURKINA_FASO
+        symbol.endsWith("TG") -> BRVMCountry.TOGO
+        symbol.endsWith("ML") -> BRVMCountry.MALI
+        symbol.endsWith("BJ") -> BRVMCountry.BENIN
+        else -> BRVMCountry.COTE_IVOIRE
     }
 
-    private fun inferLiquidity(volume: Long): LiquidityLevel {
-        return when {
-            volume > 50_000 -> LiquidityLevel.HIGH
-            volume > 10_000 -> LiquidityLevel.MEDIUM
-            volume > 1_000 -> LiquidityLevel.LOW
-            else -> LiquidityLevel.VERY_LOW
-        }
+    private fun inferLiquidity(volume: Long): LiquidityLevel = when {
+        volume > 50_000 -> LiquidityLevel.HIGH
+        volume > 10_000 -> LiquidityLevel.MEDIUM
+        volume > 1_000 -> LiquidityLevel.LOW
+        else -> LiquidityLevel.VERY_LOW
     }
 
     private fun calculateCompositeIndex(stocks: List<Stock>): Double {
@@ -350,9 +345,8 @@ class StockRepositoryImpl @Inject constructor(
     private fun getMarketStatus(): MarketStatus {
         val now = LocalDateTime.now()
         val hour = now.hour
-        val dayOfWeek = now.dayOfWeek.value
         return when {
-            dayOfWeek >= 6 -> MarketStatus.CLOSED
+            now.dayOfWeek.value >= 6 -> MarketStatus.CLOSED
             hour < 9 -> MarketStatus.PRE_OPENING
             hour in 9..14 -> MarketStatus.OPEN
             hour == 15 && now.minute <= 30 -> MarketStatus.CLOSING
@@ -360,42 +354,9 @@ class StockRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun generateSyntheticHistory(symbol: String, currentPrice: Double, days: Int): List<PriceHistoryEntity> {
-        val random = java.util.Random(symbol.hashCode().toLong())
-        val result = mutableListOf<PriceHistoryEntity>()
-        var price = currentPrice
-        val today = LocalDate.now()
-        for (i in days downTo 0) {
-            val date = today.minusDays(i.toLong())
-            // Ignorer les week-ends
-            if (date.dayOfWeek == java.time.DayOfWeek.SATURDAY || date.dayOfWeek == java.time.DayOfWeek.SUNDAY) continue
-            val change = price * (random.nextGaussian() * 0.015)
-            price = maxOf(price + change, price * 0.5)
-            val open = price * (1 + random.nextGaussian() * 0.005)
-            val high = maxOf(price, open) * (1 + random.nextDouble() * 0.01)
-            val low = minOf(price, open) * (1 - random.nextDouble() * 0.01)
-            val volume = (random.nextInt(10000) + 100).toLong()
-            result.add(PriceHistoryEntity(
-                symbol = symbol,
-                dateEpoch = date.toEpochDay(),
-                open = open,
-                high = high,
-                low = low,
-                close = price,
-                volume = volume
-            ))
-        }
-        return result
-    }
-
     private fun com.brvm.intelligence.data.remote.dto.PricePointDto.toEntity() =
         PriceHistoryEntity(
-            symbol = symbol,
-            dateEpoch = date.toEpochDay(),
-            open = open,
-            high = high,
-            low = low,
-            close = close,
-            volume = volume
+            symbol = symbol, dateEpoch = date.toEpochDay(),
+            open = open, high = high, low = low, close = close, volume = volume
         )
 }
