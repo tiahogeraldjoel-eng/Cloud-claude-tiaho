@@ -45,6 +45,7 @@ class StockListViewModel @Inject constructor(
 
     init {
         observeStocks()
+        refresh()
     }
 
     private fun observeStocks() {
