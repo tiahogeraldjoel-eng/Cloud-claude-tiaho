@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Couleurs BRVM Intelligence - Palette inspirée des marchés africains -->
+    <color name="brvm_green">#1B8A5A</color>
+    <color name="brvm_green_dark">#0D5C3A</color>
+    <color name="brvm_green_light">#4CAF87</color>
+    <color name="brvm_gold">#D4A017</color>
+    <color name="brvm_gold_light">#F5C842</color>
+    <color name="brvm_red">#E53935</color>
+    <color name="brvm_red_light">#EF9A9A</color>
+    <color name="brvm_blue">#1565C0</color>
+    <color name="brvm_surface_dark">#121212</color>
+    <color name="brvm_surface_light">#F8F9FA</color>
+    <color name="notification_color">#1B8A5A</color>
+</resources>

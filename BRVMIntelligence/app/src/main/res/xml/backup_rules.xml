@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exclure les données sensibles du portefeuille de la sauvegarde -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="portfolio_prefs.xml" />
+    <exclude domain="database" path="brvm_database" />
+    <exclude domain="file" path="encrypted_portfolio.dat" />
+</full-backup-content>

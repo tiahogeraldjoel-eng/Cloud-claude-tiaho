@@ -1,0 +1,24 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Clés sensibles — NE JAMAIS COMMITTER
+app/google-services.json
+*.jks
+*.keystore
+keystore.properties
+
+# Modèle TFLite (trop large pour Git)
+app/src/main/assets/*.tflite
+
+# APK / AAB release
+*.apk
+*.aab
+app/release/

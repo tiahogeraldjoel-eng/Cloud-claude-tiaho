@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BRVM Intelligence</string>
+    <string name="app_slogan">Votre assistant analyste IA pour la BRVM</string>
+
+    <!-- Navigation -->
+    <string name="nav_dashboard">Tableau de bord</string>
+    <string name="nav_stocks">Actions</string>
+    <string name="nav_portfolio">Portefeuille</string>
+    <string name="nav_analysis">Analyse</string>
+    <string name="nav_chat">Assistant IA</string>
+
+    <!-- Avertissement réglementaire obligatoire -->
+    <string name="disclaimer">Information à titre indicatif uniquement. Ne constitue pas un conseil en investissement réglementé. La BRVM présente une faible liquidité. Investir comporte des risques de perte en capital.</string>
+    <string name="disclaimer_short">À titre indicatif, non conseil réglementé</string>
+
+    <!-- Marché -->
+    <string name="market_open">Marché ouvert</string>
+    <string name="market_closed">Marché fermé</string>
+    <string name="brvm_composite">BRVM Composite</string>
+    <string name="brvm_10">BRVM 10</string>
+    <string name="volume">Volume</string>
+    <string name="capitalisation">Capitalisation</string>
+    <string name="per">PER</string>
+    <string name="dividende">Dividende</string>
+
+    <!-- Analyse -->
+    <string name="signal_strong_buy">Achat Fort</string>
+    <string name="signal_buy">Achat</string>
+    <string name="signal_neutral">Neutre</string>
+    <string name="signal_sell">Vente</string>
+    <string name="signal_strong_sell">Vente Forte</string>
+
+    <!-- Portefeuille -->
+    <string name="portfolio_empty">Votre portefeuille est vide. Ajoutez vos premières positions.</string>
+    <string name="add_position">Ajouter une position</string>
+    <string name="total_value">Valeur totale</string>
+    <string name="performance">Performance</string>
+
+    <!-- Erreurs -->
+    <string name="error_network">Erreur réseau. Vérifiez votre connexion.</string>
+    <string name="error_no_data">Données indisponibles pour ce titre.</string>
+    <string name="error_low_liquidity">Attention : titre à faible liquidité. Risque de difficulté de revente.</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title_1">Bienvenue sur BRVM Intelligence</string>
+    <string name="onboarding_desc_1">Votre assistant IA spécialisé dans l\'analyse de la Bourse Régionale des Valeurs Mobilières</string>
+    <string name="onboarding_title_2">Analyse Technique Avancée</string>
+    <string name="onboarding_desc_2">RSI, MACD, Bollinger Bands et prédictions IA pour anticiper les mouvements du marché</string>
+    <string name="onboarding_title_3">Gérez Votre Portefeuille</string>
+    <string name="onboarding_desc_3">Suivez vos positions, calculez vos performances et optimisez votre allocation d\'actifs</string>
+    <string name="get_started">Commencer</string>
+    <string name="next">Suivant</string>
+    <string name="skip">Passer</string>
+
+    <!-- Secteurs BRVM -->
+    <string name="sector_finance">Finance</string>
+    <string name="sector_industrie">Industrie</string>
+    <string name="sector_distribution">Distribution</string>
+    <string name="sector_agriculture">Agriculture</string>
+    <string name="sector_transport">Transport</string>
+    <string name="sector_services_publics">Services Publics</string>
+    <string name="sector_autres">Autres</string>
+</resources>
