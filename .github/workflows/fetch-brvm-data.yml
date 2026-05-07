@@ -4,6 +4,11 @@ on:
   schedule:
     # Toutes les 30min lundi-vendredi 8h-15h UTC (marché BRVM: 9h-15h30 WAT=UTC+1)
     - cron: '0,30 8-15 * * 1-5'
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'data/**'
+      - 'BRVMIntelligence/**'
   workflow_dispatch:
 
 jobs:
