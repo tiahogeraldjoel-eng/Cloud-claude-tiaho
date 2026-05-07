@@ -30,6 +30,13 @@ class BRVMScraper @Inject constructor() {
         private const val TIMEOUT_MS = 30_000
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         private val DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+        val KNOWN_TICKERS = setOf(
+            "ABJC","BICB","BICC","BNBC","BOAB","BOABF","BOAC","BOAM","BOAN","BOAS",
+            "CABC","CBIBF","CFAC","CIEC","ECOC","ETIT","FTSC","LNBB","NEIC","NSBC",
+            "NTLC","ONTBF","ORAC","ORGT","PALC","PRSC","SAFC","SCRC","SDCC","SDSC",
+            "SEMC","SGBC","SHEC","SIBC","SICC","SIVC","SLBC","SMBC","SNTS","SOGC",
+            "SPHC","STAC","STBC","TTLC","TTLS","UNLC","UNXC"
+        )
     }
 
     /** Scraping de toutes les actions cotées sur la BRVM */
@@ -115,47 +122,61 @@ class BRVMScraper @Inject constructor() {
     }
 
     private fun parseStocksTable(doc: Document): List<StockDto> {
+        // Approche identique au scraper Python qui fonctionne :
+        // chercher toutes les lignes de toutes les tables, sans dépendre des classes CSS
+        val rows = doc.select("table tbody tr").ifEmpty { doc.select("table tr") }
         val stocks = mutableListOf<StockDto>()
-        // Sélection de la table principale des cours
-        val rows = doc.select("table.table-hover tbody tr, table.tableau-cours tbody tr, .cours-table tbody tr")
-
-        if (rows.isEmpty()) {
-            // Fallback: essayer de trouver les données dans d'autres structures
-            Timber.w("Table des cours non trouvée avec les sélecteurs standard, tentative de fallback")
-            return parseStocksTableFallback(doc)
-        }
 
         for (row in rows) {
             try {
                 val cells = row.select("td")
-                if (cells.size < 6) continue
+                if (cells.size < 4) continue
 
-                val symbol = cells[0].text().trim()
-                val name = cells[1].text().trim()
-                if (symbol.isBlank() || name.isBlank()) continue
+                // Colonne 0 : ticker (peut contenir le nom de la société mélangé)
+                val rawTicker = cells[0].text().trim().uppercase().replace(Regex("[^A-Z]"), "")
+                if (rawTicker !in KNOWN_TICKERS) continue
 
-                val stock = StockDto(
-                    symbol = symbol,
-                    name = name,
-                    lastPrice = parsePrice(cells.getOrNull(2)?.text()),
-                    change = parseDouble(cells.getOrNull(3)?.text()),
-                    changePercent = parsePercent(cells.getOrNull(4)?.text()),
-                    volume = parseLong(cells.getOrNull(5)?.text()),
-                    previousClose = parsePrice(cells.getOrNull(6)?.text()),
-                    openPrice = parsePrice(cells.getOrNull(7)?.text()),
-                    highPrice = parsePrice(cells.getOrNull(8)?.text()),
-                    lowPrice = parsePrice(cells.getOrNull(9)?.text()),
-                    marketCap = parseLong(cells.getOrNull(10)?.text()),
-                    per = cells.getOrNull(11)?.text()?.let { parseDouble(it) },
-                    dividendYield = cells.getOrNull(12)?.text()?.let { parsePercent(it) }
-                )
-                if (stock.lastPrice > 0) stocks.add(stock)
+                // brvm.org : col 0=ticker, col 1=société, col 2+=prix
+                var price = 0.0
+                var priceIdx = -1
+                for (i in 2 until minOf(cells.size, 8)) {
+                    val v = parsePrice(cells[i].text())
+                    if (v > 1.0) { price = v; priceIdx = i; break }
+                }
+                if (price <= 0) continue
+
+                // Variation % : première valeur entre -99 et 99 après le prix
+                var changePct = 0.0
+                for (i in (priceIdx + 1) until minOf(cells.size, priceIdx + 5)) {
+                    val v = parsePercent(cells[i].text())
+                    if (v in -99.0..99.0 && v != 0.0) { changePct = v; break }
+                }
+
+                // Volume : dernier entier > 0 dans la ligne
+                var volume = 0L
+                for (i in cells.size - 1 downTo 0) {
+                    val v = parseLong(cells[i].text())
+                    if (v in 1L..100_000_000L) { volume = v; break }
+                }
+
+                val prevClose = if (changePct != 0.0)
+                    Math.round(price / (1.0 + changePct / 100.0) * 100.0) / 100.0
+                else price
+
+                stocks.add(StockDto(
+                    symbol = rawTicker, name = cells.getOrNull(1)?.text()?.trim() ?: rawTicker,
+                    lastPrice = price, change = price - prevClose, changePercent = changePct,
+                    volume = volume, previousClose = prevClose,
+                    openPrice = prevClose, highPrice = price, lowPrice = price, marketCap = 0L
+                ))
             } catch (e: Exception) {
-                Timber.w("Ligne ignorée lors du parsing: ${e.message}")
+                Timber.w("Ligne ignorée: ${e.message}")
             }
         }
+        Timber.i("BRVM parser: ${stocks.size} titres extraits sur ${rows.size} lignes")
         return stocks
     }
+
 
     private fun parseStocksTableFallback(doc: Document): List<StockDto> {
         // Tentative générique : chercher n'importe quelle table avec des données numériques
