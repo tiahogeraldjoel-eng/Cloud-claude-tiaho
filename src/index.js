@@ -43,8 +43,6 @@ function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data, null, 2), { status, headers: JSON_HEADERS });
 }
 
-// ── HTML parsing helpers ──────────────────────────────────────────────────────
-
 function parseNum(s) {
   s = s.replace(/\s+/g, '').replace('%', '').replace(',', '.');
   s = s.replace(/\.(?=\d{3}(?:\D|$))/g, '');
@@ -71,7 +69,6 @@ function parseBRVMTable(html) {
     const ticker = cells[0].toUpperCase().replace(/[^A-Z]/g, '');
     if (!KNOWN_TICKERS.has(ticker)) continue;
 
-    // brvm.org: col 0=ticker, 1=company, 2+=price
     let price = null, priceIdx = -1;
     for (let i = 2; i < Math.min(cells.length, 8); i++) {
       const v = parseNum(cells[i]);
@@ -131,8 +128,6 @@ function parseSikaTable(html) {
   }
   return stocks;
 }
-
-// ── Data sources ──────────────────────────────────────────────────────────────
 
 const SCRAPE_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -197,8 +192,6 @@ async function fetchGithubRaw() {
   }
 }
 
-// ── Main cache logic ──────────────────────────────────────────────────────────
-
 async function getStockData(ctx) {
   const cache = caches.default;
   const cacheKey = new Request('https://brvm-edge-cache/stocks-v2');
@@ -206,13 +199,8 @@ async function getStockData(ctx) {
   const cached = await cache.match(cacheKey);
   if (cached) return await cached.json();
 
-  // Priority 1: live scrape brvm.org
   let data = await fetchBRVMorg();
-
-  // Priority 2: live scrape sikafinance
   if (!data) data = await fetchSikaFinance();
-
-  // Priority 3: GitHub raw (updated by GitHub Actions)
   if (!data) data = await fetchGithubRaw();
 
   if (!data) return { last_updated: null, source: 'error', count: 0, stocks: [] };
@@ -225,8 +213,6 @@ async function getStockData(ctx) {
 
   return data;
 }
-
-// ── Request handler ───────────────────────────────────────────────────────────
 
 export default {
   async fetch(request, env, ctx) {
