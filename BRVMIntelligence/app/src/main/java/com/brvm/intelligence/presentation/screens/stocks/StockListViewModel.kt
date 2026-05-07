@@ -2,6 +2,7 @@ package com.brvm.intelligence.presentation.screens.stocks
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.brvm.intelligence.data.local.dao.StockDao
 import com.brvm.intelligence.domain.model.BRVMSector
 import com.brvm.intelligence.domain.model.Stock
 import com.brvm.intelligence.domain.usecase.GetStocksUseCase
@@ -11,6 +12,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 data class StockListUiState(
@@ -19,7 +23,8 @@ data class StockListUiState(
     val searchQuery: String = "",
     val selectedSector: BRVMSector? = null,
     val sortOrder: StockSortOrder = StockSortOrder.MARKET_CAP,
-    val error: String? = null
+    val error: String? = null,
+    val lastUpdatedLabel: String? = null
 )
 
 enum class StockSortOrder(val displayName: String) {
@@ -34,7 +39,8 @@ enum class StockSortOrder(val displayName: String) {
 class StockListViewModel @Inject constructor(
     private val getStocksUseCase: GetStocksUseCase,
     private val searchStocksUseCase: SearchStocksUseCase,
-    private val refreshMarketDataUseCase: RefreshMarketDataUseCase
+    private val refreshMarketDataUseCase: RefreshMarketDataUseCase,
+    private val stockDao: StockDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(StockListUiState())
@@ -91,7 +97,16 @@ class StockListViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             refreshMarketDataUseCase()
+            updateLastUpdatedLabel()
         }
+    }
+
+    private suspend fun updateLastUpdatedLabel() {
+        val epoch = stockDao.getLastUpdateEpoch() ?: return
+        val label = Instant.ofEpochSecond(epoch)
+            .atZone(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+        _uiState.update { it.copy(lastUpdatedLabel = label) }
     }
 
     private fun sortStocks(stocks: List<Stock>, order: StockSortOrder): List<Stock> {

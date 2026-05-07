@@ -8,7 +8,7 @@ on:
 
 jobs:
   fetch:
-    name: Fetch BRVM prices via cloudscraper
+    name: Fetch BRVM prices via Playwright
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -19,16 +19,18 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
         with:
-          python-version: '3.11'
+          node-version: '20'
 
-      - name: Install dependencies
-        run: pip install requests cloudscraper beautifulsoup4 lxml
+      - name: Install Playwright + Chromium
+        run: |
+          npm install playwright
+          npx playwright install chromium --with-deps
 
       - name: Fetch BRVM stock prices
-        run: python scripts/fetch_brvm_data.py
+        run: node scripts/fetch_brvm_playwright.js
 
       - name: Commit updated prices
         run: |

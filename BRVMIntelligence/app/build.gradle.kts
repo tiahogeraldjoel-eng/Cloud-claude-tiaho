@@ -64,7 +64,7 @@ android {
     }
 
     // Configuration TensorFlow Lite
-    aaptOptions {
+    androidResources {
         noCompress += "tflite"
     }
 }
