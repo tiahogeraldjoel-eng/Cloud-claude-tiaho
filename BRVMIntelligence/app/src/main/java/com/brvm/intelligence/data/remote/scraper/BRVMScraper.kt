@@ -24,26 +24,30 @@ class BRVMScraper @Inject constructor() {
 
     companion object {
         private const val BASE_URL = "https://www.brvm.org"
-        private const val STOCKS_LIST_URL = "$BASE_URL/fr/cours-actions/0"
+        private const val STOCKS_LIST_URL = "$BASE_URL/fr/cours-des-actions/0"
+        private const val STOCKS_LIST_URL_ALL = "$BASE_URL/fr/cours-des-actions/0/all"
         private const val INDEX_URL = "$BASE_URL/fr/indices"
         private const val TIMEOUT_MS = 30_000
-        private const val USER_AGENT = "Mozilla/5.0 (Android; BRVM Intelligence App) AppleWebKit/537.36"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         private val DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     }
 
     /** Scraping de toutes les actions cotées sur la BRVM */
     suspend fun scrapeAllStocks(): Result<List<StockDto>> = withContext(Dispatchers.IO) {
-        try {
-            val doc = fetchPage(STOCKS_LIST_URL) ?: return@withContext Result.failure(
-                Exception("Impossible de charger la page des cours BRVM")
-            )
-            val stocks = parseStocksTable(doc)
-            Timber.d("BRVM Scraper: ${stocks.size} actions récupérées")
-            Result.success(stocks)
-        } catch (e: Exception) {
-            Timber.e(e, "Erreur scraping liste des actions BRVM")
-            Result.failure(e)
+        // Essayer les deux URLs (avec /all d'abord pour plus de données)
+        for (url in listOf(STOCKS_LIST_URL_ALL, STOCKS_LIST_URL)) {
+            try {
+                val doc = fetchPage(url) ?: continue
+                val stocks = parseStocksTable(doc)
+                if (stocks.isNotEmpty()) {
+                    Timber.i("BRVM Scraper: ${stocks.size} actions depuis $url")
+                    return@withContext Result.success(stocks)
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Échec scraping $url")
+            }
         }
+        Result.failure(Exception("Aucune donnée récupérée depuis brvm.org"))
     }
 
     /** Détail d'une action spécifique */
@@ -154,19 +158,26 @@ class BRVMScraper @Inject constructor() {
     }
 
     private fun parseStocksTableFallback(doc: Document): List<StockDto> {
-        // Extraction depuis scripts JSON embarqués ou autre format
+        // Tentative générique : chercher n'importe quelle table avec des données numériques
+        val allRows = doc.select("table tbody tr")
         val stocks = mutableListOf<StockDto>()
-        val scriptTags = doc.select("script[type=application/json], script:containsData(symbol)")
-        for (script in scriptTags) {
-            // Extraction rudimentaire depuis JSON embarqué
-            val content = script.data()
-            if (content.contains("symbol") || content.contains("cours")) {
-                Timber.d("Données JSON trouvées dans script tag, longueur: ${content.length}")
-                // Le parsing JSON serait effectué ici selon la structure exacte du site
-            }
+        for (row in allRows) {
+            try {
+                val cells = row.select("td")
+                if (cells.size < 4) continue
+                val symbol = cells[0].text().trim().uppercase().replace(Regex("[^A-Z0-9]"), "")
+                if (symbol.length < 3 || symbol.length > 8) continue
+                val price = (1 until minOf(cells.size, 6))
+                    .mapNotNull { parsePrice(cells[it].text()).takeIf { p -> p > 0 } }
+                    .firstOrNull() ?: continue
+                stocks.add(StockDto(symbol = symbol, name = symbol, lastPrice = price,
+                    change = 0.0, changePercent = 0.0, volume = 0L,
+                    previousClose = price, openPrice = price, highPrice = price, lowPrice = price,
+                    marketCap = 0L))
+            } catch (_: Exception) {}
         }
-        // Retourner les actions BRVM avec données de démonstration si le scraping échoue
-        return getDefaultBRVMStocks()
+        Timber.w("Fallback générique: ${stocks.size} actions trouvées")
+        return stocks // vide si rien trouvé → le caller essaiera la prochaine source
     }
 
     private fun parseStockDetail(doc: Document, symbol: String): StockDto {
@@ -289,18 +300,7 @@ class BRVMScraper @Inject constructor() {
     }
 
     /** Données BRVM de référence pour les cas où le scraping est temporairement indisponible */
-    private fun getDefaultBRVMStocks(): List<StockDto> = listOf(
-        StockDto("SONR-CI", "Sonatel CI", 15600.0, 0.0, 0.0, 0, 15600.0, 15600.0, 15700.0, 15500.0, 0),
-        StockDto("SGBCI", "Société Générale Banques CI", 12000.0, 0.0, 0.0, 0, 12000.0, 12000.0, 12100.0, 11900.0, 0),
-        StockDto("ONTBF", "ONatel BF", 5000.0, 0.0, 0.0, 0, 5000.0, 5000.0, 5050.0, 4950.0, 0),
-        StockDto("BOABF", "Bank of Africa Burkina Faso", 6750.0, 0.0, 0.0, 0, 6750.0, 6750.0, 6800.0, 6700.0, 0),
-        StockDto("ETIT", "Ecobank Transnational Inc.", 18.0, 0.0, 0.0, 0, 18.0, 18.0, 18.5, 17.5, 0),
-        StockDto("SNTS", "Sonatel Sénégal", 17500.0, 0.0, 0.0, 0, 17500.0, 17500.0, 17600.0, 17400.0, 0),
-        StockDto("PALC", "Palm CI", 7800.0, 0.0, 0.0, 0, 7800.0, 7800.0, 7900.0, 7700.0, 0),
-        StockDto("SIVC", "Sifca CI", 4500.0, 0.0, 0.0, 0, 4500.0, 4500.0, 4600.0, 4400.0, 0),
-        StockDto("BICC", "BICICI", 8500.0, 0.0, 0.0, 0, 8500.0, 8500.0, 8600.0, 8400.0, 0),
-        StockDto("CABC", "COBACI", 1500.0, 0.0, 0.0, 0, 1500.0, 1500.0, 1550.0, 1450.0, 0)
-    )
+    private fun getDefaultBRVMStocks(): List<StockDto> = emptyList()
 
     private fun getDefaultIndices(): List<MarketIndexDto> = listOf(
         MarketIndexDto("BRVM Composite", 220.50, 0.0, 0.0, 0),
