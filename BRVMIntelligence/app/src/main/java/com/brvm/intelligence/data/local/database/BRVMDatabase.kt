@@ -21,7 +21,7 @@ import com.brvm.intelligence.data.local.entity.StockEntity
         PriceAlertEntity::class
     ],
     version = 1,
-    exportSchema = true
+    exportSchema = false
 )
 @TypeConverters(BRVMTypeConverters::class)
 abstract class BRVMDatabase : RoomDatabase() {
