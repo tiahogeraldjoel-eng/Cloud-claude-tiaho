@@ -83,36 +83,41 @@ class StockRepositoryImpl @Inject constructor(
     }
 
     override suspend fun refreshMarketData(): Result<Unit> {
-        // Priorité 1 : Cloudflare Worker (réseau mobile OK)
+        // Priorité 1 : Cloudflare Worker (si déployé)
         if (fetchFromWorker()) return Result.success(Unit)
 
-        // Priorité 2 : GitHub raw (données toujours fraîches, sans Worker)
-        if (fetchFromGithubRaw()) return Result.success(Unit)
-
-        // Priorité 3 : Scraper brvm.org
+        // Priorité 2 : Scraper brvm.org depuis le téléphone
+        // Les IPs résidentielles/mobiles ne sont PAS bloquées par brvm.org
         try {
+            var scraperSucceeded = false
             scraper.scrapeAllStocks().onSuccess { stocks ->
-                stockDao.insertStocks(stocks.map { dto ->
-                    StockEntity(
-                        symbol = dto.symbol, name = dto.name,
-                        sector = inferSector(dto.symbol).name,
-                        country = inferCountry(dto.symbol).name,
-                        currentPrice = dto.lastPrice, previousClose = dto.previousClose,
-                        change = dto.change, changePercent = dto.changePercent,
-                        volume = dto.volume, marketCap = dto.marketCap,
-                        per = dto.per, dividendYield = dto.dividendYield,
-                        high52Week = dto.high52Week, low52Week = dto.low52Week,
-                        openPrice = dto.openPrice, highPrice = dto.highPrice,
-                        lowPrice = dto.lowPrice,
-                        lastUpdateEpoch = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC),
-                        liquidityLevel = inferLiquidity(dto.volume).name
-                    )
-                })
-                return Result.success(Unit)
+                if (stocks.isNotEmpty()) {
+                    stockDao.insertStocks(stocks.map { dto ->
+                        StockEntity(
+                            symbol = dto.symbol, name = dto.name,
+                            sector = inferSector(dto.symbol).name,
+                            country = inferCountry(dto.symbol).name,
+                            currentPrice = dto.lastPrice, previousClose = dto.previousClose,
+                            change = dto.change, changePercent = dto.changePercent,
+                            volume = dto.volume, marketCap = dto.marketCap,
+                            per = dto.per, dividendYield = dto.dividendYield,
+                            high52Week = dto.high52Week, low52Week = dto.low52Week,
+                            openPrice = dto.openPrice, highPrice = dto.highPrice,
+                            lowPrice = dto.lowPrice,
+                            lastUpdateEpoch = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC),
+                            liquidityLevel = inferLiquidity(dto.volume).name
+                        )
+                    })
+                    scraperSucceeded = true
+                }
             }
+            if (scraperSucceeded) return Result.success(Unit)
         } catch (e: Exception) {
             Timber.w(e, "Scraper brvm.org échoué")
         }
+
+        // Priorité 3 : GitHub raw (données de la dernière exécution GitHub Actions)
+        if (fetchFromGithubRaw()) return Result.success(Unit)
 
         // Priorité 4 : asset embarqué (seed)
         seedFromAssets()
