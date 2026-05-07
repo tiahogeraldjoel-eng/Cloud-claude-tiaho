@@ -72,4 +72,7 @@ interface StockDao {
 
     @Query("SELECT SUM(volume) FROM stocks WHERE isActive = 1")
     suspend fun getTotalVolume(): Long?
+
+    @Query("SELECT MAX(lastUpdateEpoch) FROM stocks")
+    suspend fun getLastUpdateEpoch(): Long?
 }
