@@ -31,6 +31,40 @@ jobs:
           key: gradle-${{ hashFiles('BRVMIntelligence/**/*.gradle*', 'BRVMIntelligence/**/gradle-wrapper.properties') }}
           restore-keys: gradle-
 
+      - name: Create google-services.json stub for CI
+        run: |
+          cat > BRVMIntelligence/app/google-services.json << 'EOF'
+          {
+            "project_info": {
+              "project_number": "000000000000",
+              "project_id": "brvm-intelligence-ci",
+              "storage_bucket": "brvm-intelligence-ci.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+                  "android_client_info": {
+                    "package_name": "com.brvm.intelligence"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "CI_PLACEHOLDER_KEY"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+
       - name: Build debug APK
         working-directory: BRVMIntelligence
         run: ./gradlew assembleDebug --no-daemon
