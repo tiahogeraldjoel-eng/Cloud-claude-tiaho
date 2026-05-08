@@ -9,11 +9,12 @@ on:
     paths-ignore:
       - 'data/**'
       - 'BRVMIntelligence/**'
+      - 'BRVMAlerte/**'
   workflow_dispatch:
 
 jobs:
   fetch:
-    name: Fetch BRVM prices via Playwright
+    name: Fetch BRVM prices via cloudscraper
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -26,20 +27,16 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Node.js 24
-        uses: actions/setup-node@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
-          node-version: '24'
+          python-version: '3.11'
 
-      - name: Install Playwright + Chromium
-        run: |
-          npm install playwright
-          npx playwright install chromium --with-deps
+      - name: Install dependencies
+        run: pip install requests cloudscraper beautifulsoup4 lxml
 
       - name: Fetch BRVM stock prices
-        env:
-          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
-        run: node scripts/fetch_brvm_playwright.js
+        run: python scripts/fetch_brvm_data.py
 
       - name: Commit updated prices
         run: |
