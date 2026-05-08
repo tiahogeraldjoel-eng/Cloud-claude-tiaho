@@ -103,52 +103,68 @@ function parseHtmlTable(html) {
 
 // ── Source 1 : Twelve Data API ───────────────────────────────────────────────
 
+function buildStockFromTD(ticker, item) {
+  const price = parseFloat(item.close || item.previous_close || 0);
+  if (price <= 1) return null;
+  const changePct = parseFloat(item.percent_change || 0);
+  const volume = parseInt(item.volume || 0, 10);
+  const prev = changePct !== 0 ? Math.round(price / (1 + changePct / 100) * 100) / 100 : price;
+  return { ticker, closing_price: price, previous_closing_price: prev,
+           volume, change_pct: Math.round(changePct * 10000) / 10000 };
+}
+
 async function tryTwelveData() {
   const apiKey = process.env.TWELVE_DATA_API_KEY;
   if (!apiKey) {
-    console.log('[TwelveData] Pas de clé API (TWELVE_DATA_API_KEY non défini)');
+    console.log('[TwelveData] Clé API non configurée');
     return null;
   }
 
   try {
-    console.log('[TwelveData] Requête batch...');
-    // Twelve Data permet 8 symboles par requête en gratuit
-    const batches = [];
-    for (let i = 0; i < TWELVE_DATA_SYMBOLS.length; i += 8) {
-      batches.push(TWELVE_DATA_SYMBOLS.slice(i, i + 8));
+    // Test rapide sur 1 symbole pour vérifier la couverture BRVM avant de tout fetch
+    console.log('[TwelveData] Test couverture BRVM avec SNTS...');
+    const testUrl = `https://api.twelvedata.com/quote?symbol=SNTS&exchange=BRVM&apikey=${apiKey}`;
+    const testResp = await fetch(testUrl, { signal: AbortSignal.timeout(10000) });
+    if (!testResp.ok) { console.log(`[TwelveData] HTTP ${testResp.status}`); return null; }
+    const testData = await testResp.json();
+    if (testData.status === 'error') {
+      console.log(`[TwelveData] BRVM non couverte ou clé invalide: ${testData.message}`);
+      return null;
     }
+    const testPrice = parseFloat(testData.close || testData.previous_close || 0);
+    if (testPrice <= 1) { console.log('[TwelveData] Prix SNTS invalide'); return null; }
+    console.log(`[TwelveData] BRVM couverte ✓ SNTS=${testPrice}. Récupération complète...`);
 
+    // BRVM couverte — fetch de tous les symboles par batch de 8
+    // Plan gratuit: 55 req/min → 2s entre batches suffit
     const stocks = [];
-    for (const batch of batches) {
-      const symbols = batch.map(s => `${s}:BRVM`).join(',');
-      const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbols)}&apikey=${apiKey}`;
+    const sntsStock = buildStockFromTD('SNTS', testData);
+    if (sntsStock) stocks.push(sntsStock);
+
+    const remaining = TWELVE_DATA_SYMBOLS.filter(s => s !== 'SNTS');
+    for (let i = 0; i < remaining.length; i += 8) {
+      const batch = remaining.slice(i, i + 8);
+      const symbols = batch.join(',');
+      const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbols)}&exchange=BRVM&apikey=${apiKey}`;
       const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
       if (!resp.ok) continue;
       const data = await resp.json();
-
       const items = batch.length === 1 ? { [batch[0]]: data } : data;
       for (const [key, item] of Object.entries(items)) {
-        if (item.status === 'error') continue;
-        const ticker = key.replace(':BRVM', '').toUpperCase();
+        if (!item || item.status === 'error') continue;
+        const ticker = key.toUpperCase().replace(/[^A-Z]/g, '');
         if (!KNOWN_TICKERS.has(ticker)) continue;
-        const price = parseFloat(item.close || item.previous_close || 0);
-        if (price <= 1) continue;
-        const changePct = parseFloat(item.percent_change || 0);
-        const volume = parseInt(item.volume || 0, 10);
-        const prev = changePct !== 0 ? Math.round(price / (1 + changePct / 100) * 100) / 100 : price;
-        stocks.push({ ticker, closing_price: price, previous_closing_price: prev,
-                      volume, change_pct: Math.round(changePct * 10000) / 10000 });
+        const stock = buildStockFromTD(ticker, item);
+        if (stock) stocks.push(stock);
       }
-      // Respecter les limites de taux (8 req/min en gratuit)
-      if (batches.indexOf(batch) < batches.length - 1) {
-        await new Promise(r => setTimeout(r, 8000));
-      }
+      if (i + 8 < remaining.length) await new Promise(r => setTimeout(r, 2000));
     }
 
     if (stocks.length >= 5) {
       console.log(`[TwelveData] ${stocks.length} titres récupérés`);
       return stocks;
     }
+    console.log(`[TwelveData] Seulement ${stocks.length} titres valides`);
   } catch (e) {
     console.error('[TwelveData] Erreur:', e.message);
   }
@@ -261,10 +277,10 @@ async function tryPlaywrightWithInterception() {
 
   const capturedApiData = [];
   page.on('response', async (response) => {
-    const url = response.url();
-    const ct = response.headers()['content-type'] || '';
-    if (!ct.includes('json') && !url.includes('json') && !url.includes('api') && !url.includes('cours')) return;
     try {
+      const url = response.url();
+      const ct = response.headers()['content-type'] || '';
+      if (!ct.includes('json') && !url.includes('json') && !url.includes('api') && !url.includes('cours')) return;
       const body = await response.text();
       if (body.length < 50 || !body.includes('[')) return;
       const data = JSON.parse(body);
@@ -275,7 +291,7 @@ async function tryPlaywrightWithInterception() {
         fs.mkdirSync(path.dirname(API_CACHE_FILE), { recursive: true });
         fs.writeFileSync(API_CACHE_FILE, url);
       }
-    } catch {}
+    } catch {} // évite les unhandled rejections qui crashent Node.js
   });
 
   let stocks = [];
@@ -390,5 +406,10 @@ async function main() {
   if (all.length < 10) { console.error('ERREUR: moins de 10 titres'); process.exit(1); }
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+// Filet de sécurité : ne pas crasher sur des promesses non gérées
+process.on('unhandledRejection', (reason) => {
+  console.error('[WARN] Unhandled rejection (non-fatal):', reason);
+});
+
+main().catch(e => { console.error('[FATAL]', e); process.exit(1); });
 # Twelve Data API — clé configurée via secret TWELVE_DATA_API_KEY
