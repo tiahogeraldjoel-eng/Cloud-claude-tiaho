@@ -391,3 +391,4 @@ async function main() {
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
+# Twelve Data API — clé configurée via secret TWELVE_DATA_API_KEY
