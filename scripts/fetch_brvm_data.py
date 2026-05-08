@@ -158,6 +158,29 @@ def parse_brvm_table(html: str) -> list[dict]:
 
 # ── Data sources ──────────────────────────────────────────────────────────────
 
+def fetch_worker() -> list[dict]:
+    """Cloudflare Worker proxy — IPs Cloudflare non bloquées par brvm.org.
+    Retourne les cours officiels brvm.org si disponibles, sinon liste vide."""
+    import urllib.request
+    url = "https://brvm-prices.tiahogeraldjoel.workers.dev?force=1"
+    try:
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read())
+        source = data.get("source", "")
+        if not source or source in ("cache", "error") or "github" in source:
+            print(f"[Worker] Source non fraîche: '{source}' — ignoré")
+            return []
+        stocks = [s for s in data.get("stocks", []) if s.get("ticker") in KNOWN_TICKERS]
+        if len(stocks) >= 5:
+            print(f"[Worker] {len(stocks)} titres cours officiels (source: {source})")
+            return stocks
+        print(f"[Worker] Pas assez de titres ({len(stocks)})")
+    except Exception as e:
+        print(f"[Worker] Erreur: {e}", file=sys.stderr)
+    return []
+
+
 def make_cloudscraper():
     return cloudscraper.create_scraper(
         browser={"browser": "chrome", "platform": "windows", "mobile": False},
@@ -270,17 +293,17 @@ def main():
 
     scraper = make_cloudscraper()
 
-    # Phase 1: SikaFinance bulk via cloudscraper
+    # Phase 1: SikaFinance bulk via cloudscraper (base de données initiale)
     sika_bulk = fetch_sikafinance_bulk(scraper)
     for s in sika_bulk:
         by_ticker[s["ticker"]] = s
 
-    # Phase 2: brvm.org (overrides SikaFinance where available — official source)
+    # Phase 2: brvm.org plain requests (complète les titres manquants)
     brvm = fetch_brvm_org()
     for s in brvm:
         by_ticker[s["ticker"]] = s
 
-    # Phase 3: SikaFinance JSON API for remaining missing tickers
+    # Phase 3: SikaFinance JSON API pour tickers manquants
     missing = KNOWN_TICKERS - set(by_ticker.keys())
     if missing:
         print(f"[API] {len(missing)} tickers manquants → SikaFinance API individuelle")
@@ -290,6 +313,15 @@ def main():
                 by_ticker[ticker] = result
                 print(f"  {ticker}: {result['closing_price']} F")
             time.sleep(0.5)
+
+    # Phase 4: Worker Cloudflare — cours officiels brvm.org (override final)
+    # Le Worker utilise les IPs Cloudflare non bloquées par brvm.org.
+    # Override toute donnée précédente avec les cours officiels si disponibles.
+    worker_stocks = fetch_worker()
+    for s in worker_stocks:
+        by_ticker[s["ticker"]] = s
+    if worker_stocks:
+        print(f"[Worker] Override: {len(worker_stocks)} cours officiels appliqués")
 
     stocks = sorted(by_ticker.values(), key=lambda x: x["ticker"])
     found = len(stocks)
@@ -302,9 +334,10 @@ def main():
     print(f"  SikaFinance bulk : {new_from_sika}")
     print(f"  brvm.org         : {new_from_brvm}")
 
+    source_label = "github-actions-cloudscraper+worker" if worker_stocks else "github-actions-cloudscraper"
     output = {
         "last_updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "source": "github-actions-cloudscraper",
+        "source": source_label,
         "count": found,
         "stocks": stocks,
     }
