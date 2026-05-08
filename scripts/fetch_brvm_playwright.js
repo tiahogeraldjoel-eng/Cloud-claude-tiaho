@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
  * Fetch BRVM stock prices — stratégie multi-sources :
- *  1. Intercepter les requêtes XHR/API de brvm.org via Playwright
- *  2. africainvestment.net (HTML server-side rendu)
- *  3. abidjan.net bourse (HTML server-side rendu)
- *  4. Playwright brvm.org (scraping HTML après JS)
+ *  1. Twelve Data API (couvre la BRVM officiellement, gratuit 800 req/jour)
+ *  2. zonebourse.com (site financier français, couvre BRVM, serveur-rendu)
+ *  3. boursorama.com (portail financier majeur, cotations BRVM)
+ *  4. Playwright brvm.org + interception XHR (découverte API interne)
  *  5. Cache existant
  */
 
@@ -22,6 +22,15 @@ const KNOWN_TICKERS = new Set([
   'SEMC','SGBC','SHEC','SIBC','SICC','SIVC','SLBC','SMBC','SNTS','SOGC',
   'SPHC','STAC','STBC','TTLC','TTLS','UNLC','UNXC',
 ]);
+
+// Twelve Data utilise le préfixe d'exchange BRVM
+const TWELVE_DATA_SYMBOLS = [
+  'ABJC','BICB','BICC','BNBC','BOAB','BOABF','BOAC','BOAM','BOAN','BOAS',
+  'CABC','CBIBF','CFAC','CIEC','ECOC','ETIT','FTSC','LNBB','NEIC','NSBC',
+  'NTLC','ONTBF','ORAC','ORGT','PALC','PRSC','SAFC','SCRC','SDCC','SDSC',
+  'SEMC','SGBC','SHEC','SIBC','SICC','SIVC','SLBC','SMBC','SNTS','SOGC',
+  'SPHC','STAC','STBC','TTLC','TTLS','UNLC','UNXC',
+];
 
 const FETCH_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -92,19 +101,73 @@ function parseHtmlTable(html) {
   return stocks;
 }
 
-// ── Source 1 : API brvm.org mise en cache (si découverte précédemment) ─────────
+// ── Source 1 : Twelve Data API ───────────────────────────────────────────────
+
+async function tryTwelveData() {
+  const apiKey = process.env.TWELVE_DATA_API_KEY;
+  if (!apiKey) {
+    console.log('[TwelveData] Pas de clé API (TWELVE_DATA_API_KEY non défini)');
+    return null;
+  }
+
+  try {
+    console.log('[TwelveData] Requête batch...');
+    // Twelve Data permet 8 symboles par requête en gratuit
+    const batches = [];
+    for (let i = 0; i < TWELVE_DATA_SYMBOLS.length; i += 8) {
+      batches.push(TWELVE_DATA_SYMBOLS.slice(i, i + 8));
+    }
+
+    const stocks = [];
+    for (const batch of batches) {
+      const symbols = batch.map(s => `${s}:BRVM`).join(',');
+      const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbols)}&apikey=${apiKey}`;
+      const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      if (!resp.ok) continue;
+      const data = await resp.json();
+
+      const items = batch.length === 1 ? { [batch[0]]: data } : data;
+      for (const [key, item] of Object.entries(items)) {
+        if (item.status === 'error') continue;
+        const ticker = key.replace(':BRVM', '').toUpperCase();
+        if (!KNOWN_TICKERS.has(ticker)) continue;
+        const price = parseFloat(item.close || item.previous_close || 0);
+        if (price <= 1) continue;
+        const changePct = parseFloat(item.percent_change || 0);
+        const volume = parseInt(item.volume || 0, 10);
+        const prev = changePct !== 0 ? Math.round(price / (1 + changePct / 100) * 100) / 100 : price;
+        stocks.push({ ticker, closing_price: price, previous_closing_price: prev,
+                      volume, change_pct: Math.round(changePct * 10000) / 10000 });
+      }
+      // Respecter les limites de taux (8 req/min en gratuit)
+      if (batches.indexOf(batch) < batches.length - 1) {
+        await new Promise(r => setTimeout(r, 8000));
+      }
+    }
+
+    if (stocks.length >= 5) {
+      console.log(`[TwelveData] ${stocks.length} titres récupérés`);
+      return stocks;
+    }
+  } catch (e) {
+    console.error('[TwelveData] Erreur:', e.message);
+  }
+  return null;
+}
+
+// ── Source 2 : API brvm.org mise en cache ────────────────────────────────────
 
 async function tryCachedApi() {
   try {
     const apiUrl = fs.readFileSync(API_CACHE_FILE, 'utf8').trim();
     if (!apiUrl) return null;
     console.log(`[API cache] Tentative: ${apiUrl}`);
-    const resp = await fetch(apiUrl, { headers: FETCH_HEADERS });
+    const resp = await fetch(apiUrl, { headers: FETCH_HEADERS, signal: AbortSignal.timeout(15000) });
     if (!resp.ok) return null;
     const data = await resp.json();
     const stocks = extractFromBRVMJson(data);
     if (stocks.length >= 5) {
-      console.log(`[API cache] ${stocks.length} titres depuis API mise en cache`);
+      console.log(`[API cache] ${stocks.length} titres`);
       return stocks;
     }
   } catch {}
@@ -129,61 +192,62 @@ function extractFromBRVMJson(data) {
   return stocks;
 }
 
-// ── Source 2 : africainvestment.net ─────────────────────────────────────────
+// ── Source 3 : zonebourse.com ────────────────────────────────────────────────
 
-async function tryAfricaInvestment() {
+async function tryZoneBourse() {
+  // zonebourse.com couvre la BRVM (exchange code XBRV)
   const urls = [
-    'https://www.africainvestment.net/bourse/brvm/',
-    'https://www.africainvestment.net/bourse/brvm/cotations',
-    'https://www.africainvestment.net/BRVM/',
+    'https://www.zonebourse.com/cours/actions/?place=XBRV',
+    'https://www.zonebourse.com/bourse/actions/BRVM/',
+    'https://www.zonebourse.com/bourse/actions/cotations/BRVM-XBRV/',
   ];
   for (const url of urls) {
     try {
-      console.log(`[africainvestment] Tentative: ${url}`);
+      console.log(`[zonebourse] Tentative: ${url}`);
       const resp = await fetch(url, { headers: FETCH_HEADERS, signal: AbortSignal.timeout(20000) });
-      if (!resp.ok) continue;
+      if (!resp.ok) { console.log(`[zonebourse] HTTP ${resp.status}`); continue; }
       const html = await resp.text();
       if (html.length < 500) continue;
       const stocks = parseHtmlTable(html);
       if (stocks.length >= 5) {
-        console.log(`[africainvestment] ${stocks.length} titres`);
+        console.log(`[zonebourse] ${stocks.length} titres`);
         return stocks;
       }
+      console.log(`[zonebourse] ${stocks.length} titres extraits (trop peu)`);
     } catch (e) {
-      console.log(`[africainvestment] Erreur ${url}: ${e.message}`);
+      console.log(`[zonebourse] Erreur: ${e.message}`);
     }
   }
   return null;
 }
 
-// ── Source 3 : abidjan.net ───────────────────────────────────────────────────
+// ── Source 4 : boursorama.com ────────────────────────────────────────────────
 
-async function tryAbidjanNet() {
+async function tryBoursorama() {
   const urls = [
-    'https://www.abidjan.net/bourse/',
-    'https://www.abidjan.net/bourse/cours.asp',
-    'https://www.abidjan.net/bourse/brvm.asp',
+    'https://www.boursorama.com/bourse/actions/cotations/BRVM/',
+    'https://www.boursorama.com/bourse/actions/cotations/?market=2cBRVM',
   ];
   for (const url of urls) {
     try {
-      console.log(`[abidjan.net] Tentative: ${url}`);
+      console.log(`[boursorama] Tentative: ${url}`);
       const resp = await fetch(url, { headers: FETCH_HEADERS, signal: AbortSignal.timeout(20000) });
-      if (!resp.ok) continue;
+      if (!resp.ok) { console.log(`[boursorama] HTTP ${resp.status}`); continue; }
       const html = await resp.text();
       if (html.length < 500) continue;
       const stocks = parseHtmlTable(html);
       if (stocks.length >= 5) {
-        console.log(`[abidjan.net] ${stocks.length} titres`);
+        console.log(`[boursorama] ${stocks.length} titres`);
         return stocks;
       }
     } catch (e) {
-      console.log(`[abidjan.net] Erreur ${url}: ${e.message}`);
+      console.log(`[boursorama] Erreur: ${e.message}`);
     }
   }
   return null;
 }
 
-// ── Source 4 : Playwright brvm.org avec interception XHR ────────────────────
+// ── Source 5 : Playwright brvm.org + interception XHR ───────────────────────
 
 async function tryPlaywrightWithInterception() {
   console.log('[Playwright] Lancement Chromium + interception XHR...');
@@ -195,7 +259,6 @@ async function tryPlaywrightWithInterception() {
   });
   const page = await context.newPage();
 
-  // Intercepter toutes les réponses JSON pour trouver l'API interne
   const capturedApiData = [];
   page.on('response', async (response) => {
     const url = response.url();
@@ -209,7 +272,6 @@ async function tryPlaywrightWithInterception() {
       if (stocks.length >= 3) {
         console.log(`[XHR intercept] API trouvée: ${url} → ${stocks.length} titres`);
         capturedApiData.push({ url, stocks });
-        // Sauvegarder l'URL pour les prochaines exécutions
         fs.mkdirSync(path.dirname(API_CACHE_FILE), { recursive: true });
         fs.writeFileSync(API_CACHE_FILE, url);
       }
@@ -222,17 +284,15 @@ async function tryPlaywrightWithInterception() {
       console.log(`[Playwright] Chargement: ${url}`);
       const response = await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
       if (response && response.status() >= 400) {
-        console.log(`[Playwright] HTTP ${response.status()} pour ${url}`);
+        console.log(`[Playwright] HTTP ${response.status()} — brvm.org bloque cette IP`);
         continue;
       }
 
-      // Utiliser les données interceptées si disponibles
       if (capturedApiData.length > 0) {
         stocks = capturedApiData[0].stocks;
         break;
       }
 
-      // Sinon parser le HTML
       await page.waitForSelector('table tbody tr', { timeout: 15000 }).catch(() => {});
       stocks = await page.evaluate((knownTickers) => {
         const result = [];
@@ -293,16 +353,19 @@ async function main() {
   let stocks = null;
   let source = 'cache';
 
-  // 1. API brvm.org mise en cache
+  // 1. Twelve Data API (si clé dispo)
+  if (!stocks) { stocks = await tryTwelveData(); if (stocks) source = 'twelvedata-api'; }
+
+  // 2. API brvm.org mise en cache
   if (!stocks) { stocks = await tryCachedApi(); if (stocks) source = 'brvm-api-cached'; }
 
-  // 2. africainvestment.net
-  if (!stocks) { stocks = await tryAfricaInvestment(); if (stocks) source = 'africainvestment.net'; }
+  // 3. zonebourse.com
+  if (!stocks) { stocks = await tryZoneBourse(); if (stocks) source = 'zonebourse.com'; }
 
-  // 3. abidjan.net
-  if (!stocks) { stocks = await tryAbidjanNet(); if (stocks) source = 'abidjan.net'; }
+  // 4. boursorama.com
+  if (!stocks) { stocks = await tryBoursorama(); if (stocks) source = 'boursorama.com'; }
 
-  // 4. Playwright brvm.org + interception XHR
+  // 5. Playwright brvm.org + interception XHR
   if (!stocks) { stocks = await tryPlaywrightWithInterception(); if (stocks) source = 'playwright-brvm.org'; }
 
   if (stocks && stocks.length >= 5) {
