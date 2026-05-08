@@ -158,7 +158,50 @@ def parse_brvm_table(html: str) -> list[dict]:
 
 # ── Data sources ──────────────────────────────────────────────────────────────
 
-def fetch_worker() -> list[dict]:
+def fetch_openapi_brvm() -> list[dict]:
+    """API REST officielle BRVM — openapi.brvm.org/api/stocks/
+    Retourne JSON structuré avec closing_price pour tous les titres."""
+    import urllib.request
+    url = "https://openapi.brvm.org/api/stocks/"
+    try:
+        req = urllib.request.Request(url, headers={
+            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0",
+        })
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read())
+        items = data.get("data", data) if isinstance(data, dict) else data
+        if not isinstance(items, list):
+            print("[openapi.brvm.org] Format inattendu")
+            return []
+        stocks = []
+        for item in items:
+            ticker = str(item.get("ticker", "")).upper().strip()
+            if ticker not in KNOWN_TICKERS:
+                continue
+            price = item.get("closing_price") or item.get("last_price") or item.get("price")
+            if not price or float(price) <= 0:
+                continue
+            prev = item.get("previous_closing_price") or price
+            volume = int(item.get("volume") or 0)
+            change_pct = 0.0
+            if prev and float(prev) > 0:
+                change_pct = round((float(price) - float(prev)) / float(prev) * 100, 4)
+            stocks.append({
+                "ticker": ticker,
+                "closing_price": float(price),
+                "previous_closing_price": float(prev),
+                "volume": volume,
+                "change_pct": change_pct,
+            })
+        print(f"[openapi.brvm.org] {len(stocks)} titres")
+        return stocks
+    except Exception as e:
+        print(f"[openapi.brvm.org] Erreur: {e}", file=sys.stderr)
+    return []
+
+
+
     """Cloudflare Worker proxy — IPs Cloudflare non bloquées par brvm.org.
     Retourne les cours officiels brvm.org si disponibles, sinon liste vide."""
     import urllib.request
@@ -291,37 +334,36 @@ def main():
     by_ticker = load_existing()
     print(f"[baseline] {len(by_ticker)} titres en cache")
 
-    scraper = make_cloudscraper()
-
-    # Phase 1: SikaFinance bulk via cloudscraper (base de données initiale)
-    sika_bulk = fetch_sikafinance_bulk(scraper)
-    for s in sika_bulk:
+    # Phase 1: API officielle BRVM (openapi.brvm.org) — source la plus fiable
+    openapi_stocks = fetch_openapi_brvm()
+    for s in openapi_stocks:
         by_ticker[s["ticker"]] = s
 
-    # Phase 2: brvm.org plain requests (complète les titres manquants)
-    brvm = fetch_brvm_org()
-    for s in brvm:
-        by_ticker[s["ticker"]] = s
+    # Phases suivantes seulement si l'API officielle est insuffisante
+    if len(openapi_stocks) < 40:
+        scraper = make_cloudscraper()
 
-    # Phase 3: SikaFinance JSON API pour tickers manquants
-    missing = KNOWN_TICKERS - set(by_ticker.keys())
-    if missing:
-        print(f"[API] {len(missing)} tickers manquants → SikaFinance API individuelle")
-        for ticker in sorted(missing):
-            result = fetch_sikafinance_api(scraper, ticker)
-            if result:
-                by_ticker[ticker] = result
-                print(f"  {ticker}: {result['closing_price']} F")
-            time.sleep(0.5)
+        # Phase 2: SikaFinance bulk via cloudscraper
+        sika_bulk = fetch_sikafinance_bulk(scraper)
+        for s in sika_bulk:
+            if s["ticker"] not in by_ticker:
+                by_ticker[s["ticker"]] = s
 
-    # Phase 4: Worker Cloudflare — cours officiels brvm.org (override final)
-    # Le Worker utilise les IPs Cloudflare non bloquées par brvm.org.
-    # Override toute donnée précédente avec les cours officiels si disponibles.
-    worker_stocks = fetch_worker()
-    for s in worker_stocks:
-        by_ticker[s["ticker"]] = s
-    if worker_stocks:
-        print(f"[Worker] Override: {len(worker_stocks)} cours officiels appliqués")
+        # Phase 3: brvm.org plain requests
+        brvm = fetch_brvm_org()
+        for s in brvm:
+            by_ticker[s["ticker"]] = s
+
+        # Phase 4: SikaFinance JSON API pour tickers encore manquants
+        missing = KNOWN_TICKERS - set(by_ticker.keys())
+        if missing:
+            print(f"[API] {len(missing)} tickers manquants → SikaFinance API")
+            for ticker in sorted(missing):
+                result = fetch_sikafinance_api(scraper, ticker)
+                if result:
+                    by_ticker[ticker] = result
+                    print(f"  {ticker}: {result['closing_price']} F")
+                time.sleep(0.5)
 
     stocks = sorted(by_ticker.values(), key=lambda x: x["ticker"])
     found = len(stocks)
@@ -334,7 +376,7 @@ def main():
     print(f"  SikaFinance bulk : {new_from_sika}")
     print(f"  brvm.org         : {new_from_brvm}")
 
-    source_label = "github-actions-cloudscraper+worker" if worker_stocks else "github-actions-cloudscraper"
+    source_label = "openapi.brvm.org" if len(openapi_stocks) >= 40 else "github-actions-cloudscraper"
     output = {
         "last_updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": source_label,
