@@ -35,6 +35,8 @@ jobs:
           npx playwright install chromium --with-deps
 
       - name: Fetch BRVM stock prices
+        env:
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
         run: node scripts/fetch_brvm_playwright.js
 
       - name: Commit updated prices
