@@ -213,74 +213,129 @@ async function tryTwelveData() {
 // ── Source 2 : fluxbourse.com via Playwright ─────────────────────────────────
 
 async function tryFluxBourse() {
-  console.log('[fluxbourse] Lancement Playwright...');
+  console.log('[fluxbourse] Lancement Playwright + interception API...');
   const browser = await launchBrowser();
   try {
     const context = await newStealthContext(browser);
     const page = await context.newPage();
 
-    const urls = [
-      'https://fluxbourse.com/cotations/brvm/',
+    // Intercepter TOUTES les réponses pour trouver l'API de données
+    const apiHits = [];
+    page.on('response', async (response) => {
+      try {
+        const url = response.url();
+        const ct = response.headers()['content-type'] || '';
+        // Filtrer les ressources statiques sans intérêt
+        if (/\.(css|js|png|jpg|svg|ico|woff|woff2|ttf)(\?|$)/i.test(url)) return;
+        const body = await response.text();
+        if (body.length < 30) return;
+        // Chercher du JSON avec des données financières
+        if (ct.includes('json') || url.includes('api') || url.includes('cours') || url.includes('quote') || url.includes('stock')) {
+          try {
+            const data = JSON.parse(body);
+            const flat = Array.isArray(data) ? data : Object.values(data).find(v => Array.isArray(v)) || [];
+            const hits = flat.filter(row => {
+              const t = String(row.symbol || row.ticker || row.code || row.valeur || row.libelle || '').toUpperCase().replace(/[^A-Z]/g, '');
+              return KNOWN_TICKERS.has(t);
+            });
+            if (hits.length >= 3) {
+              console.log(`[fluxbourse XHR] API trouvée: ${url} → ${hits.length} tickers BRVM`);
+              apiHits.push({ url, data });
+            }
+          } catch {}
+        }
+        // Chercher du HTML avec des tickers BRVM
+        if (ct.includes('html') && ['SNTS','SGBC','ETIT','ECOC'].some(t => body.includes(t))) {
+          const stocks = parseHtmlTable(body);
+          if (stocks.length >= 5) {
+            console.log(`[fluxbourse HTML fragment] ${stocks.length} titres depuis ${url}`);
+            apiHits.push({ url, htmlStocks: stocks });
+          }
+        }
+      } catch {}
+    });
+
+    // Charger la page d'accueil et naviguer vers BRVM
+    const entryUrls = [
+      'https://fluxbourse.com/',
       'https://fluxbourse.com/brvm/',
       'https://fluxbourse.com/cotations/',
-      'https://fluxbourse.com/',
+      'https://fluxbourse.com/marche/brvm/',
     ];
 
-    for (const url of urls) {
+    for (const url of entryUrls) {
       try {
-        console.log(`[fluxbourse] Chargement: ${url}`);
-        const resp = await page.goto(url, { waitUntil: 'networkidle', timeout: 45000 });
-        if (!resp || resp.status() >= 400) {
-          console.log(`[fluxbourse] HTTP ${resp ? resp.status() : 'null'}`);
-          continue;
+        console.log(`[fluxbourse] Navigation: ${url}`);
+        const resp = await page.goto(url, { waitUntil: 'networkidle', timeout: 40000 });
+        const status = resp ? resp.status() : 0;
+        console.log(`[fluxbourse] Status: ${status}`);
+        if (status >= 400) continue;
+
+        // Attendre du contenu dynamique
+        await page.waitForTimeout(3000);
+
+        // Vérifier si des données BRVM sont apparues via XHR
+        if (apiHits.length > 0) {
+          const hit = apiHits[0];
+          if (hit.htmlStocks) {
+            await browser.close();
+            return hit.htmlStocks;
+          }
+          // Extraire depuis JSON capturé
+          const flat = Array.isArray(hit.data) ? hit.data :
+            Object.values(hit.data).find(v => Array.isArray(v)) || [];
+          const stocks = [];
+          for (const row of flat) {
+            const ticker = String(row.symbol || row.ticker || row.code || row.valeur || row.libelle || '').toUpperCase().replace(/[^A-Z]/g, '');
+            if (!KNOWN_TICKERS.has(ticker)) continue;
+            const price = parseNum(String(row.last || row.cours || row.close || row.prix || row.dernier || 0));
+            if (!price || price <= 1) continue;
+            const changePct = parseNum(String(row.var || row.variation || row.change || row.pct || 0)) || 0;
+            const volume = parseInt(String(row.volume || row.vol || 0).replace(/\D/g, ''), 10) || 0;
+            const prev = changePct !== 0 ? Math.round(price / (1 + changePct / 100) * 100) / 100 : price;
+            stocks.push({ ticker, closing_price: price, previous_closing_price: prev,
+                          volume, change_pct: Math.round(changePct * 10000) / 10000 });
+          }
+          if (stocks.length >= 5) {
+            console.log(`[fluxbourse] ${stocks.length} titres via API interceptée`);
+            await browser.close();
+            return stocks;
+          }
         }
 
-        // Attendre un tableau avec des données
-        await page.waitForSelector('table tr, .cours-table, [class*="quote"], [class*="stock"]',
-          { timeout: 15000 }).catch(() => {});
+        // Chercher des tickers BRVM dans le DOM rendu
+        const pageText = await page.evaluate(() => document.body.innerText || '');
+        const hasData = ['SNTS','SGBC','ETIT','ECOC','BOAB'].some(t => pageText.includes(t));
+        console.log(`[fluxbourse] Tickers BRVM dans DOM: ${hasData}`);
 
-        // Chercher des tickers BRVM dans le texte de la page
-        const pageText = await page.evaluate(() => document.body.innerText);
-        const hasKnownTicker = ['SNTS', 'SGBC', 'ETIT', 'ECOC', 'BOAB'].some(t => pageText.includes(t));
-        if (!hasKnownTicker) {
-          console.log(`[fluxbourse] Pas de tickers BRVM détectés sur ${url}`);
-          continue;
+        if (hasData) {
+          // Essayer d'extraire du tableau DOM
+          const stocks = await extractTableFromPage(page);
+          if (stocks.length >= 5) {
+            console.log(`[fluxbourse] ${stocks.length} titres depuis DOM`);
+            await browser.close();
+            return stocks;
+          }
+
+          // Afficher un extrait du contenu pour debug
+          const snippet = pageText.substring(0, 500).replace(/\n+/g, ' ');
+          console.log(`[fluxbourse] Extrait page: ${snippet}`);
         }
 
-        const stocks = await extractTableFromPage(page);
-        if (stocks.length >= 5) {
-          console.log(`[fluxbourse] ${stocks.length} titres extraits`);
-          await browser.close();
-          return stocks;
+        // Chercher des liens vers BRVM et cliquer dessus
+        const brvmLink = await page.$('a[href*="brvm"], a[href*="BRVM"], a:text-matches("BRVM", "i")').catch(() => null);
+        if (brvmLink) {
+          console.log('[fluxbourse] Lien BRVM trouvé, navigation...');
+          await brvmLink.click();
+          await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+          await page.waitForTimeout(2000);
+          const stocks = await extractTableFromPage(page);
+          if (stocks.length >= 5) {
+            console.log(`[fluxbourse] ${stocks.length} titres après navigation`);
+            await browser.close();
+            return stocks;
+          }
         }
-
-        // Essayer de trouver les données dans des éléments non-table
-        const stocksAlt = await page.evaluate((knownTickers) => {
-          const result = [];
-          const allText = document.querySelectorAll('[class*="ticker"], [class*="symbol"], [class*="code"], td, .row');
-          allText.forEach(el => {
-            const text = el.innerText || '';
-            const ticker = text.trim().toUpperCase().replace(/[^A-Z]/g, '');
-            if (!knownTickers.includes(ticker)) return;
-            const parent = el.closest('tr, .row, [class*="item"], li');
-            if (!parent) return;
-            const nums = (parent.innerText || '').match(/[\d\s]+[,.][\d]+/g) || [];
-            if (nums.length === 0) return;
-            const price = parseFloat(nums[0].replace(/\s/g, '').replace(',', '.'));
-            if (price > 10 && price < 10000000) {
-              result.push({ ticker, closing_price: price, previous_closing_price: price,
-                            volume: 0, change_pct: 0 });
-            }
-          });
-          return result;
-        }, Array.from(KNOWN_TICKERS));
-
-        if (stocksAlt.length >= 5) {
-          console.log(`[fluxbourse] ${stocksAlt.length} titres (méthode alt)`);
-          await browser.close();
-          return stocksAlt;
-        }
-        console.log(`[fluxbourse] ${stocks.length} titres sur ${url} (insuffisant)`);
       } catch (e) {
         console.log(`[fluxbourse] Erreur ${url}: ${e.message}`);
       }
