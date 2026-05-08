@@ -152,7 +152,35 @@ async function extractTableFromPage(page) {
   }, Array.from(knownTickers));
 }
 
-// ── Source 1 : Twelve Data API ───────────────────────────────────────────────
+// ── Source 1 : Cloudflare Worker (IPs Cloudflare, non bloquées) ─────────────
+
+async function tryWorker() {
+  try {
+    console.log('[Worker] Appel Worker (IPs Cloudflare → contourne Azure block)...');
+    const resp = await fetch(
+      'https://brvm-prices.tiahogeraldjoel.workers.dev?force=1',
+      { headers: { 'Accept': 'application/json' }, signal: AbortSignal.timeout(30000) }
+    );
+    if (!resp.ok) { console.log(`[Worker] HTTP ${resp.status}`); return null; }
+    const data = await resp.json();
+    const source = data.source || '';
+    if (!source || source === 'cache' || source === 'error' || source.includes('github')) {
+      console.log(`[Worker] Source non fraîche: "${source}" — données en cache uniquement`);
+      return null;
+    }
+    const stocks = (data.stocks || []).filter(s => KNOWN_TICKERS.has(s.ticker));
+    if (stocks.length >= 5) {
+      console.log(`[Worker] ${stocks.length} titres live (source Worker: ${source})`);
+      return stocks;
+    }
+    console.log(`[Worker] Pas assez de titres: ${stocks.length}`);
+  } catch (e) {
+    console.error('[Worker] Erreur:', e.message);
+  }
+  return null;
+}
+
+// ── Source 2 : Twelve Data API ───────────────────────────────────────────────
 
 function buildStockFromTD(ticker, item) {
   const price = parseFloat(item.close || item.previous_close || 0);
@@ -466,6 +494,7 @@ async function main() {
   let stocks = null;
   let source = 'cache';
 
+  if (!stocks) { stocks = await tryWorker();      if (stocks) source = 'worker-cloudflare'; }
   if (!stocks) { stocks = await tryTwelveData();  if (stocks) source = 'twelvedata-api'; }
   if (!stocks) { stocks = await tryFluxBourse();  if (stocks) source = 'fluxbourse.com'; }
   if (!stocks) { stocks = await tryCachedApi();   if (stocks) source = 'brvm-api-cached'; }

@@ -178,6 +178,31 @@ async function fetchSikaFinance() {
   return null;
 }
 
+async function fetchFluxBourse() {
+  const urls = [
+    'https://fluxbourse.com/brvm/',
+    'https://fluxbourse.com/cotations/',
+    'https://fluxbourse.com/',
+  ];
+  for (const url of urls) {
+    try {
+      const resp = await fetch(url, { headers: SCRAPE_HEADERS, cf: { cacheTtl: 0 } });
+      if (!resp.ok) continue;
+      const html = await resp.text();
+      if (html.length < 500) continue;
+      if (!['SNTS', 'SGBC', 'ETIT', 'ECOC'].some(t => html.includes(t))) continue;
+      const stocks = parseBRVMTable(html);
+      if (stocks.length >= 5) {
+        console.log(`[fluxbourse] ${stocks.length} titres depuis ${url}`);
+        return { stocks, last_updated: new Date().toISOString(), source: 'fluxbourse-live', count: stocks.length };
+      }
+    } catch (e) {
+      console.error('[fluxbourse] Erreur:', e.message);
+    }
+  }
+  return null;
+}
+
 async function fetchGithubRaw() {
   try {
     const resp = await fetch(GITHUB_RAW_URL, {
@@ -192,15 +217,18 @@ async function fetchGithubRaw() {
   }
 }
 
-async function getStockData(ctx) {
+async function getStockData(ctx, forceRefresh = false) {
   const cache = caches.default;
   const cacheKey = new Request('https://brvm-edge-cache/stocks-v2');
 
-  const cached = await cache.match(cacheKey);
-  if (cached) return await cached.json();
+  if (!forceRefresh) {
+    const cached = await cache.match(cacheKey);
+    if (cached) return await cached.json();
+  }
 
   let data = await fetchBRVMorg();
   if (!data) data = await fetchSikaFinance();
+  if (!data) data = await fetchFluxBourse();
   if (!data) data = await fetchGithubRaw();
 
   if (!data) return { last_updated: null, source: 'error', count: 0, stocks: [] };
@@ -222,7 +250,8 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/$/, '') || '/';
 
-    const stockData = await getStockData(ctx);
+    const forceRefresh = url.searchParams.get('force') === '1';
+    const stockData = await getStockData(ctx, forceRefresh);
 
     if (path === '/health') {
       return jsonResponse({
