@@ -4,8 +4,10 @@ import com.brvm.intelligence.data.local.dao.PriceHistoryDao
 import com.brvm.intelligence.data.local.dao.StockDao
 import com.brvm.intelligence.data.local.entity.toDomain
 import com.brvm.intelligence.data.ml.BRVMPredictor
+import com.brvm.intelligence.data.ml.FundamentalAnalyzer
 import com.brvm.intelligence.data.ml.MarketSentimentAnalyzer
 import com.brvm.intelligence.data.ml.TechnicalIndicatorCalculator
+import com.brvm.intelligence.data.ml.ValuationSignal
 import com.brvm.intelligence.domain.model.*
 import com.brvm.intelligence.domain.repository.AnalysisRepository
 import com.brvm.intelligence.domain.repository.PortfolioAnalysis
@@ -22,7 +24,8 @@ class AnalysisRepositoryImpl @Inject constructor(
     private val priceHistoryDao: PriceHistoryDao,
     private val technicalCalculator: TechnicalIndicatorCalculator,
     private val sentimentAnalyzer: MarketSentimentAnalyzer,
-    private val predictor: BRVMPredictor
+    private val predictor: BRVMPredictor,
+    private val fundamentalAnalyzer: FundamentalAnalyzer,
 ) : AnalysisRepository {
 
     override suspend fun getTechnicalAnalysis(symbol: String): TechnicalAnalysis {
@@ -60,53 +63,73 @@ class AnalysisRepositoryImpl @Inject constructor(
         val currentPrice = stock.currentPrice
         val signal = technicalAnalysis.overallSignal
 
+        // Analyse fondamentale — valorisation et ajustement de confiance
+        val fundamental = fundamentalAnalyzer.analyze(stock)
+
+        // Ajuster le signal si fondamentaux contredisent le technique
+        val adjustedSignal = adjustSignalWithFundamentals(signal, fundamental.valuationSignal)
+
         // Calcul des niveaux de trade
-        val stopLoss = when (signal) {
+        val stopLoss = when (adjustedSignal) {
             TradingSignal.STRONG_BUY, TradingSignal.BUY ->
                 technicalAnalysis.supportResistance.nearestSupport * 0.98
             else -> currentPrice * 0.93
         }
 
-        val takeProfits = when (signal) {
+        // Prix cibles : utilise la juste valeur fondamentale si disponible
+        val fundamentalTarget = fundamental.estimatedFairValue
+        val takeProfits = when (adjustedSignal) {
             TradingSignal.STRONG_BUY -> listOf(
                 currentPrice * 1.05,
                 currentPrice * 1.10,
-                technicalAnalysis.supportResistance.nearestResistance
+                fundamentalTarget ?: technicalAnalysis.supportResistance.nearestResistance
             )
             TradingSignal.BUY -> listOf(
                 currentPrice * 1.04,
-                technicalAnalysis.supportResistance.nearestResistance
+                fundamentalTarget ?: technicalAnalysis.supportResistance.nearestResistance
             )
-            else -> listOf(currentPrice)
+            else -> listOf(fundamentalTarget ?: currentPrice)
         }
 
         val riskReward = if (currentPrice - stopLoss > 0) {
             (takeProfits.first() - currentPrice) / (currentPrice - stopLoss)
         } else 0.0
 
-        // Position sizing basé sur le risque (règle des 2%)
+        // Position sizing basé sur le risque (règle des 2%) + ajustement liquidité
         val riskPercent = (currentPrice - stopLoss) / currentPrice * 100
-        val positionSize = if (riskPercent > 0) minOf(2.0 / riskPercent * 100, 20.0) else 5.0
+        val basePositionSize = if (riskPercent > 0) minOf(2.0 / riskPercent * 100, 20.0) else 5.0
+        val liquidityMultiplier = when (stock.liquidityLevel) {
+            LiquidityLevel.VERY_LOW -> 0.5
+            LiquidityLevel.LOW      -> 0.7
+            else                    -> 1.0
+        }
+        val positionSize = basePositionSize * liquidityMultiplier * fundamental.confidenceAdjustment
 
-        // Prix cible DCF simplifié (PER moyen secteur × BNA estimé)
-        val dcfValue = stock.per?.let { per ->
-            if (per > 0) currentPrice * 1.15 else null
+        // Valorisation : juste valeur fondamentale ou null si données absentes
+        val dcfValue = fundamental.estimatedFairValue
+        // Comparaison sectorielle = juste valeur ± 5% selon la méthode
+        val sectorComparable = dcfValue?.let { fv ->
+            when (fundamental.valuationSignal) {
+                ValuationSignal.UNDERVALUED -> fv * 1.05
+                ValuationSignal.OVERVALUED  -> fv * 0.95
+                else                        -> fv
+            }
         }
 
-        val rationale = buildTradeRationale(signal, technicalAnalysis, prediction, stock)
+        val rationale = buildTradeRationale(adjustedSignal, technicalAnalysis, prediction, stock, fundamental)
 
         return TradeRecommendation(
             symbol = symbol,
-            signal = signal,
+            signal = adjustedSignal,
             entryPrice = currentPrice,
             stopLoss = stopLoss,
             takeProfitLevels = takeProfits,
             riskRewardRatio = riskReward,
             positionSizePercent = positionSize,
-            timeHorizon = determineTimeHorizon(signal, prediction),
+            timeHorizon = determineTimeHorizon(adjustedSignal, prediction),
             rationale = rationale,
             dcfValuation = dcfValue,
-            sectorComparableValuation = dcfValue?.let { it * 1.05 },
+            sectorComparableValuation = sectorComparable,
             priceTarget = takeProfits.last()
         )
     }
@@ -247,27 +270,84 @@ class AnalysisRepositoryImpl @Inject constructor(
         signal: TradingSignal,
         analysis: TechnicalAnalysis,
         prediction: StockPrediction,
-        stock: Stock
+        stock: Stock,
+        fundamental: com.brvm.intelligence.data.ml.FundamentalAssessment,
     ): String {
+        val adjustedConfidence = (analysis.signalConfidence * fundamental.confidenceAdjustment).toInt()
         val sb = StringBuilder()
         sb.appendLine("## Raisonnement de l'analyse")
         sb.appendLine()
-        sb.appendLine("**Signal global : ${signal.displayName}** (confiance ${analysis.signalConfidence}%)")
+        sb.appendLine("**Signal global : ${signal.displayName}** (confiance ajustée ${adjustedConfidence}%)")
         sb.appendLine()
+
+        // ── Analyse technique ────────────────────────────────────────────────
         sb.appendLine("**Analyse technique :**")
         sb.appendLine("• RSI ${String.format("%.1f", analysis.rsi.value)} : ${analysis.rsi.signal.name}")
         sb.appendLine("• MACD : ${analysis.macd.signal.name}")
-        sb.appendLine("• Tendance : ${analysis.movingAverages.trend.displayName}")
+        sb.appendLine("• Tendance MA : ${analysis.movingAverages.trend.displayName}")
+        sb.appendLine("• Bollinger : ${analysis.bollingerBands.signal.name}")
         sb.appendLine()
+
+        // ── Prédiction IA ────────────────────────────────────────────────────
         sb.appendLine("**Prédiction IA :**")
-        sb.appendLine("• ${prediction.classification.displayName} (probabilité ${String.format("%.0f", prediction.classificationProbability * 100)}%)")
+        sb.appendLine("• ${prediction.classification.displayName} " +
+                "(probabilité ${String.format("%.0f", prediction.classificationProbability * 100)}%)")
         sb.appendLine()
+
+        // ── Valorisation fondamentale ────────────────────────────────────────
+        sb.appendLine("**Valorisation fondamentale :** ${fundamental.valuationSignal.emoji} ${fundamental.valuationSignal.displayName}")
+        if (fundamental.estimatedFairValue != null) {
+            val premium = (stock.currentPrice - fundamental.estimatedFairValue) /
+                    fundamental.estimatedFairValue * 100
+            val premiumStr = if (premium >= 0) "+${String.format("%.1f", premium)}%" else "${String.format("%.1f", premium)}%"
+            sb.appendLine("• Juste valeur estimée : ${String.format("%,.0f", fundamental.estimatedFairValue)} FCFA " +
+                    "(cours actuel : $premiumStr vs juste valeur)")
+            sb.appendLine("• Méthode : ${fundamental.valuationMethod}")
+        }
+        fundamental.perAnalysis?.let { sb.appendLine("• PER : $it") }
+        fundamental.dividendAnalysis?.let { sb.appendLine("• Dividende : $it") }
+
+        // Position dans le range 52 semaines
+        val rangePos = String.format("%.0f", fundamental.positionIn52WeekRange * 100)
+        val rangeLabel = when {
+            fundamental.positionIn52WeekRange <= 0.25 -> "proche du bas 52s (potentiellement survendu)"
+            fundamental.positionIn52WeekRange >= 0.75 -> "proche du haut 52s (potentiellement suracheté)"
+            else                                      -> "dans la zone médiane 52s"
+        }
+        sb.appendLine("• Range 52 semaines : $rangePos% ($rangeLabel)")
+        sb.appendLine("  [bas: ${String.format("%,.0f", stock.low52Week)} — haut: ${String.format("%,.0f", stock.high52Week)} FCFA]")
+        sb.appendLine()
+
+        // ── Alertes ──────────────────────────────────────────────────────────
+        fundamental.dataQualityWarning?.let {
+            sb.appendLine(it)
+            sb.appendLine()
+        }
         if (stock.liquidityLevel == LiquidityLevel.LOW || stock.liquidityLevel == LiquidityLevel.VERY_LOW) {
             sb.appendLine("⚠️ **ALERTE LIQUIDITÉ** : ${stock.liquidityLevel.warningMessage}")
             sb.appendLine()
         }
         sb.appendLine("*Information à titre indicatif uniquement. Non conseil financier réglementé AMF-UMOA.*")
         return sb.toString()
+    }
+
+    /** Modère le signal technique quand les fondamentaux sont opposés. */
+    private fun adjustSignalWithFundamentals(
+        technicalSignal: TradingSignal,
+        valuationSignal: ValuationSignal,
+    ): TradingSignal {
+        return when {
+            // Technique haussier + fondamentaux sur-évalués → rabaisser d'un cran
+            technicalSignal == TradingSignal.STRONG_BUY &&
+                    valuationSignal == ValuationSignal.OVERVALUED -> TradingSignal.BUY
+
+            // Technique baissier + fondamentaux sous-évalués → rabaisser d'un cran
+            technicalSignal == TradingSignal.STRONG_SELL &&
+                    valuationSignal == ValuationSignal.UNDERVALUED -> TradingSignal.SELL
+
+            // Données inconnues : garder le signal technique sans modification
+            else -> technicalSignal
+        }
     }
 
     private fun determineTimeHorizon(signal: TradingSignal, prediction: StockPrediction): String {
