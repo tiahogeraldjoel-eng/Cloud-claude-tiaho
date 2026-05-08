@@ -1,6 +1,6 @@
 name = "brvm-prices"
 main = "src/index.js"
-compatibility_date = "2025-05-08"
+compatibility_date = "2025-09-08"
 compatibility_flags = ["nodejs_compat"]
 
 [observability]
