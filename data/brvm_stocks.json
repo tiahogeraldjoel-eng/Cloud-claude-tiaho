@@ -1,336 +1,336 @@
 {
-  "last_updated": "2026-05-08T15:50:09Z",
+  "last_updated": "2026-05-12T21:42:08Z",
   "source": "github-actions-cloudscraper",
   "count": 47,
   "stocks": [
     {
       "ticker": "ABJC",
-      "closing_price": 2975.0,
-      "previous_closing_price": 3000.0,
-      "volume": 1988,
-      "change_pct": -0.8333
+      "closing_price": 2980.0,
+      "previous_closing_price": 2985.0,
+      "volume": 7588,
+      "change_pct": -0.1675
     },
     {
       "ticker": "BICB",
-      "closing_price": 5225.0,
-      "previous_closing_price": 5225.0,
-      "volume": 3826,
-      "change_pct": 0.0
+      "closing_price": 5200.0,
+      "previous_closing_price": 5170.0,
+      "volume": 1578,
+      "change_pct": 0.5803
     },
     {
       "ticker": "BICC",
-      "closing_price": 26000.0,
-      "previous_closing_price": 26000.0,
-      "volume": 1041,
-      "change_pct": 0.0
+      "closing_price": 26300.0,
+      "previous_closing_price": 26200.0,
+      "volume": 561,
+      "change_pct": 0.3817
     },
     {
       "ticker": "BNBC",
-      "closing_price": 1300.0,
-      "previous_closing_price": 1275.0,
-      "volume": 8921,
-      "change_pct": 1.9608
+      "closing_price": 1495.0,
+      "previous_closing_price": 1490.0,
+      "volume": 7896,
+      "change_pct": 0.3356
     },
     {
       "ticker": "BOAB",
-      "closing_price": 9400.0,
-      "previous_closing_price": 9300.0,
-      "volume": 7963,
-      "change_pct": 1.0753
+      "closing_price": 9420.0,
+      "previous_closing_price": 9405.0,
+      "volume": 11117,
+      "change_pct": 0.1595
     },
     {
       "ticker": "BOABF",
-      "closing_price": 5400.0,
-      "previous_closing_price": 5400.0,
-      "volume": 1414,
+      "closing_price": 5410.0,
+      "previous_closing_price": 5410.0,
+      "volume": 5219,
       "change_pct": 0.0
     },
     {
       "ticker": "BOAC",
-      "closing_price": 8705.0,
+      "closing_price": 8585.0,
       "previous_closing_price": 8650.0,
-      "volume": 8623,
-      "change_pct": 0.6358
+      "volume": 7396,
+      "change_pct": -0.7514
     },
     {
       "ticker": "BOAM",
-      "closing_price": 4700.0,
-      "previous_closing_price": 4690.0,
-      "volume": 3183,
-      "change_pct": 0.2132
+      "closing_price": 4680.0,
+      "previous_closing_price": 4685.0,
+      "volume": 4155,
+      "change_pct": -0.1067
     },
     {
       "ticker": "BOAN",
-      "closing_price": 3485.0,
-      "previous_closing_price": 3500.0,
-      "volume": 10423,
-      "change_pct": -0.4286
+      "closing_price": 3440.0,
+      "previous_closing_price": 3450.0,
+      "volume": 5724,
+      "change_pct": -0.2899
     },
     {
       "ticker": "BOAS",
-      "closing_price": 7390.0,
-      "previous_closing_price": 7265.0,
-      "volume": 4296,
-      "change_pct": 1.7206
+      "closing_price": 7500.0,
+      "previous_closing_price": 7450.0,
+      "volume": 8857,
+      "change_pct": 0.6711
     },
     {
       "ticker": "CABC",
-      "closing_price": 3500.0,
-      "previous_closing_price": 3500.0,
-      "volume": 1096,
+      "closing_price": 3400.0,
+      "previous_closing_price": 3400.0,
+      "volume": 514,
       "change_pct": 0.0
     },
     {
       "ticker": "CBIBF",
-      "closing_price": 16800.0,
-      "previous_closing_price": 16600.0,
-      "volume": 1024,
-      "change_pct": 1.2048
+      "closing_price": 17400.0,
+      "previous_closing_price": 17495.0,
+      "volume": 1535,
+      "change_pct": -0.543
     },
     {
       "ticker": "CFAC",
-      "closing_price": 1385.0,
-      "previous_closing_price": 1400.0,
-      "volume": 2459,
-      "change_pct": -1.0714
+      "closing_price": 1380.0,
+      "previous_closing_price": 1380.0,
+      "volume": 1999,
+      "change_pct": 0.0
     },
     {
       "ticker": "CIEC",
-      "closing_price": 3330.0,
-      "previous_closing_price": 3345.0,
-      "volume": 6545,
-      "change_pct": -0.4484
+      "closing_price": 3295.0,
+      "previous_closing_price": 3295.0,
+      "volume": 4424,
+      "change_pct": 0.0
     },
     {
       "ticker": "ECOC",
-      "closing_price": 16800.0,
-      "previous_closing_price": 16800.0,
-      "volume": 900,
-      "change_pct": 0.0
+      "closing_price": 16200.0,
+      "previous_closing_price": 16205.0,
+      "volume": 4831,
+      "change_pct": -0.0309
     },
     {
       "ticker": "ETIT",
       "closing_price": 30.0,
       "previous_closing_price": 30.0,
-      "volume": 535809,
+      "volume": 331249,
       "change_pct": 0.0
     },
     {
       "ticker": "FTSC",
-      "closing_price": 2220.0,
-      "previous_closing_price": 2250.0,
-      "volume": 952,
-      "change_pct": -1.3333
+      "closing_price": 2240.0,
+      "previous_closing_price": 2200.0,
+      "volume": 1798,
+      "change_pct": 1.8182
     },
     {
       "ticker": "LNBB",
-      "closing_price": 3845.0,
-      "previous_closing_price": 3860.0,
-      "volume": 5802,
-      "change_pct": -0.3886
+      "closing_price": 3865.0,
+      "previous_closing_price": 3865.0,
+      "volume": 2217,
+      "change_pct": 0.0
     },
     {
       "ticker": "NEIC",
-      "closing_price": 1745.0,
-      "previous_closing_price": 1745.0,
-      "volume": 5933,
+      "closing_price": 1890.0,
+      "previous_closing_price": 1890.0,
+      "volume": 12358,
       "change_pct": 0.0
     },
     {
       "ticker": "NSBC",
-      "closing_price": 14010.0,
-      "previous_closing_price": 14000.0,
-      "volume": 1323,
-      "change_pct": 0.0714
+      "closing_price": 13810.0,
+      "previous_closing_price": 13850.0,
+      "volume": 1964,
+      "change_pct": -0.2888
     },
     {
       "ticker": "NTLC",
-      "closing_price": 11650.0,
-      "previous_closing_price": 11650.0,
-      "volume": 902,
+      "closing_price": 11700.0,
+      "previous_closing_price": 11700.0,
+      "volume": 470,
       "change_pct": 0.0
     },
     {
       "ticker": "ONTBF",
-      "closing_price": 2760.0,
-      "previous_closing_price": 2845.0,
-      "volume": 622,
-      "change_pct": -2.9877
+      "closing_price": 2680.0,
+      "previous_closing_price": 2700.0,
+      "volume": 592,
+      "change_pct": -0.7407
     },
     {
       "ticker": "ORAC",
-      "closing_price": 14920.0,
-      "previous_closing_price": 15200.0,
-      "volume": 350,
-      "change_pct": -1.8421
+      "closing_price": 15050.0,
+      "previous_closing_price": 15100.0,
+      "volume": 492,
+      "change_pct": -0.3311
     },
     {
       "ticker": "ORGT",
-      "closing_price": 2550.0,
-      "previous_closing_price": 2550.0,
-      "volume": 17676,
-      "change_pct": 0.0
+      "closing_price": 2740.0,
+      "previous_closing_price": 2750.0,
+      "volume": 10458,
+      "change_pct": -0.3636
     },
     {
       "ticker": "PALC",
-      "closing_price": 7800.0,
-      "previous_closing_price": 7900.0,
-      "volume": 1399,
-      "change_pct": -1.2658
+      "closing_price": 7850.0,
+      "previous_closing_price": 7800.0,
+      "volume": 1639,
+      "change_pct": 0.641
     },
     {
       "ticker": "PRSC",
-      "closing_price": 3695.0,
-      "previous_closing_price": 3695.0,
-      "volume": 920,
-      "change_pct": 0.0
+      "closing_price": 3690.0,
+      "previous_closing_price": 3650.0,
+      "volume": 850,
+      "change_pct": 1.0959
     },
     {
       "ticker": "SAFC",
-      "closing_price": 3500.0,
-      "previous_closing_price": 3500.0,
-      "volume": 7960,
+      "closing_price": 3745.0,
+      "previous_closing_price": 3745.0,
+      "volume": 33876,
       "change_pct": 0.0
     },
     {
       "ticker": "SCRC",
-      "closing_price": 2405.0,
-      "previous_closing_price": 2405.0,
-      "volume": 16410,
-      "change_pct": 0.0
+      "closing_price": 2285.0,
+      "previous_closing_price": 2260.0,
+      "volume": 8131,
+      "change_pct": 1.1062
     },
     {
       "ticker": "SDCC",
-      "closing_price": 9095.0,
-      "previous_closing_price": 9095.0,
-      "volume": 582,
+      "closing_price": 9395.0,
+      "previous_closing_price": 9395.0,
+      "volume": 1414,
       "change_pct": 0.0
     },
     {
       "ticker": "SDSC",
       "closing_price": 1745.0,
       "previous_closing_price": 1745.0,
-      "volume": 109506,
+      "volume": 12445,
       "change_pct": 0.0
     },
     {
       "ticker": "SEMC",
-      "closing_price": 1525.0,
-      "previous_closing_price": 1555.0,
-      "volume": 4479,
-      "change_pct": -1.9293
+      "closing_price": 1500.0,
+      "previous_closing_price": 1505.0,
+      "volume": 4159,
+      "change_pct": -0.3322
     },
     {
       "ticker": "SGBC",
-      "closing_price": 34500.0,
-      "previous_closing_price": 34500.0,
-      "volume": 1961,
-      "change_pct": 0.0
+      "closing_price": 34990.0,
+      "previous_closing_price": 34800.0,
+      "volume": 1717,
+      "change_pct": 0.546
     },
     {
       "ticker": "SHEC",
-      "closing_price": 1945.0,
-      "previous_closing_price": 1940.0,
-      "volume": 4166,
-      "change_pct": 0.2577
+      "closing_price": 1940.0,
+      "previous_closing_price": 1945.0,
+      "volume": 3609,
+      "change_pct": -0.2571
     },
     {
       "ticker": "SIBC",
-      "closing_price": 7095.0,
-      "previous_closing_price": 7150.0,
-      "volume": 4043,
-      "change_pct": -0.7692
+      "closing_price": 7295.0,
+      "previous_closing_price": 7290.0,
+      "volume": 4674,
+      "change_pct": 0.0686
     },
     {
       "ticker": "SICC",
-      "closing_price": 4290.0,
-      "previous_closing_price": 4300.0,
-      "volume": 100,
-      "change_pct": -0.2326
+      "closing_price": 4390.0,
+      "previous_closing_price": 4400.0,
+      "volume": 26,
+      "change_pct": -0.2273
     },
     {
       "ticker": "SIVC",
-      "closing_price": 2845.0,
-      "previous_closing_price": 2850.0,
-      "volume": 2079,
-      "change_pct": -0.1754
+      "closing_price": 2860.0,
+      "previous_closing_price": 2855.0,
+      "volume": 4743,
+      "change_pct": 0.1751
     },
     {
       "ticker": "SLBC",
       "closing_price": 37500.0,
-      "previous_closing_price": 37500.0,
-      "volume": 118,
-      "change_pct": 0.0
+      "previous_closing_price": 37900.0,
+      "volume": 453,
+      "change_pct": -1.0554
     },
     {
       "ticker": "SMBC",
-      "closing_price": 11995.0,
-      "previous_closing_price": 12200.0,
-      "volume": 1319,
-      "change_pct": -1.6803
+      "closing_price": 12685.0,
+      "previous_closing_price": 12690.0,
+      "volume": 375,
+      "change_pct": -0.0394
     },
     {
       "ticker": "SNTS",
-      "closing_price": 28900.0,
-      "previous_closing_price": 28900.0,
-      "volume": 3362,
-      "change_pct": 0.0
+      "closing_price": 28910.0,
+      "previous_closing_price": 29000.0,
+      "volume": 12483,
+      "change_pct": -0.3103
     },
     {
       "ticker": "SOGC",
-      "closing_price": 7390.0,
+      "closing_price": 7400.0,
       "previous_closing_price": 7400.0,
-      "volume": 1124,
-      "change_pct": -0.1351
+      "volume": 2237,
+      "change_pct": 0.0
     },
     {
       "ticker": "SPHC",
-      "closing_price": 7050.0,
-      "previous_closing_price": 7100.0,
-      "volume": 539,
-      "change_pct": -0.7042
+      "closing_price": 6995.0,
+      "previous_closing_price": 7000.0,
+      "volume": 838,
+      "change_pct": -0.0714
     },
     {
       "ticker": "STAC",
-      "closing_price": 2660.0,
-      "previous_closing_price": 2655.0,
-      "volume": 3203,
-      "change_pct": 0.1883
+      "closing_price": 2600.0,
+      "previous_closing_price": 2600.0,
+      "volume": 2364,
+      "change_pct": 0.0
     },
     {
       "ticker": "STBC",
-      "closing_price": 21500.0,
-      "previous_closing_price": 21300.0,
-      "volume": 3796,
-      "change_pct": 0.939
+      "closing_price": 21050.0,
+      "previous_closing_price": 21290.0,
+      "volume": 3004,
+      "change_pct": -1.1273
     },
     {
       "ticker": "TTLC",
-      "closing_price": 2750.0,
-      "previous_closing_price": 2720.0,
-      "volume": 4953,
-      "change_pct": 1.1029
+      "closing_price": 3060.0,
+      "previous_closing_price": 3060.0,
+      "volume": 19254,
+      "change_pct": 0.0
     },
     {
       "ticker": "TTLS",
-      "closing_price": 2950.0,
-      "previous_closing_price": 3000.0,
-      "volume": 2197,
-      "change_pct": -1.6667
+      "closing_price": 2845.0,
+      "previous_closing_price": 2820.0,
+      "volume": 2044,
+      "change_pct": 0.8865
     },
     {
       "ticker": "UNLC",
-      "closing_price": 56000.0,
-      "previous_closing_price": 56000.0,
-      "volume": 14,
+      "closing_price": 56100.0,
+      "previous_closing_price": 56100.0,
+      "volume": 21,
       "change_pct": 0.0
     },
     {
       "ticker": "UNXC",
-      "closing_price": 1805.0,
-      "previous_closing_price": 1815.0,
-      "volume": 8086,
-      "change_pct": -0.551
+      "closing_price": 1825.0,
+      "previous_closing_price": 1835.0,
+      "volume": 9600,
+      "change_pct": -0.545
     }
   ]
 }
