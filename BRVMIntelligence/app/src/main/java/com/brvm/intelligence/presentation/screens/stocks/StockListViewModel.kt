@@ -20,11 +20,13 @@ import javax.inject.Inject
 data class StockListUiState(
     val stocks: List<Stock> = emptyList(),
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val searchQuery: String = "",
     val selectedSector: BRVMSector? = null,
     val sortOrder: StockSortOrder = StockSortOrder.MARKET_CAP,
     val error: String? = null,
-    val lastUpdatedLabel: String? = null
+    val lastUpdatedLabel: String? = null,
+    val refreshMessage: String? = null
 )
 
 enum class StockSortOrder(val displayName: String) {
@@ -95,10 +97,20 @@ class StockListViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            refreshMarketDataUseCase()
+            _uiState.update { it.copy(isRefreshing = true, refreshMessage = null) }
+            val result = refreshMarketDataUseCase()
             updateLastUpdatedLabel()
+            _uiState.update { state ->
+                state.copy(
+                    isRefreshing = false,
+                    refreshMessage = if (result.isSuccess) "Cours mis à jour" else "Mise à jour échouée"
+                )
+            }
         }
+    }
+
+    fun clearRefreshMessage() {
+        _uiState.update { it.copy(refreshMessage = null) }
     }
 
     private suspend fun updateLastUpdatedLabel() {
