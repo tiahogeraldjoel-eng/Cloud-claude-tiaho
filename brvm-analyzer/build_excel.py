@@ -10,6 +10,33 @@ from openpyxl.styles import (
 from openpyxl.utils import get_column_letter
 from openpyxl.formatting.rule import ColorScaleRule, FormulaRule
 from openpyxl.styles.numbers import FORMAT_PERCENTAGE_00
+import unicodedata, re
+
+# ── Sanitize Excel formula strings (replace non-ASCII) ───────────────────────
+_ACCENT_MAP = str.maketrans({
+    'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+    'à': 'a', 'â': 'a', 'ä': 'a',
+    'î': 'i', 'ï': 'i',
+    'ô': 'o', 'ö': 'o',
+    'ù': 'u', 'û': 'u', 'ü': 'u',
+    'ç': 'c',
+    'É': 'E', 'È': 'E', 'Ê': 'E',
+    'À': 'A', 'Â': 'A',
+    'Î': 'I', 'Ô': 'O', 'Ù': 'U', 'Û': 'U', 'Ç': 'C',
+    '—': '-', '–': '-', '−': '-',
+    '×': 'x',
+    '≥': '>=', '≤': '<=',
+    '➜': '->', '→': '->',
+    '✅': '', '⚠': '', '🚫': '',
+    '₀': '0', '₁': '1',
+    '​': '',  # zero-width space
+})
+
+def sf(formula: str) -> str:
+    """Sanitize a formula string: replace non-ASCII chars that break Excel."""
+    if not formula or not formula.startswith('='):
+        return formula
+    return formula.translate(_ACCENT_MAP)
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -95,7 +122,7 @@ def style_value(ws, row, col, value, fmt=None, bg=WHITE, bold=False, color=DARK)
     return cell
 
 def style_formula(ws, row, col, formula, fmt=None, bg=WHITE, bold=False, color=DARK):
-    cell = ws.cell(row=row, column=col, value=formula)
+    cell = ws.cell(row=row, column=col, value=sf(formula))
     cell.fill = px(bg)
     cell.font = ft(bold=bold, color=color, size=9)
     cell.alignment = al("right", "center")
@@ -493,7 +520,7 @@ def build_etude(ws):
     verdict_r = r
     style_label(ws, r, 1, "VERDICT", bold=True)
     style_formula(ws, r, 2,
-                  f'=IFERROR(IF(B{perf_r}>C{perf_r},"✅ MARCHÉ BOURSIER","✅ ÉPARGNE"),"Saisir les données")',
+                  f'=IFERROR(IF(B{perf_r}>C{perf_r},"MARCHE BOURSIER","EPARGNE"),"Saisir les données")',
                   bg=LGREEN, bold=True)
     ws.cell(row=r, column=2).alignment = al("center", "center")
     style_value(ws, r, 3, None, bg=WHITE)
@@ -586,8 +613,8 @@ def build_etude(ws):
                   f"=SUM(D{POINTS_CELLS[0]}:D{POINTS_CELLS[-1]})",
                   fmt='0', bg=LGREEN, bold=True)
     style_formula(ws, r, 5,
-                  f'=IFERROR(IF(D{r}>0,"Zone SURVENTE ➜ Achat possible",'
-                  f'IF(D{r}<0,"Zone SURACHAT ➜ Vente possible","NEUTRE")),"—")',
+                  f'=IFERROR(IF(D{r}>0,"Zone SURVENTE - Achat possible",'
+                  f'IF(D{r}<0,"Zone SURACHAT - Vente possible","NEUTRE")),"—")',
                   bg=WHITE, bold=True)
     ws.cell(row=r, column=5).alignment = al("center", "center")
     ws.cell(row=r, column=5).font = ft(bold=True, size=9)
@@ -611,7 +638,7 @@ def build_etude(ws):
                       f"=IFERROR((B{r}+C{r})/2,\"\")",
                       fmt='#,##0.00', bg=LGREEN)
         style_formula(ws, r, 5,
-                      f'=IFERROR(IF(B{PRIX_ROW}<D{r},"EN DESSOUS du PM ➜ Survente","AU-DESSUS du PM ➜ Surachat"),"—")',
+                      f'=IFERROR(IF(B{PRIX_ROW}<D{r},"EN DESSOUS du PM - Survente","AU-DESSUS du PM - Surachat"),"—")',
                       bg=WHITE)
         ws.cell(row=r, column=5).alignment = al("center", "center")
         ws.cell(row=r, column=5).font = ft(size=9)
@@ -750,11 +777,11 @@ def build_etude(ws):
          "#,##0.00"),
         (signal_pcd_r,
          f'=IFERROR(IF(NOT(ISNUMBER(B{pcd_r})),"PCD N/A (pas de dividende)",'
-         f'IF(B{PRIX_ROW}<B{zone_bas_r},"EN DESSOUS zone cible ➜ Survente",'
-         f'IF(B{PRIX_ROW}>B{zone_haut_r},"AU-DESSUS zone cible ➜ Surachat","DANS LA ZONE"))),\"\")',
+         f'IF(B{PRIX_ROW}<B{zone_bas_r},"EN DESSOUS zone cible - Survente",'
+         f'IF(B{PRIX_ROW}>B{zone_haut_r},"AU-DESSUS zone cible - Surachat","DANS LA ZONE"))),\"\")',
          ""),
     ]:
-        ws.cell(row=frow, column=2, value=formula)
+        ws.cell(row=frow, column=2, value=sf(formula))
         ws.cell(row=frow, column=2).fill = px(LGREEN)
         ws.cell(row=frow, column=2).font = ft(size=9)
         ws.cell(row=frow, column=2).alignment = al("right", "center")
@@ -813,7 +840,7 @@ def build_etude(ws):
     sig_r = GS_ROWS["Signal (prix actuel vs P₀)"]
 
     ws.cell(row=p0_r, column=2,
-            value=f"=IFERROR(IF(B{d1_r}=0,\"D₁ non renseigné\","
+            value=f"=IFERROR(IF(B{d1_r}=0,\"D1 non renseigne\","
                   f"B{d1_r}/((B{rr_r}/100)-(B{g_r}/100))),\"\")")
     ws.cell(row=p0_r, column=2).fill = px(LGREEN)
     ws.cell(row=p0_r, column=2).font = ft(bold=True, size=9)
@@ -822,9 +849,9 @@ def build_etude(ws):
     ws.cell(row=p0_r, column=2).number_format = "#,##0.00"
 
     ws.cell(row=sig_r, column=2,
-            value=f'=IFERROR(IF(NOT(ISNUMBER(B{p0_r})),"Renseigner D₁",'
-                  f'IF(B{PRIX_ROW}<B{p0_r}*0.95,"Prix sous P₀ ➜ Opportunité d\'achat",'
-                  f'IF(B{PRIX_ROW}>B{p0_r}*1.05,"Prix sur P₀ ➜ Surévalué","Dans la zone"))),"")')
+            value=f'=IFERROR(IF(NOT(ISNUMBER(B{p0_r})),"Renseigner D1",'
+                  f'IF(B{PRIX_ROW}<B{p0_r}*0.95,"Prix sous P0 - Opportunite achat",'
+                  f'IF(B{PRIX_ROW}>B{p0_r}*1.05,"Prix sur P0 - Surevalue","Dans la zone"))),"")')
     ws.cell(row=sig_r, column=2).fill = px(LGREEN)
     ws.cell(row=sig_r, column=2).font = ft(size=9)
     ws.cell(row=sig_r, column=2).alignment = al("center", "center")
@@ -874,8 +901,8 @@ def build_etude(ws):
         (pp_r,    f"=IFERROR(B{pa_r}-B{sl_r},\"\")", "#,##0.00", ""),
         (gp_r,    f"=IFERROR(B{tp_r}-B{pa_r},\"\")", "#,##0.00", ""),
         (rr_sl_r, f"=IFERROR(B{gp_r}/B{pp_r},\"\")", "0.00",
-         f'=IFERROR(IF(B{rr_sl_r}>=2,"✅ Bon (≥ 2:1)",'
-         f'IF(B{rr_sl_r}>=1,"⚠ Acceptable (1:1)","🚫 Mauvais")),"")'),
+         f'=IFERROR(IF(B{rr_sl_r}>=2,"Bon (>= 2:1)",'
+         f'IF(B{rr_sl_r}>=1,"Acceptable (1:1)","Mauvais")),"")'),
     ]:
         ws.cell(row=frow, column=2, value=formula)
         ws.cell(row=frow, column=2).fill = px(LGREEN)
@@ -1088,8 +1115,8 @@ def build_synthese(ws):
     style_formula(ws, r, 4, f"=IFERROR(E{SCORE_FOND_ROW}/24*100,\"\")",
                   fmt="0.0", bg=LGREEN)
     style_formula(ws, r, 5,
-                  f'=IFERROR(IF(E{SCORE_FOND_ROW}/24>=0.7,"✅ Solide",'
-                  f'IF(E{SCORE_FOND_ROW}/24>=0.5,"⚠ Moyen","🚫 Faible")),"—")',
+                  f'=IFERROR(IF(E{SCORE_FOND_ROW}/24>=0.7,"Solide",'
+                  f'IF(E{SCORE_FOND_ROW}/24>=0.5,"Moyen","Faible")),"—")',
                   bg=WHITE)
     ws.cell(row=r, column=5).alignment = al("center", "center")
     r += 1
@@ -1100,8 +1127,8 @@ def build_synthese(ws):
     style_formula(ws, r, 4, f"=IFERROR(E{SCORE_TECH_SYNTH_ROW}/15*100,\"\")",
                   fmt="0.0", bg=LGREEN)
     style_formula(ws, r, 5,
-                  f'=IFERROR(IF(E{SCORE_TECH_SYNTH_ROW}/15>=0.7,"✅ Solide",'
-                  f'IF(E{SCORE_TECH_SYNTH_ROW}/15>=0.5,"⚠ Moyen","🚫 Faible")),"—")',
+                  f'=IFERROR(IF(E{SCORE_TECH_SYNTH_ROW}/15>=0.7,"Solide",'
+                  f'IF(E{SCORE_TECH_SYNTH_ROW}/15>=0.5,"Moyen","Faible")),"—")',
                   bg=WHITE)
     ws.cell(row=r, column=5).alignment = al("center", "center")
     SCORE_TECH_ROW2 = r
@@ -1118,8 +1145,8 @@ def build_synthese(ws):
                   f"=IFERROR(B{r}/39*100,\"\")",
                   fmt="0.0", bg=LGREEN, bold=True)
     style_formula(ws, r, 5,
-                  f'=IFERROR(IF(B{r}/39>=0.7,"✅ ACHETER",'
-                  f'IF(B{r}/39>=0.5,"⚠ SURVEILLER","🚫 ÉVITER")),"—")',
+                  f'=IFERROR(IF(B{r}/39>=0.7,"ACHETER",'
+                  f'IF(B{r}/39>=0.5,"SURVEILLER","EVITER")),"—")',
                   bg=WHITE, bold=True)
     ws.cell(row=r, column=5).font = ft(bold=True, size=11)
     ws.cell(row=r, column=5).alignment = al("center", "center")
@@ -1294,9 +1321,16 @@ def main():
     for ws in [ws_etude, ws_synthese, ws_profil, ws_formule]:
         ws.freeze_panes = "A2"
 
+    # Sanitize ALL formula cells in the entire workbook (safety net)
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for cell in row:
+                if cell.value and isinstance(cell.value, str) and cell.value.startswith('='):
+                    cell.value = sf(cell.value)
+
     out = "/home/user/Cloud-claude-tiaho/brvm-analyzer/etudes_actions_v2.xlsx"
     wb.save(out)
-    print(f"✅ Fichier créé : {out}")
+    print(f"Fichier cree : {out}")
 
 
 if __name__ == "__main__":
