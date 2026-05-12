@@ -8,6 +8,7 @@ import com.brvm.intelligence.data.ml.FundamentalAnalyzer
 import com.brvm.intelligence.data.ml.MarketSentimentAnalyzer
 import com.brvm.intelligence.data.ml.TechnicalIndicatorCalculator
 import com.brvm.intelligence.data.ml.ValuationSignal
+import com.brvm.intelligence.data.remote.ClaudeAIAssistant
 import com.brvm.intelligence.domain.model.*
 import com.brvm.intelligence.domain.repository.AnalysisRepository
 import com.brvm.intelligence.domain.repository.PortfolioAnalysis
@@ -26,6 +27,7 @@ class AnalysisRepositoryImpl @Inject constructor(
     private val sentimentAnalyzer: MarketSentimentAnalyzer,
     private val predictor: BRVMPredictor,
     private val fundamentalAnalyzer: FundamentalAnalyzer,
+    private val claudeAI: ClaudeAIAssistant,
 ) : AnalysisRepository {
 
     override suspend fun getTechnicalAnalysis(symbol: String): TechnicalAnalysis {
@@ -170,9 +172,29 @@ class AnalysisRepositoryImpl @Inject constructor(
     }
 
     override suspend fun askAI(question: String, context: List<ChatMessage>): String {
-        // Intégration avec un LLM via API (Claude/GPT) pour le chat IA
-        // En mode offline, réponse heuristique basée sur les mots-clés
-        return generateHeuristicResponse(question, context)
+        val marketCtx = buildMarketContext()
+        return claudeAI.ask(question, context, marketCtx)
+    }
+
+    private suspend fun buildMarketContext(): String {
+        return try {
+            val topGainers = stockDao.getTopGainers(3).map { it.toDomain() }
+            val topLosers  = stockDao.getTopLosers(3).map { it.toDomain() }
+            buildString {
+                if (topGainers.isNotEmpty()) {
+                    append("Meilleures hausses : ")
+                    append(topGainers.joinToString { "${it.symbol} (${String.format("%+.1f", it.changePercent)}%)" })
+                    append(". ")
+                }
+                if (topLosers.isNotEmpty()) {
+                    append("Baisses : ")
+                    append(topLosers.joinToString { "${it.symbol} (${String.format("%+.1f", it.changePercent)}%)" })
+                    append(".")
+                }
+            }.ifBlank { "Données de marché non disponibles." }
+        } catch (e: Exception) {
+            "Données de marché non disponibles."
+        }
     }
 
     override suspend fun analyzePortfolio(portfolio: Portfolio): PortfolioAnalysis {
@@ -236,35 +258,7 @@ class AnalysisRepositoryImpl @Inject constructor(
         )
     }
 
-    private fun generateHeuristicResponse(question: String, context: List<ChatMessage>): String {
-        val q = question.lowercase()
-        return when {
-            q.contains("acheter") || q.contains("achat") ->
-                "Pour décider d'un achat sur la BRVM, analysez : (1) l'analyse technique (RSI < 30 = survendu), " +
-                "(2) la valorisation fondamentale (PER vs secteur), (3) la liquidité du titre (préférez les valeurs actives). " +
-                "⚠️ La BRVM a une faible liquidité globale. Consultez toujours un conseiller financier agréé AMF-UMOA."
-            q.contains("vendre") || q.contains("vente") ->
-                "Les signaux de vente sur la BRVM : RSI > 70 (suracheté), croisement MACD baissier, rupture d'un niveau de support. " +
-                "Attention : sur les titres peu liquides, la vente peut prendre plusieurs séances."
-            q.contains("brvm") && q.contains("indice") ->
-                "Le BRVM Composite suit toutes les actions cotées, pondérées par la capitalisation. " +
-                "Le BRVM 10 suit les 10 plus grandes capitalisations. Ils sont calculés quotidiennement par la BRVM à Abidjan."
-            q.contains("risque") ->
-                "La BRVM présente des risques spécifiques : faible liquidité (difficultés de revente), " +
-                "concentration sectorielle (finance/agriculture), risque de change (CFA), et impact des matières premières. " +
-                "Diversifiez votre portefeuille sur plusieurs secteurs et pays de l'UEMOA."
-            q.contains("dividende") ->
-                "Les dividendes BRVM sont généralement distribués en janvier-mars après les AG de fin d'année. " +
-                "Les entreprises à fort dividende incluent Sonatel, SGBCI et les grandes capitalisations. " +
-                "Vérifiez le calendrier dans la section Événements."
-            else ->
-                "Je suis votre assistant BRVM Intelligence. Je peux vous aider avec : " +
-                "l'analyse technique des actions, l'interprétation des indicateurs, " +
-                "la composition de votre portefeuille, et les spécificités du marché UEMOA. " +
-                "Posez-moi une question spécifique sur une action ou le marché !\n\n" +
-                "⚠️ Ces informations sont à titre indicatif uniquement et ne constituent pas un conseil financier réglementé."
-        }
-    }
+
 
     private fun buildTradeRationale(
         signal: TradingSignal,

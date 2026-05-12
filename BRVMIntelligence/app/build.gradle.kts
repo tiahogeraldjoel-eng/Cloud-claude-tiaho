@@ -16,14 +16,18 @@ android {
         applicationId = "com.brvm.intelligence"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.1.1"
+        versionCode = 6
+        versionName = "1.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Clés de configuration (à remplacer par des valeurs réelles)
         buildConfigField("String", "BRVM_BASE_URL", "\"https://www.brvm.org\"")
         buildConfigField("String", "BRVM_WORKER_URL", "\"https://brvm-prices.tiahogeraldjoel.workers.dev\"")
-        buildConfigField("String", "APP_VERSION", "\"1.0.0\"")
+        buildConfigField("String", "APP_VERSION", "\"1.3.0\"")
+        // Clé API Anthropic — lire depuis env ANTHROPIC_API_KEY (GitHub Secret) ou local.properties
+        val anthropicKey = System.getenv("ANTHROPIC_API_KEY")
+            ?: project.findProperty("ANTHROPIC_API_KEY")?.toString()
+            ?: "NONE"
+        buildConfigField("String", "ANTHROPIC_API_KEY", "\"$anthropicKey\"")
     }
 
     buildTypes {

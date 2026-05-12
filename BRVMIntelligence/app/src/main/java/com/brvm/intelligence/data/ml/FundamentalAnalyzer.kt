@@ -1,5 +1,6 @@
 package com.brvm.intelligence.data.ml
 
+import com.brvm.intelligence.data.local.BRVMKnowledgeBase
 import com.brvm.intelligence.domain.model.BRVMSector
 import com.brvm.intelligence.domain.model.Stock
 import javax.inject.Inject
@@ -19,7 +20,9 @@ import kotlin.math.abs
  * purement technique.
  */
 @Singleton
-class FundamentalAnalyzer @Inject constructor() {
+class FundamentalAnalyzer @Inject constructor(
+    private val knowledgeBase: BRVMKnowledgeBase,
+) {
 
     // ── Benchmarks sectoriels BRVM (PER moyen observé 2018-2024) ──────────────
 
@@ -41,8 +44,10 @@ class FundamentalAnalyzer @Inject constructor() {
     // ── Point d'entrée ────────────────────────────────────────────────────────
 
     fun analyze(stock: Stock): FundamentalAssessment {
-        val perResult      = analyzePer(stock)
-        val dividendResult = analyzeDividend(stock)
+        // Enrichir le stock avec les données de la base de connaissance si manquantes
+        val enrichedStock = enrichWithKnowledgeBase(stock)
+        val perResult      = analyzePer(enrichedStock)
+        val dividendResult = analyzeDividend(enrichedStock)
         val rangePosition  = compute52WeekPosition(stock)
 
         // Choisir la méthode principale et la valeur intrinsèque
@@ -61,19 +66,29 @@ class FundamentalAnalyzer @Inject constructor() {
             else                  -> ValuationSignal.UNKNOWN
         }
 
-        val dataQualityWarning = buildDataQualityWarning(stock)
-        val confidenceAdj = computeConfidenceAdjustment(stock)
+        val dataQualityWarning = buildDataQualityWarning(enrichedStock)
+        val confidenceAdj = computeConfidenceAdjustment(enrichedStock)
 
         return FundamentalAssessment(
             valuationSignal          = finalSignal,
             estimatedFairValue       = fairValue,
             valuationMethod          = method,
-            perAnalysis              = buildPerAnalysis(stock),
-            dividendAnalysis         = buildDividendAnalysis(stock),
+            perAnalysis              = buildPerAnalysis(enrichedStock),
+            dividendAnalysis         = buildDividendAnalysis(enrichedStock),
             positionIn52WeekRange    = rangePosition,
-            earningsYield            = stock.per?.let { if (it > 0) 100.0 / it else null },
+            earningsYield            = enrichedStock.per?.let { if (it > 0) 100.0 / it else null },
             dataQualityWarning       = dataQualityWarning,
             confidenceAdjustment     = confidenceAdj,
+        )
+    }
+
+    // ── Enrichissement depuis la base de connaissance ────────────────────────
+
+    private fun enrichWithKnowledgeBase(stock: Stock): Stock {
+        val profile = knowledgeBase.getProfile(stock.symbol) ?: return stock
+        return stock.copy(
+            per           = stock.per           ?: profile.estimatedPer,
+            dividendYield = stock.dividendYield ?: profile.estimatedDividendYield,
         )
     }
 
