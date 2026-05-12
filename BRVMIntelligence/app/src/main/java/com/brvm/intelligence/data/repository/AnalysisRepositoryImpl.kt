@@ -317,7 +317,7 @@ class AnalysisRepositoryImpl @Inject constructor(
             sb.appendLine(it)
             sb.appendLine()
         }
-        if (stock.liquidityLevel == LiquidityLevel.LOW || stock.liquidityLevel == LiquidityLevel.VERY_LOW) {
+        if (stock.liquidityLevel == LiquidityLevel.VERY_LOW) {
             sb.appendLine("⚠️ **ALERTE LIQUIDITÉ** : ${stock.liquidityLevel.warningMessage}")
             sb.appendLine()
         }

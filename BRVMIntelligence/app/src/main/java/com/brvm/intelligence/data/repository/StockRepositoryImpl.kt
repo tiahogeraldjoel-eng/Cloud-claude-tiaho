@@ -334,10 +334,10 @@ class StockRepositoryImpl @Inject constructor(
     }
 
     private fun inferLiquidity(volume: Long): LiquidityLevel = when {
-        volume > 50_000 -> LiquidityLevel.HIGH
-        volume > 10_000 -> LiquidityLevel.MEDIUM
-        volume > 1_000 -> LiquidityLevel.LOW
-        else -> LiquidityLevel.VERY_LOW
+        volume > 10_000 -> LiquidityLevel.HIGH
+        volume > 1_000  -> LiquidityLevel.MEDIUM
+        volume > 100    -> LiquidityLevel.LOW
+        else            -> LiquidityLevel.VERY_LOW
     }
 
     private fun calculateCompositeIndex(stocks: List<Stock>): Double {
