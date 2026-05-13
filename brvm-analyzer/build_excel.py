@@ -6,7 +6,8 @@ Usage: python3 build_excel.py
 import xlsxwriter
 from datetime import date
 
-OUT = "/home/user/Cloud-claude-tiaho/brvm-analyzer/etudes_actions_v2.xlsx"
+OUT          = "/home/user/Cloud-claude-tiaho/brvm-analyzer/etudes_actions_v2.xlsx"
+PROTECT_PWD  = ""   # vide = protection sans mot de passe (contre saisies accidentelles)
 
 # ── Couleurs ─────────────────────────────────────────────────────────────────
 NAVY    = "#0D1B2A"   # Deep navy for titles
@@ -30,11 +31,11 @@ def make_wb():
     # ── Formats communs ───────────────────────────────────────────────────────
     def fmt(bold=False, bg=WHITE, fg=DARK, size=9, italic=False,
             align='left', valign='vcenter', border=0,
-            num_format=None, wrap=False):
+            num_format=None, wrap=False, locked=True):
         d = dict(bold=bold, font_color=fg, font_size=size,
                  italic=italic, align=align, valign=valign,
                  bg_color=bg, border=border, border_color='#BFBFBF',
-                 text_wrap=wrap)
+                 text_wrap=wrap, locked=locked)
         if num_format:
             d['num_format'] = num_format
         return wb.add_format(d)
@@ -54,10 +55,10 @@ def make_wb():
     F_LBL    = fmt(bg=GREY,   fg=DARK,   size=9,    border=1)
     F_LBL_B  = fmt(bold=True, bg=GREY,   fg=DARK,   size=9,  border=1)
 
-    # Valeurs à saisir (orange)
-    F_INPUT       = fmt(bg=LORANGE, fg=ORANGE, size=10, bold=True,  align='right', border=1)
-    F_INPUT_S     = fmt(bg=LORANGE, fg=DARK,   size=9,  align='right', border=1)
-    F_INPUT_C     = fmt(bg=LORANGE, fg=DARK,   size=9,  align='center', border=1)
+    # Valeurs à saisir (orange) — locked=False : modifiables meme quand la feuille est protegee
+    F_INPUT       = fmt(bg=LORANGE, fg=ORANGE, size=10, bold=True,  align='right', border=1, locked=False)
+    F_INPUT_S     = fmt(bg=LORANGE, fg=DARK,   size=9,  align='right', border=1, locked=False)
+    F_INPUT_C     = fmt(bg=LORANGE, fg=DARK,   size=9,  align='center', border=1, locked=False)
 
     # Valeurs calculées (vert)
     F_CALC        = fmt(bg=LGREEN,  fg=DARK,   size=9,  align='right', border=1)
@@ -89,7 +90,7 @@ def make_wb():
 
     build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
                    F_LBL, F_LBL_B, F_INPUT_S, F_CALC, F_CALC_B,
-                   F_CALC_C, F_WHITE, F_WHITE_C, F_WHITE_N2, F_LORANGE_C := fmt(bg=LORANGE, fg=DARK, size=9, align='center', border=1))
+                   F_CALC_C, F_WHITE, F_WHITE_C, F_WHITE_N2, F_LORANGE_C := fmt(bg=LORANGE, fg=DARK, size=9, align='center', border=1, locked=False))
 
     build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT)
 
@@ -195,13 +196,13 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
         ws.write(row(r), col(c), text, F_LBL_B if bold else F_LBL)
 
     def inp(r, c, val=None, num_format=None):
-        f = F_INPUT if num_format is None else fmt(bg="#FFF2CC", fg="#FF6600", size=10,
-                 bold=True, align='right', border=1, num_format=num_format)
+        f = F_INPUT if num_format is None else fmt(bg=LORANGE, fg=ORANGE, size=10,
+                 bold=True, align='right', border=1, num_format=num_format, locked=False)
         ws.write(row(r), col(c), val, f)
 
     def inp_s(r, c, val=None, num_format=None):
-        f = F_INPUT_S if num_format is None else fmt(bg="#FFF2CC", fg="#404040", size=9,
-                 align='right', border=1, num_format=num_format)
+        f = F_INPUT_S if num_format is None else fmt(bg=LORANGE, fg=DARK, size=9,
+                 align='right', border=1, num_format=num_format, locked=False)
         ws.write(row(r), col(c), val, f)
 
     def calc(r, c, formula, num_format=None):
@@ -477,7 +478,7 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
     for i, (lbl_txt, _, nf) in enumerate(comp_items):
         r = 63 + i
         lbl(r, 'A', lbl_txt, bold=(lbl_txt.startswith("REND") or lbl_txt.startswith("PERF") or lbl_txt.startswith("VERD")))
-        ws.write_blank(row(r), col('B'), None, fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1, num_format=nf))
+        ws.write_blank(row(r), col('B'), None, fmt(bg=LORANGE, fg=DARK, size=9, align='right', border=1, num_format=nf, locked=False))
         ws.write_blank(row(r), col('C'), None, F_WHITE_R)
         ws.write_blank(row(r), col('D'), None, F_WHITE)
         COMP_ROWS[lbl_txt] = r
@@ -520,7 +521,7 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
 
     # ── A9 : Conclusion Fondamentale  (lignes 77–79) ─────────────────────────
     section(77, "A9 — CONCLUSION ANALYSE FONDAMENTALE (texte libre)")
-    ws.merge_range(row(78), 0, row(80), 7, "", fmt(bg=WHITE, border=1, wrap=True, valign='top'))
+    ws.merge_range(row(78), 0, row(80), 7, "", fmt(bg=WHITE, border=1, wrap=True, valign='top', locked=False))
     ws.set_row(row(78), 40)
     blank(81)
 
@@ -605,7 +606,7 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
                              fmt(bg="#E2EFDA", fg="#404040", size=9, align='right', border=1, num_format=nf))
         else:
             ws.write_blank(row(r), col('B'), None,
-                           fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1, num_format=nf))
+                           fmt(bg=LORANGE, fg=DARK, size=9, align='right', border=1, num_format=nf, locked=False))
         ws.write(row(r), col('C'), src, F_WHITE_C)
         ws.write_blank(row(r), col('D'), None, F_WHITE)
         per_act_rows[lbl_txt] = r
@@ -652,10 +653,10 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
         lbl(r, 'A', lbl_txt)
         if val is not None:
             ws.write(row(r), col('B'), val,
-                     fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1, num_format=nf))
+                     fmt(bg=LORANGE, fg=DARK, size=9, align='right', border=1, num_format=nf, locked=False))
         else:
             ws.write_blank(row(r), col('B'), None,
-                           fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1, num_format=nf))
+                           fmt(bg=LORANGE, fg=DARK, size=9, align='right', border=1, num_format=nf, locked=False))
         ws.write(row(r), col('C'), src, F_WHITE_C)
         ws.write_blank(row(r), col('D'), None, F_WHITE)
         pcd_rows[lbl_txt] = r
@@ -710,10 +711,10 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
         lbl(r, 'A', lbl_txt)
         if val is not None:
             ws.write(row(r), col('B'), val,
-                     fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1, num_format=nf))
+                     fmt(bg=LORANGE, fg=DARK, size=9, align='right', border=1, num_format=nf, locked=False))
         else:
             ws.write_blank(row(r), col('B'), None,
-                           fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1, num_format=nf))
+                           fmt(bg=LORANGE, fg=DARK, size=9, align='right', border=1, num_format=nf, locked=False))
         ws.write(row(r), col('C'), note, F_WHITE_C)
         ws.write_blank(row(r), col('D'), None, F_WHITE)
         gs_rows[lbl_txt] = r
@@ -751,7 +752,7 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
         r = 130 + i
         lbl(r, 'A', lbl_txt)
         ws.write_blank(row(r), col('B'), None,
-                       fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1, num_format=nf))
+                       fmt(bg=LORANGE, fg=DARK, size=9, align='right', border=1, num_format=nf, locked=False))
         ws.write(row(r), col('C'), note, F_WHITE_C)
         ws.write_blank(row(r), col('D'), None, F_WHITE)
         sl_rows[lbl_txt] = r
@@ -779,8 +780,16 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
     # ── B7 : Conclusion Technique  (lignes 137–140) ────────────────────────
     section(137, "B7 — CONCLUSION ANALYSE TECHNIQUE (texte libre)")
     ws.merge_range(row(138), 0, row(140), 7, "",
-                   fmt(bg=WHITE, border=1, wrap=True, valign='top'))
+                   fmt(bg=WHITE, border=1, wrap=True, valign='top', locked=False))
     ws.set_row(row(138), 40)
+
+    # Protection : formules verrouillees, cellules orange (saisie) debloquees
+    ws.protect(PROTECT_PWD, {
+        'select_locked_cells':   True,
+        'select_unlocked_cells': True,
+        'format_columns':        True,
+        'format_rows':           True,
+    })
 
 
 def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
@@ -816,7 +825,7 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
 
     def inp(r, c, val=None):
         ws.write(row(r), col(c), val,
-                 fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1))
+                 fmt(bg=LORANGE, fg=DARK, size=9, align='right', border=1, locked=False))
 
     def blank_r(r, h=5):
         ws.set_row(row(r), h)
@@ -868,10 +877,10 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
                          fmt(bg="#EBF5FB", fg="#1F3864", size=9, align='right',
                              border=1, num_format=num_fmt))
         ws.write(row(r), col('C'), zone,
-                 fmt(bg="#FFF2CC", fg="#404040", size=9, align='center', border=1))
+                 fmt(bg=LORANGE, fg=DARK, size=9, align='center', border=1, locked=False))
         ws.write_formula(row(r), col('D'), sig_f, F_SIG_AUTO)
         ws.write_blank(row(r), col('E'), None,
-                       fmt(bg="#FFFDE7", fg="#404040", size=9, align='center', border=1, num_format='0'))
+                       fmt(bg="#FFFDE7", fg="#404040", size=9, align='center', border=1, num_format='0', locked=False))
         FOND_SCORE_ROWS.append(r)
 
     FOND_TOTAL_R = 14
@@ -922,10 +931,10 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
         lbl(r, 'A', crit)
         ws.write_formula(row(r), col('B'), val_f, F_VAL_TECH)
         ws.write(row(r), col('C'), zone,
-                 fmt(bg="#FFF2CC", fg="#404040", size=9, align='center', border=1))
+                 fmt(bg=LORANGE, fg=DARK, size=9, align='center', border=1, locked=False))
         ws.write_formula(row(r), col('D'), sig_f, F_SIG_TECH)
         ws.write_blank(row(r), col('E'), None,
-                       fmt(bg="#FFFFFF", fg="#404040", size=9, align='center', border=1, num_format='0'))
+                       fmt(bg="#FFFDE7", fg="#404040", size=9, align='center', border=1, num_format='0', locked=False))
         TECH_SCORE_ROWS.append(r)
 
     TECH_TOTAL_R = 23
@@ -973,8 +982,15 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
     blank_r(30)
     section(31, "RECOMMANDATION FINALE (texte libre)")
     ws.merge_range(row(32), 0, row(35), 4, "",
-                   fmt(bg="#FFFFFF", border=1, wrap=True, valign='top'))
+                   fmt(bg=WHITE, border=1, wrap=True, valign='top', locked=False))
     ws.set_row(row(32), 50)
+
+    ws.protect(PROTECT_PWD, {
+        'select_locked_cells':   True,
+        'select_unlocked_cells': True,
+        'format_columns':        True,
+        'format_rows':           True,
+    })
 
 
 def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
@@ -1037,6 +1053,13 @@ def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
             r += 1
         ws.set_row(r-1, 5)
         r += 1
+
+    ws.protect(PROTECT_PWD, {
+        'select_locked_cells':   True,
+        'select_unlocked_cells': True,
+        'format_columns':        True,
+        'format_rows':           True,
+    })
 
 
 def build_formule(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_LBL_B, F_WHITE, F_REF, F_CALC_C):
@@ -1119,6 +1142,13 @@ def build_formule(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_LBL_B, F_WHITE, F_RE
             ws.write(r, 3, interp, fmt(bg="#FFFFFF", fg="#404040", size=9, align='left', border=1, wrap=True))
             ws.set_row(r, 28)
         r += 1
+
+    ws.protect(PROTECT_PWD, {
+        'select_locked_cells':   True,
+        'select_unlocked_cells': True,
+        'format_columns':        True,
+        'format_rows':           True,
+    })
 
 
 make_wb()
