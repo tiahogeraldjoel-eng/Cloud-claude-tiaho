@@ -9,16 +9,16 @@ from datetime import date
 OUT = "/home/user/Cloud-claude-tiaho/brvm-analyzer/etudes_actions_v2.xlsx"
 
 # ── Couleurs ─────────────────────────────────────────────────────────────────
-NAVY   = "#1F3864"
-BLUE   = "#2F5496"
-LBLUE  = "#D6E4F7"
-ORANGE = "#FF6600"
-LORANGE= "#FFF2CC"
-LGREEN = "#E2EFDA"
-GREY   = "#F2F2F2"
-WHITE  = "#FFFFFF"
-DARK   = "#404040"
-RED    = "#FF0000"
+NAVY    = "#0D1B2A"   # Deep navy for titles
+BLUE    = "#1E3A5F"   # Rich navy for sections
+LBLUE   = "#DCE8F5"   # Cool blue-grey for headers
+ORANGE  = "#D97706"   # Refined amber for inputs
+LORANGE = "#FFFBEB"   # Very light amber bg
+LGREEN  = "#ECFDF5"   # Modern mint for calculated
+GREY    = "#F1F5F9"   # Slate grey for labels
+WHITE   = "#FFFFFF"
+DARK    = "#1E293B"   # Deep slate for text
+RED     = "#DC2626"   # Clean red for warnings
 
 def make_wb():
     wb = xlsxwriter.Workbook(OUT, {
@@ -40,12 +40,12 @@ def make_wb():
         return wb.add_format(d)
 
     # Titres
-    F_TITLE  = fmt(bold=True, bg=NAVY,   fg=WHITE,  size=13, align='center', border=0)
+    F_TITLE  = fmt(bold=True, bg=NAVY,   fg=WHITE,  size=14, align='center', border=0)
     F_TITLE2 = fmt(bold=True, bg=BLUE,   fg=WHITE,  size=10, align='center', border=0)
     F_WARN   = fmt(italic=True, fg=RED,  size=8,    align='left', border=0)
 
     # Sections
-    F_SEC    = fmt(bold=True, bg=BLUE,   fg=WHITE,  size=10, border=0)
+    F_SEC    = fmt(bold=True, bg=BLUE,   fg=WHITE,  size=11, border=0)
 
     # Entêtes colonnes
     F_HEAD   = fmt(bold=True, bg=LBLUE,  fg=NAVY,   size=9,  align='center', border=1)
@@ -113,12 +113,12 @@ CPTX_CELL  = 'B26'   # Capitaux propres
 VALO_CELL  = 'B27'   # Capitalisation boursiere
 NBTI_CELL  = 'B28'   # Nombre de titres
 
-# Résultats A4 — Ratios (col C = calculé)
-PER_CELL   = 'C30'
-VMC_CELL   = 'C31'
-PBR_CELL   = 'C32'
-ROE_CELL   = 'C33'
-RVC_CELL   = 'C34'
+# Résultats A4 — Ratios (col B = calculé)
+PER_CELL   = 'B30'
+VMC_CELL   = 'B31'
+PBR_CELL   = 'B32'
+ROE_CELL   = 'B33'
+RVC_CELL   = 'B34'
 
 # RN data (ligne de données A2)
 RN_DATA_CELL = 'F12'  # RN année N
@@ -162,6 +162,7 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
                 F_WHITE_N, F_WHITE_N2, F_WHITE_PCT, F_REF, F_NOTE, F_HINT):
 
     ws = wb.add_worksheet("ETUDE")
+    ws.set_tab_color("#0EA5E9")
     ws.freeze_panes(1, 0)
 
     # Largeurs colonnes (0-indexed)
@@ -179,11 +180,11 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
 
     def title(r, text, cols=8, bg="#1F3864", size=13):
         ws.merge_range(row(r), 0, row(r), cols-1, text, F_TITLE)
-        ws.set_row(row(r), 22)
+        ws.set_row(row(r), 26)
 
     def section(r, text, cols=8):
         ws.merge_range(row(r), 0, row(r), cols-1, text, F_SEC)
-        ws.set_row(row(r), 18)
+        ws.set_row(row(r), 20)
 
     def heads(r, labels, cols_start=0):
         for i, lbl in enumerate(labels):
@@ -375,6 +376,17 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
 
     blank(35)
 
+    # Conditional formatting for A4 ratio signals (col D, rows 30-34)
+    sig_fmt_g = wb.add_format({'bg_color': '#D1FAE5', 'font_color': '#065F46', 'border': 1, 'align': 'center', 'font_size': 9})
+    sig_fmt_r = wb.add_format({'bg_color': '#FEE2E2', 'font_color': '#991B1B', 'border': 1, 'align': 'center', 'font_size': 9})
+    sig_fmt_a = wb.add_format({'bg_color': '#FEF3C7', 'font_color': '#92400E', 'border': 1, 'align': 'center', 'font_size': 9})
+    for kw in ['Sous-evalue', 'sous-evaluee', 'Decote', 'Excellent', 'Bon', 'SURVENTE']:
+        ws.conditional_format('D30:D34', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_g})
+    for kw in ['Surevalue', 'surevaluee', 'Prime', 'Faible', 'SURACHAT']:
+        ws.conditional_format('D30:D34', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_r})
+    for kw in ['Normal', 'Moyen']:
+        ws.conditional_format('D30:D34', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_a})
+
     # ── A5 : Dividendes & Taux de distribution  (lignes 36–44) ──────────────
     section(36, "A5 — DIVIDENDES & TAUX DE DISTRIBUTION")
     heads(37, ["Annee", "Dividende BRUT (FCFA)", "Dividende NET (FCFA)",
@@ -491,6 +503,7 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
 
     set_formula_comp(CMP_R, f'=IFERROR(B{ACH_R}*1.014,"")',          '#,##0.00')
     set_formula_comp(TIT_R, f'=IFERROR(B{INV_R}/B{CMP_R},"")',       '#,##0.00')
+    set_formula_comp(PCR_R, '=IFERROR(B24,"")',                       '#,##0')
     set_formula_comp(NET_R, f'=IFERROR(B{PCR_R}-(B{PCR_R}*0.014),"")','#,##0.00')
     set_formula_comp(PVU_R, f'=IFERROR(B{NET_R}-B{CMP_R},"")',       '#,##0.00')
     set_formula_comp(PVT_R, f'=IFERROR(B{PVU_R}*B{TIT_R},"")',       '#,##0')
@@ -774,6 +787,7 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
                    F_LBL, F_LBL_B, F_INPUT_S, F_CALC, F_CALC_B,
                    F_CALC_C, F_WHITE, F_WHITE_C, F_WHITE_N2, F_LORANGE_C):
     ws = wb.add_worksheet("SYNTHESE")
+    ws.set_tab_color("#1E3A5F")
     ws.freeze_panes(1, 0)
     ws.set_column(0, 0, 30)
     ws.set_column(1, 1, 16)
@@ -870,26 +884,46 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
         fmt(bg="#E2EFDA", fg="#1F3864", size=11, bold=True, align='center', border=1, num_format='0'))
     blank_r(15)
 
+    # Conditional formatting for signal column D in scorecard fondamentale
+    sig_fmt_green = wb.add_format({'bg_color': '#D1FAE5', 'font_color': '#065F46', 'border': 1, 'align': 'center'})
+    sig_fmt_red   = wb.add_format({'bg_color': '#FEE2E2', 'font_color': '#991B1B', 'border': 1, 'align': 'center'})
+    sig_fmt_amber = wb.add_format({'bg_color': '#FEF3C7', 'font_color': '#92400E', 'border': 1, 'align': 'center'})
+    for kw in ['Bon', 'rentable', 'Sous-evalue', 'Decote', 'Opportunite', 'SURVENTE', 'ACHETER']:
+        ws.conditional_format('D6:D13', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_green})
+        ws.conditional_format('D18:D22', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_green})
+    for kw in ['Surevalue', 'SURACHAT', 'Prime', 'Negatif']:
+        ws.conditional_format('D6:D13', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_red})
+        ws.conditional_format('D18:D22', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_red})
+    for kw in ['Normal', 'Faible', 'Moyen', 'NEUTRE']:
+        ws.conditional_format('D6:D13', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_amber})
+        ws.conditional_format('D18:D22', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_amber})
+
     # Scorecard technique (lignes 16–22)
     section(16, "SCORECARD TECHNIQUE")
     heads(17, ["Critere", "Signal observe", "Zone", "Interpretation", "Score"])
+    # (critere, zone, formule_col_B, formule_col_D)
     tech_criteria = [
-        ("MM20+Bollinger+MACD+RSI+Volume (score B1)", "-5 a +5"),
-        ("Prix Medians PM1 et PM2 (B2)", "< PM = survente"),
-        ("PER actualise (B3)", "9-15 = normal"),
-        ("PCD / Gordon-Shapiro (B4/B5)", "< PCD = survente"),
-        ("Risk/Reward (B6)", ">= 2 = bon"),
+        ("MM20+Bollinger+MACD+RSI+Volume (score B1)", "-5 a +5",
+         '=IFERROR(ETUDE!D91,"")',   '=IFERROR(ETUDE!E91,"-")'),
+        ("Prix Medians PM1 et PM2 (B2)", "< PM = survente",
+         '=IFERROR(ETUDE!E95,"")',   '=IFERROR(ETUDE!E96,"-")'),
+        ("PER actualise (B3)", "9-15 = normal",
+         '=IFERROR(ETUDE!B104,"")',  '=IFERROR(ETUDE!D104,"-")'),
+        ("PCD / Gordon-Shapiro (B4/B5)", "< PCD = survente",
+         '=IFERROR(ETUDE!B116,"")',  '=IFERROR(ETUDE!B125,"-")'),
+        ("Risk/Reward (B6)", ">= 2 = bon",
+         '=IFERROR(ETUDE!B135,"")',  '=IFERROR(ETUDE!D135,"-")'),
     ]
+    F_VAL_TECH = fmt(bg="#EBF5FB", fg="#1E3A5F", size=9, align='center', border=1)
+    F_SIG_TECH = fmt(bg="#EBF5FB", fg="#404040", size=9, italic=True, align='center', border=1)
     TECH_SCORE_ROWS = []
-    for i, (crit, zone) in enumerate(tech_criteria):
+    for i, (crit, zone, val_f, sig_f) in enumerate(tech_criteria):
         r = 18 + i
         lbl(r, 'A', crit)
-        ws.write(row(r), col('B'), "<-- saisir signal",
-                 fmt(bg="#FFFFFF", fg="#808080", size=8, italic=True, align='center', border=1))
+        ws.write_formula(row(r), col('B'), val_f, F_VAL_TECH)
         ws.write(row(r), col('C'), zone,
                  fmt(bg="#FFF2CC", fg="#404040", size=9, align='center', border=1))
-        ws.write(row(r), col('D'), "<-- saisir signal",
-                 fmt(bg="#FFFFFF", fg="#808080", size=8, italic=True, align='center', border=1))
+        ws.write_formula(row(r), col('D'), sig_f, F_SIG_TECH)
         ws.write_blank(row(r), col('E'), None,
                        fmt(bg="#FFFFFF", fg="#404040", size=9, align='center', border=1, num_format='0'))
         TECH_SCORE_ROWS.append(r)
@@ -945,6 +979,7 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
 
 def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
     ws = wb.add_worksheet("PROFIL")
+    ws.set_tab_color("#6B7280")
     ws.freeze_panes(1, 0)
     ws.set_column(0, 0, 32)
     ws.set_column(1, 1, 28)
@@ -1006,6 +1041,7 @@ def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
 
 def build_formule(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_LBL_B, F_WHITE, F_REF, F_CALC_C):
     ws = wb.add_worksheet("FORMULE")
+    ws.set_tab_color("#374151")
     ws.freeze_panes(1, 0)
     ws.set_column(0, 0, 30)
     ws.set_column(1, 1, 34)
