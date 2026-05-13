@@ -936,13 +936,13 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
     ws.merge_range(row(179), 0, row(179), 3,
         "VERDICT CONTRARIAN",
         fmt(bold=True, bg=NAVY, fg=WHITE, size=10, align='center', border=1))
+    _verdict_fmt = fmt(bold=True, bg="#064E3B", fg="#ECFDF5", size=11, align='center', border=2, wrap=True)
+    ws.merge_range(row(179), 4, row(179), 7, "", _verdict_fmt)
     ws.write_formula(row(179), 4,
-        f'=IFERROR(IF(D178>=7,"FORTE OPPORTUNITE CONTRARIAN — fondamentaux sains, titre boude",'
-        f'IF(D178>=5,"A SURVEILLER — signaux contrarians partiels",'
-        f'"PAS DE SIGNAL CONTRARIAN — attendre")),"-")',
-        fmt(bold=True, bg="#064E3B", fg="#ECFDF5", size=11, align='center', border=2, wrap=True))
-    ws.merge_range(row(179), 4, row(179), 7, "",
-        fmt(bold=True, bg="#064E3B", fg="#ECFDF5", size=11, align='center', border=2, wrap=True))
+        '=IFERROR(IF(D178>=7,"FORTE OPPORTUNITE CONTRARIAN — fondamentaux sains, titre boude",'
+        'IF(D178>=5,"A SURVEILLER — signaux contrarians partiels",'
+        '"PAS DE SIGNAL CONTRARIAN — attendre")),"-")',
+        _verdict_fmt)
     ws.set_row(row(179), 30)
     blank(180)
 
