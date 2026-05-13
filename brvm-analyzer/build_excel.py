@@ -1,1337 +1,1075 @@
 """
-Génère etudes_actions_v2.xlsx — version améliorée de la fiche d'analyse BRVM.
+Génère etudes_actions_v2.xlsx avec xlsxwriter.
+Toutes les formules utilisent des adresses de cellules fixes et explicites.
 Usage: python3 build_excel.py
 """
+import xlsxwriter
+from datetime import date
 
-from openpyxl import Workbook
-from openpyxl.styles import (
-    PatternFill, Font, Alignment, Border, Side, numbers
-)
-from openpyxl.utils import get_column_letter
-from openpyxl.formatting.rule import ColorScaleRule, FormulaRule
-from openpyxl.styles.numbers import FORMAT_PERCENTAGE_00
-import unicodedata, re
+OUT = "/home/user/Cloud-claude-tiaho/brvm-analyzer/etudes_actions_v2.xlsx"
 
-# ── Sanitize Excel formula strings (replace non-ASCII) ───────────────────────
-_ACCENT_MAP = str.maketrans({
-    'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
-    'à': 'a', 'â': 'a', 'ä': 'a',
-    'î': 'i', 'ï': 'i',
-    'ô': 'o', 'ö': 'o',
-    'ù': 'u', 'û': 'u', 'ü': 'u',
-    'ç': 'c',
-    'É': 'E', 'È': 'E', 'Ê': 'E',
-    'À': 'A', 'Â': 'A',
-    'Î': 'I', 'Ô': 'O', 'Ù': 'U', 'Û': 'U', 'Ç': 'C',
-    '—': '-', '–': '-', '−': '-',
-    '×': 'x',
-    '≥': '>=', '≤': '<=',
-    '➜': '->', '→': '->',
-    '✅': '', '⚠': '', '🚫': '',
-    '₀': '0', '₁': '1',
-    '​': '',  # zero-width space
-})
+# ── Couleurs ─────────────────────────────────────────────────────────────────
+NAVY   = "#1F3864"
+BLUE   = "#2F5496"
+LBLUE  = "#D6E4F7"
+ORANGE = "#FF6600"
+LORANGE= "#FFF2CC"
+LGREEN = "#E2EFDA"
+GREY   = "#F2F2F2"
+WHITE  = "#FFFFFF"
+DARK   = "#404040"
+RED    = "#FF0000"
 
-def sf(formula: str) -> str:
-    """Sanitize a formula string: replace non-ASCII chars that break Excel."""
-    if not formula or not formula.startswith('='):
-        return formula
-    return formula.translate(_ACCENT_MAP)
-
-# ── helpers ──────────────────────────────────────────────────────────────────
-
-def px(hex_color):
-    return PatternFill("solid", fgColor=hex_color)
-
-def ft(bold=False, italic=False, color="000000", size=10):
-    return Font(bold=bold, italic=italic, color=color, size=size, name="Calibri")
-
-def al(h="left", v="center", wrap=False):
-    return Alignment(horizontal=h, vertical=v, wrap_text=wrap)
-
-def bd(style="thin", color="BFBFBF"):
-    s = Side(style=style, color=color)
-    return Border(left=s, right=s, top=s, bottom=s)
-
-def bd_bottom(style="medium", color="2F5496"):
-    s = Side(style=style, color=color)
-    return Border(bottom=s)
-
-NAVY   = "1F3864"
-BLUE   = "2F5496"
-LBLUE  = "D6E4F7"
-ORANGE = "FF6600"
-LORANGE= "FFF2CC"
-GREEN  = "00B050"
-LGREEN = "E2EFDA"
-RED    = "FF0000"
-LRED   = "FFDCE1"
-GREY   = "F2F2F2"
-WHITE  = "FFFFFF"
-GOLD   = "C9AB2B"
-DARK   = "404040"
-
-def style_title(ws, row, col, text, merge_to_col=8,
-                bg=NAVY, fg=WHITE, size=12):
-    cell = ws.cell(row=row, column=col, value=text)
-    cell.fill = px(bg)
-    cell.font = ft(bold=True, color=fg, size=size)
-    cell.alignment = al("center", "center")
-    if merge_to_col > col:
-        ws.merge_cells(
-            start_row=row, start_column=col,
-            end_row=row, end_column=merge_to_col
-        )
-    ws.row_dimensions[row].height = 20
-
-def style_section(ws, row, col, text, merge_to_col=8, bg=BLUE, fg=WHITE):
-    cell = ws.cell(row=row, column=col, value=text)
-    cell.fill = px(bg)
-    cell.font = ft(bold=True, color=fg, size=10)
-    cell.alignment = al("left", "center")
-    if merge_to_col > col:
-        ws.merge_cells(
-            start_row=row, start_column=col,
-            end_row=row, end_column=merge_to_col
-        )
-    ws.row_dimensions[row].height = 18
-
-def style_header(ws, row, cols, texts, bg=LBLUE):
-    for col, text in zip(cols, texts):
-        cell = ws.cell(row=row, column=col, value=text)
-        cell.fill = px(bg)
-        cell.font = ft(bold=True, color=NAVY, size=9)
-        cell.alignment = al("center", "center")
-        cell.border = bd()
-
-def style_label(ws, row, col, text, bg=GREY, bold=False):
-    cell = ws.cell(row=row, column=col, value=text)
-    cell.fill = px(bg)
-    cell.font = ft(bold=bold, color=DARK, size=9)
-    cell.alignment = al("left", "center")
-    cell.border = bd()
-
-def style_value(ws, row, col, value, fmt=None, bg=WHITE, bold=False, color=DARK):
-    cell = ws.cell(row=row, column=col, value=value)
-    cell.fill = px(bg)
-    cell.font = ft(bold=bold, color=color, size=9)
-    cell.alignment = al("right", "center")
-    cell.border = bd()
-    if fmt:
-        cell.number_format = fmt
-    return cell
-
-def style_formula(ws, row, col, formula, fmt=None, bg=WHITE, bold=False, color=DARK):
-    cell = ws.cell(row=row, column=col, value=sf(formula))
-    cell.fill = px(bg)
-    cell.font = ft(bold=bold, color=color, size=9)
-    cell.alignment = al("right", "center")
-    cell.border = bd()
-    if fmt:
-        cell.number_format = fmt
-    return cell
-
-def blank_row(ws, row, height=6):
-    ws.row_dimensions[row].height = height
-
-def set_col_widths(ws, widths):
-    for col, w in widths.items():
-        ws.column_dimensions[get_column_letter(col)].width = w
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  FEUILLE 1 : ETUDE
-# ══════════════════════════════════════════════════════════════════════════════
-
-def build_etude(ws):
-    set_col_widths(ws, {
-        1: 34, 2: 12, 3: 12, 4: 12,
-        5: 12, 6: 10, 7: 14, 8: 12
+def make_wb():
+    wb = xlsxwriter.Workbook(OUT, {
+        'strings_to_numbers': False,
+        'strings_to_formulas': False,   # on gère les formules manuellement
+        'default_date_format': 'dd/mm/yyyy',
     })
 
-    r = 1
+    # ── Formats communs ───────────────────────────────────────────────────────
+    def fmt(bold=False, bg=WHITE, fg=DARK, size=9, italic=False,
+            align='left', valign='vcenter', border=0,
+            num_format=None, wrap=False):
+        d = dict(bold=bold, font_color=fg, font_size=size,
+                 italic=italic, align=align, valign=valign,
+                 bg_color=bg, border=border, border_color='#BFBFBF',
+                 text_wrap=wrap)
+        if num_format:
+            d['num_format'] = num_format
+        return wb.add_format(d)
 
-    # ── Titre principal ──────────────────────────────────────────────────────
-    style_title(ws, r, 1,
-        "FICHE D'ANALYSE BRVM — [NOM SOCIÉTÉ]   |   Date : [JJ/MM/AAAA]",
-        merge_to_col=8, size=13)
-    r += 1
-    ws.cell(row=r, column=1,
-        value="⚠ Remplacer [NOM SOCIÉTÉ] et [JJ/MM/AAAA] en cellule A1 avant utilisation"
-    ).font = ft(italic=True, color="FF0000", size=8)
-    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
-    r += 1
-    blank_row(ws, r)
-    r += 1
+    # Titres
+    F_TITLE  = fmt(bold=True, bg=NAVY,   fg=WHITE,  size=13, align='center', border=0)
+    F_TITLE2 = fmt(bold=True, bg=BLUE,   fg=WHITE,  size=10, align='center', border=0)
+    F_WARN   = fmt(italic=True, fg=RED,  size=8,    align='left', border=0)
 
-    # ════════════════════════════════════════════════════════════════════════
-    #  BLOC A — ANALYSE FONDAMENTALE
-    # ════════════════════════════════════════════════════════════════════════
-    style_title(ws, r, 1, "A — ANALYSE FONDAMENTALE",
-                merge_to_col=8, bg=NAVY, size=11)
-    r += 1
-    blank_row(ws, r); r += 1
+    # Sections
+    F_SEC    = fmt(bold=True, bg=BLUE,   fg=WHITE,  size=10, border=0)
 
-    # ── A1 : Chiffre d'affaires / PNB ───────────────────────────────────────
-    style_section(ws, r, 1, "A1 — CHIFFRE D'AFFAIRES ou PRODUIT NET BANCAIRE (FCFA)")
-    r += 1
-    style_header(ws, r, [1, 2, 3, 4, 5, 6, 7, 8],
-                 ["Année", "N-4", "N-3", "N-2", "N-1", "N (dernier)",
-                  "Croissance N/N-4 %", "TCAM 4 ans %"])
-    CA_ROW = r + 1
-    r += 1
-    ws.cell(row=r, column=1, value="CA / PNB").fill = px(GREY)
-    ws.cell(row=r, column=1).font = ft(size=9); ws.cell(row=r, column=1).border = bd()
-    for c in [2, 3, 4, 5, 6]:
-        style_value(ws, r, c, None, fmt='#,##0', bg=WHITE)
-    # Croissance = (N - N-4) / N-4 × 100  ← formule corrigée
-    style_formula(ws, r, 7, f"=IF(B{r}=0,\"\",((F{r}-B{r})/B{r})*100)",
-                  fmt="0.00", bg=LGREEN)
-    # TCAM = (N/N-4)^(1/4) - 1
-    style_formula(ws, r, 8, f"=IF(B{r}=0,\"\",(F{r}/B{r})^(1/4)-1)",
-                  fmt="0.00%", bg=LGREEN)
-    CA_DATA_ROW = r
-    r += 1
-    blank_row(ws, r); r += 1
+    # Entêtes colonnes
+    F_HEAD   = fmt(bold=True, bg=LBLUE,  fg=NAVY,   size=9,  align='center', border=1)
 
-    # ── A2 : Résultat Net ────────────────────────────────────────────────────
-    style_section(ws, r, 1, "A2 — RÉSULTAT NET (FCFA)")
-    r += 1
-    style_header(ws, r, [1, 2, 3, 4, 5, 6, 7, 8],
-                 ["Année", "N-4", "N-3", "N-2", "N-1", "N (dernier)",
-                  "Croissance N/N-4 %", "TCAM 4 ans %"])
-    RN_ROW = r + 1
-    r += 1
-    ws.cell(row=r, column=1, value="Résultat Net").fill = px(GREY)
-    ws.cell(row=r, column=1).font = ft(size=9); ws.cell(row=r, column=1).border = bd()
-    for c in [2, 3, 4, 5, 6]:
-        style_value(ws, r, c, None, fmt='#,##0', bg=WHITE)
-    style_formula(ws, r, 7,
-                  f"=IF(B{r}=0,\"\",((F{r}-B{r})/ABS(B{r}))*100)",
-                  fmt="0.00", bg=LGREEN)
-    style_formula(ws, r, 8,
-                  f"=IF(OR(B{r}=0,F{r}/B{r}<0),\"N/A\",(F{r}/B{r})^(1/4)-1)",
-                  fmt="0.00%", bg=LGREEN)
-    RN_DATA_ROW = r
-    r += 1
-    blank_row(ws, r); r += 1
+    # Libellés
+    F_LBL    = fmt(bg=GREY,   fg=DARK,   size=9,    border=1)
+    F_LBL_B  = fmt(bold=True, bg=GREY,   fg=DARK,   size=9,  border=1)
 
-    # ── A3 : Marge Nette ────────────────────────────────────────────────────
-    style_section(ws, r, 1, "A3 — MARGE NETTE (RN / CA × 100) — 5 dernières années")
-    r += 1
-    style_header(ws, r, [1, 2, 3, 4, 5, 6, 7],
-                 ["Année", "RN (M FCFA)", "CA/PNB (M FCFA)",
-                  "Marge %", "Interprétation",
-                  "Seuil recommandé", "Moyenne 5 ans %"])
-    MN_HEADER = r
-    r += 1
-    MARGE_ROWS = []
+    # Valeurs à saisir (orange)
+    F_INPUT       = fmt(bg=LORANGE, fg=ORANGE, size=10, bold=True,  align='right', border=1)
+    F_INPUT_S     = fmt(bg=LORANGE, fg=DARK,   size=9,  align='right', border=1)
+    F_INPUT_C     = fmt(bg=LORANGE, fg=DARK,   size=9,  align='center', border=1)
+
+    # Valeurs calculées (vert)
+    F_CALC        = fmt(bg=LGREEN,  fg=DARK,   size=9,  align='right', border=1)
+    F_CALC_B      = fmt(bold=True, bg=LGREEN,  fg=DARK,  size=9, align='right', border=1)
+    F_CALC_C      = fmt(bg=LGREEN,  fg=DARK,   size=9,  align='center', border=1)
+    F_CALC_PCT    = fmt(bg=LGREEN,  fg=DARK,   size=9,  align='right', border=1, num_format='0.00')
+    F_CALC_PCTA   = fmt(bg=LGREEN,  fg=DARK,   size=9,  align='right', border=1, num_format='0.00%')
+    F_CALC_N      = fmt(bg=LGREEN,  fg=DARK,   size=9,  align='right', border=1, num_format='#,##0')
+    F_CALC_N2     = fmt(bg=LGREEN,  fg=DARK,   size=9,  align='right', border=1, num_format='#,##0.00')
+
+    # Blanc neutre
+    F_WHITE       = fmt(bg=WHITE, border=1)
+    F_WHITE_R     = fmt(bg=WHITE, fg=DARK, size=9, align='right', border=1)
+    F_WHITE_C     = fmt(bg=WHITE, fg=DARK, size=9, align='center', border=1)
+    F_WHITE_N     = fmt(bg=WHITE, fg=DARK, size=9, align='right',  border=1, num_format='#,##0')
+    F_WHITE_N2    = fmt(bg=WHITE, fg=DARK, size=9, align='right',  border=1, num_format='#,##0.00')
+    F_WHITE_PCT   = fmt(bg=WHITE, fg=DARK, size=9, align='right',  border=1, num_format='0.00')
+
+    # Référence (gris)
+    F_REF    = fmt(bg=GREY, fg='#606060', size=8, italic=True, align='left', border=1, wrap=True)
+    F_NOTE   = fmt(bg=LORANGE, fg=ORANGE, size=8, italic=True, align='left', border=0, wrap=True)
+    F_HINT   = fmt(bg=WHITE, fg='#808080', size=8, italic=True, align='left', border=1)
+
+    build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
+                F_LBL, F_LBL_B, F_INPUT, F_INPUT_S, F_INPUT_C,
+                F_CALC, F_CALC_B, F_CALC_C, F_CALC_PCT, F_CALC_PCTA,
+                F_CALC_N, F_CALC_N2, F_WHITE, F_WHITE_R, F_WHITE_C,
+                F_WHITE_N, F_WHITE_N2, F_WHITE_PCT, F_REF, F_NOTE, F_HINT)
+
+    build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
+                   F_LBL, F_LBL_B, F_INPUT_S, F_CALC, F_CALC_B,
+                   F_CALC_C, F_WHITE, F_WHITE_C, F_WHITE_N2, F_LORANGE_C := fmt(bg=LORANGE, fg=DARK, size=9, align='center', border=1))
+
+    build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT)
+
+    build_formule(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_LBL_B, F_WHITE, F_REF, F_CALC_C)
+
+    wb.close()
+    print(f"Fichier cree : {OUT}")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  FEUILLE ETUDE — structure a lignes FIXES (pas de r dynamique pour les refs)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Toutes les adresses de cellules importantes sont définies ici comme constantes
+# pour éviter les erreurs de référence croisée
+
+# Saisies A4 (Valorisation)
+PRIX_CELL  = 'B24'   # Prix actuel
+BNPA_CELL  = 'B25'   # BNPA
+CPTX_CELL  = 'B26'   # Capitaux propres
+VALO_CELL  = 'B27'   # Capitalisation boursiere
+NBTI_CELL  = 'B28'   # Nombre de titres
+
+# Résultats A4 — Ratios (col C = calculé)
+PER_CELL   = 'C30'
+VMC_CELL   = 'C31'
+PBR_CELL   = 'C32'
+ROE_CELL   = 'C33'
+RVC_CELL   = 'C34'
+
+# RN data (ligne de données A2)
+RN_DATA_CELL = 'F12'  # RN année N
+
+# DVD total (A5)
+DVD_TOTAL_CELL = 'B43'  # total dividendes
+
+# B3 PER actualisé
+EVOL_RN_CELL  = 'B101'
+BNPA_ACT_CELL = 'B102'
+PER_ACT_CELL  = 'B103'
+
+# B4 PCD
+DVD_N_CELL    = 'B109'
+EVOL_PCD_CELL = 'B108'
+REND_SEC_CELL = 'B111'
+DVD_PREV_CELL = 'B110'
+PCD_CELL      = 'B112'
+ZONE_BAS_CELL = 'B113'
+ZONE_HAU_CELL = 'B114'
+
+# B5 Gordon-Shapiro
+D1_CELL  = 'B120'
+R_CELL   = 'B121'
+G_CELL   = 'B122'
+P0_CELL  = 'B123'
+
+# B6 Stop-Loss
+PA_CELL   = 'B128'
+TP_CELL   = 'B130'
+SL_CELL   = 'B129'
+PP_CELL   = 'B131'
+GP_CELL   = 'B132'
+RR_CELL   = 'B133'
+
+
+def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
+                F_LBL, F_LBL_B, F_INPUT, F_INPUT_S, F_INPUT_C,
+                F_CALC, F_CALC_B, F_CALC_C, F_CALC_PCT, F_CALC_PCTA,
+                F_CALC_N, F_CALC_N2, F_WHITE, F_WHITE_R, F_WHITE_C,
+                F_WHITE_N, F_WHITE_N2, F_WHITE_PCT, F_REF, F_NOTE, F_HINT):
+
+    ws = wb.add_worksheet("ETUDE")
+    ws.freeze_panes(1, 0)
+
+    # Largeurs colonnes (0-indexed)
+    ws.set_column(0, 0, 34)   # A
+    ws.set_column(1, 1, 13)   # B
+    ws.set_column(2, 2, 13)   # C
+    ws.set_column(3, 3, 13)   # D
+    ws.set_column(4, 4, 22)   # E
+    ws.set_column(5, 5, 11)   # F
+    ws.set_column(6, 6, 18)   # G
+    ws.set_column(7, 7, 13)   # H
+
+    def row(r): return r - 1   # convertit n° ligne Excel (1-based) en index (0-based)
+    def col(c): return ord(c) - ord('A')   # 'A'->0, 'B'->1, etc.
+
+    def title(r, text, cols=8, bg="#1F3864", size=13):
+        ws.merge_range(row(r), 0, row(r), cols-1, text, F_TITLE)
+        ws.set_row(row(r), 22)
+
+    def section(r, text, cols=8):
+        ws.merge_range(row(r), 0, row(r), cols-1, text, F_SEC)
+        ws.set_row(row(r), 18)
+
+    def heads(r, labels, cols_start=0):
+        for i, lbl in enumerate(labels):
+            ws.write(row(r), cols_start+i, lbl, F_HEAD)
+        ws.set_row(row(r), 15)
+
+    def lbl(r, c, text, bold=False):
+        ws.write(row(r), col(c), text, F_LBL_B if bold else F_LBL)
+
+    def inp(r, c, val=None, num_format=None):
+        f = F_INPUT if num_format is None else fmt(bg="#FFF2CC", fg="#FF6600", size=10,
+                 bold=True, align='right', border=1, num_format=num_format)
+        ws.write(row(r), col(c), val, f)
+
+    def inp_s(r, c, val=None, num_format=None):
+        f = F_INPUT_S if num_format is None else fmt(bg="#FFF2CC", fg="#404040", size=9,
+                 align='right', border=1, num_format=num_format)
+        ws.write(row(r), col(c), val, f)
+
+    def calc(r, c, formula, num_format=None):
+        f = F_CALC_PCT if num_format=='0.00' else \
+            F_CALC_PCTA if num_format=='0.00%' else \
+            F_CALC_N if num_format=='#,##0' else \
+            F_CALC_N2 if num_format=='#,##0.00' else \
+            F_CALC
+        ws.write_formula(row(r), col(c), formula, f)
+
+    def calc_c(r, c, formula):
+        ws.write_formula(row(r), col(c), formula, F_CALC_C)
+
+    def white(r, c, val=None, num_format=None):
+        if val is None:
+            ws.write_blank(row(r), col(c), None, F_WHITE_N if num_format=='#,##0' else F_WHITE)
+        else:
+            ws.write(row(r), col(c), val, F_WHITE_N if num_format=='#,##0' else F_WHITE_R)
+
+    def hint(r, c, text, cols_merge=None):
+        if cols_merge:
+            ws.merge_range(row(r), col(c), row(r), col(cols_merge), text, F_HINT)
+        else:
+            ws.write(row(r), col(c), text, F_HINT)
+
+    def blank(r, h=5):
+        ws.set_row(row(r), h)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    #  LIGNE 1 : Titre principal
+    # ─────────────────────────────────────────────────────────────────────────
+    ws.merge_range(0, 0, 0, 7,
+        "FICHE D'ANALYSE BRVM — [NOM SOCIETE]   |   Date : [JJ/MM/AAAA]",
+        F_TITLE)
+    ws.set_row(0, 22)
+
+    ws.merge_range(1, 0, 1, 7,
+        "Remplacer [NOM SOCIETE] et [JJ/MM/AAAA] dans la cellule A1 avant utilisation",
+        F_WARN)
+
+    blank(3)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    #  BLOC A — ANALYSE FONDAMENTALE (lignes 4–53)
+    # ─────────────────────────────────────────────────────────────────────────
+    ws.merge_range(3, 0, 3, 7, "A — ANALYSE FONDAMENTALE", F_TITLE)
+    ws.set_row(3, 22)
+    blank(5)
+
+    # ── A1 : Chiffre d'affaires / PNB  (lignes 6–9) ─────────────────────────
+    section(6, "A1 — CHIFFRE D'AFFAIRES ou PRODUIT NET BANCAIRE (en millions FCFA)")
+    heads(7, ["", "N-4", "N-3", "N-2", "N-1", "N (dernier)", "Croissance N/N-4 %", "TCAM 4 ans %"])
+    # Ligne 8 : données CA
+    lbl(8, 'A', "CA / PNB")
+    for c in ['B','C','D','E','F']:
+        inp_s(8, c, num_format='#,##0')
+    # G8 = Croissance = (F8-B8)/B8*100   ← formule correcte
+    calc(8, 'G', '=IF(B8=0,"",((F8-B8)/B8)*100)', '0.00')
+    # H8 = TCAM = (F8/B8)^(1/4)-1
+    calc(8, 'H', '=IF(OR(B8=0,F8=0),"",(F8/B8)^(1/4)-1)', '0.00%')
+    blank(9)
+
+    # ── A2 : Résultat Net  (lignes 10–13) ────────────────────────────────────
+    section(10, "A2 — RESULTAT NET (en millions FCFA)")
+    heads(11, ["", "N-4", "N-3", "N-2", "N-1", "N (dernier)", "Croissance N/N-4 %", "TCAM 4 ans %"])
+    # Ligne 12 : données RN
+    lbl(12, 'A', "Resultat Net")
+    for c in ['B','C','D','E','F']:
+        inp_s(12, c, num_format='#,##0')
+    # G12 = Croissance RN = (F12-B12)/|B12|*100
+    calc(12, 'G', '=IF(B12=0,"",((F12-B12)/ABS(B12))*100)', '0.00')
+    # H12 = TCAM (N/A si base négative)
+    calc(12, 'H', '=IF(OR(B12=0,F12/B12<0),"N/A",(F12/B12)^(1/4)-1)', '0.00%')
+    blank(13)
+
+    # ── A3 : Marge Nette  (lignes 14–21) ────────────────────────────────────
+    section(14, "A3 — MARGE NETTE (RN / CA x 100) — 5 dernieres annees")
+    heads(15, ["Annee", "RN (M FCFA)", "CA/PNB (M FCFA)", "Marge %",
+               "Interpretation", "Seuil", "Moyenne 5 ans %"])
+    # Lignes 16-20 : N-4 … N
     annees = ["N-4", "N-3", "N-2", "N-1", "N"]
     for i, annee in enumerate(annees):
-        ws.cell(row=r, column=1, value=annee).font = ft(size=9)
-        ws.cell(row=r, column=1).fill = px(GREY); ws.cell(row=r, column=1).border = bd()
-        style_value(ws, r, 2, None, fmt='#,##0', bg=WHITE)
-        style_value(ws, r, 3, None, fmt='#,##0', bg=WHITE)
-        style_formula(ws, r, 4,
-                      f"=IFERROR(B{r}/C{r}*100,\"\")", fmt="0.00", bg=LGREEN)
-        # Interprétation automatique
-        style_formula(ws, r, 5,
-                      f'=IFERROR(IF(D{r}>=10,"Très rentable",'
-                      f'IF(D{r}>=5,"Rentable",'
-                      f'IF(D{r}>=2,"Faiblement rentable","Très faible"))),"—")',
-                      bg=WHITE)
-        ws.cell(row=r, column=5).alignment = al("center", "center")
-        ws.cell(row=r, column=5).font = ft(size=9)
+        r = 16 + i
+        lbl(r, 'A', annee)
+        inp_s(r, 'B', num_format='#,##0')   # RN
+        inp_s(r, 'C', num_format='#,##0')   # CA
+        # D = Marge
+        calc(r, 'D', f'=IFERROR(B{r}/C{r}*100,"")', '0.00')
+        # E = interpretation auto
+        calc_c(r, 'E',
+            f'=IFERROR(IF(D{r}>=10,"Tres rentable",'
+            f'IF(D{r}>=5,"Rentable",'
+            f'IF(D{r}>=2,"Faiblement rentable","Tres faible"))),"-")')
         if i == 0:
-            style_value(ws, r, 6, "> 5% = bon", bg=LORANGE)
-            ws.cell(row=r, column=6).alignment = al("center", "center")
-            style_formula(ws, r, 7,
-                          f"=IFERROR(AVERAGE(D{r}:D{r+4}),\"\")",
-                          fmt="0.00", bg=LGREEN, bold=True)
+            ws.write(row(r), col('F'), "> 5% = bon", F_INPUT_C)
+            # G = Moyenne sur 5 ans
+            calc(r, 'G', '=IFERROR(AVERAGE(D16:D20),"")', '0.00')
         else:
-            for c in [6, 7]:
-                ws.cell(row=r, column=c).border = bd()
-        MARGE_ROWS.append(r)
-        r += 1
-    blank_row(ws, r); r += 1
+            ws.write_blank(row(r), col('F'), None, F_WHITE)
+            ws.write_blank(row(r), col('G'), None, F_WHITE)
+    blank(21)
 
-    # ── A4 : Indicateurs de Valorisation ────────────────────────────────────
-    style_section(ws, r, 1, "A4 — INDICATEURS DE VALORISATION")
-    r += 1
-    style_header(ws, r, [1, 2, 3, 4, 5],
-                 ["Indicateur", "Formule", "Valeur calculée",
-                  "Zone normale BRVM", "Signal"])
-    VALO_HEADER = r
-    r += 1
+    # ── A4 : Indicateurs de Valorisation  (lignes 22–35) ─────────────────────
+    section(22, "A4 — INDICATEURS DE VALORISATION")
+    # Sous-titre
+    heads(23, ["Indicateur", "Valeur", "Description formule",
+               "Valeur calculee", "Signal", "", "", ""])
 
-    # Saisies
-    PRIX_ROW = r
-    style_label(ws, r, 1, "Prix actuel de l'action (FCFA)")
-    style_value(ws, r, 2, None, fmt='#,##0', bg=LORANGE)
-    ws.cell(row=r, column=2).font = ft(bold=True, color=ORANGE, size=10)
-    for c in [3, 4, 5]: ws.cell(row=r, column=c).border = bd()
-    ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=5)
-    ws.cell(row=r, column=3, value="← Saisir ici le prix actuel").font = ft(italic=True, color="808080", size=8)
-    r += 1
+    # Saisies (lignes 24-28)
+    lbl(24, 'A', "Prix actuel de l'action (FCFA)")
+    inp(24, 'B', num_format='#,##0')
+    hint(24, 'C', "<-- Saisir le prix actuel", 'G')
 
-    BNPA_ROW = r
-    style_label(ws, r, 1, "BNPA — Bénéfice Net Par Action (FCFA)")
-    style_value(ws, r, 2, None, fmt='#,##0.00', bg=LORANGE)
-    for c in [3, 4, 5]: ws.cell(row=r, column=c).border = bd()
-    ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=5)
-    r += 1
+    lbl(25, 'A', "BNPA — Benefice Net Par Action (FCFA)")
+    inp(25, 'B', num_format='#,##0.00')
+    hint(25, 'C', "<-- RN / Nb titres (rapport annuel)", 'G')
 
-    CPTX_ROW = r
-    style_label(ws, r, 1, "Capitaux Propres (FCFA)")
-    style_value(ws, r, 2, None, fmt='#,##0', bg=LORANGE)
-    for c in [3, 4, 5]: ws.cell(row=r, column=c).border = bd()
-    ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=5)
-    r += 1
+    lbl(26, 'A', "Capitaux Propres (FCFA)")
+    inp(26, 'B', num_format='#,##0')
+    hint(26, 'C', "<-- Bilan comptable", 'G')
 
-    VALO_ENT_ROW = r
-    style_label(ws, r, 1, "Valorisation / Capitalisation boursière (FCFA)")
-    style_value(ws, r, 2, None, fmt='#,##0', bg=LORANGE)
-    for c in [3, 4, 5]: ws.cell(row=r, column=c).border = bd()
-    ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=5)
-    r += 1
+    lbl(27, 'A', "Capitalisation boursiere (FCFA)")
+    inp(27, 'B', num_format='#,##0')
+    hint(27, 'C', "<-- Prix x Nb titres", 'G')
 
-    NB_TITRES_ROW = r
-    style_label(ws, r, 1, "Nombre de titres en circulation")
-    style_value(ws, r, 2, None, fmt='#,##0', bg=LORANGE)
-    for c in [3, 4, 5]: ws.cell(row=r, column=c).border = bd()
-    ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=5)
-    r += 1
+    lbl(28, 'A', "Nombre de titres en circulation")
+    inp(28, 'B', num_format='#,##0')
+    hint(28, 'C', "<-- BRVM.org", 'G')
 
-    blank_row(ws, r, 4); r += 1
+    blank(29)
 
-    # Ratios calculés
-    ratios = [
-        ("PER — Price Earning Ratio",
-         f"=B{PRIX_ROW}/B{BNPA_ROW}",
-         "9 – 15",
-         f'=IFERROR(IF(C{r}>15,"Surévalué",IF(C{r}<9,"Sous-évalué","Zone normale")),"—")'),
-        ("VMC — Valeur Mathématique Comptable (FCFA)",
-         f"=B{CPTX_ROW}/B{NB_TITRES_ROW}",
-         "—",
-         f'=IFERROR(IF(B{PRIX_ROW}>C{r},"Action surévaluée","Action sous-évaluée"),"—")'),
-        ("PBR — Price to Book Ratio",
-         f"=B{VALO_ENT_ROW}/B{CPTX_ROW}",
-         "< 1 = bon",
-         f'=IFERROR(IF(C{r}<1,"Décote comptable",IF(C{r}<2,"Normal","Prime élevée")),"—")'),
-        ("ROE — Return on Equity (%)",
-         f"=IFERROR(B{RN_DATA_ROW}*1000000/B{CPTX_ROW}*100,\"\")",
-         "> 10% = bon",
-         f'=IFERROR(IF(C{r}>=15,"Excellent",IF(C{r}>=10,"Bon",IF(C{r}>=5,"Moyen","Faible"))),"—")'),
-        ("RVC = PER × PBR",
-         f"=IFERROR(C{r-4}*C{r-2},\"\")",
-         "< 22 = Décote",
-         f'=IFERROR(IF(C{r}<22,"Décote (achat possible)","Surévaluation"),"—")'),
-    ]
+    # Ratios calculés (lignes 30-34) — chaque ratio sur sa propre ligne
+    # PER — ligne 30
+    lbl(30, 'A', "PER — Price Earning Ratio")
+    ws.write(row(30), col('B'), "Prix / BNPA", F_LBL)
+    ws.write(row(30), col('C'), "=B24/B25", F_HINT)          # formule visible
+    calc(30, 'D', '=IFERROR(B24/B25,"")', '0.00')             # valeur calculee
+    calc_c(30, 'E',
+        '=IFERROR(IF(D30>15,"Surevalue",'
+        'IF(D30<9,"Sous-evalue","Zone normale (9-15)")),"-")')
+    ws.write(row(30), col('F'), "Zone : 9-15", F_INPUT_C)
 
-    PER_ROW = r
-    VMC_ROW = r + 1
-    PBR_ROW = r + 2
-    ROE_ROW = r + 3
-    RVC_ROW = r + 4
+    # VMC — ligne 31
+    lbl(31, 'A', "VMC — Valeur Mathematique Comptable (FCFA)")
+    ws.write(row(31), col('B'), "Capitaux Propres / Nb titres", F_LBL)
+    ws.write(row(31), col('C'), "=B26/B28", F_HINT)
+    calc(31, 'D', '=IFERROR(B26/B28,"")', '#,##0.00')
+    calc_c(31, 'E',
+        '=IFERROR(IF(B24>D31,"Action surevaluee vs VMC","Action sous-evaluee vs VMC"),"-")')
+    ws.write(row(31), col('F'), "Prix < VMC = bon", F_INPUT_C)
 
-    for label, formula_val, zone, signal_formula in ratios:
-        style_label(ws, r, 1, label)
-        style_value(ws, r, 2, formula_val, fmt='0.00', bg=LGREEN)
-        ws.cell(row=r, column=2).value = formula_val
-        ws.cell(row=r, column=2).number_format = "0.00"
-        # Valeur calculée : formule dynamique
-        style_formula(ws, r, 3, formula_val, fmt='0.00', bg=LGREEN)
-        style_value(ws, r, 4, zone, bg=LORANGE)
-        ws.cell(row=r, column=4).alignment = al("center", "center")
-        style_formula(ws, r, 5, signal_formula, bg=WHITE)
-        ws.cell(row=r, column=5).alignment = al("center", "center")
-        ws.cell(row=r, column=5).font = ft(size=9)
-        r += 1
-    blank_row(ws, r); r += 1
+    # PBR — ligne 32
+    lbl(32, 'A', "PBR — Price to Book Ratio")
+    ws.write(row(32), col('B'), "Capitalisation / Capitaux Propres", F_LBL)
+    ws.write(row(32), col('C'), "=B27/B26", F_HINT)
+    calc(32, 'D', '=IFERROR(B27/B26,"")', '0.00')
+    calc_c(32, 'E',
+        '=IFERROR(IF(D32<1,"Decote comptable",'
+        'IF(D32<2,"Normal","Prime elevee")),"-")')
+    ws.write(row(32), col('F'), "< 1 = decote", F_INPUT_C)
 
-    # ── A5 : Taux de distribution & Dividendes ───────────────────────────────
-    style_section(ws, r, 1, "A5 — DIVIDENDES & TAUX DE DISTRIBUTION")
-    r += 1
-    style_header(ws, r, [1, 2, 3, 4, 5, 6],
-                 ["Année", "Dividende brut (FCFA)", "BNPA (FCFA)",
-                  "Taux distribution %", "Rendement %", "Progression %"])
-    DVD_HEADER = r
-    DVD_ROWS = []
-    r += 1
-    for i in range(5):
-        annee_label = ["N-4", "N-3", "N-2", "N-1", "N"][i]
-        style_label(ws, r, 1, annee_label)
-        style_value(ws, r, 2, None, fmt='#,##0.00', bg=WHITE)
-        style_value(ws, r, 3, None, fmt='#,##0.00', bg=WHITE)
-        # Taux distribution = DVD / BNPA × 100 (après précompte 15%)
-        style_formula(ws, r, 4,
-                      f"=IFERROR(B{r}/(C{r}*0.85)*100,\"\")",
-                      fmt="0.00", bg=LGREEN)
-        # Rendement = Dividende / Prix × 100
-        style_formula(ws, r, 5,
-                      f"=IFERROR(B{r}/B{PRIX_ROW}*100,\"\")",
-                      fmt="0.00", bg=LGREEN)
+    # ROE — ligne 33
+    lbl(33, 'A', "ROE — Return on Equity (%)")
+    ws.write(row(33), col('B'), "RN / Capitaux Propres x 100", F_LBL)
+    ws.write(row(33), col('C'), "=F12*1000000/B26*100", F_HINT)
+    calc(33, 'D', '=IFERROR(F12*1000000/B26*100,"")', '0.00')
+    calc_c(33, 'E',
+        '=IFERROR(IF(D33>=15,"Excellent",'
+        'IF(D33>=10,"Bon",'
+        'IF(D33>=5,"Moyen","Faible"))),"-")')
+    ws.write(row(33), col('F'), "> 10% = bon", F_INPUT_C)
+
+    # RVC — ligne 34
+    lbl(34, 'A', "RVC — PER x PBR (Lynch)")
+    ws.write(row(34), col('B'), "PER x PBR", F_LBL)
+    ws.write(row(34), col('C'), "=D30*D32", F_HINT)
+    calc(34, 'D', '=IFERROR(D30*D32,"")', '0.00')
+    calc_c(34, 'E',
+        '=IFERROR(IF(D34<22,"Decote globale (achat possible)","Surevaluation"),"-")')
+    ws.write(row(34), col('F'), "< 22 = decote", F_INPUT_C)
+
+    blank(35)
+
+    # ── A5 : Dividendes & Taux de distribution  (lignes 36–44) ──────────────
+    section(36, "A5 — DIVIDENDES & TAUX DE DISTRIBUTION")
+    heads(37, ["Annee", "Dividende brut (FCFA)", "BNPA (FCFA)",
+               "Taux distrib. %", "Rendement %", "Progression %"])
+    # Lignes 38-42 : N-4 … N
+    for i, annee in enumerate(["N-4","N-3","N-2","N-1","N"]):
+        r = 38 + i
+        lbl(r, 'A', annee)
+        inp_s(r, 'B', num_format='#,##0.00')  # dividende
+        inp_s(r, 'C', num_format='#,##0.00')  # BNPA
+        # D = taux distribution
+        calc(r, 'D', f'=IFERROR(B{r}/(C{r}*0.85)*100,"")', '0.00')
+        # E = rendement dividend yield
+        calc(r, 'E', f'=IFERROR(B{r}/B24*100,"")', '0.00')
+        # F = progression vs annee precedente
         if i == 0:
-            ws.cell(row=r, column=6).border = bd()
-            ws.cell(row=r, column=6, value="—").font = ft(size=9)
-            ws.cell(row=r, column=6).alignment = al("center", "center")
+            ws.write_blank(row(r), col('F'), None, F_WHITE)
         else:
-            style_formula(ws, r, 6,
-                          f"=IFERROR((B{r}-B{r-1})/ABS(B{r-1})*100,\"\")",
-                          fmt="0.00", bg=LGREEN)
-        DVD_ROWS.append(r)
-        r += 1
+            calc(r, 'F', f'=IFERROR((B{r}-B{r-1})/ABS(B{r-1})*100,"")', '0.00')
+    # Ligne 43 : totaux
+    lbl(43, 'A', "TOTAL / MOYENNE", bold=True)
+    ws.write_formula(row(43), col('B'), '=SUM(B38:B42)', F_CALC_N2)
+    ws.write_blank(row(43), col('C'), None, F_WHITE)
+    ws.write_formula(row(43), col('D'), '=IFERROR(AVERAGE(D38:D42),"")', F_CALC_PCT)
+    ws.write_formula(row(43), col('E'), '=IFERROR(AVERAGE(E38:E42),"")', F_CALC_PCT)
+    ws.write_blank(row(43), col('F'), None, F_WHITE)
+    blank(44)
 
-    # Total dividendes & rendement moyen
-    style_label(ws, r, 1, "TOTAL dividendes & rendement moyen", bold=True)
-    style_formula(ws, r, 2, f"=SUM(B{DVD_ROWS[0]}:B{DVD_ROWS[-1]})",
-                  fmt='#,##0.00', bg=LGREEN, bold=True)
-    for c in [3]: ws.cell(row=r, column=c).border = bd()
-    style_formula(ws, r, 4,
-                  f"=IFERROR(AVERAGE(D{DVD_ROWS[0]}:D{DVD_ROWS[-1]}),\"\")",
-                  fmt="0.00", bg=LGREEN, bold=True)
-    style_formula(ws, r, 5,
-                  f"=IFERROR(AVERAGE(E{DVD_ROWS[0]}:E{DVD_ROWS[-1]}),\"\")",
-                  fmt="0.00", bg=LGREEN, bold=True)
-    for c in [6]: ws.cell(row=r, column=c).border = bd()
-    DVD_TOTAL_ROW = r
-    r += 1
-    blank_row(ws, r); r += 1
+    # ── A6 : Fonds Propres  (lignes 45–53) ──────────────────────────────────
+    section(45, "A6 — FONDS PROPRES (FCFA)")
+    heads(46, ["Composante", "Annee N-1", "Annee N", "Variation %"])
+    fp_items = ["Capital souscrit", "Reserves", "Report a nouveau",
+                "Resultat Net", "Dividendes verses"]
+    for i, item in enumerate(fp_items):
+        r = 47 + i
+        lbl(r, 'A', item)
+        inp_s(r, 'B', num_format='#,##0')
+        inp_s(r, 'C', num_format='#,##0')
+        calc(r, 'D', f'=IFERROR((C{r}-B{r})/ABS(B{r})*100,"")', '0.00')
+    # Total ligne 52
+    lbl(52, 'A', "TOTAL FONDS PROPRES", bold=True)
+    ws.write_formula(row(52), col('B'), '=SUM(B47:B51)', F_CALC_N)
+    ws.write_formula(row(52), col('C'), '=SUM(C47:C51)', F_CALC_N)
+    ws.write_formula(row(52), col('D'), '=IFERROR((C52-B52)/ABS(B52)*100,"")', F_CALC_PCT)
+    blank(53)
 
-    # ── A6 : Fonds Propres ──────────────────────────────────────────────────
-    style_section(ws, r, 1, "A6 — FONDS PROPRES (FCFA)")
-    r += 1
-    style_header(ws, r, [1, 2, 3, 4],
-                 ["Composante", "Année N-1", "Année N", "Variation %"])
-    FP_HEADER = r
-    r += 1
-    fp_items = ["Capital souscrit", "Réserves", "Report à nouveau", "Résultat Net", "Dividendes versés"]
-    FP_ROWS = []
-    for item in fp_items:
-        style_label(ws, r, 1, item)
-        style_value(ws, r, 2, None, fmt='#,##0', bg=WHITE)
-        style_value(ws, r, 3, None, fmt='#,##0', bg=WHITE)
-        style_formula(ws, r, 4,
-                      f"=IFERROR((C{r}-B{r})/ABS(B{r})*100,\"\")",
-                      fmt="0.00", bg=LGREEN)
-        FP_ROWS.append(r)
-        r += 1
-
-    # Total fonds propres
-    style_label(ws, r, 1, "TOTAL FONDS PROPRES", bold=True)
-    style_formula(ws, r, 2, f"=SUM(B{FP_ROWS[0]}:B{FP_ROWS[-1]})",
-                  fmt='#,##0', bg=LGREEN, bold=True)
-    style_formula(ws, r, 3, f"=SUM(C{FP_ROWS[0]}:C{FP_ROWS[-1]})",
-                  fmt='#,##0', bg=LGREEN, bold=True)
-    style_formula(ws, r, 4,
-                  f"=IFERROR((C{r}-B{r})/ABS(B{r})*100,\"\")",
-                  fmt="0.00", bg=LGREEN, bold=True)
-    FP_TOTAL_ROW = r
-    r += 1
-    blank_row(ws, r); r += 1
-
-    # ── A7 : Notation & Activités récentes ──────────────────────────────────
-    style_section(ws, r, 1, "A7 — NOTATION FINANCIÈRE & ACTIVITÉS RÉCENTES")
-    r += 1
-    style_header(ws, r, [1, 2, 3, 4],
-                 ["Indicateur", "Valeur", "Source", "Date rapport"])
-    r += 1
-    items_notation = [
-        ("Notation court terme", "", "Agence de notation", ""),
-        ("Notation long terme", "", "Agence de notation", ""),
-        ("Variation CA/PNB (trimestre)", "", "RichBourse", ""),
-        ("Variation Résultat Net (trimestre)", "", "RichBourse", ""),
+    # ── A7 : Notation & Activités récentes  (lignes 54–60) ──────────────────
+    section(54, "A7 — NOTATION FINANCIERE & ACTIVITES RECENTES")
+    heads(55, ["Indicateur", "Valeur", "Source", "Date rapport"])
+    nota_items = [
+        ("Notation court terme", "A1", "Agence de notation", ""),
+        ("Notation long terme",  "A+", "Agence de notation", ""),
+        ("Variation CA/PNB (dernier trimestre)", "", "RichBourse", ""),
+        ("Variation Resultat Net (dernier trimestre)", "", "RichBourse", ""),
     ]
-    for label, val, src, date in items_notation:
-        style_label(ws, r, 1, label)
-        style_value(ws, r, 2, val or None, bg=WHITE)
-        ws.cell(row=r, column=2).alignment = al("center", "center")
-        style_value(ws, r, 3, src, bg=GREY)
-        ws.cell(row=r, column=3).alignment = al("center", "center")
-        style_value(ws, r, 4, date or None, bg=GREY)
-        ws.cell(row=r, column=4).alignment = al("center", "center")
-        r += 1
-    blank_row(ws, r); r += 1
+    for i, (lbl_txt, val, src, dt) in enumerate(nota_items):
+        r = 56 + i
+        lbl(r, 'A', lbl_txt)
+        ws.write(row(r), col('B'), val or None, F_INPUT_S)
+        ws.write(row(r), col('C'), src, F_WHITE_C)
+        ws.write(row(r), col('D'), dt or None, F_WHITE_C)
+    blank(60)
 
-    # ── A8 : Comparaison Marché vs Épargne ──────────────────────────────────
-    style_section(ws, r, 1, "A8 — COMPARAISON MARCHÉ BOURSIER VS ÉPARGNE")
-    r += 1
+    # ── A8 : Comparaison Marché vs Épargne  (lignes 61–76) ──────────────────
+    section(61, "A8 — COMPARAISON MARCHE BOURSIER VS EPARGNE")
+    heads(62, ["Parametre", "Marche Boursier", "Epargne (saisir rendement %)", ""])
 
-    style_header(ws, r, [1, 2, 3],
-                 ["Paramètre", "Marché Boursier", "Épargne (référence)"])
-    r += 1
+    comp_items = [
+        ("Montant investi (FCFA)",                    None,  '#,##0'),
+        ("Prix d'achat historique (FCFA)",            None,  '#,##0'),
+        ("CMP = Prix x 1,014 (frais 1,4%)",          None,  '#,##0.00'),
+        ("Nombre de titres acquis",                   None,  '#,##0.00'),
+        ("Prix actuel du titre (FCFA)",               None,  '#,##0'),
+        ("Prix net apres taxe cession 1,4% (FCFA)",  None,  '#,##0.00'),
+        ("Plus-value unitaire (FCFA)",                None,  '#,##0.00'),
+        ("Plus-value totale (FCFA)",                  None,  '#,##0'),
+        ("Total dividendes recus par titre (FCFA)",   None,  '#,##0.00'),
+        ("Rendement dividendes total (FCFA)",         None,  '#,##0'),
+        ("RENDEMENT TOTAL (FCFA)",                    None,  '#,##0'),
+        ("PERFORMANCE (%)",                           None,  '0.00'),
+        ("VERDICT",                                   None,  '@'),
+    ]
 
     COMP_ROWS = {}
+    for i, (lbl_txt, _, nf) in enumerate(comp_items):
+        r = 63 + i
+        lbl(r, 'A', lbl_txt, bold=(lbl_txt.startswith("REND") or lbl_txt.startswith("PERF") or lbl_txt.startswith("VERD")))
+        ws.write_blank(row(r), col('B'), None, fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1, num_format=nf))
+        ws.write_blank(row(r), col('C'), None, F_WHITE_R)
+        ws.write_blank(row(r), col('D'), None, F_WHITE)
+        COMP_ROWS[lbl_txt] = r
 
-    items_comp = [
-        ("Montant investi (FCFA)", "#,##0", None),
-        ("Prix d'achat (FCFA)", "#,##0", None),
-        ("CMP (prix + 1,4% frais achat)", "#,##0.00", None),
-        ("Nombre de titres acquis", "#,##0.00", None),
-        ("Prix actuel titre (FCFA)", "#,##0", None),
-        ("Prix net après taxe cession 1,4% (FCFA)", "#,##0.00", None),
-        ("Plus-value unitaire (FCFA)", "#,##0.00", None),
-        ("Plus-value totale (FCFA)", "#,##0", None),
-        ("Total dividendes perçus (FCFA)", "#,##0", None),
-        ("Rendement total (FCFA)", "#,##0", None),
-        ("Performance (%)", "0.00", None),
-    ]
+    # Lignes de référence
+    INV_R  = COMP_ROWS["Montant investi (FCFA)"]
+    ACH_R  = COMP_ROWS["Prix d'achat historique (FCFA)"]
+    CMP_R  = COMP_ROWS["CMP = Prix x 1,014 (frais 1,4%)"]
+    TIT_R  = COMP_ROWS["Nombre de titres acquis"]
+    PCR_R  = COMP_ROWS["Prix actuel du titre (FCFA)"]
+    NET_R  = COMP_ROWS["Prix net apres taxe cession 1,4% (FCFA)"]
+    PVU_R  = COMP_ROWS["Plus-value unitaire (FCFA)"]
+    PVT_R  = COMP_ROWS["Plus-value totale (FCFA)"]
+    DVD_R  = COMP_ROWS["Total dividendes recus par titre (FCFA)"]
+    RDT_R  = COMP_ROWS["Rendement dividendes total (FCFA)"]
+    TOT_R  = COMP_ROWS["RENDEMENT TOTAL (FCFA)"]
+    PER_C  = COMP_ROWS["PERFORMANCE (%)"]
+    VER_R  = COMP_ROWS["VERDICT"]
 
-    for label, fmt, _ in items_comp:
-        style_label(ws, r, 1, label)
-        style_value(ws, r, 2, None, fmt=fmt, bg=WHITE)
-        style_value(ws, r, 3, None, fmt=fmt, bg=WHITE)
-        COMP_ROWS[label] = r
-        r += 1
+    def set_formula_comp(r, formula, nf):
+        ws.write_formula(row(r), col('B'), formula,
+                         fmt(bg="#E2EFDA", fg="#404040", size=9, align='right', border=1, num_format=nf))
 
-    # Pré-remplir les formules de la colonne marché
-    inv_r    = COMP_ROWS["Montant investi (FCFA)"]
-    achat_r  = COMP_ROWS["Prix d'achat (FCFA)"]
-    cmp_r    = COMP_ROWS["CMP (prix + 1,4% frais achat)"]
-    titres_r = COMP_ROWS["Nombre de titres acquis"]
-    prix_r   = COMP_ROWS["Prix actuel titre (FCFA)"]
-    net_r    = COMP_ROWS["Prix net après taxe cession 1,4% (FCFA)"]
-    pvu_r    = COMP_ROWS["Plus-value unitaire (FCFA)"]
-    pvt_r    = COMP_ROWS["Plus-value totale (FCFA)"]
-    dvd_r    = COMP_ROWS["Total dividendes perçus (FCFA)"]
-    rdt_r    = COMP_ROWS["Rendement total (FCFA)"]
-    perf_r   = COMP_ROWS["Performance (%)"]
+    set_formula_comp(CMP_R, f'=IFERROR(B{ACH_R}*1.014,"")',          '#,##0.00')
+    set_formula_comp(TIT_R, f'=IFERROR(B{INV_R}/B{CMP_R},"")',       '#,##0.00')
+    set_formula_comp(NET_R, f'=IFERROR(B{PCR_R}-(B{PCR_R}*0.014),"")','#,##0.00')
+    set_formula_comp(PVU_R, f'=IFERROR(B{NET_R}-B{CMP_R},"")',       '#,##0.00')
+    set_formula_comp(PVT_R, f'=IFERROR(B{PVU_R}*B{TIT_R},"")',       '#,##0')
+    set_formula_comp(RDT_R, f'=IFERROR(B{DVD_R}*B{TIT_R},"")',       '#,##0')
+    set_formula_comp(TOT_R, f'=IFERROR(B{PVT_R}+B{RDT_R},"")',       '#,##0')
+    set_formula_comp(PER_C, f'=IFERROR(B{TOT_R}/B{INV_R}*100,"")',   '0.00')
+    ws.write_formula(row(VER_R), col('B'),
+        f'=IFERROR(IF(B{PER_C}>C{PER_C},"MARCHE BOURSIER","EPARGNE"),"Saisir les donnees")',
+        fmt(bg="#E2EFDA", fg="#1F3864", size=10, bold=True, align='center', border=1))
+    ws.write(row(VER_R), col('C'),
+        "<-- Saisir rendement epargne % ici", F_HINT)
 
-    ws.cell(row=cmp_r,    column=2, value=f"=IFERROR(B{achat_r}*1.014,\"\")")
-    ws.cell(row=titres_r, column=2, value=f"=IFERROR(B{inv_r}/B{cmp_r},\"\")")
-    ws.cell(row=net_r,    column=2, value=f"=IFERROR(B{prix_r}-(B{prix_r}*0.014),\"\")")
-    ws.cell(row=pvu_r,    column=2, value=f"=IFERROR(B{net_r}-B{cmp_r},\"\")")
-    ws.cell(row=pvt_r,    column=2, value=f"=IFERROR(B{pvu_r}*B{titres_r},\"\")")
-    ws.cell(row=dvd_r,    column=2, value=f"=IFERROR(B{titres_r}*C{dvd_r},\"\")")  # C = total dvd par titre
-    ws.cell(row=rdt_r,    column=2, value=f"=IFERROR(B{pvt_r}+B{dvd_r},\"\")")
-    ws.cell(row=perf_r,   column=2, value=f"=IFERROR(B{rdt_r}/B{inv_r}*100,\"\")")
+    blank(76)
 
-    for row_n in [cmp_r, titres_r, net_r, pvu_r, pvt_r, dvd_r, rdt_r, perf_r]:
-        ws.cell(row=row_n, column=2).fill = px(LGREEN)
-        ws.cell(row=row_n, column=2).font = ft(size=9, color=DARK)
-        ws.cell(row=row_n, column=2).alignment = al("right", "center")
-        ws.cell(row=row_n, column=2).border = bd()
+    # ── A9 : Conclusion Fondamentale  (lignes 77–79) ─────────────────────────
+    section(77, "A9 — CONCLUSION ANALYSE FONDAMENTALE (texte libre)")
+    ws.merge_range(row(78), 0, row(80), 7, "", fmt(bg=WHITE, border=1, wrap=True, valign='top'))
+    ws.set_row(row(78), 40)
+    blank(81)
 
-    ws.cell(row=dvd_r, column=3,
-            value="← Total dividendes reçus par titre sur la période").font = ft(italic=True, color="808080", size=8)
-    ws.cell(row=dvd_r, column=3).border = bd()
+    # ─────────────────────────────────────────────────────────────────────────
+    #  BLOC B — ANALYSE TECHNIQUE (lignes 82–138)
+    # ─────────────────────────────────────────────────────────────────────────
+    ws.merge_range(row(82)-1, 0, row(82)-1, 7, "B — ANALYSE TECHNIQUE", F_TITLE)
+    ws.set_row(row(82)-1, 22)
+    blank(83)
 
-    # Verdict
-    verdict_r = r
-    style_label(ws, r, 1, "VERDICT", bold=True)
-    style_formula(ws, r, 2,
-                  f'=IFERROR(IF(B{perf_r}>C{perf_r},"MARCHE BOURSIER","EPARGNE"),"Saisir les données")',
-                  bg=LGREEN, bold=True)
-    ws.cell(row=r, column=2).alignment = al("center", "center")
-    style_value(ws, r, 3, None, bg=WHITE)
-    ws.cell(row=r, column=3, value="← Saisir le rendement épargne %").font = ft(italic=True, color="808080", size=8)
-    r += 1
-    blank_row(ws, r); r += 1
-
-    # ── A9 : Conclusion Fondamentale ────────────────────────────────────────
-    style_section(ws, r, 1, "A9 — CONCLUSION ANALYSE FONDAMENTALE (texte libre)")
-    r += 1
-    cell = ws.cell(row=r, column=1)
-    cell.value = ("← Saisir ici ta synthèse fondamentale : "
-                  "PER, valorisation, tendance CA/RN, politique dividendes, "
-                  "fonds propres, comparaison épargne…")
-    cell.font = ft(italic=True, color="808080", size=9)
-    cell.fill = px(WHITE)
-    cell.alignment = al("left", "center", wrap=True)
-    ws.merge_cells(start_row=r, start_column=1, end_row=r+2, end_column=8)
-    ws.row_dimensions[r].height = 50
-    r += 3
-    blank_row(ws, r); r += 1
-
-    # ════════════════════════════════════════════════════════════════════════
-    #  BLOC B — ANALYSE TECHNIQUE
-    # ════════════════════════════════════════════════════════════════════════
-    style_title(ws, r, 1, "B — ANALYSE TECHNIQUE",
-                merge_to_col=8, bg=NAVY, size=11)
-    r += 1
-    blank_row(ws, r); r += 1
-
-    # ── B1 : Indicateurs techniques ─────────────────────────────────────────
-    style_section(ws, r, 1, "B1 — INDICATEURS TECHNIQUES (saisie manuelle depuis graphique)")
-    r += 1
-    style_header(ws, r, [1, 2, 3, 4, 5],
-                 ["Indicateur", "Signal observé", "Valeur / Niveau",
-                  "Points attribués", "Référence"])
-    r += 1
-
-    TECH_ROWS = []
+    # ── B1 : Indicateurs techniques  (lignes 84–92) ──────────────────────────
+    section(84, "B1 — INDICATEURS TECHNIQUES (saisie depuis graphique)")
+    heads(85, ["Indicateur", "Signal observe", "Valeur / Niveau", "Score auto", "Reference"])
     tech_items = [
         ("Moyenne Mobile 20 jours (MM20)",
-         ["Zone de survente", "Neutre", "Zone de surachat"],
-         "MM20 : prix en dessous = survente"),
+         "Zone de survente : cours EN DESSOUS de la MM20"),
         ("Bandes de Bollinger",
-         ["Zone de survente", "Neutre", "Zone de surachat"],
-         "Prix < bande inf = survente"),
+         "Zone de survente : cours touche la bande inferieure"),
         ("MACD",
-         ["Zone de survente", "Neutre", "Zone de surachat"],
-         "MACD > Signal = haussier"),
-        ("RSI",
-         ["Zone de survente (RSI < 30)", "Neutre (30-70)", "Zone de surachat (RSI > 70)"],
-         "RSI < 30 = survente"),
-        ("Volume (tendance récente)",
-         ["Volume croissant haussier", "Neutre", "Volume décroissant"],
-         "Volume confirme la tendance"),
+         "Zone de survente : MACD croise Signal a la hausse"),
+        ("RSI (saisir valeur en col C)",
+         "< 30 survente | 30-70 neutre | > 70 surachat"),
+        ("Volume (tendance recente)",
+         "Volume croissant sur baisse = accumulation = survente"),
     ]
+    for i, (ind, ref) in enumerate(tech_items):
+        r = 86 + i
+        lbl(r, 'A', ind)
+        ws.write(row(r), col('B'), "<-- Saisir signal", F_HINT)
+        ws.write_blank(row(r), col('C'), None, F_WHITE_R)
+        # D = score auto : +1 si 'survente', -1 si 'surachat', 0 sinon
+        ws.write_formula(row(r), col('D'),
+            f'=IFERROR(IF(ISNUMBER(SEARCH("survente",B{r})),1,'
+            f'IF(ISNUMBER(SEARCH("surachat",B{r})),-1,0)),0)',
+            fmt(bg="#E2EFDA", fg="#404040", size=9, align='center', border=1, num_format='0'))
+        ws.write(row(r), col('E'), ref, F_REF)
 
-    POINTS_CELLS = []
-    for indicator, options, ref in tech_items:
-        style_label(ws, r, 1, indicator)
-        # Colonne B : liste déroulante (validation) — signal
-        cell_sig = ws.cell(row=r, column=2)
-        cell_sig.value = "← Saisir signal"
-        cell_sig.font = ft(italic=True, color="808080", size=8)
-        cell_sig.fill = px(WHITE)
-        cell_sig.alignment = al("center", "center")
-        cell_sig.border = bd()
-        # Colonne C : valeur numérique
-        style_value(ws, r, 3, None, fmt='0.00', bg=WHITE)
-        # Colonne D : points (1 si survente, 0 si neutre, -1 si surachat)
-        style_formula(ws, r, 4,
-                      f'=IFERROR(IF(ISNUMBER(SEARCH("survente",B{r})),1,'
-                      f'IF(ISNUMBER(SEARCH("surachat",B{r})),-1,0)),0)',
-                      fmt='0', bg=LGREEN)
-        POINTS_CELLS.append(r)
-        # Colonne E : référence
-        cell_ref = ws.cell(row=r, column=5, value=ref)
-        cell_ref.font = ft(italic=True, color="606060", size=8)
-        cell_ref.fill = px(GREY)
-        cell_ref.alignment = al("left", "center", wrap=True)
-        cell_ref.border = bd()
-        TECH_ROWS.append(r)
-        r += 1
+    # Ligne 91 : Score total
+    lbl(91, 'A', "SCORE TECHNIQUE (max +5 / min -5)", bold=True)
+    ws.write_blank(row(91), col('B'), None, F_WHITE)
+    ws.write_blank(row(91), col('C'), None, F_WHITE)
+    ws.write_formula(row(91), col('D'), '=SUM(D86:D90)',
+                     fmt(bg="#E2EFDA", fg="#1F3864", size=10, bold=True, align='center', border=1, num_format='0'))
+    ws.write_formula(row(91), col('E'),
+        '=IFERROR(IF(D91>0,"Zone SURVENTE - Achat possible",'
+        'IF(D91<0,"Zone SURACHAT - Vente possible","NEUTRE")),"-")',
+        fmt(bg="#E2EFDA", fg="#1F3864", size=9, bold=True, align='center', border=1))
+    blank(92)
 
-    # Total points techniques
-    SCORE_TECH_ROW = r
-    style_label(ws, r, 1, "SCORE TECHNIQUE (max 5, min -5)", bold=True)
-    for c in [2, 3]: ws.cell(row=r, column=c).border = bd()
-    style_formula(ws, r, 4,
-                  f"=SUM(D{POINTS_CELLS[0]}:D{POINTS_CELLS[-1]})",
-                  fmt='0', bg=LGREEN, bold=True)
-    style_formula(ws, r, 5,
-                  f'=IFERROR(IF(D{r}>0,"Zone SURVENTE - Achat possible",'
-                  f'IF(D{r}<0,"Zone SURACHAT - Vente possible","NEUTRE")),"—")',
-                  bg=WHITE, bold=True)
-    ws.cell(row=r, column=5).alignment = al("center", "center")
-    ws.cell(row=r, column=5).font = ft(bold=True, size=9)
-    r += 1
-    blank_row(ws, r); r += 1
+    # ── B2 : Prix Médians  (lignes 93–97) ────────────────────────────────────
+    section(93, "B2 — PRIX MEDIANS (PM)")
+    heads(94, ["Horizon", "Plus Haut (FCFA)", "Plus Bas (FCFA)", "Prix Median",
+               "Signal (vs prix actuel B24)"])
+    pm_items = ["52 semaines (1 an)", "2 ans"]
+    for i, horizon in enumerate(pm_items):
+        r = 95 + i
+        lbl(r, 'A', horizon)
+        inp_s(r, 'B', num_format='#,##0')
+        inp_s(r, 'C', num_format='#,##0')
+        calc(r, 'D', f'=IFERROR((B{r}+C{r})/2,"")', '#,##0.00')
+        calc_c(r, 'E',
+            f'=IFERROR(IF(B24<D{r},"EN DESSOUS du PM - Survente",'
+            f'"AU-DESSUS du PM - Surachat"),"-")')
+    blank(97)
 
-    # ── B2 : Prix Médians ───────────────────────────────────────────────────
-    style_section(ws, r, 1, "B2 — PRIX MÉDIANS (PM)")
-    r += 1
-    style_header(ws, r, [1, 2, 3, 4, 5],
-                 ["Horizon", "Plus Haut", "Plus Bas",
-                  "Prix Médian", "Signal (vs prix actuel)"])
-    r += 1
-
-    PM_ROWS = []
-    for horizon in ["52 semaines (1 an)", "2 ans"]:
-        style_label(ws, r, 1, horizon)
-        style_value(ws, r, 2, None, fmt='#,##0', bg=WHITE)   # Plus haut
-        style_value(ws, r, 3, None, fmt='#,##0', bg=WHITE)   # Plus bas
-        style_formula(ws, r, 4,
-                      f"=IFERROR((B{r}+C{r})/2,\"\")",
-                      fmt='#,##0.00', bg=LGREEN)
-        style_formula(ws, r, 5,
-                      f'=IFERROR(IF(B{PRIX_ROW}<D{r},"EN DESSOUS du PM - Survente","AU-DESSUS du PM - Surachat"),"—")',
-                      bg=WHITE)
-        ws.cell(row=r, column=5).alignment = al("center", "center")
-        ws.cell(row=r, column=5).font = ft(size=9)
-        PM_ROWS.append(r)
-        r += 1
-    blank_row(ws, r); r += 1
-
-    # ── B3 : PER actualisé ──────────────────────────────────────────────────
-    style_section(ws, r, 1, "B3 — PER ACTUALISÉ")
-    r += 1
-    style_header(ws, r, [1, 2, 3, 4],
-                 ["Paramètre", "Valeur", "Source", "Note"])
-    r += 1
-
-    PER_ACT_ROWS = {}
-    per_items = [
-        ("Prix actuel (FCFA)",
-         f"=B{PRIX_ROW}", "Section A4", "#,##0"),
-        ("BNPA N (FCFA)",
-         f"=B{BNPA_ROW}", "Section A4", "#,##0.00"),
-        ("Évolution RN dernier trimestre (%)",
-         None, "RichBourse / Rapport", "0.00"),
-        ("BNPA actualisé (FCFA)",
-         None, "= BNPA × (1 + évol%)", "#,##0.00"),
-        ("PER actualisé",
-         None, "= Prix / BNPA actualisé", "0.00"),
+    # ── B3 : PER Actualisé  (lignes 98–105) ──────────────────────────────────
+    section(98, "B3 — PER ACTUALISE (integre la derniere evolution du RN)")
+    heads(99, ["Parametre", "Valeur", "Source / Formule", "Signal"])
+    per_act_items = [
+        ("Prix actuel (FCFA)",                 f"=B24",          "#,##0",    "Lie a B24"),
+        ("BNPA N (FCFA)",                      f"=B25",          "#,##0.00", "Lie a B25"),
+        ("Evolution RN dernier trimestre (%)", None,             "0.00",     "RichBourse / Rapport trimestriel"),
+        ("BNPA actualise (FCFA)",              None,             "#,##0.00", "= BNPA x (1 + evol%)"),
+        ("PER actualise",                      None,             "0.00",     "= Prix / BNPA actualise"),
     ]
-
-    for label, val, src, fmt in per_items:
-        style_label(ws, r, 1, label)
-        if val:
-            style_formula(ws, r, 2, val, fmt=fmt, bg=LGREEN)
+    per_act_rows = {}
+    for i, (lbl_txt, formula, nf, src) in enumerate(per_act_items):
+        r = 100 + i
+        lbl(r, 'A', lbl_txt)
+        if formula:
+            ws.write_formula(row(r), col('B'), formula,
+                             fmt(bg="#E2EFDA", fg="#404040", size=9, align='right', border=1, num_format=nf))
         else:
-            style_value(ws, r, 2, None, fmt=fmt, bg=WHITE)
-        style_value(ws, r, 3, src, bg=GREY)
-        ws.cell(row=r, column=3).alignment = al("center", "center")
-        ws.cell(row=r, column=4).border = bd()
-        PER_ACT_ROWS[label] = r
-        r += 1
+            ws.write_blank(row(r), col('B'), None,
+                           fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1, num_format=nf))
+        ws.write(row(r), col('C'), src, F_WHITE_C)
+        ws.write_blank(row(r), col('D'), None, F_WHITE)
+        per_act_rows[lbl_txt] = r
+
+    EVOL_R = per_act_rows["Evolution RN dernier trimestre (%)"]
+    BACT_R = per_act_rows["BNPA actualise (FCFA)"]
+    PACT_R = per_act_rows["PER actualise"]
 
     # Formules BNPA actualisé et PER actualisé
-    bnpa_act_r = PER_ACT_ROWS["BNPA actualisé (FCFA)"]
-    evol_r     = PER_ACT_ROWS["Évolution RN dernier trimestre (%)"]
-    prix_act_r = PER_ACT_ROWS["Prix actuel (FCFA)"]
-    bnpa_r_ref = PER_ACT_ROWS["BNPA N (FCFA)"]
-    per_act_r  = PER_ACT_ROWS["PER actualisé"]
+    ws.write_formula(row(BACT_R), col('B'),
+        f'=IFERROR(B25*(1+B{EVOL_R}/100),"")',
+        fmt(bg="#E2EFDA", fg="#404040", size=9, align='right', border=1, num_format='#,##0.00'))
+    ws.write_formula(row(PACT_R), col('B'),
+        f'=IFERROR(B24/B{BACT_R},"")',
+        fmt(bg="#E2EFDA", fg="#404040", size=9, align='right', border=1, num_format='0.00'))
+    # Signal PER actualisé
+    ws.write_formula(row(PACT_R), col('D'),
+        f'=IFERROR(IF(B{PACT_R}>15,"Surevalue - Surachat",'
+        f'IF(B{PACT_R}<9,"Sous-evalue - Survente","Normal (9-15)")),"-")',
+        F_CALC_C)
+    blank(105)
 
-    ws.cell(row=bnpa_act_r, column=2,
-            value=f"=IFERROR(B{bnpa_r_ref}*(1+B{evol_r}/100),\"\")")
-    ws.cell(row=bnpa_act_r, column=2).fill = px(LGREEN)
-    ws.cell(row=bnpa_act_r, column=2).font = ft(size=9)
-    ws.cell(row=bnpa_act_r, column=2).alignment = al("right", "center")
-    ws.cell(row=bnpa_act_r, column=2).border = bd()
-    ws.cell(row=bnpa_act_r, column=2).number_format = "#,##0.00"
+    # ── B4 : Prix Cible aux Dividendes  (lignes 106–117) ─────────────────────
+    section(106, "B4 — PRIX CIBLE AUX DIVIDENDES (PCD)")
+    ws.merge_range(row(107), 0, row(107), 7,
+        "Note : Le PCD n'est pertinent que si l'entreprise verse des dividendes. "
+        "Si dividende = 0, utiliser B5 (Gordon-Shapiro).", F_NOTE)
+    ws.set_row(row(107), 25)
+    heads(108, ["Parametre", "Valeur", "Formule", "Signal"])
 
-    ws.cell(row=per_act_r, column=2,
-            value=f"=IFERROR(B{prix_act_r}/B{bnpa_act_r},\"\")")
-    ws.cell(row=per_act_r, column=2).fill = px(LGREEN)
-    ws.cell(row=per_act_r, column=2).font = ft(size=9)
-    ws.cell(row=per_act_r, column=2).alignment = al("right", "center")
-    ws.cell(row=per_act_r, column=2).border = bd()
-    ws.cell(row=per_act_r, column=2).number_format = "0.00"
-
-    # Signal PER
-    style_formula(ws, r-1, 4,
-                  f'=IFERROR(IF(B{per_act_r}>15,"Surévalué — Surachat",'
-                  f'IF(B{per_act_r}<9,"Sous-évalué — Survente","Normal (9–15)")),"—")',
-                  bg=WHITE)
-    ws.cell(row=per_act_r, column=4).alignment = al("center", "center")
-    ws.cell(row=per_act_r, column=4).font = ft(size=9)
-    blank_row(ws, r); r += 1
-
-    # ── B4 : Prix Cible aux Dividendes (PCD) ────────────────────────────────
-    style_section(ws, r, 1, "B4 — PRIX CIBLE AUX DIVIDENDES (PCD)")
-    r += 1
-
-    note_pcd = ws.cell(row=r, column=1,
-        value=("Note : Le PCD n'est pertinent que si l'entreprise distribue des dividendes. "
-               "Si dividende = 0, utiliser la section Gordon-Shapiro (B5)."))
-    note_pcd.font = ft(italic=True, color=ORANGE, size=8)
-    note_pcd.fill = px(LORANGE)
-    note_pcd.alignment = al("left", "center", wrap=True)
-    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
-    ws.row_dimensions[r].height = 25
-    r += 1
-
-    style_header(ws, r, [1, 2, 3, 4],
-                 ["Paramètre", "Valeur", "Formule", "Note"])
-    r += 1
-
-    PCD_ROWS = {}
     pcd_items = [
-        ("Évolution RN (%)", None, "← même valeur qu'en B3", "0.00"),
-        ("Dividende brut N (FCFA)", None, "← saisir le dernier dividende", "#,##0.00"),
-        ("Dividende prévisionnel (FCFA)", None, "= DVD × (1 + évol%)", "#,##0.00"),
-        ("Rendement sectoriel BRVM (%)", 6.5, "Référence : 5–8%", "0.00"),
-        ("PCD = 100 × DVD_prev / Rendement", None, "= 100 × Dprev / Rend%", "#,##0.00"),
-        ("Zone cible basse (−5%)", None, "= PCD × 0.95", "#,##0.00"),
-        ("Zone cible haute (+5%)", None, "= PCD × 1.05", "#,##0.00"),
-        ("Signal (prix actuel vs zone cible)", None, "Auto", ""),
+        ("Evolution RN (%)",                    None,  "0.00",     "Meme valeur qu'en B3"),
+        ("Dividende brut N (FCFA)",             None,  "#,##0.00", "<-- Saisir le dernier dividende verse"),
+        ("Dividende previsionnel (FCFA)",       None,  "#,##0.00", "= Dividende x (1 + evol%)"),
+        ("Rendement sectoriel BRVM (%)",        6.5,   "0.00",     "Reference : 5-8% (modifiable)"),
+        ("PCD = 100 x DVD_prev / Rendement",   None,  "#,##0.00", "= 100 x Dprev / Rendement%"),
+        ("Zone cible basse (-5%)",              None,  "#,##0.00", "= PCD x 0.95"),
+        ("Zone cible haute (+5%)",              None,  "#,##0.00", "= PCD x 1.05"),
+        ("Signal (prix B24 vs zone cible)",     None,  "@",        "Calcul automatique"),
     ]
-
-    for label, val, note, fmt in pcd_items:
-        style_label(ws, r, 1, label)
+    pcd_rows = {}
+    for i, (lbl_txt, val, nf, src) in enumerate(pcd_items):
+        r = 109 + i
+        lbl(r, 'A', lbl_txt)
         if val is not None:
-            style_value(ws, r, 2, val, fmt=fmt, bg=LORANGE)
+            ws.write(row(r), col('B'), val,
+                     fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1, num_format=nf))
         else:
-            style_value(ws, r, 2, None, fmt=fmt, bg=WHITE)
-        style_value(ws, r, 3, note, bg=GREY)
-        ws.cell(row=r, column=3).alignment = al("center", "center")
-        ws.cell(row=r, column=4).border = bd()
-        PCD_ROWS[label] = r
-        r += 1
+            ws.write_blank(row(r), col('B'), None,
+                           fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1, num_format=nf))
+        ws.write(row(r), col('C'), src, F_WHITE_C)
+        ws.write_blank(row(r), col('D'), None, F_WHITE)
+        pcd_rows[lbl_txt] = r
 
-    evol_pcd_r = PCD_ROWS["Évolution RN (%)"]
-    dvd_n_r    = PCD_ROWS["Dividende brut N (FCFA)"]
-    dvd_prev_r = PCD_ROWS["Dividende prévisionnel (FCFA)"]
-    rend_r     = PCD_ROWS["Rendement sectoriel BRVM (%)"]
-    pcd_r      = PCD_ROWS["PCD = 100 × DVD_prev / Rendement"]
-    zone_bas_r = PCD_ROWS["Zone cible basse (−5%)"]
-    zone_haut_r= PCD_ROWS["Zone cible haute (+5%)"]
-    signal_pcd_r = PCD_ROWS["Signal (prix actuel vs zone cible)"]
+    EVOL_PCD = pcd_rows["Evolution RN (%)"]
+    DVD_N    = pcd_rows["Dividende brut N (FCFA)"]
+    DVD_PRV  = pcd_rows["Dividende previsionnel (FCFA)"]
+    REND_S   = pcd_rows["Rendement sectoriel BRVM (%)"]
+    PCD_V    = pcd_rows["PCD = 100 x DVD_prev / Rendement"]
+    ZBAS     = pcd_rows["Zone cible basse (-5%)"]
+    ZHAU     = pcd_rows["Zone cible haute (+5%)"]
+    SIG_PCD  = pcd_rows["Signal (prix B24 vs zone cible)"]
 
-    for frow, formula, fmt in [
-        (dvd_prev_r,
-         f"=IFERROR(IF(B{dvd_n_r}=0,\"Aucun dividende\",B{dvd_n_r}*(1+B{evol_pcd_r}/100)),\"\")",
-         "#,##0.00"),
-        (pcd_r,
-         f"=IFERROR(IF(B{dvd_n_r}=0,\"N/A\",100*B{dvd_prev_r}/B{rend_r}),\"\")",
-         "#,##0.00"),
-        (zone_bas_r,
-         f"=IFERROR(IF(ISNUMBER(B{pcd_r}),B{pcd_r}*0.95,\"N/A\"),\"\")",
-         "#,##0.00"),
-        (zone_haut_r,
-         f"=IFERROR(IF(ISNUMBER(B{pcd_r}),B{pcd_r}*1.05,\"N/A\"),\"\")",
-         "#,##0.00"),
-        (signal_pcd_r,
-         f'=IFERROR(IF(NOT(ISNUMBER(B{pcd_r})),"PCD N/A (pas de dividende)",'
-         f'IF(B{PRIX_ROW}<B{zone_bas_r},"EN DESSOUS zone cible - Survente",'
-         f'IF(B{PRIX_ROW}>B{zone_haut_r},"AU-DESSUS zone cible - Surachat","DANS LA ZONE"))),\"\")',
-         ""),
-    ]:
-        ws.cell(row=frow, column=2, value=sf(formula))
-        ws.cell(row=frow, column=2).fill = px(LGREEN)
-        ws.cell(row=frow, column=2).font = ft(size=9)
-        ws.cell(row=frow, column=2).alignment = al("right", "center")
-        ws.cell(row=frow, column=2).border = bd()
-        if fmt:
-            ws.cell(row=frow, column=2).number_format = fmt
+    F_CALC_PCD = fmt(bg="#E2EFDA", fg="#404040", size=9, align='right', border=1, num_format='#,##0.00')
 
-    blank_row(ws, r); r += 1
+    ws.write_formula(row(DVD_PRV), col('B'),
+        f'=IFERROR(IF(B{DVD_N}=0,"Aucun dividende",B{DVD_N}*(1+B{EVOL_PCD}/100)),"")',
+        F_CALC_PCD)
+    ws.write_formula(row(PCD_V), col('B'),
+        f'=IFERROR(IF(B{DVD_N}=0,"N/A",100*B{DVD_PRV}/B{REND_S}),"")',
+        F_CALC_PCD)
+    ws.write_formula(row(ZBAS), col('B'),
+        f'=IFERROR(IF(ISNUMBER(B{PCD_V}),B{PCD_V}*0.95,"N/A"),"")',
+        F_CALC_PCD)
+    ws.write_formula(row(ZHAU), col('B'),
+        f'=IFERROR(IF(ISNUMBER(B{PCD_V}),B{PCD_V}*1.05,"N/A"),"")',
+        F_CALC_PCD)
+    ws.write_formula(row(SIG_PCD), col('B'),
+        f'=IFERROR(IF(NOT(ISNUMBER(B{PCD_V})),"PCD N/A - pas de dividende",'
+        f'IF(B24<B{ZBAS},"EN DESSOUS zone cible - Survente",'
+        f'IF(B24>B{ZHAU},"AU-DESSUS zone cible - Surachat","DANS LA ZONE CIBLE"))),"")',
+        fmt(bg="#E2EFDA", fg="#1F3864", size=9, bold=True, align='center', border=1))
+    blank(117)
 
-    # ── B5 : Gordon-Shapiro ─────────────────────────────────────────────────
-    style_section(ws, r, 1,
-                  "B5 — MODÈLE DE GORDON-SHAPIRO (Prix d'entrée théorique)")
-    r += 1
-    note_gs = ws.cell(row=r, column=1,
-        value="P₀ = D₁ / (r − g)   |   D₁ = dividende prévu, r = taux exigé, g = taux croissance dividendes")
-    note_gs.font = ft(italic=True, color=NAVY, size=9)
-    note_gs.fill = px(LBLUE)
-    note_gs.alignment = al("center", "center")
-    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
-    r += 1
+    # ── B5 : Gordon-Shapiro  (lignes 118–127) ────────────────────────────────
+    section(118, "B5 — MODELE DE GORDON-SHAPIRO   P0 = D1 / (r - g)")
+    ws.merge_range(row(119), 0, row(119), 7,
+        "D1 = dividende attendu l'an prochain | r = taux exige | g = taux croissance dividendes",
+        fmt(bg="#D6E4F7", fg="#1F3864", size=9, italic=True, align='center', border=0))
+    heads(120, ["Parametre", "Valeur", "Note", "Signal"])
 
-    style_header(ws, r, [1, 2, 3, 4],
-                 ["Paramètre", "Valeur", "Formule", "Note"])
-    r += 1
-
-    GS_ROWS = {}
     gs_items = [
-        ("D₁ — Dividende attendu l'an prochain (FCFA)", None,
-         "← Hypothèse ou dernier DVD × (1+g)", "#,##0.00"),
-        ("r — Taux de rentabilité exigé (%)", 8.0,
-         "Coût du capital / rendement cible", "0.00"),
-        ("g — Taux de croissance dividendes (%)", 2.0,
-         "Croissance annuelle supposée", "0.00"),
-        ("P₀ = D₁ / (r − g)  [Prix théorique FCFA]", None,
-         "Auto-calculé", "#,##0.00"),
-        ("Signal (prix actuel vs P₀)", None,
-         "Auto", ""),
+        ("D1 - Dividende attendu (FCFA)",      None, "#,##0.00", "<-- Hypothese ou dernier DVD x (1+g)"),
+        ("r - Taux de rentabilite exige (%)",  8.0,  "0.00",     "Cout du capital / rendement cible (ex: 8%)"),
+        ("g - Taux de croissance DVD (%)",     2.0,  "0.00",     "Croissance annuelle supposee (ex: 2%)"),
+        ("P0 = D1 / (r - g)  [FCFA]",         None, "#,##0.00", "Prix theorique calcule automatiquement"),
+        ("Signal prix actuel vs P0",           None, "@",        "Calcul automatique"),
     ]
-
-    for label, val, note, fmt in gs_items:
-        style_label(ws, r, 1, label)
+    gs_rows = {}
+    for i, (lbl_txt, val, nf, note) in enumerate(gs_items):
+        r = 121 + i
+        lbl(r, 'A', lbl_txt)
         if val is not None:
-            style_value(ws, r, 2, val, fmt=fmt, bg=LORANGE)
+            ws.write(row(r), col('B'), val,
+                     fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1, num_format=nf))
         else:
-            style_value(ws, r, 2, None, fmt=fmt, bg=WHITE)
-        style_value(ws, r, 3, note, bg=GREY)
-        ws.cell(row=r, column=3).alignment = al("center", "center")
-        ws.cell(row=r, column=4).border = bd()
-        GS_ROWS[label] = r
-        r += 1
+            ws.write_blank(row(r), col('B'), None,
+                           fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1, num_format=nf))
+        ws.write(row(r), col('C'), note, F_WHITE_C)
+        ws.write_blank(row(r), col('D'), None, F_WHITE)
+        gs_rows[lbl_txt] = r
 
-    d1_r  = GS_ROWS["D₁ — Dividende attendu l'an prochain (FCFA)"]
-    rr_r  = GS_ROWS["r — Taux de rentabilité exigé (%)"]
-    g_r   = GS_ROWS["g — Taux de croissance dividendes (%)"]
-    p0_r  = GS_ROWS["P₀ = D₁ / (r − g)  [Prix théorique FCFA]"]
-    sig_r = GS_ROWS["Signal (prix actuel vs P₀)"]
+    D1_R  = gs_rows["D1 - Dividende attendu (FCFA)"]
+    R_R   = gs_rows["r - Taux de rentabilite exige (%)"]
+    G_R   = gs_rows["g - Taux de croissance DVD (%)"]
+    P0_R  = gs_rows["P0 = D1 / (r - g)  [FCFA]"]
+    SG_R  = gs_rows["Signal prix actuel vs P0"]
 
-    ws.cell(row=p0_r, column=2,
-            value=f"=IFERROR(IF(B{d1_r}=0,\"D1 non renseigne\","
-                  f"B{d1_r}/((B{rr_r}/100)-(B{g_r}/100))),\"\")")
-    ws.cell(row=p0_r, column=2).fill = px(LGREEN)
-    ws.cell(row=p0_r, column=2).font = ft(bold=True, size=9)
-    ws.cell(row=p0_r, column=2).alignment = al("right", "center")
-    ws.cell(row=p0_r, column=2).border = bd()
-    ws.cell(row=p0_r, column=2).number_format = "#,##0.00"
+    ws.write_formula(row(P0_R), col('B'),
+        f'=IFERROR(IF(B{D1_R}=0,"Saisir D1",B{D1_R}/((B{R_R}/100)-(B{G_R}/100))),"")',
+        fmt(bg="#E2EFDA", fg="#1F3864", size=10, bold=True, align='right', border=1, num_format='#,##0.00'))
+    ws.write_formula(row(SG_R), col('B'),
+        f'=IFERROR(IF(NOT(ISNUMBER(B{P0_R})),"Saisir D1",'
+        f'IF(B24<B{P0_R}*0.95,"Prix SOUS P0 - Opportunite achat",'
+        f'IF(B24>B{P0_R}*1.05,"Prix SUR P0 - Surevalue","Dans la zone P0"))),"")',
+        fmt(bg="#E2EFDA", fg="#1F3864", size=9, bold=True, align='center', border=1))
+    blank(127)
 
-    ws.cell(row=sig_r, column=2,
-            value=f'=IFERROR(IF(NOT(ISNUMBER(B{p0_r})),"Renseigner D1",'
-                  f'IF(B{PRIX_ROW}<B{p0_r}*0.95,"Prix sous P0 - Opportunite achat",'
-                  f'IF(B{PRIX_ROW}>B{p0_r}*1.05,"Prix sur P0 - Surevalue","Dans la zone"))),"")')
-    ws.cell(row=sig_r, column=2).fill = px(LGREEN)
-    ws.cell(row=sig_r, column=2).font = ft(size=9)
-    ws.cell(row=sig_r, column=2).alignment = al("center", "center")
-    ws.cell(row=sig_r, column=2).border = bd()
+    # ── B6 : Stop-Loss & Risk/Reward  (lignes 128–135) ───────────────────────
+    section(128, "B6 — GESTION DU RISQUE : STOP-LOSS & RISK/REWARD")
+    heads(129, ["Parametre", "Valeur", "Formule/Note", "Signal"])
 
-    blank_row(ws, r); r += 1
-
-    # ── B6 : Stop-Loss & Risk/Reward ────────────────────────────────────────
-    style_section(ws, r, 1, "B6 — GESTION DU RISQUE : STOP-LOSS & RISK/REWARD")
-    r += 1
-    style_header(ws, r, [1, 2, 3, 4, 5],
-                 ["Paramètre", "Valeur", "Formule", "Note", "Signal"])
-    r += 1
-
-    SL_ROWS = {}
     sl_items = [
-        ("Prix d'achat visé (FCFA)", None, "← Saisir", "#,##0"),
-        ("Stop-Loss (FCFA) — perte max 10%", None, "= Prix × 0.90", "#,##0.00"),
-        ("Objectif de prix (Take Profit) (FCFA)", None, "← Saisir objectif", "#,##0"),
-        ("Perte potentielle (FCFA/titre)", None, "= Prix − Stop", "#,##0.00"),
-        ("Gain potentiel (FCFA/titre)", None, "= Objectif − Prix", "#,##0.00"),
-        ("Ratio Risk/Reward", None, "= Gain / Perte", "0.00"),
+        ("Prix d'achat vise (FCFA)",             None, "#,##0",    "<-- Saisir prix entree prevue"),
+        ("Stop-Loss = Prix x 0,90 (FCFA)",       None, "#,##0.00", "= Prix x 0.90 (perte max 10%)"),
+        ("Objectif Take Profit (FCFA)",          None, "#,##0",    "<-- Saisir objectif de prix"),
+        ("Perte potentielle / titre (FCFA)",     None, "#,##0.00", "= Prix - Stop"),
+        ("Gain potentiel / titre (FCFA)",        None, "#,##0.00", "= Objectif - Prix"),
+        ("Ratio Risk / Reward",                  None, "0.00",     "= Gain / Perte  (objectif >= 2)"),
     ]
+    sl_rows = {}
+    for i, (lbl_txt, _, nf, note) in enumerate(sl_items):
+        r = 130 + i
+        lbl(r, 'A', lbl_txt)
+        ws.write_blank(row(r), col('B'), None,
+                       fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1, num_format=nf))
+        ws.write(row(r), col('C'), note, F_WHITE_C)
+        ws.write_blank(row(r), col('D'), None, F_WHITE)
+        sl_rows[lbl_txt] = r
 
-    for label, val, note, fmt in sl_items:
-        style_label(ws, r, 1, label)
-        if val is not None:
-            style_value(ws, r, 2, val, fmt=fmt, bg=LORANGE)
-        else:
-            style_value(ws, r, 2, None, fmt=fmt, bg=WHITE)
-        style_value(ws, r, 3, note, bg=GREY)
-        ws.cell(row=r, column=3).alignment = al("center", "center")
-        ws.cell(row=r, column=4).border = bd()
-        ws.cell(row=r, column=5).border = bd()
-        SL_ROWS[label] = r
-        r += 1
+    PA_R  = sl_rows["Prix d'achat vise (FCFA)"]
+    SL_R  = sl_rows["Stop-Loss = Prix x 0,90 (FCFA)"]
+    TP_R  = sl_rows["Objectif Take Profit (FCFA)"]
+    PP_R  = sl_rows["Perte potentielle / titre (FCFA)"]
+    GP_R  = sl_rows["Gain potentiel / titre (FCFA)"]
+    RR_R  = sl_rows["Ratio Risk / Reward"]
 
-    pa_r  = SL_ROWS["Prix d'achat visé (FCFA)"]
-    sl_r  = SL_ROWS["Stop-Loss (FCFA) — perte max 10%"]
-    tp_r  = SL_ROWS["Objectif de prix (Take Profit) (FCFA)"]
-    pp_r  = SL_ROWS["Perte potentielle (FCFA/titre)"]
-    gp_r  = SL_ROWS["Gain potentiel (FCFA/titre)"]
-    rr_sl_r = SL_ROWS["Ratio Risk/Reward"]
+    ws.write_formula(row(SL_R), col('B'), f'=IFERROR(B{PA_R}*0.90,"")',
+                     fmt(bg="#E2EFDA", fg="#404040", size=9, align='right', border=1, num_format='#,##0.00'))
+    ws.write_formula(row(PP_R), col('B'), f'=IFERROR(B{PA_R}-B{SL_R},"")',
+                     fmt(bg="#E2EFDA", fg="#404040", size=9, align='right', border=1, num_format='#,##0.00'))
+    ws.write_formula(row(GP_R), col('B'), f'=IFERROR(B{TP_R}-B{PA_R},"")',
+                     fmt(bg="#E2EFDA", fg="#404040", size=9, align='right', border=1, num_format='#,##0.00'))
+    ws.write_formula(row(RR_R), col('B'), f'=IFERROR(B{GP_R}/B{PP_R},"")',
+                     fmt(bg="#E2EFDA", fg="#404040", size=9, align='right', border=1, num_format='0.00'))
+    ws.write_formula(row(RR_R), col('D'),
+        f'=IFERROR(IF(B{RR_R}>=2,"Bon (>= 2:1)",IF(B{RR_R}>=1,"Acceptable (1:1)","Mauvais")),"")',
+        F_CALC_C)
+    blank(136)
 
-    for frow, formula, fmt, signal in [
-        (sl_r,    f"=IFERROR(B{pa_r}*0.90,\"\")", "#,##0.00", ""),
-        (pp_r,    f"=IFERROR(B{pa_r}-B{sl_r},\"\")", "#,##0.00", ""),
-        (gp_r,    f"=IFERROR(B{tp_r}-B{pa_r},\"\")", "#,##0.00", ""),
-        (rr_sl_r, f"=IFERROR(B{gp_r}/B{pp_r},\"\")", "0.00",
-         f'=IFERROR(IF(B{rr_sl_r}>=2,"Bon (>= 2:1)",'
-         f'IF(B{rr_sl_r}>=1,"Acceptable (1:1)","Mauvais")),"")'),
-    ]:
-        ws.cell(row=frow, column=2, value=formula)
-        ws.cell(row=frow, column=2).fill = px(LGREEN)
-        ws.cell(row=frow, column=2).font = ft(size=9)
-        ws.cell(row=frow, column=2).alignment = al("right", "center")
-        ws.cell(row=frow, column=2).border = bd()
-        ws.cell(row=frow, column=2).number_format = fmt
-        if signal:
-            ws.cell(row=frow, column=5, value=signal)
-            ws.cell(row=frow, column=5).fill = px(LGREEN)
-            ws.cell(row=frow, column=5).font = ft(size=9)
-            ws.cell(row=frow, column=5).alignment = al("center", "center")
-            ws.cell(row=frow, column=5).border = bd()
-
-    blank_row(ws, r); r += 1
-
-    # ── B7 : Conclusion Technique ────────────────────────────────────────────
-    style_section(ws, r, 1, "B7 — CONCLUSION ANALYSE TECHNIQUE (texte libre)")
-    r += 1
-    cell = ws.cell(row=r, column=1)
-    cell.value = "← Saisir ici ta synthèse technique : indicateurs, zone de prix, recommandation d'achat par palier…"
-    cell.font = ft(italic=True, color="808080", size=9)
-    cell.fill = px(WHITE)
-    cell.alignment = al("left", "center", wrap=True)
-    ws.merge_cells(start_row=r, start_column=1, end_row=r+2, end_column=8)
-    ws.row_dimensions[r].height = 50
-    r += 3
+    # ── B7 : Conclusion Technique  (lignes 137–140) ────────────────────────
+    section(137, "B7 — CONCLUSION ANALYSE TECHNIQUE (texte libre)")
+    ws.merge_range(row(138), 0, row(140), 7, "",
+                   fmt(bg=WHITE, border=1, wrap=True, valign='top'))
+    ws.set_row(row(138), 40)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  FEUILLE 2 : PROFIL
-# ══════════════════════════════════════════════════════════════════════════════
+def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
+                   F_LBL, F_LBL_B, F_INPUT_S, F_CALC, F_CALC_B,
+                   F_CALC_C, F_WHITE, F_WHITE_C, F_WHITE_N2, F_LORANGE_C):
+    ws = wb.add_worksheet("SYNTHESE")
+    ws.freeze_panes(1, 0)
+    ws.set_column(0, 0, 30)
+    ws.set_column(1, 1, 16)
+    ws.set_column(2, 2, 20)
+    ws.set_column(3, 3, 16)
+    ws.set_column(4, 4, 20)
 
-def build_profil(ws):
-    set_col_widths(ws, {1: 30, 2: 25, 3: 30, 4: 25})
+    def row(r): return r - 1
+    def col(c): return ord(c) - ord('A')
 
-    r = 1
-    style_title(ws, r, 1, "PROFIL DE LA SOCIÉTÉ", merge_to_col=4, size=13)
-    r += 1
-    blank_row(ws, r); r += 1
+    def title(r, text):
+        ws.merge_range(row(r), 0, row(r), 4, text, F_TITLE)
+        ws.set_row(row(r), 22)
+
+    def section(r, text, bg="#2F5496"):
+        f = fmt(bold=True, bg=bg, fg="#FFFFFF", size=10, border=0)
+        ws.merge_range(row(r), 0, row(r), 4, text, f)
+        ws.set_row(row(r), 18)
+
+    def heads(r, labels):
+        for i, lbl in enumerate(labels):
+            ws.write(row(r), i, lbl, F_HEAD)
+
+    def lbl(r, c, text, bold=False):
+        ws.write(row(r), col(c), text, F_LBL_B if bold else F_LBL)
+
+    def inp(r, c, val=None):
+        ws.write(row(r), col(c), val,
+                 fmt(bg="#FFF2CC", fg="#404040", size=9, align='right', border=1))
+
+    def blank_r(r, h=5):
+        ws.set_row(row(r), h)
+
+    title(1, "TABLEAU DE BORD — SYNTHESE DE L'ANALYSE")
+    ws.merge_range(1, 0, 1, 4,
+        "Societe : [NOM]   |   Date : [JJ/MM/AAAA]   |   Prix analyse : [FCFA]",
+        F_TITLE2)
+    ws.set_row(1, 16)
+    blank_r(3)
+
+    # Scorecard fondamentale (lignes 4–13)
+    section(4, "SCORECARD FONDAMENTALE")
+    heads(5, ["Critere", "Valeur (depuis ETUDE)", "Zone normale", "Signal", "Score (0-3)"])
+    fond_criteria = [
+        ("Croissance CA (N/N-4 %)", "> 10%"),
+        ("Croissance RN (N/N-4 %)", "> 10%"),
+        ("Marge nette moyenne (%)", "> 5%"),
+        ("PER", "9 - 15"),
+        ("PBR", "< 1 ideal"),
+        ("ROE (%)", "> 10%"),
+        ("Rendement dividende (%)", "> 3%"),
+        ("RVC (PER x PBR)", "< 22"),
+    ]
+    FOND_SCORE_ROWS = []
+    for i, (crit, zone) in enumerate(fond_criteria):
+        r = 6 + i
+        lbl(r, 'A', crit)
+        ws.write(row(r), col('B'), "<-- depuis ETUDE",
+                 fmt(bg="#FFFFFF", fg="#808080", size=8, italic=True, align='left', border=1))
+        ws.write(row(r), col('C'), zone,
+                 fmt(bg="#FFF2CC", fg="#404040", size=9, align='center', border=1))
+        ws.write(row(r), col('D'), "<-- saisir signal",
+                 fmt(bg="#FFFFFF", fg="#808080", size=8, italic=True, align='center', border=1))
+        ws.write_blank(row(r), col('E'), None,
+                       fmt(bg="#FFFFFF", fg="#404040", size=9, align='center', border=1, num_format='0'))
+        FOND_SCORE_ROWS.append(r)
+
+    FOND_TOTAL_R = 14
+    lbl(FOND_TOTAL_R, 'A', "SCORE FONDAMENTAL TOTAL (/24)", bold=True)
+    for c in ['B','C','D']:
+        ws.write_blank(row(FOND_TOTAL_R), col(c), None,
+                       fmt(bg="#F2F2F2", border=1))
+    ws.write_formula(row(FOND_TOTAL_R), col('E'),
+        f'=SUM(E{FOND_SCORE_ROWS[0]}:E{FOND_SCORE_ROWS[-1]})',
+        fmt(bg="#E2EFDA", fg="#1F3864", size=11, bold=True, align='center', border=1, num_format='0'))
+    blank_r(15)
+
+    # Scorecard technique (lignes 16–22)
+    section(16, "SCORECARD TECHNIQUE")
+    heads(17, ["Critere", "Signal observe", "Zone", "Interpretation", "Score"])
+    tech_criteria = [
+        ("MM20+Bollinger+MACD+RSI+Volume (score B1)", "-5 a +5"),
+        ("Prix Medians PM1 et PM2 (B2)", "< PM = survente"),
+        ("PER actualise (B3)", "9-15 = normal"),
+        ("PCD / Gordon-Shapiro (B4/B5)", "< PCD = survente"),
+        ("Risk/Reward (B6)", ">= 2 = bon"),
+    ]
+    TECH_SCORE_ROWS = []
+    for i, (crit, zone) in enumerate(tech_criteria):
+        r = 18 + i
+        lbl(r, 'A', crit)
+        ws.write(row(r), col('B'), "<-- saisir signal",
+                 fmt(bg="#FFFFFF", fg="#808080", size=8, italic=True, align='center', border=1))
+        ws.write(row(r), col('C'), zone,
+                 fmt(bg="#FFF2CC", fg="#404040", size=9, align='center', border=1))
+        ws.write(row(r), col('D'), "<-- saisir signal",
+                 fmt(bg="#FFFFFF", fg="#808080", size=8, italic=True, align='center', border=1))
+        ws.write_blank(row(r), col('E'), None,
+                       fmt(bg="#FFFFFF", fg="#404040", size=9, align='center', border=1, num_format='0'))
+        TECH_SCORE_ROWS.append(r)
+
+    TECH_TOTAL_R = 23
+    lbl(TECH_TOTAL_R, 'A', "SCORE TECHNIQUE TOTAL (/15)", bold=True)
+    for c in ['B','C','D']:
+        ws.write_blank(row(TECH_TOTAL_R), col(c), None,
+                       fmt(bg="#F2F2F2", border=1))
+    ws.write_formula(row(TECH_TOTAL_R), col('E'),
+        f'=SUM(E{TECH_SCORE_ROWS[0]}:E{TECH_SCORE_ROWS[-1]})',
+        fmt(bg="#E2EFDA", fg="#1F3864", size=11, bold=True, align='center', border=1, num_format='0'))
+    blank_r(24)
+
+    # Verdict global (lignes 25–31)
+    section(25, "VERDICT GLOBAL", bg="#1F3864")
+    heads(26, ["Composante", "Score", "Max", "% atteint", "Appreciation"])
+    ws.write(row(27), 0, "Score Fondamental", F_LBL)
+    ws.write_formula(row(27), 1, f'=E{FOND_TOTAL_R}',
+                     fmt(bg="#E2EFDA", fg="#404040", size=10, bold=True, align='center', border=1, num_format='0'))
+    ws.write(row(27), 2, 24, fmt(bg="#F2F2F2", fg="#404040", size=9, align='center', border=1))
+    ws.write_formula(row(27), 3, f'=IFERROR(E{FOND_TOTAL_R}/24*100,"")',
+                     fmt(bg="#E2EFDA", fg="#404040", size=9, align='right', border=1, num_format='0.0'))
+    ws.write_formula(row(27), 4,
+        f'=IFERROR(IF(E{FOND_TOTAL_R}/24>=0.7,"Solide",IF(E{FOND_TOTAL_R}/24>=0.5,"Moyen","Faible")),"-")',
+        fmt(bg="#FFFFFF", fg="#404040", size=9, align='center', border=1))
+
+    ws.write(row(28), 0, "Score Technique", F_LBL)
+    ws.write_formula(row(28), 1, f'=E{TECH_TOTAL_R}',
+                     fmt(bg="#E2EFDA", fg="#404040", size=10, bold=True, align='center', border=1, num_format='0'))
+    ws.write(row(28), 2, 15, fmt(bg="#F2F2F2", fg="#404040", size=9, align='center', border=1))
+    ws.write_formula(row(28), 3, f'=IFERROR(E{TECH_TOTAL_R}/15*100,"")',
+                     fmt(bg="#E2EFDA", fg="#404040", size=9, align='right', border=1, num_format='0.0'))
+    ws.write_formula(row(28), 4,
+        f'=IFERROR(IF(E{TECH_TOTAL_R}/15>=0.7,"Solide",IF(E{TECH_TOTAL_R}/15>=0.5,"Moyen","Faible")),"-")',
+        fmt(bg="#FFFFFF", fg="#404040", size=9, align='center', border=1))
+
+    ws.write(row(29), 0, "SCORE TOTAL", F_LBL_B)
+    ws.write_formula(row(29), 1, f'=IFERROR(E{FOND_TOTAL_R}+E{TECH_TOTAL_R},"")',
+                     fmt(bg="#E2EFDA", fg="#1F3864", size=14, bold=True, align='center', border=1, num_format='0'))
+    ws.write(row(29), 2, 39, fmt(bg="#F2F2F2", fg="#404040", size=9, bold=True, align='center', border=1))
+    ws.write_formula(row(29), 3, f'=IFERROR(B{29}/39*100,"")',
+                     fmt(bg="#E2EFDA", fg="#404040", size=9, align='right', border=1, num_format='0.0'))
+    ws.write_formula(row(29), 4,
+        f'=IFERROR(IF(B{29}/39>=0.7,"ACHETER",IF(B{29}/39>=0.5,"SURVEILLER","EVITER")),"-")',
+        fmt(bg="#E2EFDA", fg="#1F3864", size=12, bold=True, align='center', border=1))
+    blank_r(30)
+    section(31, "RECOMMANDATION FINALE (texte libre)")
+    ws.merge_range(row(32), 0, row(35), 4, "",
+                   fmt(bg="#FFFFFF", border=1, wrap=True, valign='top'))
+    ws.set_row(row(32), 50)
+
+
+def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
+    ws = wb.add_worksheet("PROFIL")
+    ws.freeze_panes(1, 0)
+    ws.set_column(0, 0, 32)
+    ws.set_column(1, 1, 28)
+    ws.set_column(2, 2, 32)
+    ws.set_column(3, 3, 20)
+
+    def row(r): return r - 1
+    def col(c): return ord(c) - ord('A')
+
+    ws.merge_range(0, 0, 0, 3, "PROFIL DE LA SOCIETE", F_TITLE)
+    ws.set_row(0, 22)
 
     sections = [
         ("IDENTIFICATION", [
-            ("Nom de la société", ""),
-            ("Ticker BRVM", ""),
-            ("Secteur d'activité", ""),
-            ("Pays d'origine", ""),
+            ("Nom de la societe", ""), ("Ticker BRVM", ""),
+            ("Secteur d'activite", ""), ("Pays d'origine", ""),
             ("Date d'introduction en bourse", ""),
-            ("Marché", "BRVM — Bourse Régionale des Valeurs Mobilières"),
         ]),
         ("CAPITAL & ACTIONNARIAT", [
-            ("Capital social (FCFA)", ""),
-            ("Nombre de titres", ""),
-            ("Prix d'émission initial (FCFA)", ""),
-            ("Flottant (%)", ""),
-            ("Principaux actionnaires", ""),
+            ("Capital social (FCFA)", ""), ("Nombre de titres", ""),
+            ("Flottant (%)", ""), ("Principaux actionnaires", ""),
         ]),
-        ("LIQUIDITÉ DU TITRE", [
-            ("Volume moyen journalier (titres)", "← Source : BRVM.org / RichBourse"),
+        ("LIQUIDITE DU TITRE (critique sur BRVM)", [
+            ("Volume moyen journalier (titres)", "<-- Source : BRVM.org"),
             ("Volume moyen journalier (FCFA)", ""),
-            ("Fréquence de cotation (%)", "← % de séances avec transaction"),
-            ("Appréciation de la liquidité", "← Forte / Moyenne / Faible"),
+            ("Frequence de cotation (%)", "<-- % seances avec transaction"),
+            ("Appreciation liquidite", "<-- Forte / Moyenne / Faible"),
         ]),
-        ("NOTATION & CONFORMITÉ", [
-            ("Agence de notation", ""),
-            ("Note court terme", ""),
-            ("Note long terme", ""),
-            ("Dernière date de notation", ""),
-            ("Dividende versé régulièrement ?", "← Oui / Non"),
+        ("NOTATION & CONFORMITE", [
+            ("Agence de notation", ""), ("Note court terme", ""),
+            ("Note long terme", ""), ("Dividende verse regulierement ?", "<-- Oui / Non"),
         ]),
         ("SOURCES D'INFORMATION", [
-            ("Rapport annuel", "← Lien ou date"),
-            ("Rapport trimestriel", ""),
-            ("Site de la société", ""),
-            ("Profil RichBourse", "← richbourse.com"),
-            ("Profil BRVM", "← brvm.org"),
+            ("Rapport annuel", "<-- Lien ou date"),
+            ("Site de la societe", ""),
+            ("Profil RichBourse", "<-- richbourse.com"),
+            ("Profil BRVM", "<-- brvm.org"),
         ]),
     ]
 
-    for section_title, fields in sections:
-        style_section(ws, r, 1, section_title, merge_to_col=4)
+    r = 2
+    for sec_title, fields in sections:
+        ws.set_row(r-1, 18)
+        ws.merge_range(r-1, 0, r-1, 3, sec_title,
+                       fmt(bold=True, bg="#2F5496", fg="#FFFFFF", size=10, border=0))
         r += 1
-        for label, placeholder in fields:
-            style_label(ws, r, 1, label)
-            cell = ws.cell(row=r, column=2, value=placeholder or None)
-            if placeholder and placeholder.startswith("←"):
-                cell.value = placeholder
-                cell.font = ft(italic=True, color="808080", size=8)
-            cell.fill = px(WHITE)
-            cell.border = bd()
-            cell.alignment = al("left", "center")
-            for c in [3, 4]:
-                ws.cell(row=r, column=c).border = bd()
+        for lbl_txt, placeholder in fields:
+            ws.write(r-1, 0, lbl_txt, F_LBL)
+            if placeholder.startswith("<--"):
+                ws.write(r-1, 1, placeholder, F_HINT)
+            else:
+                ws.write(r-1, 1, placeholder or None, F_WHITE)
+            ws.write_blank(r-1, 2, None, F_WHITE)
+            ws.write_blank(r-1, 3, None, F_WHITE)
             r += 1
-        blank_row(ws, r); r += 1
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  FEUILLE 3 : SYNTHESE
-# ══════════════════════════════════════════════════════════════════════════════
-
-def build_synthese(ws):
-    set_col_widths(ws, {1: 28, 2: 16, 3: 20, 4: 16, 5: 20})
-
-    r = 1
-    style_title(ws, r, 1, "TABLEAU DE BORD — SYNTHÈSE DE L'ANALYSE",
-                merge_to_col=5, size=13)
-    r += 1
-    style_title(ws, r, 1,
-                "Société : [NOM]   |   Date : [JJ/MM/AAAA]   |   Prix analysé : [FCFA]",
-                merge_to_col=5, bg=BLUE, size=10)
-    r += 1
-    blank_row(ws, r); r += 1
-
-    # ── Scorecard fondamentale ───────────────────────────────────────────────
-    style_section(ws, r, 1, "SCORECARD FONDAMENTALE", merge_to_col=5)
-    r += 1
-    style_header(ws, r, [1, 2, 3, 4, 5],
-                 ["Critère", "Valeur", "Zone normale", "Signal", "Score (0–3)"])
-    r += 1
-
-    fundamental_criteria = [
-        ("Croissance CA (N/N-4 %)", "← depuis feuille ETUDE", "> 10%"),
-        ("Croissance RN (N/N-4 %)", "← depuis feuille ETUDE", "> 10%"),
-        ("Marge nette moyenne (%)", "← depuis feuille ETUDE", "> 5%"),
-        ("PER", "← depuis feuille ETUDE", "9 – 15"),
-        ("PBR", "← depuis feuille ETUDE", "< 1 idéal"),
-        ("ROE (%)", "← depuis feuille ETUDE", "> 10%"),
-        ("Rendement dividende (%)", "← depuis feuille ETUDE", "> 3%"),
-        ("RVC (PER × PBR)", "← depuis feuille ETUDE", "< 22"),
-    ]
-
-    for label, val_hint, zone in fundamental_criteria:
-        style_label(ws, r, 1, label)
-        cell = ws.cell(row=r, column=2, value=val_hint)
-        cell.font = ft(italic=True, color="808080", size=8)
-        cell.fill = px(WHITE); cell.border = bd()
-        style_value(ws, r, 3, zone, bg=LORANGE)
-        ws.cell(row=r, column=3).alignment = al("center", "center")
-        cell_sig = ws.cell(row=r, column=4, value="← Saisir signal")
-        cell_sig.font = ft(italic=True, color="808080", size=8)
-        cell_sig.fill = px(WHITE); cell_sig.border = bd()
-        cell_score = ws.cell(row=r, column=5, value=None)
-        cell_score.fill = px(WHITE); cell_score.border = bd()
-        cell_score.number_format = "0"
+        ws.set_row(r-1, 5)
         r += 1
 
-    # Score total fondamental
-    SCORE_FOND_ROW = r
-    style_label(ws, r, 1, "SCORE FONDAMENTAL TOTAL (/24)", bold=True)
-    for c in [2, 3, 4]: ws.cell(row=r, column=c).border = bd()
-    style_formula(ws, r, 5, f"=SUM(E{r-len(fundamental_criteria)}:E{r-1})",
-                  fmt="0", bg=LGREEN, bold=True)
-    r += 1
-    blank_row(ws, r); r += 1
 
-    # ── Scorecard technique ──────────────────────────────────────────────────
-    style_section(ws, r, 1, "SCORECARD TECHNIQUE", merge_to_col=5)
-    r += 1
-    style_header(ws, r, [1, 2, 3, 4, 5],
-                 ["Critère", "Signal observé", "Zone", "Interprétation", "Score"])
-    r += 1
+def build_formule(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_LBL_B, F_WHITE, F_REF, F_CALC_C):
+    ws = wb.add_worksheet("FORMULE")
+    ws.freeze_panes(1, 0)
+    ws.set_column(0, 0, 30)
+    ws.set_column(1, 1, 34)
+    ws.set_column(2, 2, 12)
+    ws.set_column(3, 3, 44)
 
-    technical_criteria = [
-        ("MM20 + Bollinger + MACD + RSI + Volume",
-         "← Score depuis ETUDE B1", "−5 à +5"),
-        ("Prix Médians (PM 1 an + 2 ans)",
-         "← Depuis ETUDE B2", "< PM = survente"),
-        ("PER actualisé",
-         "← Depuis ETUDE B3", "9–15 = normal"),
-        ("PCD / Gordon-Shapiro",
-         "← Depuis ETUDE B4/B5", "< PCD = survente"),
-        ("Risk/Reward ratio",
-         "← Depuis ETUDE B6", "≥ 2 = bon"),
-    ]
+    ws.merge_range(0, 0, 0, 3, "REFERENTIEL DES FORMULES & INDICATEURS BRVM", F_TITLE)
+    ws.set_row(0, 22)
 
-    for label, val_hint, zone in technical_criteria:
-        style_label(ws, r, 1, label)
-        cell = ws.cell(row=r, column=2, value=val_hint)
-        cell.font = ft(italic=True, color="808080", size=8)
-        cell.fill = px(WHITE); cell.border = bd()
-        style_value(ws, r, 3, zone, bg=LORANGE)
-        ws.cell(row=r, column=3).alignment = al("center", "center")
-        cell_int = ws.cell(row=r, column=4, value="← Saisir signal")
-        cell_int.font = ft(italic=True, color="808080", size=8)
-        cell_int.fill = px(WHITE); cell_int.border = bd()
-        cell_sc = ws.cell(row=r, column=5, value=None)
-        cell_sc.fill = px(WHITE); cell_sc.border = bd()
-        r += 1
-
-    SCORE_TECH_SYNTH_ROW = r
-    style_label(ws, r, 1, "SCORE TECHNIQUE TOTAL (/15)", bold=True)
-    for c in [2, 3, 4]: ws.cell(row=r, column=c).border = bd()
-    style_formula(ws, r, 5, f"=SUM(E{r-len(technical_criteria)}:E{r-1})",
-                  fmt="0", bg=LGREEN, bold=True)
-    r += 1
-    blank_row(ws, r); r += 1
-
-    # ── Verdict global ──────────────────────────────────────────────────────
-    style_section(ws, r, 1, "VERDICT GLOBAL", merge_to_col=5, bg=NAVY)
-    r += 1
-
-    style_header(ws, r, [1, 2, 3, 4, 5],
-                 ["Composante", "Score", "Max", "% atteint", "Appréciation"])
-    r += 1
-
-    style_label(ws, r, 1, "Score Fondamental")
-    style_formula(ws, r, 2, f"=E{SCORE_FOND_ROW}", fmt="0", bg=LGREEN, bold=True)
-    style_value(ws, r, 3, 24, fmt="0", bg=GREY)
-    style_formula(ws, r, 4, f"=IFERROR(E{SCORE_FOND_ROW}/24*100,\"\")",
-                  fmt="0.0", bg=LGREEN)
-    style_formula(ws, r, 5,
-                  f'=IFERROR(IF(E{SCORE_FOND_ROW}/24>=0.7,"Solide",'
-                  f'IF(E{SCORE_FOND_ROW}/24>=0.5,"Moyen","Faible")),"—")',
-                  bg=WHITE)
-    ws.cell(row=r, column=5).alignment = al("center", "center")
-    r += 1
-
-    style_label(ws, r, 1, "Score Technique")
-    style_formula(ws, r, 2, f"=E{SCORE_TECH_SYNTH_ROW}", fmt="0", bg=LGREEN, bold=True)
-    style_value(ws, r, 3, 15, fmt="0", bg=GREY)
-    style_formula(ws, r, 4, f"=IFERROR(E{SCORE_TECH_SYNTH_ROW}/15*100,\"\")",
-                  fmt="0.0", bg=LGREEN)
-    style_formula(ws, r, 5,
-                  f'=IFERROR(IF(E{SCORE_TECH_SYNTH_ROW}/15>=0.7,"Solide",'
-                  f'IF(E{SCORE_TECH_SYNTH_ROW}/15>=0.5,"Moyen","Faible")),"—")',
-                  bg=WHITE)
-    ws.cell(row=r, column=5).alignment = al("center", "center")
-    SCORE_TECH_ROW2 = r
-    r += 1
-
-    SCORE_TOTAL_ROW = r
-    style_label(ws, r, 1, "SCORE TOTAL", bold=True)
-    style_formula(ws, r, 2,
-                  f"=IFERROR(E{SCORE_FOND_ROW}+E{SCORE_TECH_SYNTH_ROW},\"\")",
-                  fmt="0", bg=LGREEN, bold=True)
-    ws.cell(row=r, column=2).font = ft(bold=True, size=12, color=NAVY)
-    style_value(ws, r, 3, 39, fmt="0", bg=GREY, bold=True)
-    style_formula(ws, r, 4,
-                  f"=IFERROR(B{r}/39*100,\"\")",
-                  fmt="0.0", bg=LGREEN, bold=True)
-    style_formula(ws, r, 5,
-                  f'=IFERROR(IF(B{r}/39>=0.7,"ACHETER",'
-                  f'IF(B{r}/39>=0.5,"SURVEILLER","EVITER")),"—")',
-                  bg=WHITE, bold=True)
-    ws.cell(row=r, column=5).font = ft(bold=True, size=11)
-    ws.cell(row=r, column=5).alignment = al("center", "center")
-    r += 1
-    blank_row(ws, r); r += 1
-
-    # ── Recommandation finale ────────────────────────────────────────────────
-    style_section(ws, r, 1, "RECOMMANDATION FINALE (texte libre)", merge_to_col=5)
-    r += 1
-    cell = ws.cell(row=r, column=1)
-    cell.value = ("← Résumer ici ta décision finale : "
-                  "Acheter / Surveiller / Éviter, avec justification "
-                  "(prix d'entrée, paliers, stop-loss, horizon).")
-    cell.font = ft(italic=True, color="808080", size=9)
-    cell.fill = px(WHITE)
-    cell.alignment = al("left", "center", wrap=True)
-    ws.merge_cells(start_row=r, start_column=1, end_row=r+3, end_column=5)
-    ws.row_dimensions[r].height = 60
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  FEUILLE 4 : FORMULE (référentiel)
-# ══════════════════════════════════════════════════════════════════════════════
-
-def build_formule(ws):
-    set_col_widths(ws, {1: 28, 2: 32, 3: 20, 4: 40})
-
-    r = 1
-    style_title(ws, r, 1, "RÉFÉRENTIEL DES FORMULES & INDICATEURS BRVM",
-                merge_to_col=4, size=13)
-    r += 1
-    blank_row(ws, r); r += 1
+    heads_f = fmt(bold=True, bg="#D6E4F7", fg="#1F3864", size=9, align='center', border=1)
+    ws.write(1, 0, "Indicateur", heads_f)
+    ws.write(1, 1, "Expression mathematique", heads_f)
+    ws.write(1, 2, "Unite", heads_f)
+    ws.write(1, 3, "Interpretation / Seuils BRVM", heads_f)
 
     formulas = [
         ("ANALYSE FONDAMENTALE", None, None, None),
-        ("Croissance N/N-4",
-         "(N − N-4) / |N-4| × 100",
-         "%",
-         "Comparer le CA ou RN sur 5 ans. Positif = croissance."),
-        ("TCAM (CAGR)",
-         "(N / N-4)^(1/4) − 1",
-         "%",
-         "Taux de Croissance Annuel Moyen sur 4 ans."),
-        ("Marge Nette",
-         "RN / CA × 100",
-         "%",
-         "< 2% = faible | 2–5% = moyen | > 5% = bon | > 10% = très bon"),
-        ("PER",
-         "Prix / BNPA",
-         "fois",
-         "Zone normale BRVM : 9–15. > 15 = surévalué, < 9 = sous-évalué"),
-        ("VMC (Valeur Mathématique Comptable)",
-         "Capitaux Propres / Nb titres",
-         "FCFA",
-         "Prix < VMC = action décotée (achat potentiellement intéressant)"),
-        ("PBR (Price to Book)",
-         "Capitalisation / Capitaux Propres",
-         "fois",
-         "< 1 = décote sur actif net | > 2 = prime significative"),
-        ("ROE (Return on Equity)",
-         "RN / Capitaux Propres × 100",
-         "%",
-         "< 5% = faible | 5–10% = moyen | 10–15% = bon | > 15% = excellent"),
-        ("RVC",
-         "PER × PBR",
-         "",
-         "< 22 = décote globale (Lynch). Indicateur de sous-valorisation composite."),
-        ("Taux de distribution",
-         "DVD / (BNPA × 0.85) × 100",
-         "%",
-         "0.85 = précompte 15% (BRVM). > 100% = distribution > bénéfice."),
-        ("Rendement dividende (Yield)",
-         "Dividende / Prix × 100",
-         "%",
-         "< 2% = faible | 2–5% = bon | > 5% = très attractif pour revenus"),
+        ("Croissance N/N-4", "(N - N-4) / |N-4| x 100", "%",
+         "Positif = croissance. Negatif = contraction. Seuil : > 10%/an = excellent"),
+        ("TCAM (CAGR)", "(N / N-4)^(1/4) - 1", "%",
+         "Taux de Croissance Annuel Moyen sur 4 ans"),
+        ("Marge Nette", "RN / CA x 100", "%",
+         "< 2% = faible | 2-5% = moyen | > 5% = bon | > 10% = tres bon"),
+        ("PER", "Prix / BNPA", "fois",
+         "Zone normale BRVM : 9-15. > 15 = surevalue, < 9 = sous-evalue"),
+        ("VMC", "Capitaux Propres / Nb titres", "FCFA",
+         "Prix < VMC = action decotee (achat potentiellement interessant)"),
+        ("PBR", "Capitalisation / Capitaux Propres", "fois",
+         "< 1 = decote sur actif net | > 2 = prime significative"),
+        ("ROE", "RN / Capitaux Propres x 100", "%",
+         "< 5% = faible | 5-10% = moyen | 10-15% = bon | > 15% = excellent"),
+        ("RVC (Lynch)", "PER x PBR", "",
+         "< 22 = decote globale. Indicateur de sous-valorisation composite"),
+        ("Taux de distribution", "DVD / (BNPA x 0.85) x 100", "%",
+         "0.85 = prefcompte 15% BRVM. > 100% = distribution > benefice"),
+        ("Rendement dividende", "Dividende / Prix x 100", "%",
+         "< 2% = faible | 2-5% = bon | > 5% = tres attractif"),
         ("ANALYSE TECHNIQUE", None, None, None),
-        ("Prix Médian (PM)",
-         "(Plus Haut + Plus Bas) / 2",
-         "FCFA",
-         "Prix < PM = zone survente. Calculer sur 1 an ET 2 ans séparément."),
-        ("RSI",
-         "Calculé sur graphique",
-         "",
-         "< 30 = survente | 30–70 = neutre | > 70 = surachat"),
-        ("MACD",
-         "Calculé sur graphique",
-         "",
-         "MACD > Signal = signal haussier (survente si récemment croisé à la hausse)"),
-        ("Bandes de Bollinger",
-         "Calculé sur graphique",
-         "",
-         "Prix sous bande inférieure = survente | Au-dessus bande sup = surachat"),
-        ("PER actualisé",
-         "Prix / BNPA × (1 + évol RN%)",
-         "fois",
-         "Intègre la dernière variation du RN pour estimer le PER forward"),
-        ("PCD (Prix Cible Dividendes)",
-         "100 × DVD_prév / Rendement_secteur%",
-         "FCFA",
-         "Rendement sectoriel BRVM : 5–8%. Ne s'applique que si dividende > 0."),
-        ("Gordon-Shapiro",
-         "P₀ = D₁ / (r − g)",
-         "FCFA",
-         "D₁ = dividende attendu | r = taux exigé | g = croissance dividendes"),
+        ("Prix Median (PM)", "(Plus Haut + Plus Bas) / 2", "FCFA",
+         "Prix < PM = zone survente. Calculer sur 1 an ET 2 ans SEPAREMENT"),
+        ("RSI", "Calcule sur graphique", "",
+         "< 30 = survente | 30-70 = neutre | > 70 = surachat"),
+        ("MACD", "Calcule sur graphique", "",
+         "MACD > Signal = signal haussier"),
+        ("PER actualise", "Prix / (BNPA x (1 + evol RN%))", "fois",
+         "Integre la derniere variation du RN. Plus precis que le PER historique"),
+        ("PCD", "100 x DVD_prev / Rendement_secteur%", "FCFA",
+         "Rendement sectoriel BRVM : 5-8%. Applicable seulement si dividende > 0"),
+        ("Gordon-Shapiro", "P0 = D1 / (r - g)", "FCFA",
+         "D1 = dividende attendu | r = taux exige | g = croissance dividendes"),
         ("GESTION DU RISQUE", None, None, None),
-        ("Stop-Loss (10%)",
-         "Prix d'achat × 0.90",
-         "FCFA",
-         "Limite de perte acceptable. Adapter selon profil de risque."),
-        ("Risk/Reward",
-         "Gain potentiel / Perte potentielle",
-         "ratio",
-         "< 1 = mauvais | 1–2 = acceptable | ≥ 2 = bon"),
-        ("CMP (Coût Moyen Pondéré)",
-         "Prix × 1.014",
-         "FCFA",
-         "Intègre la commission d'achat BRVM de 1.4%"),
-        ("Taxe de cession",
-         "Prix × 1.4%",
-         "FCFA",
-         "Taxe applicable à la vente sur BRVM."),
+        ("Stop-Loss (10%)", "Prix d'achat x 0.90", "FCFA",
+         "Limite de perte acceptable. Adapter selon profil de risque"),
+        ("Risk/Reward", "Gain potentiel / Perte potentielle", "ratio",
+         "< 1 = mauvais | 1-2 = acceptable | >= 2 = bon"),
+        ("CMP (frais achat)", "Prix x 1.014", "FCFA",
+         "Integre la commission d'achat BRVM de 1.4%"),
+        ("Taxe de cession", "Prix x 1.4%", "FCFA",
+         "Taxe applicable a la vente sur BRVM"),
     ]
 
-    style_header(ws, r, [1, 2, 3, 4],
-                 ["Indicateur / Formule", "Expression mathématique",
-                  "Unité", "Interprétation / Seuils"])
-    r += 1
+    F_SEC_F = fmt(bold=True, bg="#2F5496", fg="#FFFFFF", size=10, border=0)
+    F_EXPR  = fmt(bg="#D6E4F7", fg="#1F3864", size=9, align='center', border=1)
 
+    r = 2
     for item in formulas:
         label, expr, unit, interp = item
         if expr is None:
-            # C'est un titre de section
-            style_section(ws, r, 1, label, merge_to_col=4, bg=BLUE)
-            r += 1
-            continue
-        style_label(ws, r, 1, label, bold=True)
-        style_value(ws, r, 2, expr, bg=LBLUE)
-        ws.cell(row=r, column=2).alignment = al("center", "center")
-        ws.cell(row=r, column=2).font = ft(size=9, color=NAVY)
-        style_value(ws, r, 3, unit, bg=GREY)
-        ws.cell(row=r, column=3).alignment = al("center", "center")
-        cell_i = ws.cell(row=r, column=4, value=interp)
-        cell_i.fill = px(WHITE)
-        cell_i.font = ft(size=9, color=DARK)
-        cell_i.alignment = al("left", "center", wrap=True)
-        cell_i.border = bd()
-        ws.row_dimensions[r].height = 28
+            ws.merge_range(r, 0, r, 3, label, F_SEC_F)
+            ws.set_row(r, 18)
+        else:
+            ws.write(r, 0, label, F_LBL_B)
+            ws.write(r, 1, expr, F_EXPR)
+            ws.write(r, 2, unit, fmt(bg="#F2F2F2", fg="#404040", size=9, align='center', border=1))
+            ws.write(r, 3, interp, fmt(bg="#FFFFFF", fg="#404040", size=9, align='left', border=1, wrap=True))
+            ws.set_row(r, 28)
         r += 1
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  MAIN
-# ══════════════════════════════════════════════════════════════════════════════
-
-def main():
-    wb = Workbook()
-
-    # Renommer la feuille par défaut
-    ws_etude = wb.active
-    ws_etude.title = "ETUDE"
-
-    ws_synthese = wb.create_sheet("SYNTHESE")
-    ws_profil   = wb.create_sheet("PROFIL")
-    ws_formule  = wb.create_sheet("FORMULE")
-
-    build_etude(ws_etude)
-    build_synthese(ws_synthese)
-    build_profil(ws_profil)
-    build_formule(ws_formule)
-
-    # Figer les volets : première ligne de chaque feuille
-    for ws in [ws_etude, ws_synthese, ws_profil, ws_formule]:
-        ws.freeze_panes = "A2"
-
-    # Sanitize ALL formula cells in the entire workbook (safety net)
-    for ws in wb.worksheets:
-        for row in ws.iter_rows():
-            for cell in row:
-                if cell.value and isinstance(cell.value, str) and cell.value.startswith('='):
-                    cell.value = sf(cell.value)
-
-    out = "/home/user/Cloud-claude-tiaho/brvm-analyzer/etudes_actions_v2.xlsx"
-    wb.save(out)
-    print(f"Fichier cree : {out}")
-
-
-if __name__ == "__main__":
-    main()
+make_wb()
