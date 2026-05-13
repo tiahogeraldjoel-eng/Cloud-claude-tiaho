@@ -783,6 +783,175 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
                    fmt(bg=WHITE, border=1, wrap=True, valign='top', locked=False))
     ws.set_row(row(138), 40)
 
+    blank(141)
+    ws.merge_range(row(142)-1, 0, row(142)-1, 7, "C — ANALYSE CONTRARIAN & OPPORTUNITES DE MARCHE", F_TITLE)
+    ws.set_row(row(142)-1, 26)
+    blank(143)
+
+    # ── C1 : Normalisation du Résultat Net  (lignes 144–156) ─────────────────
+    section(144, "C1 — NORMALISATION DU RESULTAT NET  (recurrent vs exceptionnel)")
+    ws.merge_range(row(145), 0, row(145), 7,
+        "Saisir les elements exceptionnels (positifs = booste le RN, negatifs = penalise le RN). "
+        "Un mauvais RN publie mais un RN recurrent positif = opportunite contrarian.",
+        fmt(bg="#D6E4F7", fg=NAVY, size=9, italic=True, align='left', border=0, wrap=True))
+    ws.set_row(row(145), 30)
+    heads(146, ["Annee", "RN Publie (M FCFA)", "Dont Exceptionnel (M FCFA)", "RN Recurrent (M FCFA)", "Marge Recurrente %"])
+    rn_cols_c = ['B','C','D','E','F']
+    ca_cols_c = ['B','C','D','E','F']
+    for i, annee in enumerate(["N-4","N-3","N-2","N-1","N"]):
+        r = 147 + i
+        lbl(r, 'A', annee)
+        ws.write_formula(row(r), col('B'), f'={rn_cols_c[i]}12', F_CALC_N)
+        inp_s(r, 'C', num_format='#,##0')
+        calc(r, 'D', f'=IFERROR(B{r}-C{r},"")', '#,##0')
+        calc(r, 'E', f'=IFERROR(D{r}/{ca_cols_c[i]}8*100,"")', '0.00')
+    blank(152)
+    lbl(153, 'A', "BNPA Recurrent N (FCFA)")
+    calc(153, 'B', '=IFERROR(D151*1000000/B28,"")', '#,##0.00')
+    ws.write(row(153), col('C'), "PER Normalise", F_LBL)
+    calc(153, 'D', '=IFERROR(B24/B153,"")', '0.00')
+    calc_c(153, 'E', '=IFERROR(IF(D153>15,"PER normalise eleve",IF(D153<9,"Sous-evalue normalise","Normal (9-15)")),"-")')
+    lbl(154, 'A', "Signal Normalisation RN")
+    calc_c(154, 'B',
+        '=IFERROR(IF(C151<0,"Mauvais resultat PONCTUEL — RN recurrent > RN publie — opportunite contrarian potentielle",'
+        'IF(C151>0,"Resultat FLATTE par elements exceptionnels — prudence sur la valorisation",'
+        '"Pas d\'element exceptionnel detecte — RN publie = RN recurrent")),"-")')
+    blank(155)
+
+    # ── C2 : Comparaison Sectorielle BRVM  (lignes 156–165) ──────────────────
+    section(156, "C2 — COMPARAISON SECTORIELLE BRVM")
+    heads(157, ["Parametre", "Valeur", "Reference marche", "Ecart %", "Signal"])
+    lbl(158, 'A', "PER sectoriel moyen BRVM (reference)")
+    inp(158, 'B', val=12, num_format='0.00')
+    hint(158, 'C', "<-- Banques ~10 | Industrie ~12-14 | Distribution ~15 | Telecom ~8", 'G')
+    lbl(159, 'A', "Rendement dividende sectoriel BRVM (%)")
+    inp(159, 'B', val=5.0, num_format='0.00')
+    hint(159, 'C', "<-- Marche BRVM: 4 - 6% en moyenne", 'G')
+    blank(160)
+    lbl(161, 'A', "PER action vs sectoriel")
+    ws.write_formula(row(161), col('B'), '=IFERROR(B30,"")',
+                     fmt(bg=LGREEN, fg=DARK, size=9, align='right', border=1, num_format='0.00'))
+    ws.write_formula(row(161), col('C'), '=B158', F_WHITE_R)
+    calc(161, 'D', '=IFERROR((B30/B158-1)*100,"")', '0.00')
+    calc_c(161, 'E',
+        '=IFERROR(IF((B30/B158-1)*100<=-20,"Forte decote sectorielle — opportunite",'
+        'IF((B30/B158-1)*100<=-5,"Legere decote sectorielle",'
+        'IF((B30/B158-1)*100<=15,"Dans la norme sectorielle","Prime elevee vs secteur — prudence"))),"-")')
+    lbl(162, 'A', "Rendement div. action vs sectoriel")
+    ws.write_formula(row(162), col('B'), '=IFERROR(AVERAGE(F38:F42),"")',
+                     fmt(bg=LGREEN, fg=DARK, size=9, align='right', border=1, num_format='0.00'))
+    ws.write_formula(row(162), col('C'), '=B159', F_WHITE_R)
+    calc(162, 'D', '=IFERROR((AVERAGE(F38:F42)/B159-1)*100,"")', '0.00')
+    calc_c(162, 'E',
+        '=IFERROR(IF(AVERAGE(F38:F42)>=B159*1.2,"Rendement superieur au marche — attractif",'
+        'IF(AVERAGE(F38:F42)>=B159,"Dans la moyenne du marche","Rendement inferieur au marche")),"-")')
+    blank(163)
+
+    # ── C3 : Fiabilité du Dividende  (lignes 164–170) ─────────────────────────
+    section(164, "C3 — FIABILITE DU DIVIDENDE (5 ANS)")
+    heads(165, ["Indicateur", "Valeur", "Interpretation", "Score /3"])
+    lbl(166, 'A', "Nb annees avec dividende verse (sur 5)")
+    calc(166, 'B', '=COUNTIF(B38:B42,">0")', '0')
+    calc_c(166, 'C',
+        '=IFERROR(IF(B166=5,"Regulier 5/5 — fiable",'
+        'IF(B166>=4,"Quasi-regulier 4/5",'
+        'IF(B166>=3,"Irregulier 3/5","Tres irregulier — risque dividende"))),"-")')
+    calc(166, 'D', '=IF(B166=5,2,IF(B166>=4,1,0))', '0')
+    lbl(167, 'A', "CAGR dividende 5 ans (croissance annuelle)")
+    calc(167, 'B', '=IFERROR(IF(OR(B38<=0,B42<=0),"N/A",(B42/B38)^(1/4)-1),"N/A")', '0.00%')
+    calc_c(167, 'C',
+        '=IFERROR(IF(NOT(ISNUMBER(B167)),"Dividende absent",'
+        'IF(B167>0.05,"Forte croissance dividende",'
+        'IF(B167>0,"Croissance modeste","Dividende en baisse"))),"-")')
+    calc(167, 'D', '=IFERROR(IF(ISNUMBER(B167),IF(B167>0,1,0),0),0)', '0')
+    lbl(168, 'A', "SCORE FIABILITE DIVIDENDE", bold=True)
+    ws.write_formula(row(168), col('B'), '=IFERROR(D166+D167,0)',
+                     fmt(bg=LGREEN, fg=DARK, size=10, bold=True, align='center', border=1, num_format='0'))
+    calc_c(168, 'C',
+        '=IFERROR(IF(D166+D167>=3,"Dividende tres fiable",'
+        'IF(D166+D167>=2,"Dividende assez fiable","Dividende peu fiable — risque")),"-")')
+    ws.write(row(168), col('D'), "/3", F_WHITE_C)
+    blank(169)
+
+    # ── C4 : Score Contrarian BRVM  (lignes 170–182) ─────────────────────────
+    section(170, "C4 — SCORE CONTRARIAN BRVM  (detecteur : fondamentaux OK + titre boude par le marche)")
+    heads(171, ["Critere", "Signal", "Detail", "Score"])
+
+    cont_items = []
+    # C4.1
+    r = 172
+    lbl(r, 'A', "PER action < PER sectoriel (action moins chere que le marche)")
+    calc_c(r, 'B', f'=IFERROR(IF(B30<B158,"OUI","NON"),"-")')
+    calc_c(r, 'C', f'=IFERROR("PER="&ROUND(B30,1)&" vs sectoriel="&B158,"-")')
+    calc(r, 'D', f'=IFERROR(IF(B30<B158*0.85,2,IF(B30<B158,1,0)),0)', '0')
+    cont_items.append(r)
+    # C4.2
+    r = 173
+    lbl(r, 'A', "Prix actuel < VMC (decote sur valeur comptable)")
+    calc_c(r, 'B', f'=IFERROR(IF(B24<B31,"OUI — decote comptable","NON"),"-")')
+    calc_c(r, 'C', f'=IFERROR("Prix="&B24&" FCFA  vs VMC="&ROUND(B31,0)&" FCFA","-")')
+    calc(r, 'D', f'=IFERROR(IF(B24<B31*0.85,2,IF(B24<B31,1,0)),0)', '0')
+    cont_items.append(r)
+    # C4.3
+    r = 174
+    lbl(r, 'A', "ROE >= 10% (rentabilite correcte malgre sentiment negatif)")
+    calc_c(r, 'B', f'=IFERROR(IF(B33>=10,"OUI","NON"),"-")')
+    calc_c(r, 'C', f'=IFERROR("ROE="&ROUND(B33,1)&"%","-")')
+    calc(r, 'D', f'=IFERROR(IF(B33>=15,2,IF(B33>=10,1,0)),0)', '0')
+    cont_items.append(r)
+    # C4.4
+    r = 175
+    lbl(r, 'A', "Dividende fiable >= 4 ans sur 5")
+    calc_c(r, 'B', f'=IFERROR(IF(B168>=2,"OUI","NON"),"-")')
+    ws.write_formula(row(r), col('C'), '=IFERROR(C168,"-")', F_CALC_C)
+    calc(r, 'D', f'=IFERROR(MIN(B168,2),0)', '0')
+    cont_items.append(r)
+    # C4.5
+    r = 176
+    lbl(r, 'A', "Cours < Prix Median 1 an (survente technique)")
+    calc_c(r, 'B', f'=IFERROR(IF(B24<D95,"OUI — survente","NON"),"-")')
+    calc_c(r, 'C', f'=IFERROR("Prix="&B24&" FCFA  vs PM1an="&ROUND(D95,0)&" FCFA","-")')
+    calc(r, 'D', f'=IFERROR(IF(B24<D95,1,0),0)', '0')
+    cont_items.append(r)
+    # C4.6
+    r = 177
+    lbl(r, 'A', "Marge nette moyenne > 5% (profitabilite structurelle)")
+    calc_c(r, 'B', f'=IFERROR(IF(G16>=5,"OUI","NON"),"-")')
+    calc_c(r, 'C', f'=IFERROR("Marge moy="&ROUND(G16,1)&"%","-")')
+    calc(r, 'D', f'=IFERROR(IF(G16>=10,2,IF(G16>=5,1,0)),0)', '0')
+    cont_items.append(r)
+
+    # Score total /10
+    lbl(178, 'A', "SCORE CONTRARIAN TOTAL (/10)", bold=True)
+    ws.write_blank(row(178), col('B'), None, F_WHITE)
+    ws.write(row(178), col('C'), "/10", F_WHITE_C)
+    ws.write_formula(row(178), col('D'),
+        f'=IFERROR(SUM(D{cont_items[0]}:D{cont_items[-1]}),0)',
+        fmt(bg=LGREEN, fg=NAVY, size=12, bold=True, align='center', border=2, num_format='0'))
+
+    # Verdict
+    F_CONT_STRONG = fmt(bold=True, bg="#064E3B", fg="#ECFDF5", size=12, align='center', border=2)
+    F_CONT_WATCH  = fmt(bold=True, bg="#78350F", fg="#FEF3C7", size=12, align='center', border=2)
+    F_CONT_NONE   = fmt(bold=True, bg=GREY,     fg=DARK,     size=12, align='center', border=2)
+    ws.merge_range(row(179), 0, row(179), 3,
+        "VERDICT CONTRARIAN",
+        fmt(bold=True, bg=NAVY, fg=WHITE, size=10, align='center', border=1))
+    ws.write_formula(row(179), 4,
+        f'=IFERROR(IF(D178>=7,"FORTE OPPORTUNITE CONTRARIAN — fondamentaux sains, titre boude",'
+        f'IF(D178>=5,"A SURVEILLER — signaux contrarians partiels",'
+        f'"PAS DE SIGNAL CONTRARIAN — attendre")),"-")',
+        fmt(bold=True, bg="#064E3B", fg="#ECFDF5", size=11, align='center', border=2, wrap=True))
+    ws.merge_range(row(179), 4, row(179), 7, "",
+        fmt(bold=True, bg="#064E3B", fg="#ECFDF5", size=11, align='center', border=2, wrap=True))
+    ws.set_row(row(179), 30)
+    blank(180)
+
+    # Conditional formatting for C4 score column
+    cf_g = wb.add_format({'bg_color': '#D1FAE5', 'font_color': '#065F46', 'border': 1, 'align': 'center', 'font_size': 9})
+    cf_r = wb.add_format({'bg_color': '#FEE2E2', 'font_color': '#991B1B', 'border': 1, 'align': 'center', 'font_size': 9})
+    ws.conditional_format('B172:B177', {'type': 'text', 'criteria': 'containing', 'value': 'OUI', 'format': cf_g})
+    ws.conditional_format('B172:B177', {'type': 'text', 'criteria': 'containing', 'value': 'NON', 'format': cf_r})
+
     # Protection : formules verrouillees, cellules orange (saisie) debloquees
     ws.protect(PROTECT_PWD, {
         'select_locked_cells':   True,
@@ -980,10 +1149,27 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
         f'=IFERROR(IF(B{29}/39>=0.7,"ACHETER",IF(B{29}/39>=0.5,"SURVEILLER","EVITER")),"-")',
         fmt(bg="#E2EFDA", fg="#1F3864", size=12, bold=True, align='center', border=1))
     blank_r(30)
-    section(31, "RECOMMANDATION FINALE (texte libre)")
-    ws.merge_range(row(32), 0, row(35), 4, "",
+
+    # Signal Contrarian (lignes 31–34)
+    section(31, "C — SIGNAL CONTRARIAN BRVM  (depuis ETUDE C4)")
+    heads(32, ["Score /10", "Verdict", "PER Normalise", "PER vs Sectoriel", "Decote VMC"])
+    ws.write_formula(row(33), col('A'), '=IFERROR(ETUDE!D178,"")',
+                     fmt(bg="#EBF5FB", fg=NAVY, size=14, bold=True, align='center', border=2, num_format='0'))
+    ws.write_formula(row(33), col('B'), '=IFERROR(ETUDE!E179,"-")',
+                     fmt(bold=True, bg="#EBF5FB", fg=NAVY, size=10, align='center', border=2, wrap=True, locked=False))
+    ws.write_formula(row(33), col('C'), '=IFERROR(ETUDE!D153,"")',
+                     fmt(bg="#EBF5FB", fg=NAVY, size=10, align='center', border=1, num_format='0.00'))
+    ws.write_formula(row(33), col('D'), '=IFERROR(ETUDE!D161,"")',
+                     fmt(bg="#EBF5FB", fg=NAVY, size=10, align='center', border=1, num_format='0.00'))
+    ws.write_formula(row(33), col('E'), '=IFERROR(IF(ETUDE!B24<ETUDE!B31,"Prix < VMC","Prix > VMC"),"-")',
+                     fmt(bg="#EBF5FB", fg=NAVY, size=9, italic=True, align='center', border=1))
+    ws.set_row(row(33), 30)
+    blank_r(34)
+
+    section(35, "RECOMMANDATION FINALE (texte libre)")
+    ws.merge_range(row(36), 0, row(40), 4, "",
                    fmt(bg=WHITE, border=1, wrap=True, valign='top', locked=False))
-    ws.set_row(row(32), 50)
+    ws.set_row(row(36), 50)
 
     ws.protect(PROTECT_PWD, {
         'select_locked_cells':   True,
