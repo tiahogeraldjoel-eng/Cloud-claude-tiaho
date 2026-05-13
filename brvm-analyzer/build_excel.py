@@ -816,29 +816,48 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
 
     # Scorecard fondamentale (lignes 4–13)
     section(4, "SCORECARD FONDAMENTALE")
-    heads(5, ["Critere", "Valeur (depuis ETUDE)", "Zone normale", "Signal", "Score (0-3)"])
+    heads(5, ["Critere", "Valeur (auto depuis ETUDE)", "Zone normale", "Signal (auto)", "Score (0-3)"])
+    # (critere, zone, formule_valeur, num_fmt, formule_signal)
     fond_criteria = [
-        ("Croissance CA (N/N-4 %)", "> 10%"),
-        ("Croissance RN (N/N-4 %)", "> 10%"),
-        ("Marge nette moyenne (%)", "> 5%"),
-        ("PER", "9 - 15"),
-        ("PBR", "< 1 ideal"),
-        ("ROE (%)", "> 10%"),
-        ("Rendement dividende (%)", "> 3%"),
-        ("RVC (PER x PBR)", "< 22"),
+        ("Croissance CA (N/N-4 %)", "> 10%",
+         '=IFERROR(ETUDE!G8,"")', '0.00',
+         '=IFERROR(IF(ETUDE!G8>=10,"Bon (>=10%)",IF(ETUDE!G8>=0,"Faible (<10%)","Negatif")),"-")'),
+        ("Croissance RN (N/N-4 %)", "> 10%",
+         '=IFERROR(ETUDE!G12,"")', '0.00',
+         '=IFERROR(IF(ETUDE!G12>=10,"Bon (>=10%)",IF(ETUDE!G12>=0,"Faible (<10%)","Negatif")),"-")'),
+        ("Marge nette moyenne (%)", "> 5%",
+         '=IFERROR(ETUDE!G16,"")', '0.00',
+         '=IFERROR(IF(ETUDE!G16>=10,"Tres rentable",IF(ETUDE!G16>=5,"Rentable",IF(ETUDE!G16>=2,"Faiblement rentable","Faible"))),"-")'),
+        ("PER", "9 - 15",
+         '=IFERROR(ETUDE!B30,"")', '0.00',
+         '=IFERROR(ETUDE!D30,"-")'),
+        ("PBR", "< 1 ideal",
+         '=IFERROR(ETUDE!B32,"")', '0.00',
+         '=IFERROR(ETUDE!D32,"-")'),
+        ("ROE (%)", "> 10%",
+         '=IFERROR(ETUDE!B33,"")', '0.00',
+         '=IFERROR(ETUDE!D33,"-")'),
+        ("Rendement dividende (%)", "> 3%",
+         '=IFERROR(AVERAGE(ETUDE!F38:ETUDE!F42),"")', '0.00',
+         '=IFERROR(IF(AVERAGE(ETUDE!F38:ETUDE!F42)>=3,"Bon (>=3%)","Faible (<3%)"),"-")'),
+        ("RVC (PER x PBR)", "< 22",
+         '=IFERROR(ETUDE!B34,"")', '0.00',
+         '=IFERROR(ETUDE!D34,"-")'),
     ]
+    F_VAL_AUTO = fmt(bg="#EBF5FB", fg="#1F3864", size=9, align='right', border=1)
+    F_SIG_AUTO = fmt(bg="#EBF5FB", fg="#404040", size=9, italic=True, align='center', border=1)
     FOND_SCORE_ROWS = []
-    for i, (crit, zone) in enumerate(fond_criteria):
+    for i, (crit, zone, val_f, num_fmt, sig_f) in enumerate(fond_criteria):
         r = 6 + i
         lbl(r, 'A', crit)
-        ws.write(row(r), col('B'), "<-- depuis ETUDE",
-                 fmt(bg="#FFFFFF", fg="#808080", size=8, italic=True, align='left', border=1))
+        ws.write_formula(row(r), col('B'), val_f,
+                         fmt(bg="#EBF5FB", fg="#1F3864", size=9, align='right',
+                             border=1, num_format=num_fmt))
         ws.write(row(r), col('C'), zone,
                  fmt(bg="#FFF2CC", fg="#404040", size=9, align='center', border=1))
-        ws.write(row(r), col('D'), "<-- saisir signal",
-                 fmt(bg="#FFFFFF", fg="#808080", size=8, italic=True, align='center', border=1))
+        ws.write_formula(row(r), col('D'), sig_f, F_SIG_AUTO)
         ws.write_blank(row(r), col('E'), None,
-                       fmt(bg="#FFFFFF", fg="#404040", size=9, align='center', border=1, num_format='0'))
+                       fmt(bg="#FFFDE7", fg="#404040", size=9, align='center', border=1, num_format='0'))
         FOND_SCORE_ROWS.append(r)
 
     FOND_TOTAL_R = 14
