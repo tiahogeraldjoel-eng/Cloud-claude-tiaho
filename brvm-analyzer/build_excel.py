@@ -282,11 +282,13 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
                "Interpretation", "Seuil", "Moyenne 5 ans %"])
     # Lignes 16-20 : N-4 … N
     annees = ["N-4", "N-3", "N-2", "N-1", "N"]
+    a1_cols = ['B', 'C', 'D', 'E', 'F']   # colonnes CA/PNB dans A1 (ligne 8)
+    a2_cols = ['B', 'C', 'D', 'E', 'F']   # colonnes RN dans A2 (ligne 12)
     for i, annee in enumerate(annees):
         r = 16 + i
         lbl(r, 'A', annee)
-        inp_s(r, 'B', num_format='#,##0')   # RN
-        inp_s(r, 'C', num_format='#,##0')   # CA
+        ws.write_formula(row(r), col('B'), f'={a2_cols[i]}12', F_CALC_N)   # RN depuis A2
+        ws.write_formula(row(r), col('C'), f'={a1_cols[i]}8',  F_CALC_N)   # CA depuis A1
         # D = Marge
         calc(r, 'D', f'=IFERROR(B{r}/C{r}*100,"")', '0.00')
         # E = interpretation auto
@@ -306,8 +308,7 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
     # ── A4 : Indicateurs de Valorisation  (lignes 22–35) ─────────────────────
     section(22, "A4 — INDICATEURS DE VALORISATION")
     # Sous-titre
-    heads(23, ["Indicateur", "Valeur", "Description formule",
-               "Valeur calculee", "Signal", "", "", ""])
+    heads(23, ["Indicateur [formule]", "Valeur calculee", "Zone reference", "Signal", "", "", "", ""])
 
     # Saisies (lignes 24-28)
     lbl(24, 'A', "Prix actuel de l'action (FCFA)")
@@ -332,84 +333,77 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
 
     blank(29)
 
-    # Ratios calculés (lignes 30-34) — chaque ratio sur sa propre ligne
+    # Ratios calculés (lignes 30-34) — valeur directement en colonne B
     # PER — ligne 30
-    lbl(30, 'A', "PER — Price Earning Ratio")
-    ws.write(row(30), col('B'), "Prix / BNPA", F_LBL)
-    ws.write(row(30), col('C'), "=B24/B25", F_HINT)          # formule visible
-    calc(30, 'D', '=IFERROR(B24/B25,"")', '0.00')             # valeur calculee
-    calc_c(30, 'E',
-        '=IFERROR(IF(D30>15,"Surevalue",'
-        'IF(D30<9,"Sous-evalue","Zone normale (9-15)")),"-")')
-    ws.write(row(30), col('F'), "Zone : 9-15", F_INPUT_C)
+    lbl(30, 'A', "PER — Price Earning Ratio  [= Prix / BNPA]")
+    calc(30, 'B', '=IFERROR(B24/B25,"")', '0.00')
+    ws.write(row(30), col('C'), "Zone : 9-15", F_INPUT_C)
+    calc_c(30, 'D',
+        '=IFERROR(IF(B30>15,"Surevalue",'
+        'IF(B30<9,"Sous-evalue","Zone normale (9-15)")),"-")')
 
     # VMC — ligne 31
-    lbl(31, 'A', "VMC — Valeur Mathematique Comptable (FCFA)")
-    ws.write(row(31), col('B'), "Capitaux Propres / Nb titres", F_LBL)
-    ws.write(row(31), col('C'), "=B26/B28", F_HINT)
-    calc(31, 'D', '=IFERROR(B26/B28,"")', '#,##0.00')
-    calc_c(31, 'E',
-        '=IFERROR(IF(B24>D31,"Action surevaluee vs VMC","Action sous-evaluee vs VMC"),"-")')
-    ws.write(row(31), col('F'), "Prix < VMC = bon", F_INPUT_C)
+    lbl(31, 'A', "VMC — Valeur Mathematique Comptable  [= Capitaux Propres / Nb titres]")
+    calc(31, 'B', '=IFERROR(B26/B28,"")', '#,##0.00')
+    ws.write(row(31), col('C'), "Prix < VMC = bon", F_INPUT_C)
+    calc_c(31, 'D',
+        '=IFERROR(IF(B24>B31,"Action surevaluee vs VMC","Action sous-evaluee vs VMC"),"-")')
 
     # PBR — ligne 32
-    lbl(32, 'A', "PBR — Price to Book Ratio")
-    ws.write(row(32), col('B'), "Capitalisation / Capitaux Propres", F_LBL)
-    ws.write(row(32), col('C'), "=B27/B26", F_HINT)
-    calc(32, 'D', '=IFERROR(B27/B26,"")', '0.00')
-    calc_c(32, 'E',
-        '=IFERROR(IF(D32<1,"Decote comptable",'
-        'IF(D32<2,"Normal","Prime elevee")),"-")')
-    ws.write(row(32), col('F'), "< 1 = decote", F_INPUT_C)
+    lbl(32, 'A', "PBR — Price to Book Ratio  [= Capitalisation / Capitaux Propres]")
+    calc(32, 'B', '=IFERROR(B27/B26,"")', '0.00')
+    ws.write(row(32), col('C'), "< 1 = decote", F_INPUT_C)
+    calc_c(32, 'D',
+        '=IFERROR(IF(B32<1,"Decote comptable",'
+        'IF(B32<2,"Normal","Prime elevee")),"-")')
 
     # ROE — ligne 33
-    lbl(33, 'A', "ROE — Return on Equity (%)")
-    ws.write(row(33), col('B'), "RN / Capitaux Propres x 100", F_LBL)
-    ws.write(row(33), col('C'), "=F12*1000000/B26*100", F_HINT)
-    calc(33, 'D', '=IFERROR(F12*1000000/B26*100,"")', '0.00')
-    calc_c(33, 'E',
-        '=IFERROR(IF(D33>=15,"Excellent",'
-        'IF(D33>=10,"Bon",'
-        'IF(D33>=5,"Moyen","Faible"))),"-")')
-    ws.write(row(33), col('F'), "> 10% = bon", F_INPUT_C)
+    lbl(33, 'A', "ROE — Return on Equity (%)  [= RN / Capitaux Propres x 100]")
+    calc(33, 'B', '=IFERROR(F12*1000000/B26*100,"")', '0.00')
+    ws.write(row(33), col('C'), "> 10% = bon", F_INPUT_C)
+    calc_c(33, 'D',
+        '=IFERROR(IF(B33>=15,"Excellent",'
+        'IF(B33>=10,"Bon",'
+        'IF(B33>=5,"Moyen","Faible"))),"-")')
 
     # RVC — ligne 34
-    lbl(34, 'A', "RVC — PER x PBR (Lynch)")
-    ws.write(row(34), col('B'), "PER x PBR", F_LBL)
-    ws.write(row(34), col('C'), "=D30*D32", F_HINT)
-    calc(34, 'D', '=IFERROR(D30*D32,"")', '0.00')
-    calc_c(34, 'E',
-        '=IFERROR(IF(D34<22,"Decote globale (achat possible)","Surevaluation"),"-")')
-    ws.write(row(34), col('F'), "< 22 = decote", F_INPUT_C)
+    lbl(34, 'A', "RVC — PER x PBR (Lynch)  [= PER x PBR]")
+    calc(34, 'B', '=IFERROR(B30*B32,"")', '0.00')
+    ws.write(row(34), col('C'), "< 22 = decote", F_INPUT_C)
+    calc_c(34, 'D',
+        '=IFERROR(IF(B34<22,"Decote globale (achat possible)","Surevaluation"),"-")')
 
     blank(35)
 
     # ── A5 : Dividendes & Taux de distribution  (lignes 36–44) ──────────────
     section(36, "A5 — DIVIDENDES & TAUX DE DISTRIBUTION")
-    heads(37, ["Annee", "Dividende brut (FCFA)", "BNPA (FCFA)",
-               "Taux distrib. %", "Rendement %", "Progression %"])
+    heads(37, ["Annee", "Dividende BRUT (FCFA)", "Dividende NET (FCFA)",
+               "BNPA (FCFA)", "Taux distrib. %", "Rendement %", "Progression %"])
+    # NET = BRUT x 0.85 (prelevement fiscal 15% a la source)
     # Lignes 38-42 : N-4 … N
     for i, annee in enumerate(["N-4","N-3","N-2","N-1","N"]):
         r = 38 + i
         lbl(r, 'A', annee)
-        inp_s(r, 'B', num_format='#,##0.00')  # dividende
-        inp_s(r, 'C', num_format='#,##0.00')  # BNPA
-        # D = taux distribution
-        calc(r, 'D', f'=IFERROR(B{r}/(C{r}*0.85)*100,"")', '0.00')
-        # E = rendement dividend yield
-        calc(r, 'E', f'=IFERROR(B{r}/B24*100,"")', '0.00')
-        # F = progression vs annee precedente
+        inp_s(r, 'B', num_format='#,##0.00')  # dividende BRUT (saisie)
+        calc(r, 'C', f'=IFERROR(B{r}*0.85,"")', '#,##0.00')  # dividende NET auto
+        inp_s(r, 'D', num_format='#,##0.00')  # BNPA (saisie)
+        # E = taux distribution (sur BNPA brut)
+        calc(r, 'E', f'=IFERROR(B{r}/D{r}*100,"")', '0.00')
+        # F = rendement dividend yield (sur prix actuel)
+        calc(r, 'F', f'=IFERROR(B{r}/B24*100,"")', '0.00')
+        # G = progression vs annee precedente
         if i == 0:
-            ws.write_blank(row(r), col('F'), None, F_WHITE)
+            ws.write_blank(row(r), col('G'), None, F_WHITE)
         else:
-            calc(r, 'F', f'=IFERROR((B{r}-B{r-1})/ABS(B{r-1})*100,"")', '0.00')
+            calc(r, 'G', f'=IFERROR((B{r}-B{r-1})/ABS(B{r-1})*100,"")', '0.00')
     # Ligne 43 : totaux
     lbl(43, 'A', "TOTAL / MOYENNE", bold=True)
     ws.write_formula(row(43), col('B'), '=SUM(B38:B42)', F_CALC_N2)
-    ws.write_blank(row(43), col('C'), None, F_WHITE)
-    ws.write_formula(row(43), col('D'), '=IFERROR(AVERAGE(D38:D42),"")', F_CALC_PCT)
+    ws.write_formula(row(43), col('C'), '=IFERROR(B43*0.85,"")', F_CALC_N2)
+    ws.write_blank(row(43), col('D'), None, F_WHITE)
     ws.write_formula(row(43), col('E'), '=IFERROR(AVERAGE(E38:E42),"")', F_CALC_PCT)
-    ws.write_blank(row(43), col('F'), None, F_WHITE)
+    ws.write_formula(row(43), col('F'), '=IFERROR(AVERAGE(F38:F42),"")', F_CALC_PCT)
+    ws.write_blank(row(43), col('G'), None, F_WHITE)
     blank(44)
 
     # ── A6 : Fonds Propres  (lignes 45–53) ──────────────────────────────────
