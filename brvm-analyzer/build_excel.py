@@ -1022,12 +1022,12 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
     ws.conditional_format('B172:B177', {'type': 'text', 'criteria': 'containing', 'value': 'NON', 'format': cf_r})
 
     # Protection : formules verrouillees, cellules orange (saisie) debloquees
-    ws.protect(PROTECT_PWD, {
-        'select_locked_cells':   True,
-        'select_unlocked_cells': True,
-        'format_columns':        True,
-        'format_rows':           True,
-    })
+    # ws.protect(PROTECT_PWD, {
+        # 'select_locked_cells':   True,
+        # 'select_unlocked_cells': True,
+        # 'format_columns':        True,
+        # 'format_rows':           True,
+    # })
 
 
 def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
@@ -1241,12 +1241,12 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
                    fmt(bg=WHITE, border=1, wrap=True, valign='top', locked=False))
     ws.set_row(row(36), 50)
 
-    ws.protect(PROTECT_PWD, {
-        'select_locked_cells':   True,
-        'select_unlocked_cells': True,
-        'format_columns':        True,
-        'format_rows':           True,
-    })
+    # ws.protect(PROTECT_PWD, {
+        # 'select_locked_cells':   True,
+        # 'select_unlocked_cells': True,
+        # 'format_columns':        True,
+        # 'format_rows':           True,
+    # })
 
 
 def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
@@ -1353,12 +1353,12 @@ def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
         ws.set_row(r-1, 5)
         r += 1
 
-    ws.protect(PROTECT_PWD, {
-        'select_locked_cells':   True,
-        'select_unlocked_cells': True,
-        'format_columns':        True,
-        'format_rows':           True,
-    })
+    # ws.protect(PROTECT_PWD, {
+        # 'select_locked_cells':   True,
+        # 'select_unlocked_cells': True,
+        # 'format_columns':        True,
+        # 'format_rows':           True,
+    # })
 
 
 def build_formule(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_LBL_B, F_WHITE, F_REF, F_CALC_C):
@@ -1442,12 +1442,12 @@ def build_formule(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_LBL_B, F_WHITE, F_RE
             ws.set_row(r, 28)
         r += 1
 
-    ws.protect(PROTECT_PWD, {
-        'select_locked_cells':   True,
-        'select_unlocked_cells': True,
-        'format_columns':        True,
-        'format_rows':           True,
-    })
+    # ws.protect(PROTECT_PWD, {
+        # 'select_locked_cells':   True,
+        # 'select_unlocked_cells': True,
+        # 'format_columns':        True,
+        # 'format_rows':           True,
+    # })
 
 
 make_wb()
