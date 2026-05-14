@@ -1080,36 +1080,47 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
     section(4, "SCORECARD FONDAMENTALE")
     heads(5, ["Critere", "Valeur (auto depuis ETUDE)", "Zone normale", "Signal (auto)", "Score (0-3)"])
     # (critere, zone, formule_valeur, num_fmt, formule_signal)
+    # score_f: 0-3 auto par seuils (max total 24)
     fond_criteria = [
         ("Croissance CA (N/N-4 %)", "> 10%",
          '=IFERROR(ETUDE!G8,"")', '0.00',
-         '=IFERROR(IF(ETUDE!G8>=10,"Bon (>=10%)",IF(ETUDE!G8>=0,"Faible (<10%)","Negatif")),"-")'),
+         '=IFERROR(IF(ETUDE!G8>=10,"Bon (>=10%)",IF(ETUDE!G8>=0,"Faible (<10%)","Negatif")),"-")',
+         '=IFERROR(IF(ETUDE!G8>=15,3,IF(ETUDE!G8>=5,2,IF(ETUDE!G8>=0,1,0))),0)'),
         ("Croissance RN (N/N-4 %)", "> 10%",
          '=IFERROR(ETUDE!G12,"")', '0.00',
-         '=IFERROR(IF(ETUDE!G12>=10,"Bon (>=10%)",IF(ETUDE!G12>=0,"Faible (<10%)","Negatif")),"-")'),
+         '=IFERROR(IF(ETUDE!G12>=10,"Bon (>=10%)",IF(ETUDE!G12>=0,"Faible (<10%)","Negatif")),"-")',
+         '=IFERROR(IF(ETUDE!G12>=15,3,IF(ETUDE!G12>=5,2,IF(ETUDE!G12>=0,1,0))),0)'),
         ("Marge nette moyenne (%)", "> 5%",
          '=IFERROR(ETUDE!G16,"")', '0.00',
-         '=IFERROR(IF(ETUDE!G16>=10,"Tres rentable",IF(ETUDE!G16>=5,"Rentable",IF(ETUDE!G16>=2,"Faiblement rentable","Faible"))),"-")'),
+         '=IFERROR(IF(ETUDE!G16>=10,"Tres rentable",IF(ETUDE!G16>=5,"Rentable",IF(ETUDE!G16>=2,"Faiblement rentable","Faible"))),"-")',
+         '=IFERROR(IF(ETUDE!G16>=10,3,IF(ETUDE!G16>=5,2,IF(ETUDE!G16>=2,1,0))),0)'),
         ("PER", "9 - 15",
          '=IFERROR(ETUDE!B30,"")', '0.00',
-         '=IFERROR(ETUDE!D30,"-")'),
+         '=IFERROR(ETUDE!D30,"-")',
+         '=IFERROR(IF(ETUDE!B30<9,3,IF(ETUDE!B30<=15,2,IF(ETUDE!B30<=20,1,0))),0)'),
         ("PBR", "< 1 ideal",
          '=IFERROR(ETUDE!B32,"")', '0.00',
-         '=IFERROR(ETUDE!D32,"-")'),
+         '=IFERROR(ETUDE!D32,"-")',
+         '=IFERROR(IF(ETUDE!B32<1,3,IF(ETUDE!B32<2,1,0)),0)'),
         ("ROE (%)", "> 10%",
          '=IFERROR(ETUDE!B33,"")', '0.00',
-         '=IFERROR(ETUDE!D33,"-")'),
+         '=IFERROR(ETUDE!D33,"-")',
+         '=IFERROR(IF(ETUDE!B33>=15,3,IF(ETUDE!B33>=10,2,IF(ETUDE!B33>=5,1,0))),0)'),
         ("Rendement dividende (%)", "> 3%",
          '=IFERROR(AVERAGE(ETUDE!E39:ETUDE!E43),"")', '0.00',
-         '=IFERROR(IF(AVERAGE(ETUDE!E39:ETUDE!E43)>=3,"Bon (>=3%)","Faible (<3%)"),"-")'),
+         '=IFERROR(IF(AVERAGE(ETUDE!E39:ETUDE!E43)>=3,"Bon (>=3%)","Faible (<3%)"),"-")',
+         '=IFERROR(IF(AVERAGE(ETUDE!E39:ETUDE!E43)>=6,3,IF(AVERAGE(ETUDE!E39:ETUDE!E43)>=3,2,IF(AVERAGE(ETUDE!E39:ETUDE!E43)>=1,1,0))),0)'),
         ("RVC (PER x PBR)", "< 22",
          '=IFERROR(ETUDE!B34,"")', '0.00',
-         '=IFERROR(ETUDE!D34,"-")'),
+         '=IFERROR(ETUDE!D34,"-")',
+         '=IFERROR(IF(ETUDE!B34<10,3,IF(ETUDE!B34<22,2,IF(ETUDE!B34<30,1,0))),0)'),
     ]
-    F_VAL_AUTO = fmt(bg="#EBF5FB", fg="#1F3864", size=11, align='right', border=1)
-    F_SIG_AUTO = fmt(bg="#EBF5FB", fg="#404040", size=11, italic=True, align='center', border=1)
+    F_VAL_AUTO  = fmt(bg="#EBF5FB", fg="#1F3864", size=11, align='right', border=1)
+    F_SIG_AUTO  = fmt(bg="#EBF5FB", fg="#404040", size=11, italic=True, align='center', border=1)
+    F_SCORE_AUTO = fmt(bg=LGREEN, fg="#1F3864", size=11, bold=True, align='center', border=1,
+                       num_format='0', locked=True)
     FOND_SCORE_ROWS = []
-    for i, (crit, zone, val_f, num_fmt, sig_f) in enumerate(fond_criteria):
+    for i, (crit, zone, val_f, num_fmt, sig_f, score_f) in enumerate(fond_criteria):
         r = 6 + i
         lbl(r, 'A', crit)
         ws.write_formula(row(r), col('B'), val_f,
@@ -1118,8 +1129,7 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
         ws.write(row(r), col('C'), zone,
                  fmt(bg=LORANGE, fg=DARK, size=11, align='center', border=1, locked=False))
         ws.write_formula(row(r), col('D'), sig_f, F_SIG_AUTO)
-        ws.write_blank(row(r), col('E'), None,
-                       fmt(bg="#FFFDE7", fg="#404040", size=11, align='center', border=1, num_format='0', locked=False))
+        ws.write_formula(row(r), col('E'), score_f, F_SCORE_AUTO)
         FOND_SCORE_ROWS.append(r)
 
     FOND_TOTAL_R = 14
@@ -1150,30 +1160,40 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
     section(16, "SCORECARD TECHNIQUE")
     heads(17, ["Critere", "Signal observe", "Zone", "Interpretation", "Score"])
     # (critere, zone, formule_col_B, formule_col_D)
+    # score_f: 0-3 auto par seuils (max total 15)
     tech_criteria = [
         ("MM20+Bollinger+MACD+RSI+Volume (score B1)", "-5 a +5",
-         '=IFERROR(ETUDE!D91,"")',   '=IFERROR(ETUDE!E91,"-")'),
+         '=IFERROR(ETUDE!D91,"")',
+         '=IFERROR(ETUDE!E91,"-")',
+         '=IFERROR(IF(ETUDE!D91>=4,3,IF(ETUDE!D91>=2,2,IF(ETUDE!D91>=0,1,0))),0)'),
         ("Prix Medians PM1 et PM2 (B2)", "< PM = survente",
-         '=IFERROR(ETUDE!E95,"")',   '=IFERROR(ETUDE!E96,"-")'),
+         '=IFERROR(ETUDE!E95,"")',
+         '=IFERROR(ETUDE!E96,"-")',
+         '=IFERROR(IF(AND(ETUDE!B24<ETUDE!D95,ETUDE!B24<ETUDE!D96),3,IF(ETUDE!B24<ETUDE!D95,2,IF(ETUDE!B24<ETUDE!D96,1,0))),0)'),
         ("PER actualise (B3)", "9-15 = normal",
-         '=IFERROR(ETUDE!B104,"")',  '=IFERROR(ETUDE!D104,"-")'),
+         '=IFERROR(ETUDE!B104,"")',
+         '=IFERROR(ETUDE!D104,"-")',
+         '=IFERROR(IF(ETUDE!B104<9,3,IF(ETUDE!B104<=15,2,IF(ETUDE!B104<=20,1,0))),0)'),
         ("PCD / Gordon-Shapiro (B4/B5)", "< PCD = survente",
-         '=IFERROR(ETUDE!B116,"")',  '=IFERROR(ETUDE!B125,"-")'),
+         '=IFERROR(ETUDE!B116,"")',
+         '=IFERROR(ETUDE!B125,"-")',
+         '=IFERROR(IF(AND(ISNUMBER(SEARCH("DESSOUS",ETUDE!B116)),ISNUMBER(SEARCH("SOUS P0",ETUDE!B125))),3,IF(OR(ISNUMBER(SEARCH("DESSOUS",ETUDE!B116)),ISNUMBER(SEARCH("SOUS P0",ETUDE!B125))),2,IF(OR(ISNUMBER(SEARCH("ZONE CIBLE",ETUDE!B116)),ISNUMBER(SEARCH("zone P0",ETUDE!B125))),1,0))),0)'),
         ("Risk/Reward (B6)", ">= 2 = bon",
-         '=IFERROR(ETUDE!B135,"")',  '=IFERROR(ETUDE!D135,"-")'),
+         '=IFERROR(ETUDE!B135,"")',
+         '=IFERROR(ETUDE!D135,"-")',
+         '=IFERROR(IF(ETUDE!B135>=3,3,IF(ETUDE!B135>=2,2,IF(ETUDE!B135>=1,1,0))),0)'),
     ]
-    F_VAL_TECH = fmt(bg="#EBF5FB", fg="#1E3A5F", size=11, align='center', border=1)
-    F_SIG_TECH = fmt(bg="#EBF5FB", fg="#404040", size=11, italic=True, align='center', border=1)
+    F_VAL_TECH  = fmt(bg="#EBF5FB", fg="#1E3A5F", size=11, align='center', border=1)
+    F_SIG_TECH  = fmt(bg="#EBF5FB", fg="#404040", size=11, italic=True, align='center', border=1)
     TECH_SCORE_ROWS = []
-    for i, (crit, zone, val_f, sig_f) in enumerate(tech_criteria):
+    for i, (crit, zone, val_f, sig_f, score_f) in enumerate(tech_criteria):
         r = 18 + i
         lbl(r, 'A', crit)
         ws.write_formula(row(r), col('B'), val_f, F_VAL_TECH)
         ws.write(row(r), col('C'), zone,
                  fmt(bg=LORANGE, fg=DARK, size=11, align='center', border=1, locked=False))
         ws.write_formula(row(r), col('D'), sig_f, F_SIG_TECH)
-        ws.write_blank(row(r), col('E'), None,
-                       fmt(bg="#FFFDE7", fg="#404040", size=11, align='center', border=1, num_format='0', locked=False))
+        ws.write_formula(row(r), col('E'), score_f, F_SCORE_AUTO)
         TECH_SCORE_ROWS.append(r)
 
     TECH_TOTAL_R = 23
