@@ -1281,10 +1281,14 @@ def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
         ("Date d analyse",         "ex: 14/05/2026  (texte libre)"),
     ]
     KEY_ROWS = {}
+    F_KEY_INP_DATE = fmt(bold=True, bg=LORANGE, fg=DARK, size=12, align='left', border=2, locked=False, num_format='@')
+
     for i, (lbl_txt, hint_txt) in enumerate(key_fields):
         r_idx = 2 + i   # 0-based row index
         ws.write(r_idx, 0, lbl_txt, F_KEY_LBL)
-        ws.merge_range(r_idx, 1, r_idx, 2, None, F_KEY_INP)  # merge B:C uniquement
+        # B6 (i=3) : format texte pur '@' pour bloquer la conversion date->numero serie
+        f_inp = F_KEY_INP_DATE if i == 3 else F_KEY_INP
+        ws.merge_range(r_idx, 1, r_idx, 2, None, f_inp)
         ws.write(r_idx, 3, hint_txt, F_KEY_HNT)              # hint en D (hors fusion)
         ws.set_row(r_idx, 22)
         KEY_ROWS[lbl_txt] = r_idx + 1   # 1-based Excel row number
