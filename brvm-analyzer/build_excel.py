@@ -31,7 +31,7 @@ def make_wb():
     # ── Formats communs ───────────────────────────────────────────────────────
     def fmt(bold=False, bg=WHITE, fg=DARK, size=11, italic=False,
             align='left', valign='vcenter', border=0,
-            num_format=None, wrap=False, locked=True):
+            num_format=None, wrap=False, locked=False):
         d = dict(bold=bold, font_color=fg, font_size=size,
                  italic=italic, align=align, valign=valign,
                  bg_color=bg, border=border, border_color='#BFBFBF',
@@ -60,14 +60,14 @@ def make_wb():
     F_INPUT_S     = fmt(bg=LORANGE, fg=DARK,   size=11,  align='right', border=1, locked=False)
     F_INPUT_C     = fmt(bg=LORANGE, fg=DARK,   size=11,  align='center', border=1, locked=False)
 
-    # Valeurs calculées (vert)
-    F_CALC        = fmt(bg=LGREEN,  fg=DARK,   size=11,  align='right', border=1)
-    F_CALC_B      = fmt(bold=True, bg=LGREEN,  fg=DARK,  size=11, align='right', border=1)
-    F_CALC_C      = fmt(bg=LGREEN,  fg=DARK,   size=11,  align='center', border=1)
-    F_CALC_PCT    = fmt(bg=LGREEN,  fg=DARK,   size=11,  align='right', border=1, num_format='0.00')
-    F_CALC_PCTA   = fmt(bg=LGREEN,  fg=DARK,   size=11,  align='right', border=1, num_format='0.00%')
-    F_CALC_N      = fmt(bg=LGREEN,  fg=DARK,   size=11,  align='right', border=1, num_format='#,##0')
-    F_CALC_N2     = fmt(bg=LGREEN,  fg=DARK,   size=11,  align='right', border=1, num_format='#,##0.00')
+    # Valeurs calculées (vert) — locked=True : formules protegees contre cassures accidentelles
+    F_CALC        = fmt(bg=LGREEN,  fg=DARK,   size=11,  align='right', border=1, locked=True)
+    F_CALC_B      = fmt(bold=True, bg=LGREEN,  fg=DARK,  size=11, align='right', border=1, locked=True)
+    F_CALC_C      = fmt(bg=LGREEN,  fg=DARK,   size=11,  align='center', border=1, locked=True)
+    F_CALC_PCT    = fmt(bg=LGREEN,  fg=DARK,   size=11,  align='right', border=1, num_format='0.00', locked=True)
+    F_CALC_PCTA   = fmt(bg=LGREEN,  fg=DARK,   size=11,  align='right', border=1, num_format='0.00%', locked=True)
+    F_CALC_N      = fmt(bg=LGREEN,  fg=DARK,   size=11,  align='right', border=1, num_format='#,##0', locked=True)
+    F_CALC_N2     = fmt(bg=LGREEN,  fg=DARK,   size=11,  align='right', border=1, num_format='#,##0.00', locked=True)
 
     # Blanc neutre
     F_WHITE       = fmt(bg=WHITE, border=1)
