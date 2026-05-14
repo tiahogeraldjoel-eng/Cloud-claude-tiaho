@@ -236,13 +236,13 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
     # ─────────────────────────────────────────────────────────────────────────
     ws.merge_range(0, 0, 0, 7, "", F_TITLE)
     ws.write_formula(0, 0,
-        '=IFERROR("FICHE D\'ANALYSE BRVM — "&PROFIL!B3&"   ("&PROFIL!B4&")   |   "&PROFIL!B5&"   |   "&PROFIL!B6,"FICHE D\'ANALYSE BRVM — [Completer onglet PROFIL]")',
+        '=IFERROR("FICHE D\'ANALYSE BRVM — "&PROFIL!B3&"   ("&PROFIL!B4&")   |   "&PROFIL!B5&"   |   "&TEXT(PROFIL!B6,"dd/mm/yyyy"),"FICHE D\'ANALYSE BRVM — [Completer onglet PROFIL]")',
         F_TITLE)
     ws.set_row(0, 26)
 
     ws.merge_range(1, 0, 1, 7, "", F_TITLE2)
     ws.write_formula(1, 0,
-        '=IFERROR("Nom : "&PROFIL!B3&"  |  Ticker : "&PROFIL!B4&"  |  Secteur : "&PROFIL!B5&"  |  Date analyse : "&PROFIL!B6,"Completer le PROFIL : nom, ticker, secteur, date")',
+        '=IFERROR("Nom : "&PROFIL!B3&"  |  Ticker : "&PROFIL!B4&"  |  Secteur : "&PROFIL!B5&"  |  Date analyse : "&TEXT(PROFIL!B6,"dd/mm/yyyy"),"Completer le PROFIL : nom, ticker, secteur, date")',
         F_TITLE2)
 
     blank(3)
@@ -332,8 +332,9 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
     hint(27, 'C', "<-- Prix x Nb titres", 'G')
 
     lbl(28, 'A', "Nombre de titres en circulation")
-    inp(28, 'B', num_format='#,##0')
-    hint(28, 'C', "<-- BRVM.org", 'G')
+    ws.write_formula(row(28), col('B'), '=IFERROR(PROFIL!B17,"")',
+                     fmt(bg=LGREEN, fg=DARK, size=11, align='right', border=1, num_format='#,##0'))
+    hint(28, 'C', "<-- Auto depuis PROFIL onglet (Capital & Actionnariat)", 'G')
 
     blank(29)
 
@@ -952,6 +953,68 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
     ws.set_row(row(179), 30)
     blank(180)
 
+    # ─────────────────────────────────────────────────────────────────────────
+    #  BLOC D — DONNEES SOCIETE (depuis PROFIL — lecture seule)  lignes 182–208
+    # ─────────────────────────────────────────────────────────────────────────
+    blank(181)
+    ws.merge_range(row(182), 0, row(182), 7,
+        "D — DONNEES SOCIETE  (auto depuis onglet PROFIL — saisir dans PROFIL uniquement)", F_TITLE)
+    ws.set_row(row(182), 22)
+    blank(183)
+
+    # D1 — Capital & Actionnariat
+    section(184, "D1 — CAPITAL & ACTIONNARIAT")
+    heads(185, ["Champ", "Valeur (auto depuis PROFIL)", "", "", "", "", "", ""])
+    F_D = fmt(bg=LGREEN, fg=DARK, size=11, align='left', border=1)
+    F_D_N = fmt(bg=LGREEN, fg=DARK, size=11, align='right', border=1, num_format='#,##0')
+    d1 = [
+        ("Capital social (FCFA)",          '=IFERROR(PROFIL!B16,"")', F_D_N),
+        ("Nombre de titres en circulation", '=IFERROR(PROFIL!B17,"")', F_D_N),
+        ("Flottant (%)",                    '=IFERROR(PROFIL!B18,"")', F_D),
+        ("Principaux actionnaires",         '=IFERROR(PROFIL!B19,"")', F_D),
+    ]
+    for i, (lbl_txt, formula, f) in enumerate(d1):
+        r = 186 + i
+        lbl(r, 'A', lbl_txt)
+        ws.write_formula(row(r), col('B'), formula, f)
+        for c in ['C','D','E','F','G','H']:
+            ws.write_blank(row(r), col(c), None, F_WHITE)
+    blank(190)
+
+    # D2 — Liquidité
+    section(191, "D2 — LIQUIDITE DU TITRE  (critique sur BRVM)")
+    heads(192, ["Champ", "Valeur (auto depuis PROFIL)", "", "", "", "", "", ""])
+    d2 = [
+        ("Volume moyen journalier (titres)",  '=IFERROR(PROFIL!B22,"")', F_D_N),
+        ("Volume moyen journalier (FCFA)",    '=IFERROR(PROFIL!B23,"")', F_D_N),
+        ("Frequence de cotation (%)",         '=IFERROR(PROFIL!B24,"")', F_D),
+        ("Appreciation liquidite",            '=IFERROR(PROFIL!B25,"")', F_D),
+    ]
+    for i, (lbl_txt, formula, f) in enumerate(d2):
+        r = 193 + i
+        lbl(r, 'A', lbl_txt)
+        ws.write_formula(row(r), col('B'), formula, f)
+        for c in ['C','D','E','F','G','H']:
+            ws.write_blank(row(r), col(c), None, F_WHITE)
+    blank(197)
+
+    # D3 — Notation & Conformité
+    section(198, "D3 — NOTATION & CONFORMITE")
+    heads(199, ["Champ", "Valeur (auto depuis PROFIL)", "", "", "", "", "", ""])
+    d3 = [
+        ("Agence de notation",               '=IFERROR(PROFIL!B28,"")', F_D),
+        ("Note court terme",                 '=IFERROR(PROFIL!B29,"")', F_D),
+        ("Note long terme",                  '=IFERROR(PROFIL!B30,"")', F_D),
+        ("Dividende verse regulierement ?",  '=IFERROR(PROFIL!B31,"")', F_D),
+    ]
+    for i, (lbl_txt, formula, f) in enumerate(d3):
+        r = 200 + i
+        lbl(r, 'A', lbl_txt)
+        ws.write_formula(row(r), col('B'), formula, f)
+        for c in ['C','D','E','F','G','H']:
+            ws.write_blank(row(r), col(c), None, F_WHITE)
+    blank(204)
+
     # Conditional formatting for C4 score column
     cf_g = wb.add_format({'bg_color': '#D1FAE5', 'font_color': '#065F46', 'border': 1, 'align': 'center', 'font_size': 9})
     cf_r = wb.add_format({'bg_color': '#FEE2E2', 'font_color': '#991B1B', 'border': 1, 'align': 'center', 'font_size': 9})
@@ -1008,7 +1071,7 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
     title(1, "TABLEAU DE BORD — SYNTHESE DE L'ANALYSE")
     ws.merge_range(1, 0, 1, 4, "", F_TITLE2)
     ws.write_formula(1, 0,
-        '=IFERROR(PROFIL!B3&"  ("&PROFIL!B4&")  |  "&PROFIL!B5&"  |  Prix : "&TEXT(ETUDE!B24,"#,##0")&" FCFA  |  Date : "&PROFIL!B6,"Completer le PROFIL")',
+        '=IFERROR(PROFIL!B3&"  ("&PROFIL!B4&")  |  "&PROFIL!B5&"  |  Prix : "&TEXT(ETUDE!B24,"#,##0")&" FCFA  |  Date : "&TEXT(PROFIL!B6,"dd/mm/yyyy"),"Completer le PROFIL")',
         F_TITLE2)
     ws.set_row(1, 16)
     blank_r(3)
@@ -1258,6 +1321,15 @@ def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
         ]),
     ]
 
+    # Cellules IDENTIFICATION auto-liées aux cellules clés B3/B4/B5
+    F_AUTO = fmt(bg=LGREEN, fg=DARK, size=11, align='left', border=1)
+    # Champs IDENTIFICATION qui reprennent automatiquement les cellules clés
+    ident_auto = {
+        "Nom complet":       "=B3",
+        "Ticker BRVM":       "=B4",
+        "Secteur d'activite": "=B5",
+    }
+
     r = 8   # start after key section + gap
     for sec_title, fields in sections:
         ws.set_row(r-1, 20)
@@ -1266,12 +1338,19 @@ def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
         r += 1
         for lbl_txt, placeholder in fields:
             ws.write(r-1, 0, lbl_txt, F_LBL)
-            if placeholder.startswith("<--"):
+            if lbl_txt in ident_auto:
+                # Auto-rempli depuis les cellules clés ci-dessus
+                ws.write_formula(r-1, 1, ident_auto[lbl_txt], F_AUTO)
+                ws.write(r-1, 2, "<-- Auto depuis cellules cles ci-dessus", F_HINT)
+                ws.write_blank(r-1, 3, None, fmt(bg=WHITE, border=1, locked=False))
+            elif placeholder.startswith("<--"):
                 ws.write(r-1, 1, placeholder, F_HINT)
+                ws.write_blank(r-1, 2, None, fmt(bg=WHITE, border=1, locked=False))
+                ws.write_blank(r-1, 3, None, fmt(bg=WHITE, border=1, locked=False))
             else:
                 ws.write(r-1, 1, placeholder or None, fmt(bg=LORANGE, fg=DARK, size=11, align='left', border=1, locked=False))
-            ws.write_blank(r-1, 2, None, fmt(bg=WHITE, border=1, locked=False))
-            ws.write_blank(r-1, 3, None, fmt(bg=WHITE, border=1, locked=False))
+                ws.write_blank(r-1, 2, None, fmt(bg=WHITE, border=1, locked=False))
+                ws.write_blank(r-1, 3, None, fmt(bg=WHITE, border=1, locked=False))
             r += 1
         ws.set_row(r-1, 5)
         r += 1
