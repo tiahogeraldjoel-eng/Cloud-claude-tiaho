@@ -236,13 +236,13 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
     # ─────────────────────────────────────────────────────────────────────────
     ws.merge_range(0, 0, 0, 7, "", F_TITLE)
     ws.write_formula(0, 0,
-        '=IF(PROFIL!B3="","FICHE D\'ANALYSE BRVM — [Completer onglet PROFIL]","FICHE D\'ANALYSE BRVM — "&PROFIL!B3&"  ("&PROFIL!B4&")  |  "&PROFIL!B5&"  |  "&PROFIL!B6)',
+        '=IF(PROFIL!B3="","FICHE D\'ANALYSE BRVM — [Completer onglet PROFIL]","FICHE D\'ANALYSE BRVM — "&PROFIL!B3&"  ("&PROFIL!B4&")  |  "&PROFIL!B5&"  |  "&IF(ISNUMBER(PROFIL!B6),TEXT(PROFIL!B6,"dd/mm/yyyy"),PROFIL!B6))',
         F_TITLE)
     ws.set_row(0, 26)
 
     ws.merge_range(1, 0, 1, 7, "", F_TITLE2)
     ws.write_formula(1, 0,
-        '=IF(PROFIL!B3="","Completer le PROFIL : nom, ticker, secteur, date","Nom : "&PROFIL!B3&"  |  Ticker : "&PROFIL!B4&"  |  Secteur : "&PROFIL!B5&"  |  Date : "&PROFIL!B6)',
+        '=IF(PROFIL!B3="","Completer le PROFIL : nom, ticker, secteur, date","Nom : "&PROFIL!B3&"  |  Ticker : "&PROFIL!B4&"  |  Secteur : "&PROFIL!B5&"  |  Date : "&IF(ISNUMBER(PROFIL!B6),TEXT(PROFIL!B6,"dd/mm/yyyy"),PROFIL!B6))',
         F_TITLE2)
 
     blank(3)
@@ -1071,7 +1071,7 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
     title(1, "TABLEAU DE BORD — SYNTHESE DE L'ANALYSE")
     ws.merge_range(1, 0, 1, 4, "", F_TITLE2)
     ws.write_formula(1, 0,
-        '=IF(PROFIL!B3="","Completer le PROFIL",PROFIL!B3&"  ("&PROFIL!B4&")  |  "&PROFIL!B5&"  |  Prix : "&ETUDE!B24&" FCFA  |  Date : "&PROFIL!B6)',
+        '=IF(PROFIL!B3="","Completer le PROFIL",PROFIL!B3&"  ("&PROFIL!B4&")  |  "&PROFIL!B5&"  |  Prix : "&ETUDE!B24&" FCFA  |  Date : "&IF(ISNUMBER(PROFIL!B6),TEXT(PROFIL!B6,"dd/mm/yyyy"),PROFIL!B6))',
         F_TITLE2)
     ws.set_row(1, 16)
     blank_r(3)
