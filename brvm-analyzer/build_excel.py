@@ -94,6 +94,8 @@ def make_wb():
 
     build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT)
 
+    build_portefeuille(wb, fmt, F_TITLE, F_HEAD, F_LBL, F_LBL_B, F_WHITE, F_CALC_N, F_CALC_C)
+
     build_formule(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_LBL_B, F_WHITE, F_REF, F_CALC_C)
 
     wb.close()
@@ -1015,6 +1017,335 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
             ws.write_blank(row(r), col(c), None, F_WHITE)
     blank(204)
 
+    # ── Section E : Analyse du Bilan ──────────────────────────────────────────
+    blank(205)
+    ws.merge_range(row(206), 0, row(206), 7,
+        "E — ANALYSE DU BILAN  (saisir dans PROFIL — section BILAN)", F_TITLE)
+    ws.set_row(row(206), 22)
+    blank(207)
+
+    F_E_N = fmt(bg=LGREEN, fg=DARK, size=11, align='right', border=1, num_format='#,##0', locked=True)
+    F_E_P = fmt(bg=LGREEN, fg=DARK, size=11, align='right', border=1, num_format='0.00', locked=True)
+
+    def e_row(r_num, lbl_t, formula, fmt_f, note=''):
+        lbl(r_num, 'A', lbl_t)
+        ws.write_formula(row(r_num), col('B'), formula, fmt_f)
+        ws.write_blank(row(r_num), col('C'), None, F_WHITE)
+        ws.write(row(r_num), col('D'), note, F_REF)
+        for c in ['E', 'F', 'G', 'H']:
+            ws.write_blank(row(r_num), col(c), None, F_WHITE)
+
+    section(208, "E1 — STRUCTURE DE LA DETTE")
+    heads(209, ["Indicateur", "Valeur", "", "Reference / Seuils", "", "", "", ""])
+    e_row(210, "Dette long terme (FCFA)",
+          '=IFERROR(PROFIL!B40,"")', F_E_N, "Bilan passif non courant")
+    e_row(211, "Dette court terme (FCFA)",
+          '=IFERROR(PROFIL!B41,"")', F_E_N, "Bilan passif courant")
+    e_row(212, "Dette totale (FCFA)",
+          '=IFERROR(IFERROR(PROFIL!B40,0)+IFERROR(PROFIL!B41,0),"")', F_E_N, "= LT + CT")
+    e_row(213, "Gearing (Dette totale / Fonds propres %)",
+          '=IFERROR((IFERROR(PROFIL!B40,0)+IFERROR(PROFIL!B41,0))/B26*100,"")', F_E_P,
+          "< 50% sain | 50-100% eleve | > 100% risque")
+    e_row(214, "Dette nette / RN annuel (nb annees)",
+          '=IFERROR((IFERROR(PROFIL!B40,0)+IFERROR(PROFIL!B41,0))/(F12*1000000),"")', F_E_P,
+          "< 3 ans sain | 3-5 ans acceptable | > 5 ans excessif")
+    blank(215)
+
+    section(216, "E2 — SOLVABILITE & COUVERTURE DES INTERETS")
+    heads(217, ["Indicateur", "Valeur", "", "Reference / Seuils", "", "", "", ""])
+    e_row(218, "EBIT (M FCFA) — depuis PROFIL",
+          '=IFERROR(PROFIL!B42,"")', F_E_N, "Resultat avant interets et impots")
+    e_row(219, "Charges financieres nettes (FCFA)",
+          '=IFERROR(PROFIL!B43,"")', F_E_N, "Interets nets payes sur la dette")
+    e_row(220, "Couverture des interets (x)",
+          '=IFERROR(PROFIL!B42*1000000/PROFIL!B43,"")', F_E_P,
+          "> 3x sain | 1.5-3x vigilance | < 1.5x risque")
+    e_row(221, "Ratio Fonds propres / Dette totale (%)",
+          '=IFERROR(B26/(IFERROR(PROFIL!B40,0)+IFERROR(PROFIL!B41,0))*100,"")', F_E_P,
+          "> 100% solide | 50-100% moyen | < 50% fragile")
+    blank(222)
+
+    section(223, "E3 — LIQUIDITE DU BILAN")
+    heads(224, ["Indicateur", "Valeur", "", "Reference / Seuils", "", "", "", ""])
+    e_row(225, "Actifs courants (FCFA)",
+          '=IFERROR(PROFIL!B44,"")', F_E_N, "Tresorerie + creances + stocks")
+    e_row(226, "Passifs courants (FCFA)",
+          '=IFERROR(PROFIL!B45,"")', F_E_N, "Dettes court terme < 1 an")
+    e_row(227, "Ratio de liquidite courant (x)",
+          '=IFERROR(PROFIL!B44/PROFIL!B45,"")', F_E_P,
+          "> 2 = tres liquide | 1-2 = OK | < 1 = tension tresorerie")
+    e_row(228, "Fonds de roulement net (FCFA)",
+          '=IFERROR(PROFIL!B44-PROFIL!B45,"")', F_E_N,
+          "> 0 = excedent | < 0 = deficit de liquidite")
+    blank(229)
+
+    # ── Section F : Alertes de Prix & Valeur Intrinseque ──────────────────────
+    blank(230)
+    ws.merge_range(row(231), 0, row(231), 7,
+        "F — ALERTES DE PRIX & VALEUR INTRINSEQUE", F_TITLE)
+    ws.set_row(row(231), 22)
+    blank(232)
+
+    section(233, "F1 — VALEUR INTRINSEQUE COMPOSITE  (VMC x2  +  PCD  +  Gordon  quand disponibles)")
+    heads(234, ["Modele", "VI estimee (FCFA)", "Poids", "Signal vs prix actuel", "", "", "", ""])
+    F_VI_LBL = fmt(bg=GREY, fg=DARK, size=11, border=1)
+    F_VI_SIG = fmt(bg=LGREEN, fg=DARK, size=10, italic=True, align='left', border=1)
+
+    ws.write_formula(row(235), col('A'),
+        '=IF(ISNUMBER(B31),"VMC  =  "&TEXT(ROUND(B31,0),"#,##0")&" FCFA","VMC — N/A")', F_VI_LBL)
+    ws.write_formula(row(235), col('B'), '=IFERROR(B31,"")', F_CALC_N)
+    ws.write(row(235), col('C'), "x2", fmt(bg=GREY, fg=DARK, size=11, align='center', border=1))
+    ws.write_formula(row(235), col('D'),
+        '=IFERROR(IF(B24<B31,"Prix SOUS VMC — decote comptable","Prix AU-DESSUS VMC"),"")', F_VI_SIG)
+    for c in ['E','F','G','H']: ws.write_blank(row(235), col(c), None, F_WHITE)
+
+    ws.write_formula(row(236), col('A'),
+        '=IF(ISNUMBER(B113),"PCD  =  "&TEXT(ROUND(B113,0),"#,##0")&" FCFA","PCD — N/A (pas de dividende)")', F_VI_LBL)
+    ws.write_formula(row(236), col('B'), '=IFERROR(IF(ISNUMBER(B113),B113,""),"")', F_CALC_N)
+    ws.write(row(236), col('C'), "x1", fmt(bg=GREY, fg=DARK, size=11, align='center', border=1))
+    ws.write_formula(row(236), col('D'),
+        '=IFERROR(IF(NOT(ISNUMBER(B113)),"Non disponible — dividend = 0",IF(B24<B113,"Prix SOUS PCD — survente","Prix AU-DESSUS PCD — surachat")),"N/A")', F_VI_SIG)
+    for c in ['E','F','G','H']: ws.write_blank(row(236), col(c), None, F_WHITE)
+
+    ws.write_formula(row(237), col('A'),
+        '=IF(ISNUMBER(B124),"Gordon P0  =  "&TEXT(ROUND(B124,0),"#,##0")&" FCFA","Gordon P0 — N/A (saisir D1)")', F_VI_LBL)
+    ws.write_formula(row(237), col('B'), '=IFERROR(IF(ISNUMBER(B124),B124,""),"")', F_CALC_N)
+    ws.write(row(237), col('C'), "x1", fmt(bg=GREY, fg=DARK, size=11, align='center', border=1))
+    ws.write_formula(row(237), col('D'),
+        '=IFERROR(IF(NOT(ISNUMBER(B124)),"Non disponible — saisir D1",IF(B24<B124,"Prix SOUS P0 — opportunite","Prix AU-DESSUS P0 — surevalue")),"N/A")', F_VI_SIG)
+    for c in ['E','F','G','H']: ws.write_blank(row(237), col(c), None, F_WHITE)
+
+    lbl(238, 'A', "VALEUR INTRINSEQUE COMPOSITE (VI)", bold=True)
+    VI_FORMULA = ('=IFERROR('
+        '(B31*2+IF(ISNUMBER(B113),B113,0)+IF(ISNUMBER(B124),B124,0))'
+        '/(2+IF(ISNUMBER(B113),1,0)+IF(ISNUMBER(B124),1,0)),"")')
+    ws.write_formula(row(238), col('B'), VI_FORMULA,
+                     fmt(bold=True, bg=LGREEN, fg="#1F3864", size=12, align='right', border=2,
+                         num_format='#,##0', locked=True))
+    ws.write(row(238), col('C'), "composite", fmt(bg=GREY, fg=DARK, size=11, align='center', border=1))
+    ws.write_formula(row(238), col('D'),
+        '=IFERROR(IF(B24<B238*0.75,"FORTE OPPORTUNITE — decote > 25%",'
+        'IF(B24<B238*0.85,"Achat ideal — decote 15-25%",'
+        'IF(B24<B238,"Legerement sous-evalue",'
+        'IF(B24<B238*1.20,"Zone normale / prime moderee","ATTENTION — surevaluation > 20%")))),'
+        '"Saisir prix actuel (B24)")',
+        fmt(bold=True, bg=LGREEN, fg=DARK, size=11, italic=True, align='left', border=2, wrap=True, locked=True))
+    ws.set_row(row(238), 30)
+    for c in ['E','F','G','H']: ws.write_blank(row(238), col(c), None, F_WHITE)
+    blank(239)
+
+    section(240, "F2 — ZONES D ALERTE PRIX  (depuis VI composite B238)")
+    heads(241, ["Zone", "Prix seuil (FCFA)", "Ecart vs prix actuel (%)", "Action recommandee", "", "", "", ""])
+    F_ZONE_ACT = fmt(bg=WHITE, fg='#404040', size=10, italic=True, align='left', border=1)
+    f2_zones = [
+        (242, "FORTE OPPORTUNITE  (VI x 0.75)",
+         '=IFERROR(B238*0.75,"")', '=IFERROR((B24/(B238*0.75)-1)*100,"")',
+         "Achat agressif — decote > 25% sur VI"),
+        (243, "ACHAT IDEAL  (VI x 0.85)",
+         '=IFERROR(B238*0.85,"")', '=IFERROR((B24/(B238*0.85)-1)*100,"")',
+         "Achat — marge de securite confortable (15-25%)"),
+        (244, "JUSTE VALEUR  (VI x 1.00)",
+         '=IFERROR(B238,"")', '=IFERROR((B24/B238-1)*100,"")',
+         "Achat si fondamentaux solides — prime nulle"),
+        (245, "ZONE NEUTRE  (VI x 1.10)",
+         '=IFERROR(B238*1.10,"")', '=IFERROR((B24/(B238*1.10)-1)*100,"")',
+         "Surveiller — prime moderee"),
+        (246, "SURACHAT  (VI x 1.20)",
+         '=IFERROR(B238*1.20,"")', '=IFERROR((B24/(B238*1.20)-1)*100,"")',
+         "Allegement conseille — prime > 20% sur VI"),
+    ]
+    for r_num, zone_lbl, prix_f, ecart_f, action in f2_zones:
+        ws.write(row(r_num), col('A'), zone_lbl, F_LBL)
+        ws.write_formula(row(r_num), col('B'), prix_f, F_CALC_N)
+        ws.write_formula(row(r_num), col('C'), ecart_f,
+                         fmt(bg=LGREEN, fg=DARK, size=11, align='right', border=1,
+                             num_format='0.0', locked=True))
+        ws.write(row(r_num), col('D'), action, F_ZONE_ACT)
+        for c in ['E','F','G','H']:
+            ws.write_blank(row(r_num), col(c), None, F_WHITE)
+    blank(247)
+
+    # ── Section G : Analyse Cyclique ──────────────────────────────────────────
+    blank(248)
+    ws.merge_range(row(249), 0, row(249), 7,
+        "G — ANALYSE CYCLIQUE  (agro-industrie BRVM : caoutchouc, huile de palme, cacao...)",
+        F_TITLE)
+    ws.set_row(row(249), 22)
+    blank(250)
+
+    COMM_MATCH = ('"Caoutchouc RSS3 (USD/kg)",'
+                  '"Huile de palme CPO (USD/t)",'
+                  '"Cacao (USD/t)",'
+                  '"Coton (USD/lb)",'
+                  '"Cafe Robusta (USD/t)"')
+    COMM_VALS  = "1.65,820,2500,0.85,1800"
+    COMM_LIST  = ["Caoutchouc RSS3 (USD/kg)", "Huile de palme CPO (USD/t)",
+                  "Cacao (USD/t)", "Coton (USD/lb)", "Cafe Robusta (USD/t)", "Autre"]
+
+    section(251, "G1 — EXPOSITION AUX MATIERES PREMIERES  (jusqu'a 3 matieres par societe)")
+    ws.merge_range(row(252), 0, row(252), 7,
+        "Liste : choisir la matiere | saisir % CA et prix actuel | moy. LT 10 ans auto-remplie | "
+        "Pour 'Autre' : laisser D vide et saisir la moy. LT en colonne E",
+        F_NOTE)
+    ws.set_row(row(252), 14)
+    heads(253, ["Matiere premiere", "% CA", "Prix actuel",
+                "Moy. LT auto", "Moy. LT (Autre)", "Ratio cycle", "Signal", ""])
+
+    F_G_INP   = fmt(bg=LORANGE, fg=DARK, size=11, align='left',  border=1, locked=False)
+    F_G_INP_R = fmt(bg=LORANGE, fg=DARK, size=11, align='right', border=1, locked=False,
+                    num_format='0.00')
+    F_G_CALC  = fmt(bg=LGREEN,  fg=DARK, size=11, align='right', border=1, num_format='0.00',
+                    locked=True)
+    F_G_SIG   = fmt(bg=LGREEN,  fg=DARK, size=10, italic=True, align='left', border=1,
+                    locked=True)
+
+    ws.data_validation(row(254), col('A'), row(256), col('A'), {
+        'validate': 'list',
+        'source': COMM_LIST,
+        'input_title': 'Matiere premiere',
+        'input_message': "Choisir dans la liste. Pour 'Autre' : saisir moy. LT en col. E",
+    })
+
+    for r_num in [254, 255, 256]:
+        lt_auto  = (f'=IFERROR(CHOOSE(MATCH(A{r_num},{{{COMM_MATCH}}},0),{COMM_VALS}),"")')
+        ratio_f  = (f'=IFERROR(IF(AND(ISNUMBER(C{r_num}),'
+                    f'OR(D{r_num}<>"",ISNUMBER(E{r_num}))),'
+                    f'C{r_num}/IF(D{r_num}<>"",D{r_num},E{r_num}),""),"")')
+        signal_f = (f'=IFERROR(IF(NOT(ISNUMBER(F{r_num})),"—",'
+                    f'IF(F{r_num}<0.85,"BAS — opportunite acheteur",'
+                    f'IF(F{r_num}<1.15,"MILIEU — cycle normal",'
+                    f'"HAUT — PER annuel trompeur"))),"—")')
+        ws.write(row(r_num), col('A'), None, F_G_INP)
+        ws.write(row(r_num), col('B'), None, F_G_INP_R)
+        ws.write(row(r_num), col('C'), None, F_G_INP_R)
+        ws.write_formula(row(r_num), col('D'), lt_auto,  F_G_CALC)
+        ws.write(row(r_num), col('E'), None, F_G_INP_R)
+        ws.write_formula(row(r_num), col('F'), ratio_f,  F_G_CALC)
+        ws.write_formula(row(r_num), col('G'), signal_f, F_G_SIG)
+        ws.write_blank(row(r_num), col('H'), None, F_WHITE)
+        ws.set_row(row(r_num), 18)
+
+    lbl(257, 'A', "Total % CA renseigne")
+    ws.write_formula(row(257), col('B'), '=IFERROR(SUM(B254:B256),"")',
+                     fmt(bg=LGREEN, fg=DARK, size=11, align='right', border=1,
+                         num_format='0.0', locked=True))
+    ws.write_formula(row(257), col('C'),
+        '=IFERROR(IF(ABS(SUM(B254:B256)-100)<0.1,"Total = 100% OK",'
+        '"ATTENTION : total "&TEXT(SUM(B254:B256),"0.0")&"% — verifier les %"),"—")',
+        F_G_SIG)
+    for c in ['D','E','F','G','H']:
+        ws.write_blank(row(257), col(c), None, F_WHITE)
+    blank(258)
+
+    # G2 — Indice de cycle composite
+    section(259, "G2 — INDICE DE CYCLE COMPOSITE  (pondere par le % du CA de chaque matiere)")
+    heads(260, ["Indicateur", "Valeur", "", "Interpretation & Conduite a tenir", "", "", "", ""])
+
+    comp_f = ('=IFERROR('
+              '(IF(AND(A254<>"",ISNUMBER(F254)),B254*F254,0)'
+              '+IF(AND(A255<>"",ISNUMBER(F255)),B255*F255,0)'
+              '+IF(AND(A256<>"",ISNUMBER(F256)),B256*F256,0))'
+              '/(IF(AND(A254<>"",ISNUMBER(F254)),B254,0)'
+              '+IF(AND(A255<>"",ISNUMBER(F255)),B255,0)'
+              '+IF(AND(A256<>"",ISNUMBER(F256)),B256,0))'
+              ',"")')
+
+    lbl(261, 'A', "Indice cycle composite (pondere % CA)")
+    ws.write_formula(row(261), col('B'), comp_f,
+                     fmt(bold=True, bg=LGREEN, fg="#1F3864", size=12, align='right',
+                         border=2, num_format='0.00', locked=True))
+    ws.write_blank(row(261), col('C'), None, F_WHITE)
+    ws.write_formula(row(261), col('D'),
+        '=IFERROR("Indice "&TEXT(B261,"0.00")&" — "& '
+        'IF(B261<0.85,"en dessous moy LT : bas de cycle",'
+        'IF(B261<1.15,"proche moy LT : milieu de cycle","au-dessus moy LT : haut de cycle")),"")',
+        fmt(bg=LGREEN, fg=DARK, size=10, italic=True, align='left', border=1, locked=True))
+    for c in ['E','F','G','H']:
+        ws.write_blank(row(261), col(c), None, F_WHITE)
+
+    lbl(262, 'A', "Phase du cycle detectee", bold=True)
+    ws.write_formula(row(262), col('B'),
+        '=IFERROR(IF(B261<0.85,"BAS DE CYCLE",'
+        'IF(B261<1.15,"MILIEU DE CYCLE","HAUT DE CYCLE")),"—")',
+        fmt(bold=True, bg=LGREEN, fg="#1F3864", size=12, align='center',
+            border=2, locked=True))
+    ws.write_blank(row(262), col('C'), None, F_WHITE)
+    ws.write_formula(row(262), col('D'),
+        '=IFERROR(IF(B261<0.85,'
+        '"ACHETER : RN comprime par bas cycle, actifs (plantations) solides. '
+        'PER eleve = normal, ne pas vendre sur cette base.",'
+        'IF(B261<1.15,'
+        '"ANALYSE STANDARD applicable. PER historique fiable.",'
+        '"PRUDENCE : RN gonfle par haut cycle. PER bas = TROMPEUR. '
+        'Preferer PER normalise cycle (G3) avant toute decision.")),"")',
+        fmt(bg=LGREEN, fg=DARK, size=10, italic=True, align='left', border=1,
+            wrap=True, locked=True))
+    ws.set_row(row(262), 40)
+    for c in ['E','F','G','H']:
+        ws.write_blank(row(262), col(c), None, F_WHITE)
+
+    lbl(263, 'A', "Nb matieres renseignees")
+    ws.write_formula(row(263), col('B'), '=IFERROR(COUNTA(A254:A256),0)',
+                     fmt(bg=LGREEN, fg=DARK, size=11, align='center', border=1, locked=True))
+    ws.write_blank(row(263), col('C'), None, F_WHITE)
+    ws.write_formula(row(263), col('D'),
+        '=IFERROR(IF(COUNTA(A254:A256)>=2,'
+        '"Multi-matieres : diversification naturelle — cycles partiellement decoreles (ex: SOGB)",'
+        '"Mono-matiere : exposition totale au cycle unique (ex: SAPH, PALMCI)"),"")',
+        F_G_SIG)
+    for c in ['E','F','G','H']:
+        ws.write_blank(row(263), col(c), None, F_WHITE)
+    blank(264)
+
+    # G3 — Valorisation adaptée aux cycliques
+    section(265, "G3 — VALORISATION ADAPTEE AUX CYCLIQUES  (PER normalise sur cycle 5 ans)")
+    heads(266, ["Indicateur", "Valeur", "", "Signal / Interpretation", "", "", "", ""])
+
+    lbl(267, 'A', "BPA normalise 5 ans (FCFA)")
+    ws.write_formula(row(267), col('B'),
+        '=IFERROR(AVERAGE(B12:F12)*1000000/B28,"")',
+        fmt(bg=LGREEN, fg=DARK, size=11, align='right', border=1,
+            num_format='#,##0', locked=True))
+    ws.write_blank(row(267), col('C'), None, F_WHITE)
+    ws.write(row(267), col('D'),
+             "= RN moyen 5 ans / Nb titres. Lisse les pics et creux de cycle.",
+             fmt(bg=WHITE, fg='#6B7280', size=10, italic=True, align='left', border=1))
+    for c in ['E','F','G','H']:
+        ws.write_blank(row(267), col(c), None, F_WHITE)
+
+    lbl(268, 'A', "PER normalise cycle (Prix / BPA moyen 5 ans)", bold=True)
+    ws.write_formula(row(268), col('B'), '=IFERROR(B24/B267,"")',
+                     fmt(bold=True, bg=LGREEN, fg="#1F3864", size=12, align='right',
+                         border=2, num_format='0.00', locked=True))
+    ws.write_blank(row(268), col('C'), None, F_WHITE)
+    ws.write_formula(row(268), col('D'),
+        '=IFERROR(IF(B268<9,"Sous-evalue sur cycle complet — forte opportunite",'
+        'IF(B268<15,"Zone normale sur cycle — achat raisonnable",'
+        'IF(B268<22,"Prime moderee sur cycle — attendre correction",'
+        '"Fortement surevalue sur cycle — eviter"))),"Saisir donnees A1 et A2")',
+        fmt(bg=LGREEN, fg=DARK, size=11, italic=True, align='left', border=1, locked=True))
+    for c in ['E','F','G','H']:
+        ws.write_blank(row(268), col(c), None, F_WHITE)
+
+    lbl(269, 'A', "VERDICT CYCLIQUE FINAL", bold=True)
+    ws.merge_range(row(269), col('B'), row(269), col('D'), None,
+                   fmt(bold=True, bg=LGREEN, fg="#1F3864", size=11, align='center',
+                       border=2, wrap=True, locked=True))
+    ws.write_formula(row(269), col('B'),
+        '=IFERROR('
+        'IF(AND(B261<0.85,B268<15),"ACHAT FORT — bas cycle + sous-evalue sur cycle",'
+        'IF(AND(B261<1.15,B268<15),"ACHAT — milieu cycle + juste valorisation cycle",'
+        'IF(AND(B261>1.15,B268<9),"SURVEILLER — haut cycle mais tres sous-evalue cycle",'
+        'IF(AND(B261>1.15,B268>=15),"EVITER — haut cycle ET surevalue sur cycle",'
+        '"NEUTRE — analyser fondamentaux en detail")))),'
+        '"Saisir matieres en G1")',
+        fmt(bold=True, bg=LGREEN, fg="#1F3864", size=11, align='center',
+            border=2, wrap=True, locked=True))
+    ws.set_row(row(269), 28)
+    for c in ['E','F','G','H']:
+        ws.write_blank(row(269), col(c), None, F_WHITE)
+    blank(270)
+
     # Conditional formatting for C4 score column
     cf_g = wb.add_format({'bg_color': '#D1FAE5', 'font_color': '#065F46', 'border': 1, 'align': 'center', 'font_size': 9})
     cf_r = wb.add_format({'bg_color': '#FEE2E2', 'font_color': '#991B1B', 'border': 1, 'align': 'center', 'font_size': 9})
@@ -1080,36 +1411,47 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
     section(4, "SCORECARD FONDAMENTALE")
     heads(5, ["Critere", "Valeur (auto depuis ETUDE)", "Zone normale", "Signal (auto)", "Score (0-3)"])
     # (critere, zone, formule_valeur, num_fmt, formule_signal)
+    # score_f: 0-3 auto par seuils (max total 24)
     fond_criteria = [
         ("Croissance CA (N/N-4 %)", "> 10%",
          '=IFERROR(ETUDE!G8,"")', '0.00',
-         '=IFERROR(IF(ETUDE!G8>=10,"Bon (>=10%)",IF(ETUDE!G8>=0,"Faible (<10%)","Negatif")),"-")'),
+         '=IFERROR(IF(ETUDE!G8>=10,"Bon (>=10%)",IF(ETUDE!G8>=0,"Faible (<10%)","Negatif")),"-")',
+         '=IFERROR(IF(ETUDE!G8>=15,3,IF(ETUDE!G8>=5,2,IF(ETUDE!G8>=0,1,0))),0)'),
         ("Croissance RN (N/N-4 %)", "> 10%",
          '=IFERROR(ETUDE!G12,"")', '0.00',
-         '=IFERROR(IF(ETUDE!G12>=10,"Bon (>=10%)",IF(ETUDE!G12>=0,"Faible (<10%)","Negatif")),"-")'),
+         '=IFERROR(IF(ETUDE!G12>=10,"Bon (>=10%)",IF(ETUDE!G12>=0,"Faible (<10%)","Negatif")),"-")',
+         '=IFERROR(IF(ETUDE!G12>=15,3,IF(ETUDE!G12>=5,2,IF(ETUDE!G12>=0,1,0))),0)'),
         ("Marge nette moyenne (%)", "> 5%",
          '=IFERROR(ETUDE!G16,"")', '0.00',
-         '=IFERROR(IF(ETUDE!G16>=10,"Tres rentable",IF(ETUDE!G16>=5,"Rentable",IF(ETUDE!G16>=2,"Faiblement rentable","Faible"))),"-")'),
+         '=IFERROR(IF(ETUDE!G16>=10,"Tres rentable",IF(ETUDE!G16>=5,"Rentable",IF(ETUDE!G16>=2,"Faiblement rentable","Faible"))),"-")',
+         '=IFERROR(IF(ETUDE!G16>=10,3,IF(ETUDE!G16>=5,2,IF(ETUDE!G16>=2,1,0))),0)'),
         ("PER", "9 - 15",
          '=IFERROR(ETUDE!B30,"")', '0.00',
-         '=IFERROR(ETUDE!D30,"-")'),
+         '=IFERROR(ETUDE!D30,"-")',
+         '=IFERROR(IF(ETUDE!B30<9,3,IF(ETUDE!B30<=15,2,IF(ETUDE!B30<=20,1,0))),0)'),
         ("PBR", "< 1 ideal",
          '=IFERROR(ETUDE!B32,"")', '0.00',
-         '=IFERROR(ETUDE!D32,"-")'),
+         '=IFERROR(ETUDE!D32,"-")',
+         '=IFERROR(IF(ETUDE!B32<1,3,IF(ETUDE!B32<2,1,0)),0)'),
         ("ROE (%)", "> 10%",
          '=IFERROR(ETUDE!B33,"")', '0.00',
-         '=IFERROR(ETUDE!D33,"-")'),
+         '=IFERROR(ETUDE!D33,"-")',
+         '=IFERROR(IF(ETUDE!B33>=15,3,IF(ETUDE!B33>=10,2,IF(ETUDE!B33>=5,1,0))),0)'),
         ("Rendement dividende (%)", "> 3%",
          '=IFERROR(AVERAGE(ETUDE!E39:ETUDE!E43),"")', '0.00',
-         '=IFERROR(IF(AVERAGE(ETUDE!E39:ETUDE!E43)>=3,"Bon (>=3%)","Faible (<3%)"),"-")'),
+         '=IFERROR(IF(AVERAGE(ETUDE!E39:ETUDE!E43)>=3,"Bon (>=3%)","Faible (<3%)"),"-")',
+         '=IFERROR(IF(AVERAGE(ETUDE!E39:ETUDE!E43)>=6,3,IF(AVERAGE(ETUDE!E39:ETUDE!E43)>=3,2,IF(AVERAGE(ETUDE!E39:ETUDE!E43)>=1,1,0))),0)'),
         ("RVC (PER x PBR)", "< 22",
          '=IFERROR(ETUDE!B34,"")', '0.00',
-         '=IFERROR(ETUDE!D34,"-")'),
+         '=IFERROR(ETUDE!D34,"-")',
+         '=IFERROR(IF(ETUDE!B34<10,3,IF(ETUDE!B34<22,2,IF(ETUDE!B34<30,1,0))),0)'),
     ]
-    F_VAL_AUTO = fmt(bg="#EBF5FB", fg="#1F3864", size=11, align='right', border=1)
-    F_SIG_AUTO = fmt(bg="#EBF5FB", fg="#404040", size=11, italic=True, align='center', border=1)
+    F_VAL_AUTO  = fmt(bg="#EBF5FB", fg="#1F3864", size=11, align='right', border=1)
+    F_SIG_AUTO  = fmt(bg="#EBF5FB", fg="#404040", size=11, italic=True, align='center', border=1)
+    F_SCORE_AUTO = fmt(bg=LGREEN, fg="#1F3864", size=11, bold=True, align='center', border=1,
+                       num_format='0', locked=True)
     FOND_SCORE_ROWS = []
-    for i, (crit, zone, val_f, num_fmt, sig_f) in enumerate(fond_criteria):
+    for i, (crit, zone, val_f, num_fmt, sig_f, score_f) in enumerate(fond_criteria):
         r = 6 + i
         lbl(r, 'A', crit)
         ws.write_formula(row(r), col('B'), val_f,
@@ -1118,8 +1460,7 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
         ws.write(row(r), col('C'), zone,
                  fmt(bg=LORANGE, fg=DARK, size=11, align='center', border=1, locked=False))
         ws.write_formula(row(r), col('D'), sig_f, F_SIG_AUTO)
-        ws.write_blank(row(r), col('E'), None,
-                       fmt(bg="#FFFDE7", fg="#404040", size=11, align='center', border=1, num_format='0', locked=False))
+        ws.write_formula(row(r), col('E'), score_f, F_SCORE_AUTO)
         FOND_SCORE_ROWS.append(r)
 
     FOND_TOTAL_R = 14
@@ -1150,30 +1491,40 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
     section(16, "SCORECARD TECHNIQUE")
     heads(17, ["Critere", "Signal observe", "Zone", "Interpretation", "Score"])
     # (critere, zone, formule_col_B, formule_col_D)
+    # score_f: 0-3 auto par seuils (max total 15)
     tech_criteria = [
         ("MM20+Bollinger+MACD+RSI+Volume (score B1)", "-5 a +5",
-         '=IFERROR(ETUDE!D91,"")',   '=IFERROR(ETUDE!E91,"-")'),
+         '=IFERROR(ETUDE!D91,"")',
+         '=IFERROR(ETUDE!E91,"-")',
+         '=IFERROR(IF(ETUDE!D91>=4,3,IF(ETUDE!D91>=2,2,IF(ETUDE!D91>=0,1,0))),0)'),
         ("Prix Medians PM1 et PM2 (B2)", "< PM = survente",
-         '=IFERROR(ETUDE!E95,"")',   '=IFERROR(ETUDE!E96,"-")'),
+         '=IFERROR(ETUDE!E95,"")',
+         '=IFERROR(ETUDE!E96,"-")',
+         '=IFERROR(IF(AND(ETUDE!B24<ETUDE!D95,ETUDE!B24<ETUDE!D96),3,IF(ETUDE!B24<ETUDE!D95,2,IF(ETUDE!B24<ETUDE!D96,1,0))),0)'),
         ("PER actualise (B3)", "9-15 = normal",
-         '=IFERROR(ETUDE!B104,"")',  '=IFERROR(ETUDE!D104,"-")'),
+         '=IFERROR(ETUDE!B104,"")',
+         '=IFERROR(ETUDE!D104,"-")',
+         '=IFERROR(IF(ETUDE!B104<9,3,IF(ETUDE!B104<=15,2,IF(ETUDE!B104<=20,1,0))),0)'),
         ("PCD / Gordon-Shapiro (B4/B5)", "< PCD = survente",
-         '=IFERROR(ETUDE!B116,"")',  '=IFERROR(ETUDE!B125,"-")'),
+         '=IFERROR(ETUDE!B116,"")',
+         '=IFERROR(ETUDE!B125,"-")',
+         '=IFERROR(IF(AND(ISNUMBER(SEARCH("DESSOUS",ETUDE!B116)),ISNUMBER(SEARCH("SOUS P0",ETUDE!B125))),3,IF(OR(ISNUMBER(SEARCH("DESSOUS",ETUDE!B116)),ISNUMBER(SEARCH("SOUS P0",ETUDE!B125))),2,IF(OR(ISNUMBER(SEARCH("ZONE CIBLE",ETUDE!B116)),ISNUMBER(SEARCH("zone P0",ETUDE!B125))),1,0))),0)'),
         ("Risk/Reward (B6)", ">= 2 = bon",
-         '=IFERROR(ETUDE!B135,"")',  '=IFERROR(ETUDE!D135,"-")'),
+         '=IFERROR(ETUDE!B135,"")',
+         '=IFERROR(ETUDE!D135,"-")',
+         '=IFERROR(IF(ETUDE!B135>=3,3,IF(ETUDE!B135>=2,2,IF(ETUDE!B135>=1,1,0))),0)'),
     ]
-    F_VAL_TECH = fmt(bg="#EBF5FB", fg="#1E3A5F", size=11, align='center', border=1)
-    F_SIG_TECH = fmt(bg="#EBF5FB", fg="#404040", size=11, italic=True, align='center', border=1)
+    F_VAL_TECH  = fmt(bg="#EBF5FB", fg="#1E3A5F", size=11, align='center', border=1)
+    F_SIG_TECH  = fmt(bg="#EBF5FB", fg="#404040", size=11, italic=True, align='center', border=1)
     TECH_SCORE_ROWS = []
-    for i, (crit, zone, val_f, sig_f) in enumerate(tech_criteria):
+    for i, (crit, zone, val_f, sig_f, score_f) in enumerate(tech_criteria):
         r = 18 + i
         lbl(r, 'A', crit)
         ws.write_formula(row(r), col('B'), val_f, F_VAL_TECH)
         ws.write(row(r), col('C'), zone,
                  fmt(bg=LORANGE, fg=DARK, size=11, align='center', border=1, locked=False))
         ws.write_formula(row(r), col('D'), sig_f, F_SIG_TECH)
-        ws.write_blank(row(r), col('E'), None,
-                       fmt(bg="#FFFDE7", fg="#404040", size=11, align='center', border=1, num_format='0', locked=False))
+        ws.write_formula(row(r), col('E'), score_f, F_SCORE_AUTO)
         TECH_SCORE_ROWS.append(r)
 
     TECH_TOTAL_R = 23
@@ -1321,6 +1672,14 @@ def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
             ("Profil RichBourse", "<-- richbourse.com"),
             ("Profil BRVM", "<-- brvm.org"),
         ]),
+        ("BILAN (depuis rapport annuel)", [
+            ("Dette long terme (FCFA)",                     "<-- Bilan passif non courant"),
+            ("Dette court terme (FCFA)",                    "<-- Bilan passif courant"),
+            ("EBIT - Res. avant interets et impots (M FCFA)", "<-- Compte de resultat"),
+            ("Charges financieres nettes (FCFA)",           "<-- Compte de resultat"),
+            ("Actifs courants (FCFA)",                      "<-- Bilan actif courant"),
+            ("Passifs courants (FCFA)",                     "<-- Bilan passif courant"),
+        ]),
     ]
 
     # Cellules IDENTIFICATION auto-liées aux cellules clés B3/B4/B5
@@ -1358,6 +1717,142 @@ def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
         r += 1
 
     ws.protect(PROTECT_PWD, {
+        'select_locked_cells':   True,
+        'select_unlocked_cells': True,
+        'format_columns':        True,
+        'format_rows':           True,
+    })
+
+
+def build_portefeuille(wb, fmt, F_TITLE, F_HEAD, F_LBL, F_LBL_B, F_WHITE, F_CALC_N, F_CALC_C):
+    ws = wb.add_worksheet("PORTEFEUILLE")
+    ws.set_tab_color("#059669")
+    ws.freeze_panes(4, 0)
+
+    # Largeurs colonnes
+    ws.set_column(0,  0, 10)   # A Ticker
+    ws.set_column(1,  1, 12)   # B Secteur
+    ws.set_column(2,  2, 10)   # C Nb titres
+    ws.set_column(3,  3, 14)   # D Prix achat moyen
+    ws.set_column(4,  4, 14)   # E Prix actuel
+    ws.set_column(5,  5, 14)   # F Div reçus/titre
+    ws.set_column(6,  6, 8)    # G Note /39
+    ws.set_column(7,  7, 16)   # H Cout total achat
+    ws.set_column(8,  8, 15)   # I Valeur actuelle
+    ws.set_column(9,  9, 16)   # J PV/MV + Div
+    ws.set_column(10, 10, 14)  # K Rend. total %
+    ws.set_column(11, 11, 22)  # L Recommandation
+
+    F_INP  = fmt(bg="#FFFBEB", fg="#92400E", size=11, align='right', border=1, locked=False)
+    F_INP_L = fmt(bg="#FFFBEB", fg="#92400E", size=11, align='left', border=1, locked=False)
+    F_CALC_PCT = fmt(bg="#ECFDF5", fg="#064E3B", size=11, align='right', border=1,
+                     num_format='0.00', locked=True)
+    F_CALC_MN  = fmt(bg="#ECFDF5", fg="#064E3B", size=11, align='right', border=1,
+                     num_format='#,##0', locked=True)
+    F_REC = fmt(bold=True, bg="#EFF6FF", fg="#1E40AF", size=11, align='center', border=1,
+                wrap=True, locked=True)
+    F_TOT = fmt(bold=True, bg="#1E3A5F", fg="#FFFFFF", size=11, align='right', border=1,
+                num_format='#,##0', locked=True)
+    F_TOT_P = fmt(bold=True, bg="#1E3A5F", fg="#FFFFFF", size=11, align='right', border=1,
+                  num_format='0.00', locked=True)
+    F_GREY = fmt(bg="#F1F5F9", fg="#374151", size=11, align='center', border=1)
+
+    # Titre
+    ws.merge_range(0, 0, 0, 11,
+        "PORTEFEUILLE BRVM — SUIVI DES POSITIONS & RECOMMANDATIONS", F_TITLE)
+    ws.set_row(0, 26)
+    ws.merge_range(1, 0, 1, 11,
+        "Saisir Ticker, Secteur, Nb titres, Prix achat, Prix actuel, Dividendes recus/titre, Note ETUDE /39  —  Reste calculé automatiquement",
+        fmt(italic=True, bg="#1E3A5F", fg="#CBD5E1", size=9, align='center', border=0))
+    ws.set_row(1, 16)
+    ws.set_row(2, 5)
+
+    # En-têtes
+    headers = ["Ticker", "Secteur", "Nb titres", "Prix achat moy.\n(FCFA)",
+               "Prix actuel\n(FCFA)", "Div. recus/titre\n(FCFA)", "Note\n/39",
+               "Cout total achat\n(auto)", "Val. actuelle\n(auto)",
+               "PV/MV+Div\n(auto)", "Rend. total %\n(auto)", "Recommandation\n(auto)"]
+    for i, h in enumerate(headers):
+        ws.write(3, i, h, F_HEAD)
+    ws.set_row(3, 32)
+
+    NB_POS = 15
+    for i in range(NB_POS):
+        r = 4 + i          # 0-indexed row
+        er = r + 1         # 1-based Excel row number
+        ws.write(r, 0, None, F_INP_L)   # Ticker
+        ws.write(r, 1, None, F_INP_L)   # Secteur
+        ws.write(r, 2, None, F_INP)     # Nb titres
+        ws.write(r, 3, None, F_INP)     # Prix achat
+        ws.write(r, 4, None, F_INP)     # Prix actuel
+        ws.write(r, 5, None, F_INP)     # Div reçus/titre
+        ws.write(r, 6, None, F_INP)     # Note /39
+        # H: Cout total achat = Nb × Prix achat × 1.014
+        ws.write_formula(r, 7,
+            f'=IFERROR(IF(A{er}="","",C{er}*D{er}*1.014),"")', F_CALC_MN)
+        # I: Valeur actuelle = Nb × Prix actuel
+        ws.write_formula(r, 8,
+            f'=IFERROR(IF(A{er}="","",C{er}*E{er}),"")', F_CALC_MN)
+        # J: PV/MV + Dividendes = (Val actuelle - Cout achat + Div totaux)
+        ws.write_formula(r, 9,
+            f'=IFERROR(IF(A{er}="","",(C{er}*E{er})-(C{er}*D{er}*1.014)+(C{er}*F{er})),"")',
+            F_CALC_MN)
+        # K: Rendement total % = J / H × 100
+        ws.write_formula(r, 10,
+            f'=IFERROR(IF(A{er}="","",J{er}/H{er}*100),"")', F_CALC_PCT)
+        # L: Recommandation
+        ws.write_formula(r, 11,
+            f'=IFERROR(IF(A{er}="","—",'
+            f'IF(K{er}<-10,"VENDRE — Stop-loss",'
+            f'IF(AND(G{er}>=24,K{er}>=0),"RENFORCER",'
+            f'IF(AND(G{er}>=15,K{er}>=-5),"CONSERVER",'
+            f'"SURVEILLER")))),"—")', F_REC)
+        ws.set_row(r, 20)
+
+    # Totaux
+    tot_r = 4 + NB_POS   # 0-indexed
+    tot_er = tot_r + 1
+    ws.set_row(tot_r, 5)
+    tot_r2 = tot_r + 1
+    tot_er2 = tot_r2 + 1
+    ws.write(tot_r2, 0, "TOTAL PORTEFEUILLE", F_LBL_B)
+    for c in range(1, 7):
+        ws.write_blank(tot_r2, c, None, F_GREY)
+    ws.write_formula(tot_r2, 7,
+        f'=IFERROR(SUMIF(A5:A{4+NB_POS},"<>",H5:H{4+NB_POS}),"")', F_TOT)
+    ws.write_formula(tot_r2, 8,
+        f'=IFERROR(SUMIF(A5:A{4+NB_POS},"<>",I5:I{4+NB_POS}),"")', F_TOT)
+    ws.write_formula(tot_r2, 9,
+        f'=IFERROR(SUMIF(A5:A{4+NB_POS},"<>",J5:J{4+NB_POS}),"")', F_TOT)
+    ws.write_formula(tot_r2, 10,
+        f'=IFERROR(J{tot_er2}/H{tot_er2}*100,"")', F_TOT_P)
+    ws.write_formula(tot_r2, 11,
+        f'=IFERROR(IF(J{tot_er2}/H{tot_er2}*100>15,"Portefeuille PERFORMANT",'
+        f'IF(J{tot_er2}/H{tot_er2}*100>0,"Portefeuille POSITIF",'
+        f'"Portefeuille EN PERTE")),"")', F_REC)
+    ws.set_row(tot_r2, 22)
+
+    # Légende recommandations
+    ws.set_row(tot_r2 + 1, 8)
+    leg_r = tot_r2 + 2
+    ws.merge_range(leg_r, 0, leg_r, 11,
+        "LEGENDE RECOMMANDATIONS", fmt(bold=True, bg="#1E3A5F", fg=WHITE, size=10, border=0))
+    ws.set_row(leg_r, 18)
+    legend = [
+        ("RENFORCER",      "Note >= 24/39 ET rendement total >= 0%   — Fondamentaux solides, titre en gain"),
+        ("CONSERVER",      "Note >= 15/39 ET rendement > -5%   — Garder la position, surveiller"),
+        ("SURVEILLER",     "Situation ambiguë   — Attendre confirmation avant d'agir"),
+        ("VENDRE — Stop",  "Rendement total < -10%   — Stop-loss déclenché, limiter la perte"),
+    ]
+    F_LEG_LBL = fmt(bold=True, bg="#EFF6FF", fg="#1E40AF", size=10, align='center', border=1)
+    F_LEG_TXT = fmt(bg="#F8FAFF", fg="#374151", size=10, italic=True, align='left', border=1)
+    for j, (rec, desc) in enumerate(legend):
+        lr = leg_r + 1 + j
+        ws.write(lr, 0, rec, F_LEG_LBL)
+        ws.merge_range(lr, 1, lr, 11, desc, F_LEG_TXT)
+        ws.set_row(lr, 16)
+
+    ws.protect("", {
         'select_locked_cells':   True,
         'select_unlocked_cells': True,
         'format_columns':        True,
