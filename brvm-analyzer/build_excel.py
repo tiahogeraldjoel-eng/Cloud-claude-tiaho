@@ -5,10 +5,74 @@ Usage: python3 build_excel.py
 """
 import xlsxwriter
 import os
+import math
 from datetime import date
 
 OUT          = "/home/user/Cloud-claude-tiaho/brvm-analyzer/etudes_actions_v2.xlsx"
 PROTECT_PWD  = ""   # vide = protection sans mot de passe (contre saisies accidentelles)
+
+
+def _generate_logo(path):
+    """Génère logo.png stylé BRVM Analyzer si PIL est disponible."""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        return
+
+    W, H, SCALE = 520, 160, 2
+    WW, HH = W * SCALE, H * SCALE
+    img  = Image.new("RGBA", (WW, HH), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    NAVY   = (13, 27, 42)
+    BLUE   = (30, 58, 95)
+    ORANGE = (217, 119, 6)
+    WHITE  = (255, 255, 255)
+    LORAN  = (255, 251, 235)
+
+    # Fond arrondi navy
+    draw.rounded_rectangle([0, 0, WW-1, HH-1], radius=40*SCALE, fill=NAVY)
+
+    # Bande orange en bas
+    BAR = 14 * SCALE
+    draw.rectangle([0, HH-BAR, WW-1, HH-1], fill=ORANGE)
+
+    # Candlesticks stylisés
+    CX, CY = 68*SCALE, 80*SCALE
+    candles = [
+        (CX-32*SCALE, 90*SCALE, 60*SCALE,  96*SCALE, 52*SCALE, (239, 68,  68)),
+        (CX,          96*SCALE, 72*SCALE, 103*SCALE, 64*SCALE, (239, 68,  68)),
+        (CX+32*SCALE, 88*SCALE, 48*SCALE,  95*SCALE, 40*SCALE, (52, 211, 153)),
+    ]
+    for cx, yb, yt, wlo, whi, col in candles:
+        bw = 9 * SCALE
+        draw.line([(cx, wlo), (cx, whi)], fill=col, width=3*SCALE)
+        draw.rectangle([cx-bw, yt, cx+bw, yb], fill=col)
+
+    # Ligne de tendance haussière + flèche
+    pts = [(CX-48*SCALE,100*SCALE),(CX-10*SCALE,78*SCALE),
+           (CX+20*SCALE,60*SCALE),(CX+48*SCALE,44*SCALE)]
+    draw.line(pts, fill=ORANGE, width=4*SCALE)
+    ax, ay = pts[-1]
+    draw.polygon([(ax,ay-8*SCALE),(ax+12*SCALE,ay+4*SCALE),(ax-4*SCALE,ay+4*SCALE)], fill=ORANGE)
+
+    # Textes
+    FDIR = "/usr/share/fonts/truetype/liberation"
+    try:
+        fb = ImageFont.truetype(f"{FDIR}/LiberationSans-Bold.ttf",    50*SCALE)
+        fl = ImageFont.truetype(f"{FDIR}/LiberationSans-Regular.ttf", 22*SCALE)
+        ft = ImageFont.truetype(f"{FDIR}/LiberationSans-Regular.ttf", 16*SCALE)
+    except Exception:
+        fb = fl = ft = ImageFont.load_default()
+
+    TX = 148 * SCALE
+    draw.text((TX, 22*SCALE), "BRVM",     font=fb, fill=WHITE)
+    bb = draw.textbbox((TX, 22*SCALE), "BRVM", font=fb)
+    draw.rectangle([bb[0], bb[3]+4*SCALE, bb[2], bb[3]+10*SCALE], fill=ORANGE)
+    draw.text((TX+4*SCALE,  86*SCALE), "ANALYZER",                        font=fl, fill=LORAN)
+    draw.text((TX+4*SCALE, 118*SCALE), "Analyse Fondamentale & Technique", font=ft, fill=(150,180,210))
+
+    img.resize((W, H), Image.LANCZOS).save(path, "PNG")
 
 # ── Couleurs ─────────────────────────────────────────────────────────────────
 NAVY    = "#0D1B2A"   # Deep navy for titles
@@ -23,6 +87,9 @@ DARK    = "#1E293B"   # Deep slate for text
 RED     = "#DC2626"   # Clean red for warnings
 
 def make_wb():
+    # Génère le logo automatiquement avant de créer le workbook
+    _generate_logo(LOGO_PATH)
+
     wb = xlsxwriter.Workbook(OUT, {
         'strings_to_numbers': False,
         'strings_to_formulas': False,   # on gère les formules manuellement
