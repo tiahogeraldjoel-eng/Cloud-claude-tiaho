@@ -100,25 +100,28 @@ with st.sidebar:
         "5️⃣  Bilan & FCF",
         "6️⃣  Technique & Risque",
         "📊 Aperçu & Scores",
+        "💼 Portefeuille",
         "📥 Générer Excel",
     ], label_visibility="collapsed")
     st.markdown("---")
 
     # Indicateur de complétude
     checks = [
-        bool(st.session_state.nom),
-        bool(st.session_state.ticker),
-        bool(st.session_state.secteur),
-        all(v is not None for v in st.session_state.ca),
-        all(v is not None for v in st.session_state.rn),
-        st.session_state.prix is not None,
-        st.session_state.bnpa is not None,
-        st.session_state.capitaux_propres is not None,
-        st.session_state.nb_titres is not None,
-        any(v is not None for v in st.session_state.dividendes),
-        st.session_state.dette_lt is not None,
-        st.session_state.actifs_cour is not None,
-        st.session_state.amortissements is not None,
+        bool(st.session_state.nom),           # 1 Nom société
+        bool(st.session_state.ticker),        # 2 Ticker
+        bool(st.session_state.secteur),       # 3 Secteur
+        all(v is not None for v in st.session_state.ca),   # 4 CA 5 ans
+        all(v is not None for v in st.session_state.rn),   # 5 RN 5 ans
+        st.session_state.prix is not None,    # 6 Prix actuel
+        st.session_state.bnpa is not None,    # 7 BNPA
+        st.session_state.capitaux_propres is not None,     # 8 Capitaux propres
+        st.session_state.nb_titres is not None,            # 9 Nb titres
+        any(v is not None for v in st.session_state.dividendes),  # 10 Dividendes
+        st.session_state.dette_lt is not None,             # 11 Dette LT
+        st.session_state.actifs_cour is not None,          # 12 Actifs courants
+        st.session_state.amortissements is not None,       # 13 Amortissements
+        st.session_state.prix_avant is not None,           # 14 Psychologie marché
+        st.session_state.score_b1 is not None,             # 15 Score technique
     ]
     done = sum(checks)
     total = len(checks)
@@ -589,6 +592,100 @@ elif page == "📊 Aperçu & Scores":
                 st.warning(f"Prime de risque : **+{prime:.1f}%** 🟡")
             else:
                 st.error(f"Prime de risque : **{prime:.1f}%** 🔴\nObligations > action")
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  PAGE — PORTEFEUILLE
+# ════════════════════════════════════════════════════════════════════════════
+elif page == "💼 Portefeuille":
+    st.title("💼 Portefeuille — Suivi de positions")
+    st.info("Saisissez vos positions. Les calculs se font automatiquement. "
+            "Ces données alimenteront la feuille **PORTEFEUILLE** du fichier Excel généré.")
+
+    NB = 25
+    FRAIS = 0.014  # 1,4% frais BRVM
+
+    # Init session state portefeuille
+    if "portef" not in st.session_state:
+        st.session_state.portef = [
+            {"ticker": "", "secteur": "", "nb": None, "px_achat": None,
+             "px_actuel": None, "div": None, "note": None}
+            for _ in range(NB)
+        ]
+
+    positions = st.session_state.portef
+
+    # En-têtes
+    hcols = st.columns([2, 2, 1, 1.2, 1.2, 1, 1, 1.5, 1.5, 1.8, 1.8])
+    for h, c in zip(["Ticker", "Secteur", "Nb titres", "Px achat", "Px actuel",
+                      "Div/titre", "Note /45", "Val. achat", "Val. actuelle",
+                      "P&L total", "P&L %"], hcols):
+        c.markdown(f"**{h}**")
+    st.markdown("---")
+
+    tot_achat = tot_actuel = tot_pl = 0.0
+
+    for i, pos in enumerate(positions):
+        cols = st.columns([2, 2, 1, 1.2, 1.2, 1, 1, 1.5, 1.5, 1.8, 1.8])
+        pos["ticker"]    = cols[0].text_input("", value=pos["ticker"], key=f"pt_{i}",
+                                               placeholder="SAPH", label_visibility="collapsed")
+        pos["secteur"]   = cols[1].selectbox("", [""] + SECTEURS,
+                                              index=([""] + SECTEURS).index(pos["secteur"])
+                                              if pos["secteur"] in SECTEURS else 0,
+                                              key=f"ps_{i}", label_visibility="collapsed")
+        pos["nb"]        = cols[2].number_input("", min_value=0, value=pos["nb"] or 0,
+                                                 step=1, key=f"pn_{i}", label_visibility="collapsed")
+        pos["px_achat"]  = cols[3].number_input("", min_value=0.0, value=pos["px_achat"] or 0.0,
+                                                  step=10.0, key=f"pa_{i}", label_visibility="collapsed")
+        pos["px_actuel"] = cols[4].number_input("", min_value=0.0, value=pos["px_actuel"] or 0.0,
+                                                  step=10.0, key=f"pac_{i}", label_visibility="collapsed")
+        pos["div"]       = cols[5].number_input("", min_value=0.0, value=pos["div"] or 0.0,
+                                                  step=1.0, key=f"pd_{i}", label_visibility="collapsed")
+        pos["note"]      = cols[6].number_input("", min_value=0, max_value=45,
+                                                  value=pos["note"] or 0,
+                                                  step=1, key=f"pno_{i}", label_visibility="collapsed")
+
+        if pos["ticker"] and pos["nb"] and pos["px_achat"]:
+            val_achat  = pos["nb"] * pos["px_achat"] * (1 + FRAIS)
+            val_actuel = pos["nb"] * pos["px_actuel"]
+            div_total  = pos["nb"] * pos["div"]
+            pl         = val_actuel - val_achat + div_total
+            pl_pct     = pl / val_achat * 100 if val_achat else 0
+
+            cols[7].markdown(f"`{val_achat:,.0f}`")
+            cols[8].markdown(f"`{val_actuel:,.0f}`")
+            color = "green" if pl >= 0 else "red"
+            cols[9].markdown(f":{color}[`{pl:+,.0f}`]")
+            cols[10].markdown(f":{color}[`{pl_pct:+.1f}%`]")
+
+            tot_achat  += val_achat
+            tot_actuel += val_actuel
+            tot_pl     += pl
+        else:
+            for c in cols[7:]:
+                c.markdown("—")
+
+    st.markdown("---")
+    # Totaux
+    if tot_achat > 0:
+        pl_tot_pct = tot_pl / tot_achat * 100
+        col_t = st.columns([2, 2, 4, 1.5, 1.5, 1.8, 1.8])
+        col_t[0].markdown("**TOTAL**")
+        col_t[3].markdown(f"**`{tot_achat:,.0f}`**")
+        col_t[4].markdown(f"**`{tot_actuel:,.0f}`**")
+        color_t = "green" if tot_pl >= 0 else "red"
+        col_t[5].markdown(f":{color_t}[**`{tot_pl:+,.0f}`**]")
+        col_t[6].markdown(f":{color_t}[**`{pl_tot_pct:+.1f}%`**]")
+
+        st.markdown("---")
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Valeur investie", f"{tot_achat:,.0f} FCFA")
+        m2.metric("Valeur actuelle", f"{tot_actuel:,.0f} FCFA",
+                  delta=f"{tot_actuel - tot_achat:+,.0f}")
+        m3.metric("P&L total", f"{tot_pl:+,.0f} FCFA")
+        m4.metric("Rendement", f"{pl_tot_pct:+.2f}%")
+    else:
+        st.warning("Saisissez au moins une position (Ticker + Nb titres + Prix achat).")
 
 
 # ════════════════════════════════════════════════════════════════════════════
