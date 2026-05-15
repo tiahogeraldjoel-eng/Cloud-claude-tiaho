@@ -1941,6 +1941,60 @@ def build_formule(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_LBL_B, F_WHITE, F_RE
             ws.set_row(r, 28)
         r += 1
 
+    # ── Sources de données ────────────────────────────────────────────────────
+    ws.set_row(r, 8); r += 1
+    ws.merge_range(r, 0, r, 3, "SOURCES DE DONNEES RECOMMANDEES", F_SEC_F)
+    ws.set_row(r, 20); r += 1
+
+    F_SRC_CAT = fmt(bold=True, bg="#1E3A5F", fg=WHITE,      size=10, border=0)
+    F_SRC_LBL = fmt(bold=True, bg="#EFF6FF", fg="#1E3A5F",  size=11, border=1)
+    F_SRC_URL = fmt(bg=WHITE,  fg="#1D4ED8", size=11, align='left',  border=1)
+    F_SRC_NOT = fmt(bg=WHITE,  fg="#6B7280", size=10, italic=True, align='left', border=1)
+
+    sources = [
+        # (categorie, None, None, None) = header
+        # (label, url, note, None)      = ligne source
+        ("MARCHE BRVM", None, None, None),
+        ("Cours & volumes BRVM",    "https://www.brvm.org",                   "Cours officiels, volumes, capitalisation, indices", None),
+        ("Profils societes BRVM",   "https://www.richbourse.com",              "Rapports, bilans, ratios, actualites par societe",  None),
+        ("Actualites & analyses",   "https://www.sika-finance.com",            "News, dividendes, resultats semestriels",           None),
+
+        ("MATIERES PREMIERES", None, None, None),
+        ("Caoutchouc RSS3/TSR20",   "https://www.indexmundi.com/commodities/?commodity=rubber", "Prix journalier + historique + graphique", None),
+        ("Huile de palme CPO",      "https://www.indexmundi.com/commodities/?commodity=palm-oil", "Prix journalier + historique + graphique", None),
+        ("Cacao",                   "https://www.indexmundi.com/commodities/?commodity=cocoa", "Prix journalier + historique + graphique", None),
+        ("Coton",                   "https://www.indexmundi.com/commodities/?commodity=cotton", "Prix journalier + historique + graphique", None),
+        ("Cafe Robusta",            "https://www.indexmundi.com/commodities/?commodity=coffee-robusta", "Prix journalier + historique + graphique", None),
+        ("Toutes matieres (synthese)", "https://www.worldbank.org/en/research/commodity-markets", "Pink Sheet mensuel — moyennes LT officielles Banque Mondiale", None),
+
+        ("TAUX & MACROECONOMIE", None, None, None),
+        ("Taux UEMOA / BCEAO",      "https://www.bceao.int",                   "Taux directeur, inflation, statistiques zone UEMOA", None),
+        ("Taux sans risque UEMOA",  "https://www.boad.org",                    "Obligations BOAD — reference taux sans risque",     None),
+        ("Indicateurs macro Afrique", "https://data.worldbank.org",            "PIB, inflation, taux de change par pays",           None),
+
+        ("RAPPORTS ANNUELS", None, None, None),
+        ("SOGB",    "https://www.sogb.ci",                     "Rapports annuels, chiffres cles, dividendes",  None),
+        ("SAPH",    "https://www.saph.ci",                     "Rapports annuels, chiffres cles, dividendes",  None),
+        ("PALMCI",  "https://www.palmci.ci",                   "Rapports annuels, chiffres cles, dividendes",  None),
+        ("Toutes societes BRVM",    "https://www.brvm.org/fr/societes-cotees", "Acces aux profils et publications officielles",    None),
+    ]
+
+    ws.set_column(1, 1, 52)
+    ws.set_column(2, 2, 44)
+
+    for item in sources:
+        lbl_s, url, note, _ = item
+        if url is None:
+            ws.merge_range(r, 0, r, 3, lbl_s, F_SRC_CAT)
+            ws.set_row(r, 16)
+        else:
+            ws.write(r, 0, lbl_s, F_SRC_LBL)
+            ws.write_url(r, 1, url, F_SRC_URL, url)
+            ws.write(r, 2, note, F_SRC_NOT)
+            ws.write_blank(r, 3, None, fmt(bg=WHITE, border=1))
+            ws.set_row(r, 18)
+        r += 1
+
     ws.protect(PROTECT_PWD, {
         'select_locked_cells':   True,
         'select_unlocked_cells': True,
