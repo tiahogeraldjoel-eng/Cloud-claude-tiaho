@@ -1416,6 +1416,85 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
         ws.write_blank(row(269), col(c), None, F_WHITE)
     blank(270)
 
+    blank(271)
+    ws.merge_range(row(272), 0, row(272), 7,
+        "H — PSYCHOLOGIE DU MARCHE & REACTION AUX RESULTATS", F_TITLE)
+    ws.set_row(row(272), 22)
+
+    section(273, "H1 — REACTION COURS POST-RESULTATS  (saisir dans PROFIL — section Psychologie)")
+    heads(274, ["Indicateur", "Valeur", "Unite", "Signal", "Note", "", "", ""])
+
+    lbl(275, 'A', "Prix avant publication resultats (J-1)")
+    ws.write_formula(row(275), col('B'), '=IFERROR(PROFIL!B48,"")', F_CALC_N)
+    ws.write(row(275), col('C'), "FCFA", F_WHITE_C)
+    ws.merge_range(row(275), col('D'), row(275), col('E'),
+        "Saisir dans PROFIL > Psychologie", F_HINT)
+
+    lbl(276, 'A', "Prix apres publication resultats (J+5)")
+    ws.write_formula(row(276), col('B'), '=IFERROR(PROFIL!B49,"")', F_CALC_N)
+    ws.write(row(276), col('C'), "FCFA", F_WHITE_C)
+
+    lbl(277, 'A', "Reaction marche (%)", bold=True)
+    ws.write_formula(row(277), col('B'),
+        '=IFERROR(IF(AND(ISNUMBER(PROFIL!B48),ISNUMBER(PROFIL!B49),PROFIL!B48>0),'
+        '(PROFIL!B49-PROFIL!B48)/PROFIL!B48*100,""),"")' , F_CALC_PCT)
+    ws.write(row(277), col('C'), "%", F_WHITE_C)
+    ws.write_formula(row(277), col('D'),
+        '=IFERROR(IF(OR(NOT(ISNUMBER(PROFIL!B48)),NOT(ISNUMBER(PROFIL!B49))),'
+        '"Saisir J-1 et J+5 dans PROFIL",'
+        'IF((PROFIL!B49-PROFIL!B48)/PROFIL!B48*100>=5,"Accueil tres favorable — marche recompense les resultats",'
+        'IF((PROFIL!B49-PROFIL!B48)/PROFIL!B48*100>=0,"Accueil positif — marche satisfait",'
+        'IF((PROFIL!B49-PROFIL!B48)/PROFIL!B48*100>=-5,"Reaction mitigee — marche decu",'
+        '"PUNITION MARCHE — resultats fortement sanctionnes")))),'
+        '"")' , F_CALC_C)
+    blank(278)
+
+    section(279, "H2 — TENDANCE DIVIDENDES  (auto depuis A5)")
+    heads(280, ["Indicateur", "N-4", "N-3", "N-2", "N-1", "N", "CAGR 4 ans", "Signal"])
+
+    lbl(281, 'A', "Dividende NET verse (FCFA)")
+    for ci, col_l in enumerate(['B','C','D','E','F']):
+        r_dvd = 39 + ci
+        ws.write_formula(row(281), col(col_l), f'=IFERROR(ETUDE!B{r_dvd},"")', F_CALC_N2)
+    ws.write_formula(row(281), col('G'), '=IFERROR(ETUDE!B167*100,"N/A")',
+                     fmt(bg=LGREEN, fg=DARK, size=11, align='right', border=1, num_format='0.00', locked=True))
+    ws.write_formula(row(281), col('H'),
+        '=IFERROR(IF(NOT(ISNUMBER(ETUDE!B167)),"Pas de dividende",'
+        'IF(ETUDE!B167>=0.10,"Dividende CROISSANT fort (>10%/an)",'
+        'IF(ETUDE!B167>=0.02,"Dividende croissant (2-10%/an)",'
+        'IF(ETUDE!B167>=0,"Dividende stable / faible croissance",'
+        '"DIVIDENDE EN BAISSE — signal negatif pour le marche")))),"N/A")',
+        F_CALC_C)
+
+    blank(282)
+
+    section(283, "H3 — IMPACT PSYCHOLOGIQUE SUR LE COURS  (rappel des scores)")
+    heads(284, ["Critere psychologique", "Score /3", "", "Interpretation", "", "", "", ""])
+
+    lbl(285, 'A', "Tendance dividendes (score auto dans SYNTHESE)")
+    ws.write_formula(row(285), col('B'),
+        '=IFERROR(IF(NOT(ISNUMBER(ETUDE!B167)),0,IF(ETUDE!B167>=0.10,3,IF(ETUDE!B167>=0.02,2,IF(ETUDE!B167>=0,1,0)))),0)',
+        fmt(bg=LGREEN, fg="#1F3864", size=11, bold=True, align='center', border=1, num_format='0', locked=True))
+    ws.merge_range(row(285), col('D'), row(285), col('H'),
+        "Un dividende croissant attire les investisseurs et soutient le cours. "
+        "Une coupe de dividende provoque souvent une chute brutale (-10% a -30%).",
+        fmt(bg=WHITE, fg=DARK, size=10, italic=True, align='left', border=1, wrap=True))
+
+    lbl(286, 'A', "Reaction marche post-resultats (score auto dans SYNTHESE)")
+    ws.write_formula(row(286), col('B'),
+        '=IFERROR(IF(OR(NOT(ISNUMBER(PROFIL!B48)),NOT(ISNUMBER(PROFIL!B49))),0,'
+        'IF((PROFIL!B49-PROFIL!B48)/PROFIL!B48*100>=5,3,'
+        'IF((PROFIL!B49-PROFIL!B48)/PROFIL!B48*100>=0,2,'
+        'IF((PROFIL!B49-PROFIL!B48)/PROFIL!B48*100>=-5,1,0)))),0)',
+        fmt(bg=LGREEN, fg="#1F3864", size=11, bold=True, align='center', border=1, num_format='0', locked=True))
+    ws.merge_range(row(286), col('D'), row(286), col('H'),
+        "Le marche BRVM punit fortement les mauvaises surprises (illiquidite amplifie les mouvements). "
+        "Une forte reaction positive est un signal de confiance durable des investisseurs.",
+        fmt(bg=WHITE, fg=DARK, size=10, italic=True, align='left', border=1, wrap=True))
+    ws.set_row(row(286), 28)
+
+    blank(287)
+
     # Conditional formatting for C4 score column
     cf_g = wb.add_format({'bg_color': '#D1FAE5', 'font_color': '#065F46', 'border': 1, 'align': 'center', 'font_size': 9})
     cf_r = wb.add_format({'bg_color': '#FEE2E2', 'font_color': '#991B1B', 'border': 1, 'align': 'center', 'font_size': 9})
@@ -1615,60 +1694,58 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
         fmt(bg="#E2EFDA", fg="#1F3864", size=11, bold=True, align='center', border=1, num_format='0'))
     blank_r(26)
 
-    # Verdict global (lignes 25–31)
-    section(25, "VERDICT GLOBAL", bg="#1F3864")
-    heads(26, ["Composante", "Score", "Max", "% atteint", "Appreciation"])
-    ws.write(row(27), 0, "Score Fondamental", F_LBL)
-    ws.write_formula(row(27), 1, f'=E{FOND_TOTAL_R}',
+    section(27, "VERDICT GLOBAL", bg="#1F3864")
+    heads(28, ["Composante", "Score", "Max", "% atteint", "Appreciation"])
+    ws.write(row(29), 0, "Score Fondamental", F_LBL)
+    ws.write_formula(row(29), 1, f'=E{FOND_TOTAL_R}',
                      fmt(bg="#E2EFDA", fg="#404040", size=10, bold=True, align='center', border=1, num_format='0'))
-    ws.write(row(27), 2, 24, fmt(bg="#F2F2F2", fg="#404040", size=11, align='center', border=1))
-    ws.write_formula(row(27), 3, f'=IFERROR(E{FOND_TOTAL_R}/24*100,"")',
+    ws.write(row(29), 2, 30, fmt(bg="#F2F2F2", fg="#404040", size=11, align='center', border=1))
+    ws.write_formula(row(29), 3, f'=IFERROR(E{FOND_TOTAL_R}/30*100,"")',
                      fmt(bg="#E2EFDA", fg="#404040", size=11, align='right', border=1, num_format='0.0'))
-    ws.write_formula(row(27), 4,
-        f'=IFERROR(IF(E{FOND_TOTAL_R}/24>=0.7,"Solide",IF(E{FOND_TOTAL_R}/24>=0.5,"Moyen","Faible")),"-")',
+    ws.write_formula(row(29), 4,
+        f'=IFERROR(IF(E{FOND_TOTAL_R}/30>=0.7,"Solide",IF(E{FOND_TOTAL_R}/30>=0.5,"Moyen","Faible")),"-")',
         fmt(bg="#FFFFFF", fg="#404040", size=11, align='center', border=1))
 
-    ws.write(row(28), 0, "Score Technique", F_LBL)
-    ws.write_formula(row(28), 1, f'=E{TECH_TOTAL_R}',
+    ws.write(row(30), 0, "Score Technique", F_LBL)
+    ws.write_formula(row(30), 1, f'=E{TECH_TOTAL_R}',
                      fmt(bg="#E2EFDA", fg="#404040", size=10, bold=True, align='center', border=1, num_format='0'))
-    ws.write(row(28), 2, 15, fmt(bg="#F2F2F2", fg="#404040", size=11, align='center', border=1))
-    ws.write_formula(row(28), 3, f'=IFERROR(E{TECH_TOTAL_R}/15*100,"")',
+    ws.write(row(30), 2, 15, fmt(bg="#F2F2F2", fg="#404040", size=11, align='center', border=1))
+    ws.write_formula(row(30), 3, f'=IFERROR(E{TECH_TOTAL_R}/15*100,"")',
                      fmt(bg="#E2EFDA", fg="#404040", size=11, align='right', border=1, num_format='0.0'))
-    ws.write_formula(row(28), 4,
+    ws.write_formula(row(30), 4,
         f'=IFERROR(IF(E{TECH_TOTAL_R}/15>=0.7,"Solide",IF(E{TECH_TOTAL_R}/15>=0.5,"Moyen","Faible")),"-")',
         fmt(bg="#FFFFFF", fg="#404040", size=11, align='center', border=1))
 
-    ws.write(row(29), 0, "SCORE TOTAL", F_LBL_B)
-    ws.write_formula(row(29), 1, f'=IFERROR(E{FOND_TOTAL_R}+E{TECH_TOTAL_R},"")',
+    ws.write(row(31), 0, "SCORE TOTAL", F_LBL_B)
+    ws.write_formula(row(31), 1, f'=IFERROR(E{FOND_TOTAL_R}+E{TECH_TOTAL_R},"")',
                      fmt(bg="#E2EFDA", fg="#1F3864", size=14, bold=True, align='center', border=1, num_format='0'))
-    ws.write(row(29), 2, 39, fmt(bg="#F2F2F2", fg="#404040", size=11, bold=True, align='center', border=1))
-    ws.write_formula(row(29), 3, f'=IFERROR(B{29}/39*100,"")',
+    ws.write(row(31), 2, 45, fmt(bg="#F2F2F2", fg="#404040", size=11, bold=True, align='center', border=1))
+    ws.write_formula(row(31), 3, f'=IFERROR(B{31}/45*100,"")',
                      fmt(bg="#E2EFDA", fg="#404040", size=11, align='right', border=1, num_format='0.0'))
-    ws.write_formula(row(29), 4,
-        f'=IFERROR(IF(B{29}/39>=0.7,"ACHETER",IF(B{29}/39>=0.5,"SURVEILLER","EVITER")),"-")',
+    ws.write_formula(row(31), 4,
+        f'=IFERROR(IF(B{31}/45>=0.7,"ACHETER",IF(B{31}/45>=0.5,"SURVEILLER","EVITER")),"-")',
         fmt(bg="#E2EFDA", fg="#1F3864", size=12, bold=True, align='center', border=1))
-    blank_r(30)
+    blank_r(32)
 
-    # Signal Contrarian (lignes 31–34)
-    section(31, "C — SIGNAL CONTRARIAN BRVM  (depuis ETUDE C4)")
-    heads(32, ["Score /10", "Verdict", "PER Normalise", "PER vs Sectoriel", "Decote VMC"])
-    ws.write_formula(row(33), col('A'), '=IFERROR(ETUDE!D178,"")',
+    section(33, "C — SIGNAL CONTRARIAN BRVM  (depuis ETUDE C4)")
+    heads(34, ["Score /10", "Verdict", "PER Normalise", "PER vs Sectoriel", "Decote VMC"])
+    ws.write_formula(row(35), col('A'), '=IFERROR(ETUDE!D178,"")',
                      fmt(bg="#EBF5FB", fg=NAVY, size=14, bold=True, align='center', border=2, num_format='0'))
-    ws.write_formula(row(33), col('B'), '=IFERROR(ETUDE!E179,"-")',
+    ws.write_formula(row(35), col('B'), '=IFERROR(ETUDE!E179,"-")',
                      fmt(bold=True, bg="#EBF5FB", fg=NAVY, size=10, align='center', border=2, wrap=True, locked=False))
-    ws.write_formula(row(33), col('C'), '=IFERROR(ETUDE!D153,"")',
+    ws.write_formula(row(35), col('C'), '=IFERROR(ETUDE!D153,"")',
                      fmt(bg="#EBF5FB", fg=NAVY, size=10, align='center', border=1, num_format='0.00'))
-    ws.write_formula(row(33), col('D'), '=IFERROR(ETUDE!D161,"")',
+    ws.write_formula(row(35), col('D'), '=IFERROR(ETUDE!D161,"")',
                      fmt(bg="#EBF5FB", fg=NAVY, size=10, align='center', border=1, num_format='0.00'))
-    ws.write_formula(row(33), col('E'), '=IFERROR(IF(ETUDE!B24<ETUDE!B31,"Prix < VMC","Prix > VMC"),"-")',
+    ws.write_formula(row(35), col('E'), '=IFERROR(IF(ETUDE!B24<ETUDE!B31,"Prix < VMC","Prix > VMC"),"-")',
                      fmt(bg="#EBF5FB", fg=NAVY, size=11, italic=True, align='center', border=1))
-    ws.set_row(row(33), 30)
-    blank_r(34)
+    ws.set_row(row(35), 30)
+    blank_r(36)
 
-    section(35, "RECOMMANDATION FINALE (texte libre)")
-    ws.merge_range(row(36), 0, row(40), 4, "",
+    section(37, "RECOMMANDATION FINALE (texte libre)")
+    ws.merge_range(row(38), 0, row(42), 4, "",
                    fmt(bg=WHITE, border=1, wrap=True, valign='top', locked=False))
-    ws.set_row(row(36), 50)
+    ws.set_row(row(38), 50)
 
     ws.protect(PROTECT_PWD, {
         'select_locked_cells':   True,
@@ -2177,9 +2254,9 @@ def build_rapport(wb, fmt):
         ("Valeur Intrinseque VI", '=IFERROR(ETUDE!B238,"")', '#,##0'),
     ]
     scores = [
-        ("Score Fondamental",  '=IFERROR(SYNTHESE!E14,"")', '0"/24"'),
-        ("Score Technique",    '=IFERROR(SYNTHESE!E23,"")', '0"/15"'),
-        ("SCORE TOTAL /39",    '=IFERROR(SYNTHESE!B29,"")', '0'),
+        ("Score Fondamental",  '=IFERROR(SYNTHESE!E16,"")', '0"/30"'),
+        ("Score Technique",    '=IFERROR(SYNTHESE!E25,"")', '0"/15"'),
+        ("SCORE TOTAL /45",    '=IFERROR(SYNTHESE!B31,"")', '0'),
     ]
 
     for i, (lbl_txt, val_f, nf) in enumerate(metrics):
@@ -2201,7 +2278,7 @@ def build_rapport(wb, fmt):
     # VERDICT — grand affichage lignes 8-10 droite (après 3 lignes scores)
     ws.set_row(r(8), 44)
     ws.merge_range(r(8), 3, r(10), 4, "", F_VERDICT)
-    ws.write_formula(r(8), 3, '=IFERROR(SYNTHESE!E29,"—")', F_VERDICT)
+    ws.write_formula(r(8), 3, '=IFERROR(SYNTHESE!E31,"—")', F_VERDICT)
 
     # Signal VI (ligne 11, col D-E)
     ws.set_row(r(11), 18)
@@ -2218,11 +2295,11 @@ def build_rapport(wb, fmt):
 
     ws.set_row(r(14), 22)
     ws.write(r(14), 0, "Score Contrarian (/10)", F_LBL_R)
-    ws.write_formula(r(14), 1, '=IFERROR(SYNTHESE!A33,"")',
+    ws.write_formula(r(14), 1, '=IFERROR(SYNTHESE!A35,"")',
                      fmt(bg=LVIOLET, fg=NAVY, size=14, bold=True, align='center', border=1, locked=True))
     ws.write_blank(r(14), 2, None, F_SPACER)
     ws.write(r(14), 3, "Verdict", F_LBL_R)
-    ws.write_formula(r(14), 4, '=IFERROR(SYNTHESE!B33,"")', F_VAL_TXT)
+    ws.write_formula(r(14), 4, '=IFERROR(SYNTHESE!B35,"")', F_VAL_TXT)
 
     # ── Ligne 15 : Section Analyse Cyclique (si données présentes) ───────────
     ws.set_row(r(15), 6)
@@ -2258,7 +2335,7 @@ def build_rapport(wb, fmt):
         ws.set_row(r(row_n), 22)
     ws.merge_range(r(21), 0, r(24), 4, "", F_RECO)
     ws.write_formula(r(21), 0,
-        '=IFERROR(IF(SYNTHESE!A36="","[Completer la recommandation dans SYNTHESE > ligne 36]",SYNTHESE!A36),"[—]")',
+        '=IFERROR(IF(SYNTHESE!A38="","[Completer la recommandation dans SYNTHESE > ligne 38]",SYNTHESE!A38),"[—]")',
         F_RECO)
 
     # ── Ligne 25 : Spacer ─────────────────────────────────────────────────────
