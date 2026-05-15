@@ -151,6 +151,7 @@ def make_wb():
     F_HINT   = fmt(bg=WHITE, fg='#808080', size=8, italic=True, align='left', border=1)
 
     build_rapport(wb, fmt)
+    build_guide(wb, fmt)
 
     build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
                 F_LBL, F_LBL_B, F_INPUT, F_INPUT_S, F_INPUT_C,
@@ -2589,6 +2590,222 @@ def build_rapport(wb, fmt):
         fmt(fg='#D1D5DB', size=8, italic=True, align='right', border=0))
 
     # ── Pas de protection sur RAPPORT (champs signature libres) ──────────────
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  FEUILLE GUIDE — Checklist de saisie + indicateur de complétude
+# ══════════════════════════════════════════════════════════════════════════════
+
+def build_guide(wb, fmt):
+    ws = wb.add_worksheet("GUIDE")
+    ws.set_tab_color("#059669")
+    ws.freeze_panes(3, 0)
+    ws.set_column(0, 0,  4)   # A  numéro étape
+    ws.set_column(1, 1, 30)   # B  description étape
+    ws.set_column(2, 2, 18)   # C  où saisir
+    ws.set_column(3, 3, 16)   # D  statut auto
+    ws.set_column(4, 4, 40)   # E  conseil / note
+
+    GREEN  = "#059669"
+    LGREEN = "#ECFDF5"
+    RED    = "#DC2626"
+    LRED   = "#FEF2F2"
+    AMBER  = "#D97706"
+    LAMBER = "#FFFBEB"
+    NAVY   = "#0D1B2A"
+    WHITE  = "#FFFFFF"
+    GREY   = "#F1F5F9"
+    DARK   = "#1E293B"
+    BLUE   = "#1E3A5F"
+
+    F_TITLE   = fmt(bold=True, bg=NAVY,   fg=WHITE,  size=14, align='center', border=0)
+    F_SUB     = fmt(bold=False, bg=BLUE,  fg=WHITE,  size=10, align='center', border=0)
+    F_SEC     = fmt(bold=True,  bg=BLUE,  fg=WHITE,  size=10, align='left',   border=0)
+    F_HEAD    = fmt(bold=True,  bg=GREY,  fg=NAVY,   size=10, align='center', border=1)
+    F_NUM     = fmt(bold=True,  bg=GREY,  fg=NAVY,   size=11, align='center', border=1)
+    F_LBL     = fmt(bg=WHITE,   fg=DARK,  size=10,   align='left',  border=1)
+    F_WHERE   = fmt(bg=GREY,    fg="#4B5563", size=9, italic=True, align='center', border=1)
+    F_NOTE    = fmt(bg=WHITE,   fg="#6B7280", size=9, italic=True, align='left', border=1, wrap=True)
+    F_OK      = fmt(bold=True,  bg=LGREEN, fg=GREEN,  size=10, align='center', border=1)
+    F_KO      = fmt(bold=True,  bg=LRED,   fg=RED,    size=10, align='center', border=1)
+    F_OPT     = fmt(bold=True,  bg=LAMBER, fg=AMBER,  size=10, align='center', border=1)
+    F_PROG_LBL = fmt(bold=True, bg=NAVY,  fg=WHITE,  size=11, align='right',  border=0)
+    F_PROG_VAL = fmt(bold=True, bg=GREEN, fg=WHITE,  size=14, align='center', border=2)
+
+    # ── Ligne 1 : Titre ───────────────────────────────────────────────────────
+    ws.merge_range(0, 0, 0, 4, "GUIDE DE SAISIE — CHECKLIST ANALYSTE BRVM", F_TITLE)
+    ws.set_row(0, 28)
+    ws.merge_range(1, 0, 1, 4,
+        "Completer les etapes dans l'ordre — les cellules oranges sont les seules a saisir",
+        F_SUB)
+    ws.set_row(1, 16)
+
+    # ── Ligne 3 : En-têtes colonnes ───────────────────────────────────────────
+    ws.set_row(2, 18)
+    for ci, h in enumerate(["#", "Etape de saisie", "Ou saisir", "Statut", "Conseil pratique"]):
+        ws.write(2, ci, h, F_HEAD)
+
+    # ── Définition des étapes ─────────────────────────────────────────────────
+    # (num, section, description, onglet+cellule, formule_check, note)
+    # formule_check retourne TRUE si rempli
+    steps = [
+        # OBLIGATOIRES — IDENTITE
+        ("SEC", "IDENTITE & CONTEXTE (PROFIL)", None, None, None),
+        (1,  "Nom complet de la societe",           "PROFIL B3",
+         '=PROFIL!B3<>""',
+         "Nom officiel complet (ex: Société Africaine de Plantations d'Hévéas)"),
+        (2,  "Ticker BRVM",                         "PROFIL B4",
+         '=PROFIL!B4<>""',
+         "Code cotation BRVM (ex: SAPH, ETIT, BIDC). Visible sur brvm.org"),
+        (3,  "Secteur d'activite",                  "PROFIL B5",
+         '=PROFIL!B5<>""',
+         "Banque | Assurance | Industrie | Agroalimentaire | Telecom | Distribution"),
+        (4,  "Date d'analyse",                       "PROFIL B6",
+         '=PROFIL!B6<>""',
+         "Date du jour en texte (ex: 15/05/2026). Format libre."),
+
+        # DONNEES FINANCIERES — 5 ANS
+        ("SEC", "RESULTATS SUR 5 ANS (ETUDE — Section A1/A2/A3)", None, None, None),
+        (5,  "Chiffre d'affaires N-4 a N (5 ans)", "ETUDE B8:F8",
+         '=AND(ISNUMBER(ETUDE!B8),ISNUMBER(ETUDE!F8))',
+         "En millions FCFA. Source : rapports annuels ou richbourse.com"),
+        (6,  "Resultat Net N-4 a N (5 ans)",         "ETUDE B12:F12",
+         '=AND(ISNUMBER(ETUDE!B12),ISNUMBER(ETUDE!F12))',
+         "En millions FCFA. Si perte, saisir en negatif."),
+        (7,  "Marges nettes (auto si 5 et 6 remplis)", "ETUDE B16:F16",
+         '=AND(ISNUMBER(ETUDE!B8),ISNUMBER(ETUDE!B12))',
+         "Calcule automatiquement apres saisie CA et RN."),
+
+        # VALORISATION
+        ("SEC", "VALORISATION (ETUDE — Section A4)", None, None, None),
+        (8,  "Prix actuel du titre (FCFA)",          "ETUDE B24",
+         '=ISNUMBER(ETUDE!B24)',
+         "Cours de cloture du jour. Source : brvm.org ou sika-finance.com"),
+        (9,  "BNPA (Benefice Net Par Action)",       "ETUDE B25",
+         '=ISNUMBER(ETUDE!B25)',
+         "= RN N / Nombre de titres. Parfois publie directement."),
+        (10, "Capitaux propres (FCFA)",              "ETUDE B26",
+         '=ISNUMBER(ETUDE!B26)',
+         "Actif net comptable total. Bilan passif section capitaux propres."),
+        (11, "Nombre de titres en circulation",      "ETUDE B28",
+         '=ISNUMBER(ETUDE!B28)',
+         "Capital social / valeur nominale. Ou directement dans le rapport annuel."),
+
+        # DIVIDENDES
+        ("SEC", "DIVIDENDES (ETUDE — Section A5)", None, None, None),
+        (12, "Dividendes NET sur 5 ans",             "ETUDE B39:B43",
+         '=ISNUMBER(ETUDE!B43)',
+         "Dividende net = montant recu apres prelevement 15%. Au moins l'annee N."),
+
+        # BILAN
+        ("SEC", "ANALYSE DU BILAN (PROFIL — section Bilan)", None, None, None),
+        (13, "Dette LT + CT + EBIT + Charges fin.",  "PROFIL B40:B43",
+         '=AND(ISNUMBER(PROFIL!B40),ISNUMBER(PROFIL!B42))',
+         "Tableau des flux du rapport annuel. Permet calcul gearing et couverture interets."),
+        (14, "Actifs et Passifs courants",            "PROFIL B44:B45",
+         '=AND(ISNUMBER(PROFIL!B44),ISNUMBER(PROFIL!B45))',
+         "Permet calcul ratio de liquidite (current ratio) et fonds de roulement."),
+
+        # FCF
+        ("SEC", "FREE CASH FLOW (PROFIL — section Flux de Tresorerie)", None, None, None),
+        (15, "Amortissements + CAPEX + Variation BFR", "PROFIL B52:B54",
+         '=AND(ISNUMBER(PROFIL!B52),ISNUMBER(PROFIL!B53))',
+         "Tableau des flux de tresorerie du rapport annuel. 3 chiffres = FCF complet."),
+
+        # OPTIONNEL
+        ("SEC", "OPTIONNEL — enrichissement de l'analyse", None, None, None),
+        ("OPT", "Taux sans risque UEMOA (defaut 6.5%)",   "ETUDE B307",
+         '=ISNUMBER(ETUDE!B307)',
+         "Modifier si les taux OAT UEMOA ont change. Source : boad.org"),
+        ("OPT", "Stop-Loss, Prix Achat, Take Profit",     "ETUDE B128:B130",
+         '=ISNUMBER(ETUDE!B128)',
+         "Pour calcul Risk/Reward et gestion de position."),
+        ("OPT", "Prix avant/apres resultats (psychologie)", "PROFIL B48:B49",
+         '=ISNUMBER(PROFIL!B48)',
+         "Cours J-1 et J+5 autour de la publication. Mesure la reaction du marche."),
+        ("OPT", "Analyse cyclique (si agro-industrie)",    "ETUDE A254:B256",
+         '=ETUDE!A254<>""',
+         "Saisir les matieres premieres et % CA. Sections G1-G2 de ETUDE."),
+    ]
+
+    # Compter les étapes obligatoires (numérotées 1-15)
+    n_obligatoires = 15
+
+    r = 3
+    check_cells = []
+
+    for step in steps:
+        if step[0] == "SEC":
+            ws.set_row(r, 16)
+            ws.merge_range(r, 0, r, 4, step[1], F_SEC)
+            r += 1
+            continue
+
+        num, desc, where, check_f, note = step
+        is_opt = (num == "OPT")
+        ws.set_row(r, 22)
+
+        # Colonne A — numéro
+        ws.write(r, 0, "OPT" if is_opt else num, F_NUM)
+
+        # Colonne B — description
+        ws.write(r, 1, desc, F_LBL)
+
+        # Colonne C — où saisir
+        ws.write(r, 2, where or "—", F_WHERE)
+
+        # Colonne D — statut auto
+        if check_f:
+            ws.write_formula(r, 3,
+                f'=IF({check_f},"✓ Rempli","✗ Manquant")',
+                F_OPT if is_opt else F_KO)
+            if not is_opt:
+                check_cells.append(f'IF({check_f},1,0)')
+        else:
+            ws.write(r, 3, "—", F_WHERE)
+
+        # Colonne E — conseil
+        ws.write(r, 4, note or "", F_NOTE)
+
+        r += 1
+
+    # ── Spacer ────────────────────────────────────────────────────────────────
+    ws.set_row(r, 8)
+    r += 1
+
+    # ── Indicateur de complétude ──────────────────────────────────────────────
+    ws.set_row(r, 24)
+    ws.merge_range(r, 0, r, 2, "COMPLETUDE DE L'ETUDE :", F_PROG_LBL)
+    score_formula = "+".join(check_cells)
+    ws.write_formula(r, 3,
+        f'=IFERROR({score_formula}&"/{n_obligatoires} etapes remplies","")' ,
+        fmt(bold=True, bg=GREEN, fg=WHITE, size=13, align='center', border=2))
+    ws.write_formula(r, 4,
+        f'=IFERROR(IF(({score_formula})/{n_obligatoires}>=1,"Analyse complete — pret pour le RAPPORT",'
+        f'IF(({score_formula})/{n_obligatoires}>=0.8,"Bonne avancee — finaliser les etapes manquantes",'
+        f'IF(({score_formula})/{n_obligatoires}>=0.5,"En cours — saisir les donnees financieres prioritaires",'
+        f'"Demarrer : PROFIL > Nom + Ticker + Secteur"))),"")',
+        fmt(bold=True, bg=LGREEN, fg=GREEN, size=11, align='left', border=1, wrap=True))
+    r += 1
+
+    # Conditional formatting pour le statut (colonne D)
+    fmt_ok  = wb.add_format({'bg_color': LGREEN, 'font_color': GREEN, 'bold': True,
+                              'border': 1, 'align': 'center', 'font_size': 10})
+    fmt_ko  = wb.add_format({'bg_color': LRED,   'font_color': RED,   'bold': True,
+                              'border': 1, 'align': 'center', 'font_size': 10})
+    fmt_opt = wb.add_format({'bg_color': LAMBER, 'font_color': AMBER, 'bold': True,
+                              'border': 1, 'align': 'center', 'font_size': 10})
+    ws.conditional_format('D4:D40', {'type': 'text', 'criteria': 'containing',
+                                      'value': 'Rempli', 'format': fmt_ok})
+    ws.conditional_format('D4:D40', {'type': 'text', 'criteria': 'containing',
+                                      'value': 'Manquant', 'format': fmt_ko})
+
+    ws.protect(PROTECT_PWD, {
+        'select_locked_cells':   True,
+        'select_unlocked_cells': True,
+        'format_columns':        True,
+        'format_rows':           True,
+    })
 
 
 make_wb()
