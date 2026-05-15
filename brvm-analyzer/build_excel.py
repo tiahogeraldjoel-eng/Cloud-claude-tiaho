@@ -2139,7 +2139,7 @@ def build_portefeuille(wb, fmt, F_TITLE, F_HEAD, F_LBL, F_LBL_B, F_WHITE, F_CALC
         ws.write(3, i, h, F_HEAD)
     ws.set_row(3, 32)
 
-    NB_POS = 15
+    NB_POS = 25
     for i in range(NB_POS):
         r = 4 + i          # 0-indexed row
         er = r + 1         # 1-based Excel row number
