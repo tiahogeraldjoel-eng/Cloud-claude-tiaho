@@ -1515,6 +1515,14 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
          '=IFERROR(ETUDE!B34,"")', '0.00',
          '=IFERROR(ETUDE!D34,"-")',
          '=IFERROR(IF(ETUDE!B34<10,3,IF(ETUDE!B34<22,2,IF(ETUDE!B34<30,1,0))),0)'),
+        ("Tendance dividende (CAGR 4 ans %)", "> 0%",
+         '=IFERROR(IF(ISNUMBER(ETUDE!B167),ETUDE!B167*100,"N/A"),"N/A")', '0.00',
+         '=IFERROR(IF(NOT(ISNUMBER(ETUDE!B167)),"Pas de dividende",IF(ETUDE!B167>=0.10,"Croissant fort (>10%/an)",IF(ETUDE!B167>=0.02,"Croissant (2-10%/an)",IF(ETUDE!B167>=0,"Stable","Dividende en BAISSE")))),"-")',
+         '=IFERROR(IF(NOT(ISNUMBER(ETUDE!B167)),0,IF(ETUDE!B167>=0.10,3,IF(ETUDE!B167>=0.02,2,IF(ETUDE!B167>=0,1,0)))),0)'),
+        ("Reaction marche post-resultats (%)", "> 0%",
+         '=IFERROR(IF(AND(ISNUMBER(PROFIL!B48),ISNUMBER(PROFIL!B49),PROFIL!B48>0),(PROFIL!B49-PROFIL!B48)/PROFIL!B48*100,"Non renseigne"),"Non renseigne")', '0.00',
+         '=IFERROR(IF(OR(NOT(ISNUMBER(PROFIL!B48)),NOT(ISNUMBER(PROFIL!B49))),"Non renseigne — saisir dans PROFIL",IF((PROFIL!B49-PROFIL!B48)/PROFIL!B48*100>=5,"Accueil tres favorable — marche recompense",IF((PROFIL!B49-PROFIL!B48)/PROFIL!B48*100>=0,"Accueil positif",IF((PROFIL!B49-PROFIL!B48)/PROFIL!B48*100>=-5,"Reaction mitigee","Punition marche — forte baisse")))),"-")',
+         '=IFERROR(IF(OR(NOT(ISNUMBER(PROFIL!B48)),NOT(ISNUMBER(PROFIL!B49))),0,IF((PROFIL!B49-PROFIL!B48)/PROFIL!B48*100>=5,3,IF((PROFIL!B49-PROFIL!B48)/PROFIL!B48*100>=0,2,IF((PROFIL!B49-PROFIL!B48)/PROFIL!B48*100>=-5,1,0)))),0)'),
     ]
     F_VAL_AUTO  = fmt(bg="#EBF5FB", fg="#1F3864", size=11, align='right', border=1)
     F_SIG_AUTO  = fmt(bg="#EBF5FB", fg="#404040", size=11, italic=True, align='center', border=1)
@@ -1533,33 +1541,33 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
         ws.write_formula(row(r), col('E'), score_f, F_SCORE_AUTO)
         FOND_SCORE_ROWS.append(r)
 
-    FOND_TOTAL_R = 14
-    lbl(FOND_TOTAL_R, 'A', "SCORE FONDAMENTAL TOTAL (/24)", bold=True)
+    FOND_TOTAL_R = 16
+    lbl(FOND_TOTAL_R, 'A', "SCORE FONDAMENTAL TOTAL (/30)", bold=True)
     for c in ['B','C','D']:
         ws.write_blank(row(FOND_TOTAL_R), col(c), None,
                        fmt(bg="#F2F2F2", border=1))
     ws.write_formula(row(FOND_TOTAL_R), col('E'),
         f'=SUM(E{FOND_SCORE_ROWS[0]}:E{FOND_SCORE_ROWS[-1]})',
         fmt(bg="#E2EFDA", fg="#1F3864", size=11, bold=True, align='center', border=1, num_format='0'))
-    blank_r(15)
+    blank_r(17)
 
     # Conditional formatting for signal column D in scorecard fondamentale
     sig_fmt_green = wb.add_format({'bg_color': '#D1FAE5', 'font_color': '#065F46', 'border': 1, 'align': 'center'})
     sig_fmt_red   = wb.add_format({'bg_color': '#FEE2E2', 'font_color': '#991B1B', 'border': 1, 'align': 'center'})
     sig_fmt_amber = wb.add_format({'bg_color': '#FEF3C7', 'font_color': '#92400E', 'border': 1, 'align': 'center'})
     for kw in ['Bon', 'rentable', 'Sous-evalue', 'Decote', 'Opportunite', 'SURVENTE', 'ACHETER']:
-        ws.conditional_format('D6:D13', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_green})
-        ws.conditional_format('D18:D22', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_green})
+        ws.conditional_format('D6:D15', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_green})
+        ws.conditional_format('D20:D24', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_green})
     for kw in ['Surevalue', 'SURACHAT', 'Prime', 'Negatif']:
-        ws.conditional_format('D6:D13', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_red})
-        ws.conditional_format('D18:D22', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_red})
+        ws.conditional_format('D6:D15', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_red})
+        ws.conditional_format('D20:D24', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_red})
     for kw in ['Normal', 'Faible', 'Moyen', 'NEUTRE']:
-        ws.conditional_format('D6:D13', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_amber})
-        ws.conditional_format('D18:D22', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_amber})
+        ws.conditional_format('D6:D15', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_amber})
+        ws.conditional_format('D20:D24', {'type': 'text', 'criteria': 'containing', 'value': kw, 'format': sig_fmt_amber})
 
     # Scorecard technique (lignes 16–22)
-    section(16, "SCORECARD TECHNIQUE")
-    heads(17, ["Critere", "Signal observe", "Zone", "Interpretation", "Score"])
+    section(18, "SCORECARD TECHNIQUE")
+    heads(19, ["Critere", "Signal observe", "Zone", "Interpretation", "Score"])
     # (critere, zone, formule_col_B, formule_col_D)
     # score_f: 0-3 auto par seuils (max total 15)
     tech_criteria = [
@@ -1588,7 +1596,7 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
     F_SIG_TECH  = fmt(bg="#EBF5FB", fg="#404040", size=11, italic=True, align='center', border=1)
     TECH_SCORE_ROWS = []
     for i, (crit, zone, val_f, sig_f, score_f) in enumerate(tech_criteria):
-        r = 18 + i
+        r = 20 + i
         lbl(r, 'A', crit)
         ws.write_formula(row(r), col('B'), val_f, F_VAL_TECH)
         ws.write(row(r), col('C'), zone,
@@ -1597,7 +1605,7 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
         ws.write_formula(row(r), col('E'), score_f, F_SCORE_AUTO)
         TECH_SCORE_ROWS.append(r)
 
-    TECH_TOTAL_R = 23
+    TECH_TOTAL_R = 25
     lbl(TECH_TOTAL_R, 'A', "SCORE TECHNIQUE TOTAL (/15)", bold=True)
     for c in ['B','C','D']:
         ws.write_blank(row(TECH_TOTAL_R), col(c), None,
@@ -1605,7 +1613,7 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
     ws.write_formula(row(TECH_TOTAL_R), col('E'),
         f'=SUM(E{TECH_SCORE_ROWS[0]}:E{TECH_SCORE_ROWS[-1]})',
         fmt(bg="#E2EFDA", fg="#1F3864", size=11, bold=True, align='center', border=1, num_format='0'))
-    blank_r(24)
+    blank_r(26)
 
     # Verdict global (lignes 25–31)
     section(25, "VERDICT GLOBAL", bg="#1F3864")
@@ -1749,6 +1757,10 @@ def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
             ("Charges financieres nettes (FCFA)",           "<-- Compte de resultat"),
             ("Actifs courants (FCFA)",                      "<-- Bilan actif courant"),
             ("Passifs courants (FCFA)",                     "<-- Bilan passif courant"),
+        ]),
+        ("PSYCHOLOGIE DU MARCHE", [
+            ("Prix avant publication resultats (J-1, FCFA)", "<-- Cours de cloture J-1 avant annonce"),
+            ("Prix apres resultats J+5 (FCFA)",              "<-- Cours 5 jours apres publication"),
         ]),
     ]
 
