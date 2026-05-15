@@ -4,6 +4,7 @@ Toutes les formules utilisent des adresses de cellules fixes et explicites.
 Usage: python3 build_excel.py
 """
 import xlsxwriter
+import os
 from datetime import date
 
 OUT          = "/home/user/Cloud-claude-tiaho/brvm-analyzer/etudes_actions_v2.xlsx"
@@ -81,6 +82,8 @@ def make_wb():
     F_REF    = fmt(bg=GREY, fg='#606060', size=8, italic=True, align='left', border=1, wrap=True)
     F_NOTE   = fmt(bg=LORANGE, fg=ORANGE, size=8, italic=True, align='left', border=0, wrap=True)
     F_HINT   = fmt(bg=WHITE, fg='#808080', size=8, italic=True, align='left', border=1)
+
+    build_rapport(wb, fmt)
 
     build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
                 F_LBL, F_LBL_B, F_INPUT, F_INPUT_S, F_INPUT_C,
@@ -2001,6 +2004,230 @@ def build_formule(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_LBL_B, F_WHITE, F_RE
         'format_columns':        True,
         'format_rows':           True,
     })
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  FEUILLE RAPPORT — synthèse imprimable, signée, avec logo optionnel
+# ══════════════════════════════════════════════════════════════════════════════
+
+LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(OUT)), 'logo.png')
+
+def build_rapport(wb, fmt):
+    ws = wb.add_worksheet("RAPPORT")
+    ws.set_tab_color("#7C3AED")
+
+    # ── Colonnes ──────────────────────────────────────────────────────────────
+    ws.set_column(0, 0, 30)   # A : libellés gauche
+    ws.set_column(1, 1, 20)   # B : valeurs gauche
+    ws.set_column(2, 2,  2)   # C : séparateur
+    ws.set_column(3, 3, 30)   # D : libellés droite
+    ws.set_column(4, 4, 20)   # E : valeurs droite
+
+    # ── Impression A4 portrait, 1 page ────────────────────────────────────────
+    ws.set_paper(9)
+    ws.set_portrait()
+    ws.fit_to_pages(1, 1)
+    ws.set_margins(left=0.5, right=0.5, top=0.6, bottom=0.6)
+    ws.hide_gridlines(2)
+    ws.print_area('A1:E36')
+
+    # ── Formats locaux ────────────────────────────────────────────────────────
+    VIOLET  = "#7C3AED"
+    LVIOLET = "#EDE9FE"
+    DGREY   = "#374151"
+
+    F_MAIN_TITLE = fmt(bold=True, bg=NAVY, fg=WHITE, size=16, align='center', border=0)
+    F_SUB        = fmt(bold=False, bg=BLUE, fg=WHITE, size=10, align='center', border=0)
+    F_SEC_V      = fmt(bold=True, bg=VIOLET, fg=WHITE, size=10, align='left', border=0)
+    F_LBL_R      = fmt(bg=GREY,  fg=DGREY, size=10, align='left',  border=1)
+    F_VAL_R      = fmt(bg=LVIOLET, fg=NAVY, size=10, bold=True, align='right', border=1,
+                       num_format='#,##0.00', locked=True)
+    F_VAL_N      = fmt(bg=LVIOLET, fg=NAVY, size=10, bold=True, align='right', border=1,
+                       num_format='#,##0', locked=True)
+    F_VAL_TXT    = fmt(bg=LVIOLET, fg=NAVY, size=10, bold=True, align='center', border=1, locked=True)
+    F_VERDICT    = fmt(bold=True, bg="#7C3AED", fg=WHITE, size=18, align='center', border=2, locked=True)
+    F_INPUT_R    = fmt(bg=LORANGE, fg=ORANGE, size=10, bold=True, align='left', border=1, locked=False)
+    F_RECO       = fmt(bg=WHITE, fg=DGREY, size=10, align='left', border=1, wrap=True, valign='top', locked=True)
+    F_DISCLAIMER = fmt(bg=WHITE, fg='#9CA3AF', size=8, italic=True, align='left', border=0, wrap=True)
+    F_SPACER     = fmt(bg=WHITE, border=0)
+    F_LOGO_PH    = fmt(bold=True, bg=LVIOLET, fg=VIOLET, size=14, align='center', valign='vcenter', border=1)
+
+    def r(n): return n - 1   # 1-based → 0-based
+
+    # ── Ligne 1 : En-tête principal ───────────────────────────────────────────
+    ws.set_row(r(1), 55)
+    has_logo = os.path.exists(LOGO_PATH)
+    if has_logo:
+        ws.merge_range(r(1), 0, r(2), 1, "", fmt(bg=WHITE, border=0))
+        ws.insert_image(r(1), 0, LOGO_PATH,
+                        {'x_scale': 0.18, 'y_scale': 0.18,
+                         'x_offset': 6, 'y_offset': 6,
+                         'object_position': 1})
+    else:
+        ws.merge_range(r(1), 0, r(2), 1, "LOGO", F_LOGO_PH)
+
+    ws.merge_range(r(1), 2, r(1), 4, "FICHE D'ANALYSE BOURSIERE BRVM", F_MAIN_TITLE)
+
+    # ── Ligne 2 : Sous-titre société ──────────────────────────────────────────
+    ws.set_row(r(2), 18)
+    ws.merge_range(r(2), 2, r(2), 4, "",
+                   fmt(bold=True, bg=BLUE, fg=WHITE, size=10, align='center', border=0, locked=True))
+    ws.write_formula(r(2), 2,
+        '=IF(PROFIL!B3="","[Completer onglet PROFIL]",'
+        'PROFIL!B3&"  ("&PROFIL!B4&")  |  "&PROFIL!B5'
+        '&"  |  "&IF(ISNUMBER(PROFIL!B6),TEXT(PROFIL!B6,"dd/mm/yyyy"),PROFIL!B6))',
+        fmt(bold=True, bg=BLUE, fg=WHITE, size=10, align='center', border=0, locked=True))
+
+    # ── Ligne 3 : Spacer ──────────────────────────────────────────────────────
+    ws.set_row(r(3), 6)
+    ws.merge_range(r(3), 0, r(3), 4, "", F_SPACER)
+
+    # ── Ligne 4 : Section headers ─────────────────────────────────────────────
+    ws.set_row(r(4), 18)
+    ws.merge_range(r(4), 0, r(4), 1, "METRIQUES CLES", F_SEC_V)
+    ws.write_blank(r(4), 2, None, F_SPACER)
+    ws.merge_range(r(4), 3, r(4), 4, "SCORECARD", F_SEC_V)
+
+    # ── Lignes 5-10 : Métriques + Scorecard ──────────────────────────────────
+    metrics = [
+        ("Prix actuel (FCFA)",    '=IFERROR(ETUDE!B24,"")',  '#,##0'),
+        ("PER",                   '=IFERROR(ETUDE!B30,"")',  '0.00'),
+        ("PBR",                   '=IFERROR(ETUDE!B32,"")',  '0.00'),
+        ("ROE (%)",               '=IFERROR(ETUDE!B33,"")',  '0.00'),
+        ("VMC — capitalisation",  '=IFERROR(ETUDE!B31,"")',  '#,##0'),
+        ("Valeur Intrinseque VI", '=IFERROR(ETUDE!B238,"")', '#,##0'),
+    ]
+    scores = [
+        ("Score Fondamental",  '=IFERROR(SYNTHESE!E14,"")', '0"/24"'),
+        ("Score Technique",    '=IFERROR(SYNTHESE!E23,"")', '0"/15"'),
+        ("SCORE TOTAL /39",    '=IFERROR(SYNTHESE!B29,"")', '0'),
+    ]
+
+    for i, (lbl_txt, val_f, nf) in enumerate(metrics):
+        row_n = 5 + i
+        ws.set_row(r(row_n), 18)
+        ws.write(r(row_n), 0, lbl_txt, F_LBL_R)
+        ws.write_formula(r(row_n), 1, val_f,
+                         fmt(bg=LVIOLET, fg=NAVY, size=10, bold=True, align='right',
+                             border=1, num_format=nf, locked=True))
+        ws.write_blank(r(row_n), 2, None, F_SPACER)
+
+    for i, (lbl_txt, val_f, nf) in enumerate(scores):
+        row_n = 5 + i
+        ws.write(r(row_n), 3, lbl_txt, F_LBL_R)
+        ws.write_formula(r(row_n), 4, val_f,
+                         fmt(bg=LVIOLET, fg=NAVY, size=11, bold=True, align='center',
+                             border=1, num_format=nf, locked=True))
+
+    # VERDICT — grand affichage lignes 8-10 droite (après 3 lignes scores)
+    ws.set_row(r(8), 44)
+    ws.merge_range(r(8), 3, r(10), 4, "", F_VERDICT)
+    ws.write_formula(r(8), 3, '=IFERROR(SYNTHESE!E29,"—")', F_VERDICT)
+
+    # Signal VI (ligne 11, col D-E)
+    ws.set_row(r(11), 18)
+    ws.write(r(11), 3, "Signal VI",  F_LBL_R)
+    ws.write_formula(r(11), 4, '=IFERROR(ETUDE!D238,"")', F_VAL_TXT)
+
+    # ── Ligne 11 déjà occupée — spacer 12 ────────────────────────────────────
+    ws.set_row(r(12), 6)
+    ws.merge_range(r(12), 0, r(12), 4, "", F_SPACER)
+
+    # ── Ligne 13 : Signal Contrarian ─────────────────────────────────────────
+    ws.set_row(r(13), 18)
+    ws.merge_range(r(13), 0, r(13), 4, "SIGNAL CONTRARIAN BRVM", F_SEC_V)
+
+    ws.set_row(r(14), 22)
+    ws.write(r(14), 0, "Score Contrarian (/10)", F_LBL_R)
+    ws.write_formula(r(14), 1, '=IFERROR(SYNTHESE!A33,"")',
+                     fmt(bg=LVIOLET, fg=NAVY, size=14, bold=True, align='center', border=1, locked=True))
+    ws.write_blank(r(14), 2, None, F_SPACER)
+    ws.write(r(14), 3, "Verdict", F_LBL_R)
+    ws.write_formula(r(14), 4, '=IFERROR(SYNTHESE!B33,"")', F_VAL_TXT)
+
+    # ── Ligne 15 : Section Analyse Cyclique (si données présentes) ───────────
+    ws.set_row(r(15), 6)
+    ws.merge_range(r(15), 0, r(15), 4, "", F_SPACER)
+
+    ws.set_row(r(16), 18)
+    ws.merge_range(r(16), 0, r(16), 4,
+                   "ANALYSE CYCLIQUE  (si applicable — Section G de ETUDE)", F_SEC_V)
+
+    ws.set_row(r(17), 18)
+    ws.write(r(17), 0, "Indice cycle matières premières", F_LBL_R)
+    ws.write_formula(r(17), 1, '=IFERROR(IF(ETUDE!B261="","N/A",ETUDE!B261),"N/A")',
+                     fmt(bg=LVIOLET, fg=NAVY, size=10, bold=True, align='center', border=1, locked=True))
+    ws.write_blank(r(17), 2, None, F_SPACER)
+    ws.write(r(17), 3, "PER normalisé cycle", F_LBL_R)
+    ws.write_formula(r(17), 4, '=IFERROR(IF(ETUDE!B268="","N/A",ETUDE!B268),"N/A")',
+                     fmt(bg=LVIOLET, fg=NAVY, size=10, bold=True, align='center', border=1, locked=True))
+
+    ws.set_row(r(18), 18)
+    ws.merge_range(r(18), 0, r(18), 1, "Verdict cyclique", F_LBL_R)
+    ws.merge_range(r(18), 3, r(18), 4, "", F_VAL_TXT)
+    ws.write_formula(r(18), 3, '=IFERROR(IF(ETUDE!B269="","—",ETUDE!B269),"—")', F_VAL_TXT)
+
+    # ── Ligne 19 : Spacer ─────────────────────────────────────────────────────
+    ws.set_row(r(19), 6)
+    ws.merge_range(r(19), 0, r(19), 4, "", F_SPACER)
+
+    # ── Ligne 20 : Recommandation ─────────────────────────────────────────────
+    ws.set_row(r(20), 18)
+    ws.merge_range(r(20), 0, r(20), 4, "RECOMMANDATION DE L'ANALYSTE", F_SEC_V)
+
+    for row_n in [21, 22, 23, 24]:
+        ws.set_row(r(row_n), 22)
+    ws.merge_range(r(21), 0, r(24), 4, "", F_RECO)
+    ws.write_formula(r(21), 0,
+        '=IFERROR(IF(SYNTHESE!A36="","[Completer la recommandation dans SYNTHESE > ligne 36]",SYNTHESE!A36),"[—]")',
+        F_RECO)
+
+    # ── Ligne 25 : Spacer ─────────────────────────────────────────────────────
+    ws.set_row(r(25), 6)
+    ws.merge_range(r(25), 0, r(25), 4, "", F_SPACER)
+
+    # ── Ligne 26 : Signature analyste ─────────────────────────────────────────
+    ws.set_row(r(26), 18)
+    ws.merge_range(r(26), 0, r(26), 4, "SIGNATURE DE L'ANALYSTE", F_SEC_V)
+
+    ws.set_row(r(27), 22)
+    ws.write(r(27), 0, "Nom de l'analyste", F_LBL_R)
+    ws.write(r(27), 1, "", F_INPUT_R)
+    ws.write_blank(r(27), 2, None, F_SPACER)
+    ws.write(r(27), 3, "Cabinet / Firme", F_LBL_R)
+    ws.write(r(27), 4, "", F_INPUT_R)
+
+    ws.set_row(r(28), 22)
+    ws.write(r(28), 0, "Date du rapport", F_LBL_R)
+    ws.merge_range(r(28), 1, r(28), 4, "", F_INPUT_R)
+
+    # ── Ligne 29 : Spacer ─────────────────────────────────────────────────────
+    ws.set_row(r(29), 6)
+    ws.merge_range(r(29), 0, r(29), 4, "", F_SPACER)
+
+    # ── Lignes 30-33 : Pied de page / Disclaimer ──────────────────────────────
+    ws.set_row(r(30), 14)
+    ws.merge_range(r(30), 0, r(30), 4,
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        fmt(fg='#D1D5DB', size=8, align='center', border=0))
+
+    disclaimer = (
+        "AVERTISSEMENT — Ce document est produit à titre informatif uniquement et ne constitue pas une offre "
+        "d'achat ou de vente de valeurs mobilières. Les données proviennent de sources réputées fiables mais "
+        "leur exactitude n'est pas garantie. Les performances passées ne préjugent pas des performances futures. "
+        "Tout investissement comporte un risque de perte en capital. BRVM — Bourse Régionale des Valeurs Mobilières, UEMOA."
+    )
+    for i, row_n in enumerate([31, 32, 33]):
+        ws.set_row(r(row_n), 14)
+    ws.merge_range(r(31), 0, r(33), 4, disclaimer, F_DISCLAIMER)
+
+    # ── Ligne 34 : generé avec ────────────────────────────────────────────────
+    ws.set_row(r(34), 12)
+    ws.merge_range(r(34), 0, r(34), 4,
+        f"Document genere automatiquement — Modele BRVM Analyzer",
+        fmt(fg='#D1D5DB', size=8, italic=True, align='right', border=0))
+
+    # ── Pas de protection sur RAPPORT (champs signature libres) ──────────────
 
 
 make_wb()
