@@ -1495,6 +1495,152 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
 
     blank(287)
 
+    # ─────────────────────────────────────────────────────────────────────────
+    #  BLOC I — FREE CASH FLOW & PRIME DE RISQUE (lignes 289–320)
+    # ─────────────────────────────────────────────────────────────────────────
+    blank(288)
+    ws.merge_range(row(289), 0, row(289), 7,
+        "I — FREE CASH FLOW & PRIME DE RISQUE  (depuis rapport annuel + marche UEMOA)", F_TITLE)
+    ws.set_row(row(289), 22)
+
+    # I1 — Free Cash Flow
+    section(290, "I1 — FREE CASH FLOW  (saisir Amort / CAPEX / ΔBFR dans PROFIL — section Flux de Tresorerie)")
+    heads(291, ["Composante FCF", "Valeur (FCFA)", "Source", "Note", "", "", "", ""])
+
+    lbl(292, 'A', "Resultat Net N  (reference A2)")
+    ws.write_formula(row(292), col('B'), '=IFERROR(F12*1000000,"")', F_CALC_N)
+    ws.write(row(292), col('C'), "Auto", F_WHITE_C)
+    hint(292, 'D', "= RN annee N depuis A2 x 1 000 000")
+
+    lbl(293, 'A', "(+) Amortissements & depreciations")
+    ws.write_formula(row(293), col('B'), '=IFERROR(PROFIL!B52,"")', F_CALC_N)
+    ws.write(row(293), col('C'), "PROFIL!B52", F_WHITE_C)
+    hint(293, 'D', "Tableau des flux — charges non decaissees")
+
+    lbl(294, 'A', "(-) CAPEX — Investissements nets")
+    ws.write_formula(row(294), col('B'), '=IFERROR(PROFIL!B53,"")', F_CALC_N)
+    ws.write(row(294), col('C'), "PROFIL!B53", F_WHITE_C)
+    hint(294, 'D', "Acquisitions d'immobilisations nettes de cessions")
+
+    lbl(295, 'A', "(-) Variation du BFR")
+    ws.write_formula(row(295), col('B'), '=IFERROR(PROFIL!B54,"")', F_CALC_N)
+    ws.write(row(295), col('C'), "PROFIL!B54", F_WHITE_C)
+    hint(295, 'D', "Positif = BFR en hausse = consommation de cash")
+
+    lbl(296, 'A', "FREE CASH FLOW (FCF)", bold=True)
+    ws.write_formula(row(296), col('B'),
+        '=IFERROR(F12*1000000+IFERROR(PROFIL!B52,0)-IFERROR(PROFIL!B53,0)-IFERROR(PROFIL!B54,0),"")',
+        F_CALC_B)
+    ws.write(row(296), col('C'), "FCFA", F_WHITE_C)
+    ws.write_formula(row(296), col('D'),
+        '=IFERROR(IF(F12*1000000+IFERROR(PROFIL!B52,0)-IFERROR(PROFIL!B53,0)-IFERROR(PROFIL!B54,0)>0,'
+        '"FCF POSITIF — societe genere du cash",'
+        '"ALERTE — FCF negatif (consomme plus qu\'elle ne genere)")'
+        ',"Saisir Amort/CAPEX dans PROFIL")',
+        fmt(bg=LGREEN, fg=DARK, size=11, italic=True, align='left', border=1, locked=True))
+    ws.set_row(row(296), 20)
+
+    lbl(297, 'A', "FCF par titre (FCFA)")
+    ws.write_formula(row(297), col('B'),
+        '=IFERROR((F12*1000000+IFERROR(PROFIL!B52,0)-IFERROR(PROFIL!B53,0)-IFERROR(PROFIL!B54,0))/B28,"")',
+        F_CALC_N2)
+    ws.write(row(297), col('C'), "FCFA/titre", F_WHITE_C)
+
+    lbl(298, 'A', "FCF Yield (FCF / Capitalisation boursiere)", bold=True)
+    ws.write_formula(row(298), col('B'),
+        '=IFERROR((F12*1000000+IFERROR(PROFIL!B52,0)-IFERROR(PROFIL!B53,0)-IFERROR(PROFIL!B54,0))/B31*100,"")',
+        F_CALC_PCT)
+    ws.write(row(298), col('C'), "%", F_WHITE_C)
+    ws.write_formula(row(298), col('D'),
+        '=IFERROR(IF((F12*1000000+IFERROR(PROFIL!B52,0)-IFERROR(PROFIL!B53,0)-IFERROR(PROFIL!B54,0))/B31*100>=8,'
+        '"Excellent FCF yield (>= 8%)",'
+        'IF((F12*1000000+IFERROR(PROFIL!B52,0)-IFERROR(PROFIL!B53,0)-IFERROR(PROFIL!B54,0))/B31*100>=5,'
+        '"Bon FCF yield (5-8%)",'
+        'IF((F12*1000000+IFERROR(PROFIL!B52,0)-IFERROR(PROFIL!B53,0)-IFERROR(PROFIL!B54,0))/B31*100>=0,'
+        '"FCF yield faible (< 5%)",'
+        '"FCF negatif — risque de dilution ou dette"))),'
+        '"Completer PROFIL")',
+        fmt(bg=LGREEN, fg=DARK, size=11, italic=True, align='left', border=1, locked=True))
+    blank(299)
+
+    # I2 — Soutenabilité du dividende
+    section(300, "I2 — SOUTENABILITE DU DIVIDENDE  (FCF coverage ratio)")
+    heads(301, ["Indicateur", "Valeur", "Unite", "Interpretation", "", "", "", ""])
+
+    lbl(302, 'A', "Dividendes totaux verses N  (Div NET / 0.85 x Nb titres)")
+    ws.write_formula(row(302), col('B'),
+        '=IFERROR(IF(B43=0,"Aucun dividende",B43/0.85*B28),"")',
+        F_CALC_N)
+    ws.write(row(302), col('C'), "FCFA", F_WHITE_C)
+    hint(302, 'D', "= dividende brut reconstitue x nombre de titres")
+
+    lbl(303, 'A', "FCF Coverage Ratio  (FCF / Dividendes verses)", bold=True)
+    FCF_REF = '(F12*1000000+IFERROR(PROFIL!B52,0)-IFERROR(PROFIL!B53,0)-IFERROR(PROFIL!B54,0))'
+    DIV_REF = 'B43/0.85*B28'
+    ws.write_formula(row(303), col('B'),
+        f'=IFERROR(IF(B43=0,"N/A - pas de dividende",{FCF_REF}/({DIV_REF})),"")',
+        F_CALC_N2)
+    ws.write(row(303), col('C'), "ratio", F_WHITE_C)
+    ws.write_formula(row(303), col('D'),
+        f'=IFERROR(IF(B43=0,"Pas de dividende verse",'
+        f'IF({FCF_REF}/({DIV_REF})>=2,"Dividende tres soutenable (FCF > 2x dividendes)",'
+        f'IF({FCF_REF}/({DIV_REF})>=1,"Dividende soutenable (FCF couvre les dividendes)",'
+        f'IF({FCF_REF}/({DIV_REF})>=0,"ALERTE — FCF couvre partiellement les dividendes",'
+        f'"DANGER — dividende non couvert par le FCF (ponction sur reserves)")))),"")',
+        fmt(bg=LGREEN, fg=DARK, size=11, italic=True, align='left', border=1, wrap=True, locked=True))
+    ws.set_row(row(303), 22)
+    blank(304)
+
+    # I3 — Prime de risque vs taux sans risque UEMOA
+    section(305, "I3 — PRIME DE RISQUE  vs  TAUX SANS RISQUE UEMOA  (OAT 5 ans BCEAO / BOAD)")
+    heads(306, ["Indicateur", "Valeur", "Unite", "Signal", "", "", "", ""])
+
+    lbl(307, 'A', "Taux sans risque UEMOA (OAT 5 ans)")
+    ws.write(row(307), col('B'), 6.5,
+             fmt(bg=LORANGE, fg=ORANGE, size=11, bold=True, align='right', border=1,
+                 num_format='0.00', locked=False))
+    ws.write(row(307), col('C'), "%", F_WHITE_C)
+    hint(307, 'D', "Modifier si necessaire — source : boad.org / bceao.int")
+
+    lbl(308, 'A', "Rendement dividende actuel (Div N / Prix)")
+    ws.write_formula(row(308), col('B'),
+        '=IFERROR(IF(B43=0,"N/A",B43/B24*100),"")',
+        F_CALC_PCT)
+    ws.write(row(308), col('C'), "%", F_WHITE_C)
+
+    lbl(309, 'A', "FCF Yield (reference complementaire)")
+    ws.write_formula(row(309), col('B'),
+        f'=IFERROR({FCF_REF}/B31*100,"")',
+        F_CALC_PCT)
+    ws.write(row(309), col('C'), "%", F_WHITE_C)
+
+    lbl(310, 'A', "Prime de risque  (Rendement Div - Taux sans risque)", bold=True)
+    ws.write_formula(row(310), col('B'),
+        '=IFERROR(IF(B43=0,"N/A",B43/B24*100-B307),"")',
+        fmt(bg=LGREEN, fg=DARK, size=12, bold=True, align='right', border=1, num_format='0.00', locked=True))
+    ws.write(row(310), col('C'), "pts %", F_WHITE_C)
+    ws.write_formula(row(310), col('D'),
+        '=IFERROR(IF(B43=0,"N/A - pas de dividende",'
+        'IF(B43/B24*100-B307>=4,"ACTION TRES REMUNERATRICE vs obligations UEMOA (prime > 4%)",'
+        'IF(B43/B24*100-B307>=2,"Action remuneratrice vs obligations (prime 2-4%)",'
+        'IF(B43/B24*100-B307>=0,"Prime de risque faible — obligations presque equivalentes",'
+        '"SOUS-REMUNEREE — les obligations UEMOA rapportent plus que cette action")))),'
+        '"")',
+        fmt(bg=LGREEN, fg=DARK, size=11, italic=True, align='left', border=1, wrap=True, locked=True))
+    ws.set_row(row(310), 22)
+
+    lbl(311, 'A', "Prime FCF Yield - Taux sans risque", bold=True)
+    ws.write_formula(row(311), col('B'),
+        f'=IFERROR({FCF_REF}/B31*100-B307,"")',
+        fmt(bg=LGREEN, fg=DARK, size=11, bold=True, align='right', border=1, num_format='0.00', locked=True))
+    ws.write(row(311), col('C'), "pts %", F_WHITE_C)
+    ws.write_formula(row(311), col('D'),
+        f'=IFERROR(IF({FCF_REF}/B31*100-B307>=4,"FCF yield tres attractif vs obligations",'
+        f'IF({FCF_REF}/B31*100-B307>=0,"FCF yield acceptable",'
+        f'"FCF yield inferieur au taux sans risque — risque non remunere")),"")',
+        fmt(bg=LGREEN, fg=DARK, size=11, italic=True, align='left', border=1, locked=True))
+    blank(312)
+
     # Conditional formatting for C4 score column
     cf_g = wb.add_format({'bg_color': '#D1FAE5', 'font_color': '#065F46', 'border': 1, 'align': 'center', 'font_size': 9})
     cf_r = wb.add_format({'bg_color': '#FEE2E2', 'font_color': '#991B1B', 'border': 1, 'align': 'center', 'font_size': 9})
@@ -1746,6 +1892,58 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
     ws.merge_range(row(38), 0, row(42), 4, "",
                    fmt(bg=WHITE, border=1, wrap=True, valign='top', locked=False))
     ws.set_row(row(38), 50)
+    blank_r(43)
+
+    # ── FCF & Prime de risque (lignes 44–52) ─────────────────────────────────
+    section(44, "D — FREE CASH FLOW & PRIME DE RISQUE  (depuis ETUDE Section I)")
+    heads(45, ["Indicateur", "Valeur (auto)", "Signal", "", ""])
+
+    F_FCF_VAL = fmt(bg="#EBF5FB", fg="#1F3864", size=11, bold=True, align='right', border=1)
+    F_FCF_SIG = fmt(bg="#EBF5FB", fg="#404040", size=10, italic=True, align='left', border=1, wrap=True)
+
+    fcf_rows = [
+        ("FCF Yield (%)",
+         '=IFERROR(ETUDE!B298,"")', '0.00',
+         '=IFERROR(ETUDE!D298,"Saisir Amort/CAPEX dans PROFIL")'),
+        ("FCF Coverage Ratio (FCF / Dividendes)",
+         '=IFERROR(IF(ETUDE!B303="N/A - pas de dividende","N/A",ETUDE!B303),"")', '0.00',
+         '=IFERROR(ETUDE!D303,"Completer PROFIL — flux de tresorerie")'),
+        ("Prime de risque vs OAT UEMOA (pts %)",
+         '=IFERROR(IF(ETUDE!B310="N/A",ETUDE!B310,ETUDE!B310),"")', '0.00',
+         '=IFERROR(ETUDE!D310,"Verifier taux sans risque en ETUDE I3")'),
+        ("Prime FCF Yield vs taux sans risque (pts %)",
+         '=IFERROR(ETUDE!B311,"")', '0.00',
+         '=IFERROR(ETUDE!D311,"")'),
+    ]
+    for i, (lbl_txt, val_f, nf, sig_f) in enumerate(fcf_rows):
+        r = 46 + i
+        lbl(r, 'A', lbl_txt)
+        ws.write_formula(row(r), col('B'), val_f,
+                         fmt(bg="#EBF5FB", fg="#1F3864", size=11, bold=True,
+                             align='right', border=1, num_format=nf))
+        ws.merge_range(row(r), col('C'), row(r), col('E'), "", F_FCF_SIG)
+        ws.write_formula(row(r), col('C'), sig_f, F_FCF_SIG)
+        ws.set_row(row(r), 20)
+
+    blank_r(50)
+
+    # Conditional formatting FCF
+    ws.conditional_format('C46:C49', {'type': 'text', 'criteria': 'containing',
+                                       'value': 'Excellent', 'format': sig_fmt_green})
+    ws.conditional_format('C46:C49', {'type': 'text', 'criteria': 'containing',
+                                       'value': 'soutenable', 'format': sig_fmt_green})
+    ws.conditional_format('C46:C49', {'type': 'text', 'criteria': 'containing',
+                                       'value': 'TRES REMUNER', 'format': sig_fmt_green})
+    ws.conditional_format('C46:C49', {'type': 'text', 'criteria': 'containing',
+                                       'value': 'remuneratrice', 'format': sig_fmt_green})
+    ws.conditional_format('C46:C49', {'type': 'text', 'criteria': 'containing',
+                                       'value': 'ALERTE', 'format': sig_fmt_amber})
+    ws.conditional_format('C46:C49', {'type': 'text', 'criteria': 'containing',
+                                       'value': 'faible', 'format': sig_fmt_amber})
+    ws.conditional_format('C46:C49', {'type': 'text', 'criteria': 'containing',
+                                       'value': 'DANGER', 'format': sig_fmt_red})
+    ws.conditional_format('C46:C49', {'type': 'text', 'criteria': 'containing',
+                                       'value': 'SOUS-REMUNER', 'format': sig_fmt_red})
 
     ws.protect(PROTECT_PWD, {
         'select_locked_cells':   True,
@@ -1838,6 +2036,11 @@ def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
         ("PSYCHOLOGIE DU MARCHE", [
             ("Prix avant publication resultats (J-1, FCFA)", "<-- Cours de cloture J-1 avant annonce"),
             ("Prix apres resultats J+5 (FCFA)",              "<-- Cours 5 jours apres publication"),
+        ]),
+        ("FLUX DE TRESORERIE (tableau des flux du rapport annuel)", [
+            ("Amortissements & depreciations (FCFA)",        "<-- Tableau des flux — produits non decaissés"),
+            ("CAPEX — Investissements nets (FCFA)",          "<-- Tableau des flux — acquisitions immobilisations"),
+            ("Variation du BFR (FCFA)",                      "<-- Positif = besoin en hausse (consomme du cash)"),
         ]),
     ]
 
@@ -2185,7 +2388,7 @@ def build_rapport(wb, fmt):
     ws.fit_to_pages(1, 1)
     ws.set_margins(left=0.5, right=0.5, top=0.6, bottom=0.6)
     ws.hide_gridlines(2)
-    ws.print_area('A1:E36')
+    ws.print_area('A1:E38')
 
     # ── Formats locaux ────────────────────────────────────────────────────────
     VIOLET  = "#7C3AED"
@@ -2252,6 +2455,8 @@ def build_rapport(wb, fmt):
         ("ROE (%)",               '=IFERROR(ETUDE!B33,"")',  '0.00'),
         ("VMC — capitalisation",  '=IFERROR(ETUDE!B31,"")',  '#,##0'),
         ("Valeur Intrinseque VI", '=IFERROR(ETUDE!B238,"")', '#,##0'),
+        ("FCF Yield (%)",         '=IFERROR(ETUDE!B298,"")', '0.00'),
+        ("Prime de risque (pts%)", '=IFERROR(IF(ETUDE!B310="N/A","N/A",ETUDE!B310),"")', '0.00'),
     ]
     scores = [
         ("Score Fondamental",  '=IFERROR(SYNTHESE!E16,"")', '0"/30"'),
