@@ -1675,7 +1675,17 @@ elif page == "📄 Rapport":
     </div>
     """
 
-    st.markdown(report_html, unsafe_allow_html=True)
+    import streamlit.components.v1 as components
+    # Wrap in full HTML document so styles apply correctly
+    full_html = f"""<!DOCTYPE html>
+<html><head><meta charset='utf-8'>
+<style>
+  body {{ font-family: Arial, sans-serif; margin: 0; padding: 16px;
+         background: white; color: #1F2937; line-height: 1.6; }}
+  * {{ box-sizing: border-box; }}
+</style>
+</head><body>{report_html}</body></html>"""
+    components.html(full_html, height=1800, scrolling=True)
 
     st.markdown("---")
     st.info("💡 **Imprimer le rapport** : Utilisez Ctrl+P (ou Cmd+P sur Mac) dans votre navigateur. "
@@ -1722,7 +1732,7 @@ elif page == "📥 Générer Excel":
                 import importlib.util
                 spec = importlib.util.spec_from_file_location(
                     "build_excel", str(ANALYZER_DIR / "build_excel.py"))
-                mod = importlib.util.load_from_spec(spec)
+                mod = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(mod)
 
                 original_out = mod.OUT
