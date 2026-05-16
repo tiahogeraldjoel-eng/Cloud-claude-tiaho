@@ -69,6 +69,57 @@ ANNEES = ["N-4", "N-3", "N-2", "N-1", "N"]
 SECTEURS = ["Banque", "Assurance", "Industrie", "Agroalimentaire",
             "Telecom", "Distribution", "Energie", "Immobilier", "Autre"]
 
+# Noms complets des sociétés BRVM (pour auto-remplissage)
+TICKER_NAMES = {
+    "ABJC": "Abidjan Catering",
+    "BICB": "BICI Burkina — Banque Internationale pour le Commerce et l'Industrie du Burkina",
+    "BICC": "BICICI — Banque Internationale pour le Commerce et l'Industrie de la Côte d'Ivoire",
+    "BNBC": "BICI Bénin — Banque Internationale pour le Commerce et l'Industrie du Bénin",
+    "BOAB": "Bank Of Africa Bénin",
+    "BOABF": "Bank Of Africa Burkina Faso",
+    "BOAC": "Bank Of Africa Côte d'Ivoire",
+    "BOAM": "Bank Of Africa Mali",
+    "BOAN": "Bank Of Africa Niger",
+    "BOAS": "Bank Of Africa Sénégal",
+    "CABC": "Coris Bank International Côte d'Ivoire",
+    "CBIBF": "Coris Bank International Burkina Faso",
+    "CFAC": "CFAO Technologies & Digital",
+    "CIEC": "CI-Energies — Compagnie Ivoirienne d'Électricité",
+    "ECOC": "Ecobank Côte d'Ivoire",
+    "ETIT": "Ecobank Transnational Incorporated (ETI)",
+    "FTSC": "Filtisac",
+    "LNBB": "La Nationale de Burkina Faso (LNB)",
+    "NEIC": "NEI-CEDA",
+    "NSBC": "NSIA Banque Côte d'Ivoire",
+    "NTLC": "NSIA Technologies CI",
+    "ONTBF": "Onatel — Office National des Télécommunications du Burkina Faso",
+    "ORAC": "Orange Côte d'Ivoire",
+    "ORGT": "Orange Togo",
+    "PALC": "PALM-CI — Société de Palmindustrie",
+    "PRSC": "Presses de Côte d'Ivoire",
+    "SAFC": "SAFCA — Société Africaine de Financement et de Crédit Automobile",
+    "SCRC": "Société de Caoutchoucs de Côte d'Ivoire (SCRC)",
+    "SDCC": "SODECI — Société de Distribution d'Eau de la Côte d'Ivoire",
+    "SDSC": "SDE — Sénégalaise des Eaux",
+    "SEMC": "SEMC Côte d'Ivoire",
+    "SGBC": "Société Générale de Banques en Côte d'Ivoire (SGBCI)",
+    "SHEC": "Shell Côte d'Ivoire",
+    "SIBC": "SIB — Société Ivoirienne de Banque",
+    "SICC": "SICOGI — Société Ivoirienne de Construction et de Gestion Immobilière",
+    "SIVC": "SIFCA — Société Ivoirienne de Financement et d'Investissement",
+    "SLBC": "Solibra — Société de Limonaderie et de Brasserie d'Afrique (CI)",
+    "SMBC": "SMB — Société des Mines de Bougouni CI",
+    "SNTS": "Sonatel — Société Nationale des Télécommunications du Sénégal",
+    "SOGC": "SOGB — Société des Caoutchoucs de Grand-Béréby",
+    "SPHC": "SAPH — Société Africaine de Plantations d'Hévéas",
+    "STAC": "STCA — Société de Transport en Commun d'Abidjan",
+    "STBC": "STBC — Société de Transformation du Bois de Côte d'Ivoire",
+    "TTLC": "TotalEnergies Marketing Côte d'Ivoire",
+    "TTLS": "TotalEnergies Marketing Sénégal",
+    "UNLC": "Unilever Côte d'Ivoire",
+    "UNXC": "UNIWAX",
+}
+
 
 # ════════════════════════════════════════════════════════════════════════════
 #  SESSION STATE — stocke les données saisies
@@ -704,17 +755,25 @@ elif page == "1️⃣  Identité société":
         st.session_state.nom = st.text_input(
             "Nom complet de la société *",
             value=st.session_state.nom,
-            placeholder="ex: Société Africaine de Plantations d'Hévéas")
+            placeholder="ex: Société Africaine de Plantations d'Hévéas",
+            help="Rempli automatiquement quand vous sélectionnez un ticker BRVM")
 
         # Ticker with BRVM autocomplete
         all_tickers = [""] + KNOWN_TICKERS
         ticker_idx = all_tickers.index(st.session_state.ticker) if st.session_state.ticker in all_tickers else 0
+        prev_ticker = st.session_state.ticker
         st.session_state.ticker = st.selectbox(
             "Ticker BRVM *",
             all_tickers,
             index=ticker_idx,
             help="Sélectionnez parmi les 47 titres BRVM cotés"
         )
+        # Auto-remplissage du nom complet quand le ticker change
+        tk_sel = st.session_state.ticker
+        if tk_sel and tk_sel != prev_ticker and tk_sel in TICKER_NAMES:
+            if not st.session_state.nom:
+                st.session_state.nom = TICKER_NAMES[tk_sel]
+                st.rerun()
         # Allow free-text entry for tickers not in list
         if not st.session_state.ticker:
             custom = st.text_input("Ou saisissez un ticker manuellement", placeholder="ex: SAPH")
@@ -889,10 +948,33 @@ elif page == "2️⃣  Résultats 5 ans":
 elif page == "3️⃣  Valorisation":
     st.title("3 — Données de valorisation")
     source_helper(3)
+
+    # Auto-fetch prix actuel depuis BRVM si non encore rempli
+    if st.session_state.ticker and st.session_state.ticker.upper() in KNOWN_TICKERS:
+        if not st.session_state.prix or st.session_state.prix == 0:
+            with st.spinner("Chargement du cours BRVM en direct..."):
+                q = get_quote(st.session_state.ticker.upper())
+                if q and q["closing_price"] > 0:
+                    st.session_state.prix = q["closing_price"]
+                    st.toast(f"✅ Prix chargé automatiquement : {q['closing_price']:,.0f} FCFA", icon="📡")
+
     col1, col2 = st.columns(2)
     with col1:
+        # Show live price badge if available
+        tk_v = st.session_state.ticker.upper() if st.session_state.ticker else ""
+        if tk_v and tk_v in KNOWN_TICKERS:
+            q_live = get_quote(tk_v)
+            if q_live:
+                delta_color = "green" if q_live["change_pct"] >= 0 else "red"
+                st.markdown(
+                    f"<div style='background:#F0FDF4;border:1px solid #86EFAC;border-radius:6px;"
+                    f"padding:0.4rem 0.8rem;margin-bottom:0.5rem;font-size:0.9rem;'>"
+                    f"📡 <b>Cours BRVM :</b> {q_live['closing_price']:,.0f} FCFA "
+                    f"<span style='color:{delta_color};font-weight:bold;'>{q_live['change_pct']:+.2f}%</span>"
+                    f"</div>", unsafe_allow_html=True)
         st.session_state.prix = st.number_input("Prix actuel (FCFA) *", min_value=0.0, step=10.0,
-                                                  value=float(st.session_state.prix or 0))
+                                                  value=float(st.session_state.prix or 0),
+                                                  help="Chargé automatiquement depuis la BRVM — modifiable")
         # Calculate auto BNPA from RN(N) and nb_titres
         rn_n = st.session_state.rn[4]
         nb_for_bnpa = st.session_state.nb_titres or 0
@@ -1075,21 +1157,52 @@ elif page == "5️⃣  Bilan & FCF":
     st.info("Source : Tableau des flux de trésorerie du rapport annuel")
 
     st.markdown("#### Analyse du Bilan")
+    st.markdown("""
+<div style='background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:0.7rem 1rem;margin-bottom:1rem;font-size:0.88rem;'>
+<b>📖 Où trouver ces données ?</b><br>
+Toutes les lignes ci-dessous se trouvent dans le <b>Bilan annuel</b> de la société (Rapport annuel → Bilan).<br>
+Sur <b>Richbourse</b> ou <b>SikaFinance</b>, consultez l'onglet <b>« Bilan »</b> ou <b>« Financier »</b>.
+</div>
+""", unsafe_allow_html=True)
+
     c1, c2 = st.columns(2)
     with c1:
-        st.session_state.dette_lt = st.number_input("Dette long terme (FCFA)", step=1e6,
-            value=float(st.session_state.dette_lt or 0))
-        st.session_state.dette_ct = st.number_input("Dette court terme (FCFA)", step=1e6,
-            value=float(st.session_state.dette_ct or 0))
-        st.session_state.ebit = st.number_input("EBIT (M FCFA) — Résultat avant intérêts/impôts", step=1.0,
-            value=float(st.session_state.ebit or 0))
-        st.session_state.charges_fin = st.number_input("Charges financières nettes (FCFA)", step=1e5,
-            value=float(st.session_state.charges_fin or 0))
+        st.session_state.dette_lt = st.number_input(
+            "Dette long terme (FCFA)",
+            step=1e6, value=float(st.session_state.dette_lt or 0),
+            help="Emprunts et dettes financières à plus d'un an — Bilan PASSIF, rubrique 'Dettes financières LT' ou 'Emprunts LT'")
+        st.caption("📌 Bilan Passif → Dettes financières > 1 an (emprunts bancaires LT, obligations)")
+
+        st.session_state.dette_ct = st.number_input(
+            "Dette court terme (FCFA)",
+            step=1e6, value=float(st.session_state.dette_ct or 0),
+            help="Emprunts et dettes financières à moins d'un an — Bilan PASSIF, rubrique 'Concours bancaires' ou 'Dettes CT'")
+        st.caption("📌 Bilan Passif → Dettes financières < 1 an (découverts, crédits CT)")
+
+        st.session_state.ebit = st.number_input(
+            "EBIT (M FCFA) — Résultat avant intérêts/impôts",
+            step=1.0, value=float(st.session_state.ebit or 0),
+            help="Résultat d'Exploitation = CA − Charges d'exploitation. Compte de résultat → ligne 'Résultat d'exploitation'")
+        st.caption("📌 Compte de résultat → Résultat d'exploitation (avant charges financières et IS)")
+
+        st.session_state.charges_fin = st.number_input(
+            "Charges financières nettes (FCFA)",
+            step=1e5, value=float(st.session_state.charges_fin or 0),
+            help="Intérêts payés sur les dettes, nets des produits financiers reçus — Compte de résultat → 'Charges financières'")
+        st.caption("📌 Compte de résultat → Charges financières nettes (intérêts sur emprunts)")
+
     with c2:
-        st.session_state.actifs_cour = st.number_input("Actifs courants (FCFA)", step=1e6,
-            value=float(st.session_state.actifs_cour or 0))
-        st.session_state.passifs_cour = st.number_input("Passifs courants (FCFA)", step=1e6,
-            value=float(st.session_state.passifs_cour or 0))
+        st.session_state.actifs_cour = st.number_input(
+            "Actifs courants (FCFA)",
+            step=1e6, value=float(st.session_state.actifs_cour or 0),
+            help="Stocks + Créances clients + Trésorerie — Bilan ACTIF, total de la rubrique 'Actifs courants' ou 'Actif circulant'")
+        st.caption("📌 Bilan Actif → Actif circulant = Stocks + Créances + Disponibilités")
+
+        st.session_state.passifs_cour = st.number_input(
+            "Passifs courants (FCFA)",
+            step=1e6, value=float(st.session_state.passifs_cour or 0),
+            help="Dettes fournisseurs + dettes fiscales + autres dettes CT — Bilan PASSIF, rubrique 'Passifs courants' ou 'Dettes à CT'")
+        st.caption("📌 Bilan Passif → Passif circulant = Dettes fournisseurs + fiscales + sociales")
 
     # ── Auto-calculated bilan metrics ─────────────────────────────────────────
     ac = st.session_state.actifs_cour or 0
