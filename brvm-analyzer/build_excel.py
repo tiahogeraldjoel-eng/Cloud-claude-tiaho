@@ -86,7 +86,10 @@ WHITE   = "#FFFFFF"
 DARK    = "#1E293B"   # Deep slate for text
 RED     = "#DC2626"   # Clean red for warnings
 
-def make_wb():
+def make_wb(out_path=None, logo_path=None):
+    global OUT, LOGO_PATH
+    if out_path:  OUT = out_path
+    if logo_path: LOGO_PATH = logo_path
     # Génère le logo automatiquement avant de créer le workbook
     _generate_logo(LOGO_PATH)
 
@@ -2808,4 +2811,5 @@ def build_guide(wb, fmt):
     })
 
 
-make_wb()
+if __name__ == "__main__":
+    make_wb()

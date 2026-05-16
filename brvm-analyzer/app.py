@@ -1986,16 +1986,8 @@ elif page == "📥 Générer Excel":
                 if logo_src.exists():
                     shutil.copy(str(logo_src), logo_dst)
 
-                import importlib.util
-                spec = importlib.util.spec_from_file_location(
-                    "build_excel", str(ANALYZER_DIR / "build_excel.py"))
-                mod = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(mod)
-
-                original_out = mod.OUT
-                mod.OUT = out_path
-                mod.LOGO_PATH = logo_dst
-                mod.make_wb()
+                import build_excel
+                build_excel.make_wb(out_path=out_path, logo_path=logo_dst)
 
                 with open(out_path, "rb") as f:
                     excel_bytes = f.read()
