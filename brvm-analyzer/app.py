@@ -408,9 +408,9 @@ def compute_scores():
     if vmc > 0 and rn_n:
         fcf_yield = fcf / vmc * 100
         s = 3 if fcf_yield >= 8 else 2 if fcf_yield >= 4 else 1 if fcf_yield >= 0 else 0
-        scores_fond["FCF Yield"] = (f"{fcf_yield:.1f}%", s)
+        scores_fond["Rendement FCF"] = (f"{fcf_yield:.1f}%", s)
     else:
-        scores_fond["FCF Yield"] = ("N/A", 0)
+        scores_fond["Rendement FCF"] = ("N/A", 0)
 
     # ── Technique /15 ────────────────────────────────────────────────────────
 
@@ -418,9 +418,9 @@ def compute_scores():
     b1 = ss.score_b1
     if b1 is not None:
         s = 3 if b1 >= 4 else 2 if b1 >= 1 else 1 if b1 == 0 else 0
-        scores_tech["Score technique B1"] = (f"{b1:+d}/5", s)
+        scores_tech["Tendance graphique (B1)"] = (f"{b1:+d}/5", s)
     else:
-        scores_tech["Score technique B1"] = ("N/A", 0)
+        scores_tech["Tendance graphique (B1)"] = ("N/A", 0)
 
     # 2. Prime de risque vs OAT
     taux_sr = ss.taux_sr or 6.5
@@ -428,9 +428,9 @@ def compute_scores():
         rdt_div = divs[4] / p * 100
         prime = rdt_div - taux_sr
         s = 3 if prime >= 3 else 2 if prime >= 1 else 1 if prime >= 0 else 0
-        scores_tech["Prime de risque vs OAT"] = (f"{prime:+.1f}%", s)
+        scores_tech["Prime vs taux sans risque"] = (f"{prime:+.1f}%", s)
     else:
-        scores_tech["Prime de risque vs OAT"] = ("N/A", 0)
+        scores_tech["Prime vs taux sans risque"] = ("N/A", 0)
 
     # 3. FCF Coverage
     div_n = divs[4]
@@ -438,9 +438,9 @@ def compute_scores():
         divs_tot = div_n / 0.85 * nb
         coverage = fcf / divs_tot if divs_tot > 0 else 0
         s = 3 if coverage >= 2 else 2 if coverage >= 1 else 1 if coverage >= 0.5 else 0
-        scores_tech["FCF Coverage"] = (f"{coverage:.1f}x", s)
+        scores_tech["Couverture dividende par FCF"] = (f"{coverage:.1f}x", s)
     else:
-        scores_tech["FCF Coverage"] = ("N/A", 0)
+        scores_tech["Couverture dividende par FCF"] = ("N/A", 0)
 
     # 4. Risk/Reward ratio
     px_achat = ss.prix_achat or 0
@@ -451,9 +451,9 @@ def compute_scores():
         perte = px_achat - sl
         rr = gain / perte if perte > 0 else 0
         s = 3 if rr >= 3 else 2 if rr >= 2 else 1 if rr >= 1 else 0
-        scores_tech["Risk/Reward ratio"] = (f"{rr:.1f}x", s)
+        scores_tech["Rapport Gain / Risque"] = (f"{rr:.1f}x", s)
     else:
-        scores_tech["Risk/Reward ratio"] = ("N/A", 0)
+        scores_tech["Rapport Gain / Risque"] = ("N/A", 0)
 
     # 5. Stop-loss valide
     if px_achat > 0 and sl > 0 and tp > 0 and sl < px_achat < tp:
@@ -1548,6 +1548,15 @@ elif page == "📊 Scorecard /45":
 
     scores_fond, scores_tech, total_fond, total_tech, total, verdict, extras = compute_scores()
 
+    # Warn about missing data that blocks calculations
+    missing_for_tech = []
+    if not (st.session_state.dividendes and st.session_state.dividendes[4] is not None):
+        missing_for_tech.append("dividende année N (page 4️⃣)")
+    if not st.session_state.prix_achat:
+        missing_for_tech.append("prix d'achat visé (page 6️⃣)")
+    if missing_for_tech:
+        st.info(f"ℹ️ Pour calculer tous les indicateurs techniques, renseignez : **{', '.join(missing_for_tech)}**")
+
     # ── Tableau Fondamental ───────────────────────────────────────────────
     col_table, col_summary = st.columns([3, 2])
 
@@ -2053,13 +2062,26 @@ elif page == "📄 Rapport":
   body {{ font-family: Arial, sans-serif; margin: 0; padding: 16px;
          background: white; color: #1F2937; line-height: 1.6; }}
   * {{ box-sizing: border-box; }}
+  @media print {{
+    .no-print {{ display: none !important; }}
+    body {{ margin: 0; padding: 8px; }}
+  }}
 </style>
-</head><body>{report_html}</body></html>"""
+</head><body>
+<div class="no-print" style="position:sticky;top:0;z-index:99;background:#1E3A5F;
+     padding:8px 16px;margin-bottom:12px;border-radius:0 0 8px 8px;display:flex;
+     align-items:center;gap:12px;">
+  <button onclick="window.print()" style="background:#F59E0B;color:#1F2937;border:none;
+    padding:8px 20px;border-radius:6px;font-size:14px;font-weight:bold;cursor:pointer;">
+    🖨️ Imprimer / Exporter PDF
+  </button>
+  <span style="color:#CBD5E1;font-size:12px;">Dans la boîte de dialogue → choisir "Enregistrer en PDF"</span>
+</div>
+{report_html}</body></html>"""
     components.html(full_html, height=1800, scrolling=True)
 
     st.markdown("---")
-    st.info("💡 **Imprimer le rapport** : Utilisez Ctrl+P (ou Cmd+P sur Mac) dans votre navigateur. "
-            "Sélectionnez 'Enregistrer en PDF' pour un export propre.")
+    st.caption("💡 Cliquez sur le bouton jaune « Imprimer / Exporter PDF » en haut du rapport ci-dessus.")
 
     if st.session_state.ticker:
         save_analysis()
@@ -2100,7 +2122,34 @@ elif page == "📥 Générer Excel":
                     shutil.copy(str(logo_src), logo_dst)
 
                 import build_excel
-                build_excel.make_wb(out_path=out_path, logo_path=logo_dst)
+                excel_data = {
+                    "nom": st.session_state.nom,
+                    "ticker": st.session_state.ticker,
+                    "secteur": st.session_state.secteur,
+                    "date_analyse": st.session_state.date_analyse,
+                    "ca": st.session_state.ca,
+                    "rn": st.session_state.rn,
+                    "prix": st.session_state.prix,
+                    "bnpa": st.session_state.bnpa,
+                    "capitaux_propres": st.session_state.capitaux_propres,
+                    "nb_titres": st.session_state.nb_titres,
+                    "dividendes": st.session_state.dividendes,
+                    "dette_lt": st.session_state.dette_lt,
+                    "dette_ct": st.session_state.dette_ct,
+                    "ebit": st.session_state.ebit,
+                    "charges_fin": st.session_state.charges_fin,
+                    "actifs_cour": st.session_state.actifs_cour,
+                    "passifs_cour": st.session_state.passifs_cour,
+                    "amortissements": st.session_state.amortissements,
+                    "capex": st.session_state.capex,
+                    "var_bfr": st.session_state.var_bfr,
+                    "prix_avant": st.session_state.prix_avant,
+                    "prix_apres": st.session_state.prix_apres,
+                    "prix_achat": st.session_state.prix_achat,
+                    "stop_loss": st.session_state.stop_loss,
+                    "take_profit": st.session_state.take_profit,
+                }
+                build_excel.make_wb(out_path=out_path, logo_path=logo_dst, data=excel_data)
 
                 with open(out_path, "rb") as f:
                     excel_bytes = f.read()

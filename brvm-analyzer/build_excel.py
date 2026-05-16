@@ -2102,10 +2102,16 @@ def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT, data=N
         r += 1
         for lbl_txt, placeholder in fields:
             ws.write(r-1, 0, lbl_txt, F_LBL)
+            _pref = _data_map.get(lbl_txt)
             if lbl_txt in ident_auto:
-                # Auto-rempli depuis les cellules clés ci-dessus
                 ws.write_formula(r-1, 1, ident_auto[lbl_txt], F_AUTO)
                 ws.write(r-1, 2, "<-- Auto depuis cellules cles ci-dessus", F_HINT)
+                ws.write_blank(r-1, 3, None, fmt(bg=WHITE, border=1, locked=False))
+            elif _pref is not None:
+                # Pre-fill from app data
+                ws.write(r-1, 1, float(_pref) if isinstance(_pref, (int, float)) else _pref,
+                         fmt(bg=LGREEN, fg="#064E3B", size=11, align='right', border=1, locked=False))
+                ws.write(r-1, 2, "✓ Pré-rempli depuis l'application", F_HINT)
                 ws.write_blank(r-1, 3, None, fmt(bg=WHITE, border=1, locked=False))
             elif placeholder.startswith("<--"):
                 ws.write(r-1, 1, placeholder, F_HINT)
