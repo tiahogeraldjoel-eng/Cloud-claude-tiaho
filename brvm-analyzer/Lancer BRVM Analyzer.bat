@@ -21,7 +21,7 @@ if errorlevel 1 (
 
 echo  Python detecte. Installation des dependances...
 echo.
-pip install streamlit xlsxwriter pillow plotly --quiet --disable-pip-version-check
+pip install streamlit xlsxwriter pillow plotly requests beautifulsoup4 lxml --quiet --disable-pip-version-check
 
 echo.
 echo  Demarrage de l'application...

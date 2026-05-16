@@ -595,6 +595,45 @@ elif page == "📂 Mes analyses":
             cols[1].markdown(f"`{va}`" if va is not None else "—")
             cols[2].markdown(f"`{vb}`" if vb is not None else "—")
 
+    # Score history timeline
+    all_analyses = list_analyses()
+    if len(all_analyses) >= 2:
+        st.markdown("---")
+        st.markdown("### 📈 Évolution des scores dans le temps")
+        import pandas as pd
+        history_rows = []
+        for a in all_analyses:
+            d = a["data"]
+            saved = a["saved_at"]
+            if not saved:
+                continue
+            ticker = d.get("ticker", "?")
+            try:
+                dt = pd.to_datetime(saved[:10])
+            except Exception:
+                continue
+            rn = d.get("rn") or [None]*5
+            prix = d.get("prix") or 0
+            bnpa = d.get("bnpa") or 0
+            cp = d.get("capitaux_propres") or 0
+            nb = d.get("nb_titres") or 0
+            divs = d.get("dividendes") or [None]*5
+            per = prix/bnpa if prix > 0 and bnpa > 0 else 0
+            roe = (rn[4] or 0)*1e6/cp*100 if cp > 0 else 0
+            rdt = (divs[4] or 0)/prix*100 if prix > 0 else 0
+            est_score = min(30, int((roe>10)*3 + (per>0 and per<15)*3 + (rdt>3)*3 + ((rn[4] or 0)>0)*3))
+            history_rows.append({"Date": dt, "Ticker": ticker, "Score estimé": est_score})
+        if len(history_rows) >= 2:
+            df_hist_score = pd.DataFrame(history_rows).sort_values("Date")
+            fig_score_hist = px.line(
+                df_hist_score, x="Date", y="Score estimé", color="Ticker",
+                title="Évolution des scores sauvegardés",
+                markers=True, color_discrete_sequence=[NAVY, ORANGE, GREEN, "#8B5CF6"])
+            fig_score_hist.add_hline(y=33, line_dash="dash", line_color=GREEN, annotation_text="Acheter ≥33")
+            fig_score_hist.add_hline(y=27, line_dash="dash", line_color=ORANGE, annotation_text="Surveiller ≥27")
+            fig_score_hist.update_layout(plot_bgcolor="white", paper_bgcolor="white", height=300)
+            st.plotly_chart(fig_score_hist, use_container_width=True)
+
 
 # ════════════════════════════════════════════════════════════════════════════
 #  PAGE 1 — IDENTITE
@@ -1109,6 +1148,96 @@ elif page == "5️⃣  Bilan & FCF":
 # ════════════════════════════════════════════════════════════════════════════
 elif page == "6️⃣  Technique & Risque":
     st.title("6 — Analyse Technique & Gestion du Risque")
+
+    # ── Live technical chart ─────────────────────────────────────────────────
+    if st.session_state.ticker:
+        st.markdown("### 📡 Graphique technique — Données BRVM en direct")
+        with st.spinner(f"Chargement historique {st.session_state.ticker}..."):
+            df_hist = fetch_history(st.session_state.ticker)
+
+        if df_hist is not None and len(df_hist) >= 20:
+            df_tech = compute_technicals(df_hist)
+            b1_auto, b1_signals, b1_values = auto_b1_score(df_tech)
+
+            # Chart 1: Price + MA20 + Bollinger
+            fig_price = go.Figure()
+            fig_price.add_trace(go.Scatter(
+                x=df_tech["date"], y=df_tech["close"],
+                name="Prix", line=dict(color=NAVY, width=2)))
+            fig_price.add_trace(go.Scatter(
+                x=df_tech["date"], y=df_tech["MA20"],
+                name="MA20", line=dict(color=ORANGE, width=1.5, dash="dash")))
+            fig_price.add_trace(go.Scatter(
+                x=df_tech["date"], y=df_tech["BB_upper"],
+                name="BB Upper", line=dict(color="#94A3B8", width=1, dash="dot"),
+                showlegend=True))
+            fig_price.add_trace(go.Scatter(
+                x=df_tech["date"], y=df_tech["BB_lower"],
+                name="BB Lower", line=dict(color="#94A3B8", width=1, dash="dot"),
+                fill="tonexty", fillcolor="rgba(148,163,184,0.1)", showlegend=False))
+            fig_price.update_layout(
+                title=f"{st.session_state.ticker} — Prix & Indicateurs",
+                plot_bgcolor="white", paper_bgcolor="white",
+                font=dict(color=NAVY), legend=dict(orientation="h"),
+                height=350, margin=dict(t=40, b=20))
+            st.plotly_chart(fig_price, use_container_width=True)
+
+            # Chart 2: RSI + MACD in two sub-columns
+            ch_rsi, ch_macd = st.columns(2)
+            with ch_rsi:
+                fig_rsi = go.Figure()
+                fig_rsi.add_trace(go.Scatter(
+                    x=df_tech["date"], y=df_tech["RSI"],
+                    name="RSI(14)", line=dict(color=ORANGE, width=2)))
+                fig_rsi.add_hline(y=70, line_color="red", line_dash="dash",
+                                   annotation_text="Surachat 70")
+                fig_rsi.add_hline(y=30, line_color=GREEN, line_dash="dash",
+                                   annotation_text="Survente 30")
+                fig_rsi.update_layout(
+                    title="RSI (14)", height=250, plot_bgcolor="white",
+                    paper_bgcolor="white", font=dict(color=NAVY),
+                    margin=dict(t=40, b=20), yaxis=dict(range=[0,100]))
+                st.plotly_chart(fig_rsi, use_container_width=True)
+
+            with ch_macd:
+                fig_macd = go.Figure()
+                fig_macd.add_trace(go.Scatter(
+                    x=df_tech["date"], y=df_tech["MACD"],
+                    name="MACD", line=dict(color=NAVY, width=2)))
+                fig_macd.add_trace(go.Scatter(
+                    x=df_tech["date"], y=df_tech["MACD_signal"],
+                    name="Signal", line=dict(color=ORANGE, width=1.5, dash="dash")))
+                fig_macd.add_trace(go.Bar(
+                    x=df_tech["date"], y=df_tech["MACD_hist"],
+                    name="Histogramme",
+                    marker_color=[GREEN if v >= 0 else "#DC2626" for v in df_tech["MACD_hist"].fillna(0)]))
+                fig_macd.update_layout(
+                    title="MACD (12,26,9)", height=250, plot_bgcolor="white",
+                    paper_bgcolor="white", font=dict(color=NAVY),
+                    margin=dict(t=40, b=20))
+                st.plotly_chart(fig_macd, use_container_width=True)
+
+            # Auto-fill B1 score
+            if b1_auto is not None:
+                st.markdown("---")
+                st.success(f"✅ Score B1 calculé automatiquement depuis les indicateurs : **{b1_auto:+d}/5**")
+                st.session_state.score_b1 = b1_auto
+                # Update checkbox states to match
+                signal_map = {"MM20": "tech_mm20", "Bollinger": "tech_boll",
+                              "MACD": "tech_macd", "RSI": "tech_rsi", "Volume": "tech_vol"}
+                for name, key in signal_map.items():
+                    if name in b1_signals:
+                        st.session_state[key] = b1_signals[name]
+                # Show signal table
+                st.markdown("**Détail des signaux auto-calculés :**")
+                for name, bull in b1_signals.items():
+                    icon = "✅" if bull else "🔴"
+                    val = b1_values.get(name, "")
+                    st.markdown(f"{icon} **{name}** — {val} — {'Haussier' if bull else 'Baissier'}")
+        else:
+            st.info(f"Historique non disponible pour {st.session_state.ticker}. Utilisez les cases à cocher ci-dessous.")
+        st.markdown("---")
+
     c1, c2 = st.columns(2)
     with c1:
         st.markdown("#### Score technique B1 — 5 critères (-5 à +5)")
