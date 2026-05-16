@@ -8,6 +8,7 @@ from datetime import date, datetime
 from pathlib import Path
 import plotly.express as px
 import plotly.graph_objects as go
+from brvm_data import fetch_all_quotes, get_quote, fetch_history, compute_technicals, auto_b1_score, KNOWN_TICKERS
 
 # ── Config page ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -47,6 +48,14 @@ h1, h2, h3 {{ color: {NAVY}; }}
                   border-radius:10px; margin-bottom:1.5rem; }}
 .report-section {{ background:#F8FAFC; border-radius:8px; padding:1rem 1.5rem;
                    border:1px solid #E2E8F0; margin-bottom:1rem; }}
+@media print {{
+    [data-testid="stSidebar"] {{ display: none !important; }}
+    [data-testid="stHeader"] {{ display: none !important; }}
+    [data-testid="stToolbar"] {{ display: none !important; }}
+    .stButton {{ display: none !important; }}
+    section[data-testid="stSidebarContent"] {{ display: none !important; }}
+    .block-container {{ padding: 0 !important; max-width: 100% !important; }}
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -598,10 +607,22 @@ elif page == "1️⃣  Identité société":
             "Nom complet de la société *",
             value=st.session_state.nom,
             placeholder="ex: Société Africaine de Plantations d'Hévéas")
-        st.session_state.ticker = st.text_input(
+
+        # Ticker with BRVM autocomplete
+        all_tickers = [""] + KNOWN_TICKERS
+        ticker_idx = all_tickers.index(st.session_state.ticker) if st.session_state.ticker in all_tickers else 0
+        st.session_state.ticker = st.selectbox(
             "Ticker BRVM *",
-            value=st.session_state.ticker,
-            placeholder="ex: SAPH, ETIT, BIDC, SNTS")
+            all_tickers,
+            index=ticker_idx,
+            help="Sélectionnez parmi les 47 titres BRVM cotés"
+        )
+        # Allow free-text entry for tickers not in list
+        if not st.session_state.ticker:
+            custom = st.text_input("Ou saisissez un ticker manuellement", placeholder="ex: SAPH")
+            if custom:
+                st.session_state.ticker = custom.upper().strip()
+
         st.session_state.secteur = st.selectbox(
             "Secteur d'activité *",
             [""] + SECTEURS,
@@ -618,6 +639,32 @@ elif page == "1️⃣  Identité société":
         - 📊 [richbourse.com](https://www.richbourse.com) — bilans, ratios
         - 📰 [sika-finance.com](https://www.sika-finance.com) — actualités
         """)
+
+    # Live BRVM data fetch
+    if st.session_state.ticker and st.session_state.ticker.upper() in KNOWN_TICKERS:
+        col_fetch1, col_fetch2 = st.columns([1, 2])
+        with col_fetch1:
+            if st.button("🔄 Charger prix BRVM", use_container_width=True):
+                with st.spinner("Connexion BRVM..."):
+                    q = get_quote(st.session_state.ticker.upper())
+                    if q:
+                        st.session_state.prix = q["closing_price"]
+                        st.success(f"✅ Prix chargé : **{q['closing_price']:,.0f} FCFA**")
+                        if q["change_pct"] != 0:
+                            delta_color = "🟢" if q["change_pct"] > 0 else "🔴"
+                            st.info(f"{delta_color} Variation : **{q['change_pct']:+.2f}%** | Volume : {q['volume']:,} titres")
+                    else:
+                        st.warning("Données non disponibles pour ce ticker. Saisissez le prix manuellement.")
+        with col_fetch2:
+            q = get_quote(st.session_state.ticker.upper())
+            if q:
+                delta_color = "green" if q["change_pct"] >= 0 else "red"
+                st.markdown(
+                    f"<div style='background:#F0FDF4; border:1px solid #86EFAC; border-radius:8px; padding:0.5rem 1rem; margin-top:0.3rem;'>"
+                    f"<b style='color:#166534;'>📡 Cours BRVM en direct</b> — "
+                    f"<b style='font-size:1.1rem;'>{q['closing_price']:,.0f} FCFA</b> "
+                    f"<span style='color:{delta_color}; font-weight:bold;'>{q['change_pct']:+.2f}%</span>"
+                    f"</div>", unsafe_allow_html=True)
 
     if st.session_state.ticker:
         save_analysis()
