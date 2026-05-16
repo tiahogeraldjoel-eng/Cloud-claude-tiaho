@@ -1291,17 +1291,17 @@ elif page == "6️⃣  Technique & Risque":
                     margin=dict(t=40, b=20))
                 st.plotly_chart(fig_macd, use_container_width=True)
 
-            # Auto-fill B1 score
+            # Auto-fill B1 score — store in separate keys to avoid widget conflict
             if b1_auto is not None:
                 st.markdown("---")
                 st.success(f"✅ Score B1 calculé automatiquement depuis les indicateurs : **{b1_auto:+d}/5**")
-                st.session_state.score_b1 = b1_auto
-                # Update checkbox states to match
+                # Store auto signals in _auto_ prefixed keys (NOT widget keys)
                 signal_map = {"MM20": "tech_mm20", "Bollinger": "tech_boll",
                               "MACD": "tech_macd", "RSI": "tech_rsi", "Volume": "tech_vol"}
                 for name, key in signal_map.items():
                     if name in b1_signals:
-                        st.session_state[key] = b1_signals[name]
+                        st.session_state[f"_auto_{key}"] = b1_signals[name]
+                st.session_state["_auto_score_b1"] = b1_auto
                 # Show signal table
                 st.markdown("**Détail des signaux auto-calculés :**")
                 for name, bull in b1_signals.items():
@@ -1317,6 +1317,11 @@ elif page == "6️⃣  Technique & Risque":
         st.markdown("#### Score technique B1 — 5 critères (-5 à +5)")
         st.caption("Cochez si le signal est HAUSSIER, décochez si BAISSIER")
 
+        # If auto signals computed from live data, use them as checkbox defaults
+        _auto_available = st.session_state.get("_auto_score_b1") is not None
+        if _auto_available:
+            st.caption("✅ Cases pré-remplies depuis les indicateurs techniques en direct — modifiables")
+
         tech_criteria = [
             ("mm20", "📈 MM20 — Prix au-dessus de la moyenne mobile 20 jours"),
             ("boll",  "📊 Bandes de Bollinger — Prix dans la moitié haute"),
@@ -1325,14 +1330,16 @@ elif page == "6️⃣  Technique & Risque":
             ("vol",   "📦 Volume — Volumes en hausse sur les jours de hausse"),
         ]
         tc1, tc2 = st.columns(2)
-        score_b1_auto = 0
+        score_b1_manual = 0
         for j, (key, label) in enumerate(tech_criteria):
             col = tc1 if j < 3 else tc2
-            val = col.checkbox(label, key=f"tech_{key}",
-                               value=st.session_state.get(f"tech_{key}", False))
-            st.session_state[f"tech_{key}"] = val
-            score_b1_auto += 1 if val else -1
+            # Default: auto signal if available, else stored manual value
+            default = st.session_state.get(f"_auto_{f'tech_{key}'}", st.session_state.get(f"tech_{key}", False))
+            val = col.checkbox(label, key=f"tech_{key}", value=bool(default))
+            score_b1_manual += 1 if val else -1
 
+        # Final score: manual (checkboxes always win — they reflect user's last state)
+        score_b1_auto = score_b1_manual
         st.session_state.score_b1 = score_b1_auto
         color_b1 = GREEN if score_b1_auto >= 3 else (ORANGE if score_b1_auto >= 0 else "#DC2626")
         st.markdown(f"**Score B1 calculé : <span style='color:{color_b1};font-size:1.3em'>{score_b1_auto:+d}/5</span>**",
