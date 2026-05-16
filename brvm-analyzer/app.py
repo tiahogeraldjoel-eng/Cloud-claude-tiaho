@@ -98,6 +98,12 @@ def init_state():
         ],
         # Auto-save indicator
         "_last_saved": None,
+        # Override flags for auto-calculated fields
+        "override_bnpa": False, "override_bfr": False,
+        "override_sl": False, "override_tp": False,
+        # Technical sub-criteria checkboxes
+        "tech_mm20": False, "tech_boll": False, "tech_macd": False,
+        "tech_rsi": False, "tech_vol": False,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -729,8 +735,25 @@ elif page == "3️⃣  Valorisation":
     with col1:
         st.session_state.prix = st.number_input("Prix actuel (FCFA) *", min_value=0.0, step=10.0,
                                                   value=float(st.session_state.prix or 0))
-        st.session_state.bnpa = st.number_input("BNPA — Bénéfice Net Par Action (FCFA) *",
-                                                  step=1.0, value=float(st.session_state.bnpa or 0))
+        # Calculate auto BNPA from RN(N) and nb_titres
+        rn_n = st.session_state.rn[4]
+        nb_for_bnpa = st.session_state.nb_titres or 0
+        bnpa_auto = round(rn_n * 1e6 / nb_for_bnpa, 1) if rn_n and nb_for_bnpa > 0 else None
+
+        if bnpa_auto is not None:
+            override_bnpa = st.checkbox("✏️ Saisir BNPA manuellement", key="override_bnpa",
+                                         value=st.session_state.get("override_bnpa", False))
+            if not override_bnpa:
+                st.session_state.bnpa = bnpa_auto
+                st.metric("BNPA 🔒 Auto-calculé", f"{bnpa_auto:.1f} FCFA")
+                st.caption("= RN(N) × 1 000 000 ÷ Nb titres")
+            else:
+                st.session_state.bnpa = st.number_input("BNPA (FCFA) *", step=1.0,
+                                                          value=float(st.session_state.bnpa or bnpa_auto or 0))
+        else:
+            st.session_state.bnpa = st.number_input("BNPA — Bénéfice Net Par Action (FCFA) *",
+                                                      step=1.0, value=float(st.session_state.bnpa or 0))
+            st.caption("⚠️ Saisissez Résultats 5 ans + Nb titres pour calcul auto")
         st.session_state.capitaux_propres = st.number_input("Capitaux propres (FCFA) *",
                                                               step=1_000_000.0,
                                                               value=float(st.session_state.capitaux_propres or 0))
@@ -738,9 +761,17 @@ elif page == "3️⃣  Valorisation":
         st.session_state.nb_titres = st.number_input("Nombre de titres en circulation *",
                                                        step=1000.0,
                                                        value=float(st.session_state.nb_titres or 0))
-        st.session_state.valeur_comptable = st.number_input("Valeur comptable par action (FCFA)",
-                                                              step=10.0,
-                                                              value=float(st.session_state.valeur_comptable or 0))
+        nb_cur = st.session_state.nb_titres or 0
+        cp_cur = st.session_state.capitaux_propres or 0
+        vc_auto = round(cp_cur / nb_cur, 1) if nb_cur > 0 and cp_cur > 0 else None
+        if vc_auto is not None:
+            st.metric("Valeur comptable/action 🔒 Auto", f"{vc_auto:.1f} FCFA")
+            st.caption("= Capitaux propres ÷ Nb titres")
+            st.session_state.valeur_comptable = vc_auto
+        else:
+            st.session_state.valeur_comptable = st.number_input("Valeur comptable par action (FCFA)",
+                                                                  step=10.0,
+                                                                  value=float(st.session_state.valeur_comptable or 0))
         st.session_state.taux_sr = st.number_input("Taux sans risque UEMOA — OAT 5 ans (%)",
                                                      value=float(st.session_state.taux_sr),
                                                      step=0.1, format="%.1f")
@@ -750,6 +781,9 @@ elif page == "3️⃣  Valorisation":
     bnpa = st.session_state.bnpa or 0
     cp = st.session_state.capitaux_propres or 0
     nb = st.session_state.nb_titres or 0
+    nb_cur = nb
+    cp_cur = cp
+    vc_auto = round(cp_cur / nb_cur, 1) if nb_cur > 0 and cp_cur > 0 else None
 
     if p > 0 and bnpa > 0:
         per = p / bnpa
@@ -769,6 +803,20 @@ elif page == "3️⃣  Valorisation":
             if rn_n and cp > 0:
                 roe = rn_n * 1e6 / cp * 100
                 st.metric("ROE", f"{roe:.1f}%")
+
+    # Additional auto metrics row
+    if cp_cur > 0 and nb_cur > 0 and p > 0:
+        st.markdown("---")
+        st.markdown("**📐 Ratios complémentaires auto-calculés**")
+        ar1, ar2, ar3 = st.columns(3)
+        vmc = p * nb_cur
+        ar1.metric("Capitalisation boursière", f"{vmc/1e9:.2f} Mds FCFA" if vmc >= 1e9 else f"{vmc/1e6:.1f} M FCFA")
+        if bnpa > 0:
+            ar2.metric("Décote/Surcote vs VC", f"{((p - vc_auto)/vc_auto*100):+.1f}%" if vc_auto else "—")
+        rn_n_v = st.session_state.rn[4]
+        if rn_n_v and p > 0 and nb_cur > 0:
+            per_val = p / (rn_n_v * 1e6 / nb_cur)
+            ar3.metric("PER auto", f"{per_val:.1f}x", delta="Sous-évalué" if per_val < 12 else ("Cher" if per_val > 20 else "Correct"))
 
     if st.session_state.ticker:
         save_analysis()
@@ -883,6 +931,39 @@ elif page == "5️⃣  Bilan & FCF":
         st.session_state.passifs_cour = st.number_input("Passifs courants (FCFA)", step=1e6,
             value=float(st.session_state.passifs_cour or 0))
 
+    # ── Auto-calculated bilan metrics ─────────────────────────────────────────
+    ac = st.session_state.actifs_cour or 0
+    pc = st.session_state.passifs_cour or 0
+    dlt = st.session_state.dette_lt or 0
+    dct = st.session_state.dette_ct or 0
+    ebit_v = st.session_state.ebit or 0
+    cf_v = st.session_state.charges_fin or 0
+    prix_v = st.session_state.prix or 0
+    nb_v = st.session_state.nb_titres or 0
+
+    if ac > 0 or dlt > 0:
+        st.markdown("---")
+        st.markdown("**🔒 Indicateurs calculés automatiquement**")
+        bc1, bc2, bc3, bc4 = st.columns(4)
+
+        bfr = ac - pc
+        bc1.metric("BFR", f"{bfr/1e6:.1f} M FCFA", delta="Positif" if bfr > 0 else "Négatif")
+
+        dette_nette = dlt + dct - ac
+        bc2.metric("Dette nette", f"{dette_nette/1e6:.1f} M FCFA",
+                   delta="⚠️ Endetté" if dette_nette > 0 else "✅ Trésorerie nette positive")
+
+        if cf_v > 0 and ebit_v > 0:
+            couv_int = ebit_v / (cf_v / 1e6)
+            bc3.metric("Couverture intérêts", f"{couv_int:.1f}x",
+                       delta="✅ Solide" if couv_int >= 3 else ("🟡 Limite" if couv_int >= 1.5 else "🔴 Risqué"))
+
+        vmc_v = prix_v * nb_v if prix_v and nb_v else 0
+        if vmc_v > 0 and (dlt + dct) > 0:
+            leverage = (dlt + dct) / vmc_v
+            bc4.metric("Levier (Dette/VMC)", f"{leverage:.2f}x",
+                       delta="✅ Faible" if leverage < 0.3 else ("🟡 Modéré" if leverage < 0.6 else "🔴 Élevé"))
+
     st.markdown("#### Free Cash Flow (3 chiffres)")
     c3, c4, c5 = st.columns(3)
     with c3:
@@ -892,8 +973,20 @@ elif page == "5️⃣  Bilan & FCF":
         st.session_state.capex = st.number_input("(-) CAPEX — Investissements nets (FCFA)",
             step=1e6, value=float(st.session_state.capex or 0))
     with c5:
-        st.session_state.var_bfr = st.number_input("(-) Variation du BFR (FCFA)",
-            step=1e5, value=float(st.session_state.var_bfr or 0))
+        # Auto ΔBFR: if we have BFR computable, suggest it, but let user override
+        bfr_cur = (st.session_state.actifs_cour or 0) - (st.session_state.passifs_cour or 0)
+        override_bfr = st.checkbox("✏️ Saisir ΔBFR manuellement", key="override_bfr",
+                                     value=st.session_state.get("override_bfr", False))
+        if not override_bfr and bfr_cur != 0:
+            # Use 5% of BFR as default ΔBFR (conservative estimate)
+            var_bfr_auto = round(bfr_cur * 0.05)  # 5% variation by default
+            st.metric("ΔBFR 🔒 Estimation auto (5% du BFR)", f"{var_bfr_auto/1e6:.1f} M FCFA")
+            st.caption("Décochez pour saisir manuellement depuis le rapport annuel")
+            st.session_state.var_bfr = var_bfr_auto
+        else:
+            st.session_state.var_bfr = st.number_input("Variation BFR (FCFA)",
+                step=1e5, value=float(st.session_state.var_bfr or 0),
+                help="Positif = augmentation BFR = consomme du cash. Source : tableau flux trésorerie.")
 
     # FCF calculé live
     rn_n = (st.session_state.rn[4] or 0) * 1e6
@@ -971,11 +1064,36 @@ elif page == "6️⃣  Technique & Risque":
     st.title("6 — Analyse Technique & Gestion du Risque")
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown("#### Score technique B1 (-5 à +5)")
-        st.session_state.score_b1 = st.slider(
-            "Score MM20 / Bollinger / MACD / RSI / Volume",
-            min_value=-5, max_value=5,
-            value=int(st.session_state.score_b1 or 0))
+        st.markdown("#### Score technique B1 — 5 critères (-5 à +5)")
+        st.caption("Cochez si le signal est HAUSSIER, décochez si BAISSIER")
+
+        tech_criteria = [
+            ("mm20", "📈 MM20 — Prix au-dessus de la moyenne mobile 20 jours"),
+            ("boll",  "📊 Bandes de Bollinger — Prix dans la moitié haute"),
+            ("macd",  "🔀 MACD — Signal haussier (MACD > Signal)"),
+            ("rsi",   "💹 RSI — Zone neutre/haussière (30–70, tendance montante)"),
+            ("vol",   "📦 Volume — Volumes en hausse sur les jours de hausse"),
+        ]
+        tc1, tc2 = st.columns(2)
+        score_b1_auto = 0
+        for j, (key, label) in enumerate(tech_criteria):
+            col = tc1 if j < 3 else tc2
+            val = col.checkbox(label, key=f"tech_{key}",
+                               value=st.session_state.get(f"tech_{key}", False))
+            st.session_state[f"tech_{key}"] = val
+            score_b1_auto += 1 if val else -1
+
+        st.session_state.score_b1 = score_b1_auto
+        color_b1 = GREEN if score_b1_auto >= 3 else (ORANGE if score_b1_auto >= 0 else "#DC2626")
+        st.markdown(f"**Score B1 calculé : <span style='color:{color_b1};font-size:1.3em'>{score_b1_auto:+d}/5</span>**",
+                    unsafe_allow_html=True)
+        if score_b1_auto >= 3:
+            st.success("✅ Signal technique fort")
+        elif score_b1_auto >= 0:
+            st.info("🟡 Signal neutre")
+        else:
+            st.warning("🔴 Signal technique faible")
+
         st.markdown("#### Psychologie du marché")
         st.session_state.prix_avant = st.number_input("Prix avant résultats J-1 (FCFA)",
             step=10.0, value=float(st.session_state.prix_avant or 0))
@@ -993,12 +1111,38 @@ elif page == "6️⃣  Technique & Risque":
                 st.error(f"🔴 Punition marché ({reaction:.1f}%)")
     with c2:
         st.markdown("#### Stop-Loss & Take Profit")
+        prix_ref = st.session_state.prix or 0
+        # Prix achat defaults to prix actuel
+        pa_default = float(st.session_state.prix_achat or prix_ref or 0)
         st.session_state.prix_achat = st.number_input("Prix d'achat envisagé (FCFA)",
-            step=10.0, value=float(st.session_state.prix_achat or st.session_state.prix or 0))
-        st.session_state.stop_loss = st.number_input("Stop-Loss (FCFA)",
-            step=10.0, value=float(st.session_state.stop_loss or 0))
-        st.session_state.take_profit = st.number_input("Take Profit (FCFA)",
-            step=10.0, value=float(st.session_state.take_profit or 0))
+            step=10.0, value=pa_default)
+
+        pa = st.session_state.prix_achat or 0
+
+        # Auto stop-loss = -15%
+        sl_auto = round(pa * 0.85 / 10) * 10 if pa > 0 else 0
+        override_sl = st.checkbox("✏️ Modifier Stop-Loss", key="override_sl",
+                                   value=st.session_state.get("override_sl", False))
+        if pa > 0 and not override_sl:
+            st.session_state.stop_loss = sl_auto
+            st.metric("Stop-Loss 🔒 Auto (-15%)", f"{sl_auto:,.0f} FCFA")
+            st.caption(f"= Prix achat × 0.85 — Perte max : {(sl_auto - pa):+,.0f} FCFA")
+        else:
+            st.session_state.stop_loss = st.number_input("Stop-Loss (FCFA)", step=10.0,
+                value=float(st.session_state.stop_loss or sl_auto or 0))
+
+        # Auto take-profit = +30% (for ~2x RR with -15% stop)
+        tp_auto = round(pa * 1.30 / 10) * 10 if pa > 0 else 0
+        override_tp = st.checkbox("✏️ Modifier Take-Profit", key="override_tp",
+                                   value=st.session_state.get("override_tp", False))
+        if pa > 0 and not override_tp:
+            st.session_state.take_profit = tp_auto
+            st.metric("Take-Profit 🔒 Auto (+30%)", f"{tp_auto:,.0f} FCFA")
+            st.caption(f"= Prix achat × 1.30 — Gain potentiel : {(tp_auto - pa):+,.0f} FCFA → Risk/Reward ≈ 2x")
+        else:
+            st.session_state.take_profit = st.number_input("Take Profit (FCFA)", step=10.0,
+                value=float(st.session_state.take_profit or tp_auto or 0))
+
         pa = st.session_state.prix_achat or 0
         sl = st.session_state.stop_loss or 0
         tp = st.session_state.take_profit or 0
