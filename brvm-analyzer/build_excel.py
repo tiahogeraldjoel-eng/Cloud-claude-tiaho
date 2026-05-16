@@ -86,7 +86,7 @@ WHITE   = "#FFFFFF"
 DARK    = "#1E293B"   # Deep slate for text
 RED     = "#DC2626"   # Clean red for warnings
 
-def make_wb(out_path=None, logo_path=None):
+def make_wb(out_path=None, logo_path=None, data=None):
     global OUT, LOGO_PATH
     if out_path:  OUT = out_path
     if logo_path: LOGO_PATH = logo_path
@@ -160,13 +160,14 @@ def make_wb(out_path=None, logo_path=None):
                 F_LBL, F_LBL_B, F_INPUT, F_INPUT_S, F_INPUT_C,
                 F_CALC, F_CALC_B, F_CALC_C, F_CALC_PCT, F_CALC_PCTA,
                 F_CALC_N, F_CALC_N2, F_WHITE, F_WHITE_R, F_WHITE_C,
-                F_WHITE_N, F_WHITE_N2, F_WHITE_PCT, F_REF, F_NOTE, F_HINT)
+                F_WHITE_N, F_WHITE_N2, F_WHITE_PCT, F_REF, F_NOTE, F_HINT,
+                data=data)
 
     build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
                    F_LBL, F_LBL_B, F_INPUT_S, F_CALC, F_CALC_B,
                    F_CALC_C, F_WHITE, F_WHITE_C, F_WHITE_N2, F_LORANGE_C := fmt(bg=LORANGE, fg=DARK, size=11, align='center', border=1, locked=False))
 
-    build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT)
+    build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT, data=data)
 
     build_portefeuille(wb, fmt, F_TITLE, F_HEAD, F_LBL, F_LBL_B, F_WHITE, F_CALC_N, F_CALC_C)
 
@@ -236,9 +237,15 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
                 F_LBL, F_LBL_B, F_INPUT, F_INPUT_S, F_INPUT_C,
                 F_CALC, F_CALC_B, F_CALC_C, F_CALC_PCT, F_CALC_PCTA,
                 F_CALC_N, F_CALC_N2, F_WHITE, F_WHITE_R, F_WHITE_C,
-                F_WHITE_N, F_WHITE_N2, F_WHITE_PCT, F_REF, F_NOTE, F_HINT):
+                F_WHITE_N, F_WHITE_N2, F_WHITE_PCT, F_REF, F_NOTE, F_HINT,
+                data=None):
 
     ws = wb.add_worksheet("ETUDE")
+    # Pre-fill data from app session
+    _d = data or {}
+    _ca   = _d.get("ca") or [None]*5
+    _rn   = _d.get("rn") or [None]*5
+    _divs = _d.get("dividendes") or [None]*5
     ws.set_tab_color("#0EA5E9")
     ws.freeze_panes(1, 0)
 
@@ -335,8 +342,8 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
     heads(7, ["", "N-4", "N-3", "N-2", "N-1", "N (dernier)", "Croissance N/N-4 %", "TCAM 4 ans %"])
     # Ligne 8 : données CA
     lbl(8, 'A', "CA / PNB")
-    for c in ['B','C','D','E','F']:
-        inp_s(8, c, num_format='#,##0')
+    for i, c in enumerate(['B','C','D','E','F']):
+        inp_s(8, c, val=(_ca[i] if _ca[i] is not None else None), num_format='#,##0')
     # G8 = Croissance = (F8-B8)/B8*100   ← formule correcte
     calc(8, 'G', '=IF(B8=0,"",((F8-B8)/B8)*100)', '0.00')
     # H8 = TCAM = (F8/B8)^(1/4)-1
@@ -348,8 +355,8 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
     heads(11, ["", "N-4", "N-3", "N-2", "N-1", "N (dernier)", "Croissance N/N-4 %", "TCAM 4 ans %"])
     # Ligne 12 : données RN
     lbl(12, 'A', "Resultat Net")
-    for c in ['B','C','D','E','F']:
-        inp_s(12, c, num_format='#,##0')
+    for i, c in enumerate(['B','C','D','E','F']):
+        inp_s(12, c, val=(_rn[i] if _rn[i] is not None else None), num_format='#,##0')
     # G12 = Croissance RN = (F12-B12)/|B12|*100
     calc(12, 'G', '=IF(B12=0,"",((F12-B12)/ABS(B12))*100)', '0.00')
     # H12 = TCAM (N/A si base négative)
@@ -391,20 +398,26 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
     heads(23, ["Indicateur [formule]", "Valeur calculee", "Zone reference", "Signal", "", "", "", ""])
 
     # Saisies (lignes 24-28)
+    _prix = _d.get("prix") or None
+    _bnpa = _d.get("bnpa") or None
+    _cp   = _d.get("capitaux_propres") or None
+    _nb   = _d.get("nb_titres") or None
+    _cap  = (_prix * _nb) if (_prix and _nb) else None
+
     lbl(24, 'A', "Prix actuel de l'action (FCFA)")
-    inp(24, 'B', num_format='#,##0')
+    inp(24, 'B', val=_prix, num_format='#,##0')
     hint(24, 'C', "<-- Saisir le prix actuel", 'G')
 
     lbl(25, 'A', "BNPA — Benefice Net Par Action (FCFA)")
-    inp(25, 'B', num_format='#,##0.00')
+    inp(25, 'B', val=_bnpa, num_format='#,##0.00')
     hint(25, 'C', "<-- RN / Nb titres (rapport annuel)", 'G')
 
     lbl(26, 'A', "Capitaux Propres (FCFA)")
-    inp(26, 'B', num_format='#,##0')
+    inp(26, 'B', val=_cp, num_format='#,##0')
     hint(26, 'C', "<-- Bilan comptable", 'G')
 
     lbl(27, 'A', "Capitalisation boursiere (FCFA)")
-    inp(27, 'B', num_format='#,##0')
+    inp(27, 'B', val=_cap, num_format='#,##0')
     hint(27, 'C', "<-- Prix x Nb titres", 'G')
 
     lbl(28, 'A', "Nombre de titres en circulation")
@@ -480,8 +493,8 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
     for i, annee in enumerate(["N-4","N-3","N-2","N-1","N"]):
         r = 39 + i
         lbl(r, 'A', annee)
-        inp_s(r, 'B', num_format='#,##0.00')  # Dividende NET (saisie)
-        inp_s(r, 'C', num_format='#,##0.00')  # BNPA (saisie)
+        inp_s(r, 'B', val=(_divs[i] if _divs[i] is not None else None), num_format='#,##0.00')
+        inp_s(r, 'C', val=_bnpa, num_format='#,##0.00')
         # D = taux distribution = (Div NET / 0.85) / BNPA * 100
         calc(r, 'D', f'=IFERROR((B{r}/0.85)/C{r}*100,"")', '0.00')
         # E = rendement dividend yield (sur prix actuel B24)
@@ -829,11 +842,15 @@ def build_etude(wb, fmt, F_TITLE, F_TITLE2, F_WARN, F_SEC, F_HEAD,
         ("Ratio Risk / Reward",                  None, "0.00",     "= Gain / Perte  (objectif >= 2)"),
     ]
     sl_rows = {}
+    _pa_val = _d.get("prix_achat") or None
+    _tp_val = _d.get("take_profit") or None
+    _sl_prefill = {"Prix d'achat vise (FCFA)": _pa_val, "Objectif Take Profit (FCFA)": _tp_val}
     for i, (lbl_txt, _, nf, note) in enumerate(sl_items):
         r = 130 + i
         lbl(r, 'A', lbl_txt)
-        ws.write_blank(row(r), col('B'), None,
-                       fmt(bg=LORANGE, fg=DARK, size=11, align='right', border=1, num_format=nf, locked=False))
+        _v = _sl_prefill.get(lbl_txt)
+        ws.write(row(r), col('B'), _v,
+                 fmt(bg=LORANGE, fg=DARK, size=11, align='right', border=1, num_format=nf, locked=False))
         ws.write(row(r), col('C'), note, F_WHITE_C)
         ws.write_blank(row(r), col('D'), None, F_WHITE)
         sl_rows[lbl_txt] = r
@@ -1957,8 +1974,23 @@ def build_synthese(wb, fmt, F_TITLE, F_TITLE2, F_SEC, F_HEAD,
     })
 
 
-def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
+def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT, data=None):
     ws = wb.add_worksheet("PROFIL")
+    _d = data or {}
+    _data_map = {
+        "Nombre de titres":                                _d.get("nb_titres"),
+        "Dette long terme (FCFA)":                         _d.get("dette_lt"),
+        "Dette court terme (FCFA)":                        _d.get("dette_ct"),
+        "EBIT - Res. avant interets et impots (M FCFA)":   _d.get("ebit"),
+        "Charges financieres nettes (FCFA)":               _d.get("charges_fin"),
+        "Actifs courants (FCFA)":                          _d.get("actifs_cour"),
+        "Passifs courants (FCFA)":                         _d.get("passifs_cour"),
+        "Prix avant publication resultats (J-1, FCFA)":    _d.get("prix_avant"),
+        "Prix apres resultats J+5 (FCFA)":                 _d.get("prix_apres"),
+        "Amortissements & depreciations (FCFA)":           _d.get("amortissements"),
+        "CAPEX — Investissements nets (FCFA)":             _d.get("capex"),
+        "Variation du BFR (FCFA)":                         _d.get("var_bfr"),
+    }
     ws.set_tab_color("#6B7280")
     ws.freeze_panes(1, 0)
     ws.set_column(0, 0, 32)
@@ -1991,13 +2023,18 @@ def build_profil(wb, fmt, F_TITLE, F_SEC, F_HEAD, F_LBL, F_WHITE, F_HINT):
     KEY_ROWS = {}
     F_KEY_INP_DATE = fmt(bold=True, bg=LORANGE, fg=DARK, size=12, align='left', border=2, locked=False, num_format='@')
 
+    _key_vals = [
+        _d.get("nom") or None,
+        _d.get("ticker") or None,
+        _d.get("secteur") or None,
+        _d.get("date_analyse") or None,
+    ]
     for i, (lbl_txt, hint_txt) in enumerate(key_fields):
         r_idx = 2 + i   # 0-based row index
         ws.write(r_idx, 0, lbl_txt, F_KEY_LBL)
-        # B6 (i=3) : format texte pur '@' pour bloquer la conversion date->numero serie
         f_inp = F_KEY_INP_DATE if i == 3 else F_KEY_INP
-        ws.merge_range(r_idx, 1, r_idx, 2, None, f_inp)
-        ws.write(r_idx, 3, hint_txt, F_KEY_HNT)              # hint en D (hors fusion)
+        ws.merge_range(r_idx, 1, r_idx, 2, _key_vals[i], f_inp)
+        ws.write(r_idx, 3, hint_txt, F_KEY_HNT)
         ws.set_row(r_idx, 22)
         KEY_ROWS[lbl_txt] = r_idx + 1   # 1-based Excel row number
 
