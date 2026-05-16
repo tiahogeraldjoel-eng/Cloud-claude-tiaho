@@ -159,6 +159,65 @@ def dict_to_state(d: dict):
             st.session_state[k] = d[k]
 
 
+def source_helper(page_num):
+    """Affiche un expander 'Où trouver ces données' avec liens directs par ticker."""
+    tk = st.session_state.ticker.upper() if st.session_state.ticker else ""
+    tk_low = tk.lower()
+    rb  = f"https://www.richbourse.com/cours/{tk}" if tk else "https://www.richbourse.com"
+    sf  = f"https://www.sikafinance.com/marches/cotation/{tk}" if tk else "https://www.sikafinance.com"
+    sfh = f"https://www.sikafinance.com/marches/historiques/{tk}" if tk else "https://www.sikafinance.com"
+    brv = f"https://www.brvm.org/fr/cours-action/{tk_low}/0/" if tk else "https://www.brvm.org"
+
+    guides = {
+        2: {
+            "titre": "CA & Résultat Net (5 ans)",
+            "liens": [
+                (rb,  "Richbourse — Compte de résultat", "Section « Résultats » → tableau CA / RN sur 5 ans"),
+                (sf,  "SikaFinance — Fiche cotation",    "Onglet « Financier » → CA et Résultat net"),
+            ],
+            "astuce": "Cherchez 'Chiffre d'affaires' et 'Résultat net' dans le tableau des 5 dernières années. Saisir en **millions FCFA**.",
+        },
+        3: {
+            "titre": "Valorisation (Prix, BNPA, Capitaux propres)",
+            "liens": [
+                (rb,  "Richbourse — Ratios",     "Section « Ratios » → BNPA, PER, PBR, capitaux propres"),
+                (sf,  "SikaFinance — Cotation",  "Onglet « Données » → Nombre de titres, Capitalisation"),
+                (brv, "BRVM.org — Fiche",        "Prix actuel, nombre de titres en circulation"),
+            ],
+            "astuce": "**BNPA** = Bénéfice Net Par Action (calculé auto si vous avez RN + Nb titres). **Capitaux propres** = dans le bilan sous 'Fonds propres'.",
+        },
+        4: {
+            "titre": "Dividendes (5 ans)",
+            "liens": [
+                (rb,  "Richbourse — Dividendes", "Section « Dividendes » → historique des versements"),
+                (sfh, "SikaFinance — Historique", "Onglet « Dividendes »"),
+                (brv, "BRVM.org — Dividendes",   "Fiche société → dividendes déclarés"),
+            ],
+            "astuce": "Saisir le dividende **NET** (après 15% de retenue à la source). Dividende brut × 0.85 = dividende net.",
+        },
+        5: {
+            "titre": "Bilan & FCF",
+            "liens": [
+                (rb,  "Richbourse — Bilan",         "Section « Bilan » → dettes, actifs, capitaux propres"),
+                (sf,  "SikaFinance — Financier",     "Tableau de flux de trésorerie → amortissements, CAPEX"),
+            ],
+            "astuce": "**Amortissements** et **CAPEX** se trouvent dans le 'Tableau des flux de trésorerie' du rapport annuel (téléchargeable sur le site de la société ou BRVM.org).",
+        },
+    }
+
+    if page_num not in guides:
+        return
+    g = guides[page_num]
+    with st.expander(f"🔗 Où trouver ces données{' pour ' + tk if tk else ''} ?", expanded=False):
+        st.markdown(f"**{g['titre']}**")
+        st.info(f"💡 {g['astuce']}")
+        st.markdown("**Liens directs :**")
+        cols = st.columns(len(g["liens"]))
+        for col, (url, label, desc) in zip(cols, g["liens"]):
+            col.markdown(f"[🔗 {label}]({url})")
+            col.caption(desc)
+
+
 def save_analysis():
     """Sauvegarde l'analyse courante en JSON."""
     ticker = st.session_state.ticker
@@ -673,11 +732,22 @@ elif page == "1️⃣  Identité société":
             value=st.session_state.date_analyse,
             placeholder="ex: 15/05/2026")
         st.markdown("#### Sources recommandées")
-        st.markdown("""
-        - 🌐 [brvm.org](https://www.brvm.org) — cours, profils sociétés
-        - 📊 [richbourse.com](https://www.richbourse.com) — bilans, ratios
-        - 📰 [sika-finance.com](https://www.sika-finance.com) — actualités
-        """)
+        tk = st.session_state.ticker.upper() if st.session_state.ticker else ""
+        tk_low = tk.lower()
+        if tk:
+            st.markdown(f"""
+**Liens directs pour `{tk}` :**
+- 📊 [Richbourse — Bilan & Résultats](https://www.richbourse.com/cours/{tk}) → CA, RN, BNPA, dividendes 5 ans
+- 📈 [SikaFinance — Cotation](https://www.sikafinance.com/marches/cotation/{tk}) → Prix, ratios, historique
+- 🌐 [BRVM.org — Fiche société](https://www.brvm.org/fr/cours-action/{tk_low}/0/) → Capitalisation, dividendes déclarés
+- 📰 [SikaFinance — Actualités](https://www.sikafinance.com/marches/actualites/{tk}) → Résultats publiés
+            """)
+        else:
+            st.markdown("""
+- 📊 [richbourse.com](https://www.richbourse.com) — bilans, ratios
+- 📈 [sikafinance.com](https://www.sikafinance.com) — cotations, historique
+- 🌐 [brvm.org](https://www.brvm.org) — cours officiels
+            """)
 
     # Live BRVM data fetch
     if st.session_state.ticker and st.session_state.ticker.upper() in KNOWN_TICKERS:
@@ -715,7 +785,8 @@ elif page == "1️⃣  Identité société":
 # ════════════════════════════════════════════════════════════════════════════
 elif page == "2️⃣  Résultats 5 ans":
     st.title("2 — Résultats sur 5 ans")
-    st.info("Saisir en **millions FCFA**. Source : rapports annuels ou richbourse.com")
+    source_helper(2)
+    st.info("Saisir en **millions FCFA**.")
 
     st.markdown("**Chiffre d'Affaires (M FCFA)**")
     cols = st.columns(5)
@@ -817,6 +888,7 @@ elif page == "2️⃣  Résultats 5 ans":
 # ════════════════════════════════════════════════════════════════════════════
 elif page == "3️⃣  Valorisation":
     st.title("3 — Données de valorisation")
+    source_helper(3)
     col1, col2 = st.columns(2)
     with col1:
         st.session_state.prix = st.number_input("Prix actuel (FCFA) *", min_value=0.0, step=10.0,
@@ -913,6 +985,7 @@ elif page == "3️⃣  Valorisation":
 # ════════════════════════════════════════════════════════════════════════════
 elif page == "4️⃣  Dividendes":
     st.title("4 — Dividendes")
+    source_helper(4)
     st.info("Dividende **NET** reçu (après prélèvement 15% à la source)")
     cols = st.columns(5)
     for i, annee in enumerate(ANNEES):
@@ -998,6 +1071,7 @@ elif page == "4️⃣  Dividendes":
 # ════════════════════════════════════════════════════════════════════════════
 elif page == "5️⃣  Bilan & FCF":
     st.title("5 — Bilan & Free Cash Flow")
+    source_helper(5)
     st.info("Source : Tableau des flux de trésorerie du rapport annuel")
 
     st.markdown("#### Analyse du Bilan")
