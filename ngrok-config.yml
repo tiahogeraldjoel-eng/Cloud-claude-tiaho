@@ -1,0 +1,9 @@
+version: "3"
+agent:
+    authtoken: 3Cnq2H32sueBDuTr5tuw8JLwWTP_u44B9z3KochwdsXXBeyq
+
+tunnels:
+  brvm:
+    proto: http
+    addr: 8000
+    domain: stupor-rewind-spiritism.ngrok-free.dev

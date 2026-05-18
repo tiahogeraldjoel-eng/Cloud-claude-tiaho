@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+
+    <!-- Fond intérieur dégradé bleu nuit profond -->
+    <radialGradient id="bgGrad" cx="40%" cy="35%" r="70%">
+      <stop offset="0%"   stop-color="#1a2a4a"/>
+      <stop offset="100%" stop-color="#060d1a"/>
+    </radialGradient>
+
+    <!-- Anneau or extérieur -->
+    <linearGradient id="goldRing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#fde68a"/>
+      <stop offset="30%"  stop-color="#f59e0b"/>
+      <stop offset="65%"  stop-color="#d97706"/>
+      <stop offset="85%"  stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#92400e"/>
+    </linearGradient>
+
+    <!-- Ligne de tendance or lumineux -->
+    <linearGradient id="trendGold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#f59e0b" stop-opacity="0.6"/>
+      <stop offset="60%"  stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#fde68a"/>
+    </linearGradient>
+
+    <!-- Texte BRVM dégradé or-blanc -->
+    <linearGradient id="brvmText" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fde68a"/>
+    </linearGradient>
+
+    <!-- Étoile halo / lueur -->
+    <radialGradient id="starGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#fde68a" stop-opacity="0.9"/>
+      <stop offset="60%"  stop-color="#f59e0b" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#d97706" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Lueur bougie or -->
+    <radialGradient id="goldCandleGlow" cx="50%" cy="0%" r="100%">
+      <stop offset="0%"   stop-color="#fde68a" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- ClipPath cercle intérieur -->
+    <clipPath id="innerClip">
+      <circle cx="50" cy="50" r="42.5"/>
+    </clipPath>
+
+    <!-- Filtre lueur douce -->
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="1.2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <filter id="starFilter" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+  </defs>
+
+  <!-- ═══════════════ ANNEAU OR EXTÉRIEUR ═══════════════ -->
+  <!-- Ombre portée de l'anneau -->
+  <circle cx="51" cy="51.5" r="49" fill="#000000" opacity="0.55"/>
+  <!-- Anneau or principal -->
+  <circle cx="50" cy="50" r="49" fill="url(#goldRing)"/>
+  <!-- Filet interne sombre séparateur -->
+  <circle cx="50" cy="50" r="45" fill="#0a1020" opacity="0.9"/>
+  <!-- Second filet or fin -->
+  <circle cx="50" cy="50" r="44.5" fill="none" stroke="#f59e0b" stroke-width="0.6" opacity="0.7"/>
+
+  <!-- ═══════════════ FOND INTÉRIEUR ═══════════════ -->
+  <circle cx="50" cy="50" r="43.5" fill="url(#bgGrad)"/>
+
+  <!-- Groupe clipé -->
+  <g clip-path="url(#innerClip)">
+
+    <!-- Reflet subtil en haut à gauche (lumière ambiante) -->
+    <ellipse cx="32" cy="22" rx="22" ry="14" fill="#ffffff" opacity="0.04"/>
+
+    <!-- ═══════════════ BOUGIES JAPONAISES ═══════════════ -->
+    <!-- zone chart : x 10→88, y_bas=83, hauteurs croissantes -->
+
+    <!-- Bougie 1 — verte modeste -->
+    <line x1="16" y1="67" x2="16" y2="72"  stroke="#16a34a" stroke-width="1.6" opacity="0.7"/>
+    <line x1="16" y1="83" x2="16" y2="86"  stroke="#16a34a" stroke-width="1.6" opacity="0.6"/>
+    <rect x="12" y="72" width="8" height="11" rx="1.5" fill="#22c55e" opacity="0.9"/>
+
+    <!-- Bougie 2 — verte moyenne -->
+    <line x1="26" y1="58" x2="26" y2="63"  stroke="#16a34a" stroke-width="1.6" opacity="0.7"/>
+    <line x1="26" y1="83" x2="26" y2="86"  stroke="#16a34a" stroke-width="1.6" opacity="0.6"/>
+    <rect x="22" y="63" width="8" height="20" rx="1.5" fill="#22c55e" opacity="0.9"/>
+
+    <!-- Bougie 3 — rouge (correction momentanée — la vraie vie) -->
+    <line x1="36" y1="61" x2="36" y2="65"  stroke="#dc2626" stroke-width="1.6" opacity="0.7"/>
+    <line x1="36" y1="83" x2="36" y2="87"  stroke="#dc2626" stroke-width="1.6" opacity="0.6"/>
+    <rect x="32" y="65" width="8" height="18" rx="1.5" fill="#ef4444" opacity="0.88"/>
+
+    <!-- Bougie 4 — verte forte reprise -->
+    <line x1="46" y1="49" x2="46" y2="54"  stroke="#16a34a" stroke-width="1.6" opacity="0.7"/>
+    <line x1="46" y1="83" x2="46" y2="87"  stroke="#16a34a" stroke-width="1.6" opacity="0.6"/>
+    <rect x="42" y="54" width="8" height="29" rx="1.5" fill="#22c55e" opacity="0.9"/>
+
+    <!-- Bougie 5 — verte puissante -->
+    <line x1="58" y1="40" x2="58" y2="45"  stroke="#16a34a" stroke-width="1.6" opacity="0.7"/>
+    <line x1="58" y1="83" x2="58" y2="87"  stroke="#16a34a" stroke-width="1.6" opacity="0.6"/>
+    <rect x="54" y="45" width="8" height="38" rx="1.5" fill="#22c55e" opacity="0.9"/>
+
+    <!-- Bougie 6 — OR — la victoire de l'investisseur -->
+    <!-- Halo de lumière derrière la bougie or -->
+    <rect x="62" y="24" width="16" height="62" rx="8" fill="url(#goldCandleGlow)"/>
+    <line x1="70" y1="22" x2="70" y2="29"  stroke="#fbbf24" stroke-width="2"   opacity="0.9"/>
+    <line x1="70" y1="83" x2="70" y2="88"  stroke="#fbbf24" stroke-width="2"   opacity="0.7"/>
+    <!-- Corps or avec dégradé vertical -->
+    <rect x="66" y="29" width="8" height="54" rx="1.5" fill="#f59e0b" opacity="0.95"/>
+    <!-- Reflet brillant sur la bougie or -->
+    <rect x="67" y="30" width="2.5" height="52" rx="1" fill="#fde68a" opacity="0.45"/>
+
+    <!-- ═══════════════ LIGNE DE TENDANCE HAUSSIÈRE ═══════════════ -->
+    <!-- Halo de la ligne -->
+    <polyline
+      points="16,67 26,58 36,61 46,49 58,40 70,22"
+      fill="none" stroke="#fbbf24" stroke-width="4"
+      stroke-linecap="round" stroke-linejoin="round" opacity="0.18"/>
+    <!-- Ligne principale luminescente -->
+    <polyline
+      points="16,67 26,58 36,61 46,49 58,40 70,22"
+      fill="none" stroke="url(#trendGold)" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round"
+      filter="url(#softGlow)" opacity="0.95"/>
+
+    <!-- Points sur la ligne -->
+    <circle cx="16" cy="67" r="1.8" fill="#fbbf24" opacity="0.7"/>
+    <circle cx="26" cy="58" r="1.8" fill="#fbbf24" opacity="0.7"/>
+    <circle cx="36" cy="61" r="1.8" fill="#ef4444" opacity="0.8"/>
+    <circle cx="46" cy="49" r="1.8" fill="#fbbf24" opacity="0.8"/>
+    <circle cx="58" cy="40" r="2"   fill="#fbbf24" opacity="0.85"/>
+    <!-- Gros point terminal or -->
+    <circle cx="70" cy="22" r="2.8" fill="#fde68a" filter="url(#softGlow)"/>
+
+    <!-- ═══════════════ ÉTOILE OR AU SOMMET ═══════════════ -->
+    <!-- Halo rayonnant -->
+    <circle cx="70" cy="13" r="8" fill="url(#starGlow)"/>
+    <!-- Étoile à 5 branches — victorieux investisseur BRVM -->
+    <!--
+      Centre (70,13), R_ext=5.5, R_int=2.3
+      Outer: (70,7.5), (75.23,10.3), (73.39,16.2), (66.61,16.2), (64.77,10.3)
+      Inner: (71.35,10.68), (73.14,13.71), (70,15.3), (66.86,13.71), (68.65,10.68)
+    -->
+    <polygon
+      points="70,7.5 71.35,10.68 75.23,10.3 73.14,13.71 73.39,16.2 70,15.3 66.61,16.2 66.86,13.71 64.77,10.3 68.65,10.68"
+      fill="#fde68a"
+      filter="url(#starFilter)"
+      opacity="0.97"/>
+    <!-- Reflet central de l'étoile -->
+    <circle cx="70" cy="13" r="1.2" fill="#ffffff" opacity="0.9"/>
+
+    <!-- Petites étincelles autour de l'étoile -->
+    <line x1="70" y1="4"  x2="70" y2="6"    stroke="#fde68a" stroke-width="0.9" opacity="0.7"/>
+    <line x1="76" y1="7"  x2="74.5" y2="8.3" stroke="#fde68a" stroke-width="0.9" opacity="0.6"/>
+    <line x1="64" y1="7"  x2="65.5" y2="8.3" stroke="#fde68a" stroke-width="0.9" opacity="0.6"/>
+    <line x1="78" y1="13" x2="76"   y2="13"  stroke="#fde68a" stroke-width="0.9" opacity="0.55"/>
+    <line x1="62" y1="13" x2="64"   y2="13"  stroke="#fde68a" stroke-width="0.9" opacity="0.55"/>
+
+    <!-- ═══════════════ TEXTE "BRVM" ═══════════════ -->
+    <!-- Ombre du texte -->
+    <text x="30.5" y="93.5"
+          font-family="Arial Black,Arial,Helvetica,sans-serif"
+          font-weight="900" font-size="15.5" fill="#000000" opacity="0.5"
+          letter-spacing="1.5">BRVM</text>
+    <!-- Texte principal or-blanc -->
+    <text x="30" y="93"
+          font-family="Arial Black,Arial,Helvetica,sans-serif"
+          font-weight="900" font-size="15.5" fill="url(#brvmText)"
+          letter-spacing="1.5">BRVM</text>
+
+    <!-- Filet séparateur fin entre BRVM et ANALYTICS -->
+    <line x1="22" y1="96" x2="78" y2="96" stroke="#f59e0b" stroke-width="0.5" opacity="0.5"/>
+
+  </g>
+
+  <!-- ═══════════════ REFLET BRILLANT SUR L'ANNEAU OR ═══════════════ -->
+  <!-- Arc de brillance en haut de l'anneau -->
+  <path d="M 18,18 Q 50,8 82,18" fill="none" stroke="#fde68a" stroke-width="1.5"
+        stroke-linecap="round" opacity="0.55"/>
+
+</svg>
