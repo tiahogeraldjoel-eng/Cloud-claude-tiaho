@@ -1,0 +1,31 @@
+{
+  "last_updated": "2026-05-18T17:00:00Z",
+  "source": "static-fallback",
+  "count": 24,
+  "stocks": [
+    { "ticker": "BOAB",  "closing_price": 5250,   "previous_closing_price": 5200,  "volume": 1250,  "change_pct": 0.96 },
+    { "ticker": "BOAC",  "closing_price": 6450,   "previous_closing_price": 6380,  "volume": 3400,  "change_pct": 1.10 },
+    { "ticker": "BOAN",  "closing_price": 3800,   "previous_closing_price": 3780,  "volume": 420,   "change_pct": 0.53 },
+    { "ticker": "BOAS",  "closing_price": 4900,   "previous_closing_price": 4850,  "volume": 890,   "change_pct": 1.03 },
+    { "ticker": "CBIBF", "closing_price": 8750,   "previous_closing_price": 8800,  "volume": 620,   "change_pct": -0.57 },
+    { "ticker": "ETIT",  "closing_price": 18,     "previous_closing_price": 17,    "volume": 125000,"change_pct": 5.88 },
+    { "ticker": "NSBC",  "closing_price": 7200,   "previous_closing_price": 7150,  "volume": 1100,  "change_pct": 0.70 },
+    { "ticker": "SGBC",  "closing_price": 12500,  "previous_closing_price": 12400, "volume": 850,   "change_pct": 0.81 },
+    { "ticker": "SIBC",  "closing_price": 5800,   "previous_closing_price": 5750,  "volume": 1650,  "change_pct": 0.87 },
+    { "ticker": "PALC",  "closing_price": 7800,   "previous_closing_price": 7650,  "volume": 2800,  "change_pct": 1.96 },
+    { "ticker": "SIAC",  "closing_price": 4200,   "previous_closing_price": 4150,  "volume": 1800,  "change_pct": 1.20 },
+    { "ticker": "SAPH",  "closing_price": 5100,   "previous_closing_price": 5050,  "volume": 980,   "change_pct": 0.99 },
+    { "ticker": "SOGB",  "closing_price": 3650,   "previous_closing_price": 3620,  "volume": 580,   "change_pct": 0.83 },
+    { "ticker": "SIPH",  "closing_price": 8900,   "previous_closing_price": 8820,  "volume": 320,   "change_pct": 0.91 },
+    { "ticker": "SNTS",  "closing_price": 15800,  "previous_closing_price": 15700, "volume": 4200,  "change_pct": 0.64 },
+    { "ticker": "ORGT",  "closing_price": 11500,  "previous_closing_price": 11400, "volume": 5800,  "change_pct": 0.88 },
+    { "ticker": "STAC",  "closing_price": 8200,   "previous_closing_price": 8180,  "volume": 380,   "change_pct": 0.24 },
+    { "ticker": "CABC",  "closing_price": 2850,   "previous_closing_price": 2820,  "volume": 920,   "change_pct": 1.06 },
+    { "ticker": "LACI",  "closing_price": 6500,   "previous_closing_price": 6450,  "volume": 280,   "change_pct": 0.78 },
+    { "ticker": "SLBC",  "closing_price": 120000, "previous_closing_price": 119500,"volume": 38,    "change_pct": 0.42 },
+    { "ticker": "CFAC",  "closing_price": 4800,   "previous_closing_price": 4750,  "volume": 650,   "change_pct": 1.05 },
+    { "ticker": "TTLC",  "closing_price": 2150,   "previous_closing_price": 2100,  "volume": 3200,  "change_pct": 2.38 },
+    { "ticker": "SEMC",  "closing_price": 680,    "previous_closing_price": 670,   "volume": 4200,  "change_pct": 1.49 },
+    { "ticker": "UNLC",  "closing_price": 5600,   "previous_closing_price": 5550,  "volume": 1250,  "change_pct": 0.90 }
+  ]
+}

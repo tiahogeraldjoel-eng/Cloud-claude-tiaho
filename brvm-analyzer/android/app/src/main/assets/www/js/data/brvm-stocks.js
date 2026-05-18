@@ -353,46 +353,47 @@ const BRVM_STOCKS = [
   }
 ];
 
-// Données des obligations BRVM (sélection)
+// Données des obligations BRVM (sélection) — mai 2026
 const BRVM_BONDS = [
-  { code: "TPCI.O19", name: "Bon du Trésor CI 7.00% 2019-2026", rate: 7.00, maturity: "2026-06-15", country: "CI", price: 99.5, yield: 7.12 },
-  { code: "TPSN.O21", name: "Bon du Trésor Sénégal 6.25% 2021-2028", rate: 6.25, maturity: "2028-03-15", country: "SN", price: 98.2, yield: 6.58 },
-  { code: "TPBF.O22", name: "Bon du Trésor BF 6.75% 2022-2029", rate: 6.75, maturity: "2029-09-15", country: "BF", price: 96.8, yield: 7.28 }
+  { code: "TPCI.O23", name: "Bon du Trésor CI 6.50% 2023-2030", rate: 6.50, maturity: "2030-04-15", country: "CI", price: 98.8, yield: 6.72 },
+  { code: "TPSN.O23", name: "Bon du Trésor Sénégal 6.00% 2023-2030", rate: 6.00, maturity: "2030-06-15", country: "SN", price: 97.5, yield: 6.38 },
+  { code: "TPBF.O22", name: "Bon du Trésor BF 6.75% 2022-2029", rate: 6.75, maturity: "2029-09-15", country: "BF", price: 95.2, yield: 7.58 },
+  { code: "TPCI.O25", name: "Eurobond CI 7.625% 2025-2033", rate: 7.625, maturity: "2033-01-16", country: "CI", price: 101.2, yield: 7.45 }
 ];
 
-// Indices BRVM
+// Indices BRVM — valeurs de référence mai 2026
 const BRVM_INDICES = {
-  composite: { value: 218.45, change: 1.23, changePct: 0.57, ytdPct: 8.4 },
-  brvm10:    { value: 185.32, change: 0.98, changePct: 0.53, ytdPct: 6.2 },
-  prestige:  { value: 142.18, change: 1.45, changePct: 1.03, ytdPct: 11.8 }
+  composite: { value: 241.87, change: 1.54, changePct: 0.64, ytdPct: 10.7 },
+  brvm10:    { value: 204.15, change: 1.12, changePct: 0.55, ytdPct: 8.3  },
+  prestige:  { value: 163.42, change: 1.78, changePct: 1.10, ytdPct: 14.2 }
 };
 
-// Moyennes sectorielles BRVM (PER médian par secteur)
+// Moyennes sectorielles BRVM (PER médian par secteur) — mai 2026
 const SECTOR_AVERAGES = {
-  "Banque":       { avgPER: 9.5,  avgYield: 5.8, avgROE: 0.135 },
-  "Agriculture":  { avgPER: 8.2,  avgYield: 6.5, avgROE: 0.148 },
-  "Telecom":      { avgPER: 7.8,  avgYield: 8.5, avgROE: 0.195 },
-  "Industrie":    { avgPER: 10.5, avgYield: 5.2, avgROE: 0.155 },
-  "Distribution": { avgPER: 9.8,  avgYield: 5.8, avgROE: 0.142 },
-  "Transport":    { avgPER: 8.8,  avgYield: 5.5, avgROE: 0.135 },
-  "Assurance":    { avgPER: 8.5,  avgYield: 6.0, avgROE: 0.130 }
+  "Banque":       { avgPER: 9.8,  avgYield: 5.6, avgROE: 0.138 },
+  "Agriculture":  { avgPER: 8.5,  avgYield: 6.2, avgROE: 0.152 },
+  "Telecom":      { avgPER: 8.2,  avgYield: 8.2, avgROE: 0.198 },
+  "Industrie":    { avgPER: 10.8, avgYield: 5.0, avgROE: 0.158 },
+  "Distribution": { avgPER: 10.0, avgYield: 5.6, avgROE: 0.145 },
+  "Transport":    { avgPER: 9.0,  avgYield: 5.3, avgROE: 0.138 },
+  "Assurance":    { avgPER: 8.8,  avgYield: 5.8, avgROE: 0.132 }
 };
 
-// Contexte macroéconomique UEMOA
+// Contexte macroéconomique UEMOA — mis à jour mai 2026
 const MACRO_CONTEXT = {
-  inflationRate: 0.038,       // Taux inflation UEMOA
-  policyRate: 0.035,          // Taux directeur BCEAO
-  riskFreeRate: 0.055,        // Taux OAT 5 ans UEMOA moyen
+  inflationRate: 0.032,       // Taux inflation UEMOA (reflux post-2024, ~3.2%)
+  policyRate: 0.030,          // Taux directeur BCEAO (abaissé à 3.00% nov. 2024)
+  riskFreeRate: 0.060,        // Taux OAT 5 ans UEMOA (~6.0% en 2025-2026)
   marketRiskPremium: 0.065,   // Prime de risque marché BRVM
-  cfa_eur_peg: true,          // Parité fixe CFA/EUR
-  gdpGrowthUEMOA: 0.065,      // Croissance PIB UEMOA
-  politicalRisk: {            // Score risque politique (0=max, 10=min)
-    "CI": 6.8, "SN": 7.5, "BF": 3.5, "BJ": 7.0,
-    "ML": 3.8, "TG": 6.2, "GW": 4.5, "NE": 3.2
+  cfa_eur_peg: true,          // Parité fixe CFA/EUR (655.957)
+  gdpGrowthUEMOA: 0.068,      // Croissance PIB UEMOA 2026 (FMI: +6.8%)
+  politicalRisk: {            // Score risque politique (0=max, 10=min) — mise à jour 2026
+    "CI": 7.0, "SN": 7.2, "BF": 3.2, "BJ": 7.2,
+    "ML": 3.5, "TG": 6.5, "GW": 4.5, "NE": 3.0
   }
 };
 
-// Calendrier boursier BRVM 2024-2025
+// Calendrier boursier BRVM 2026
 const MARKET_CALENDAR = {
   openDays: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
   openTime: "09:00",

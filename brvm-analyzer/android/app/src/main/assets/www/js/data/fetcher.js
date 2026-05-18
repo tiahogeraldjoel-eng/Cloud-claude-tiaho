@@ -2,9 +2,10 @@
  * BRVM Data Fetcher — Stratégie multi-niveaux sans dépendance API
  *
  * Niveau 1: Cache IndexedDB récent (< 4h)
- * Niveau 2: Scraping BRVM via proxy CORS-safe
- * Niveau 3: Parsing HTML brvm.org via AndroidBridge (WebView natif)
- * Niveau 4: Données embarquées BRVM_STOCKS (toujours disponibles)
+ * Niveau 2: Worker Cloudflare brvm-prices (API edge scraping brvm.org en temps réel)
+ * Niveau 3: Scraping BRVM via proxy CORS-safe
+ * Niveau 4: Parsing HTML brvm.org via AndroidBridge (WebView natif)
+ * Niveau 5: Données embarquées BRVM_STOCKS (toujours disponibles)
  *
  * Aucune clé API requise — fonctionne 100% hors ligne.
  */
@@ -12,6 +13,7 @@ const BRVMFetcher = (() => {
   const DB_NAME = 'brvm_cache';
   const DB_VERSION = 2;
   const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4h
+  const WORKER_URL = 'https://brvm-prices.tiahogeraldjoel-eng.workers.dev';
   const CORS_PROXIES = [
     'https://api.allorigins.win/raw?url=',
     'https://corsproxy.io/?',
@@ -227,7 +229,33 @@ const BRVMFetcher = (() => {
       }
     }
 
-    // 2. Tentative live — Android Bridge
+    // 2. Tentative live — Worker Cloudflare (source principale)
+    if (navigator.onLine) {
+      try {
+        const workerResp = await Promise.race([
+          fetch(`${WORKER_URL}/stocks`),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+        ]);
+        if (workerResp.ok) {
+          const workerJson = await workerResp.json();
+          if (workerJson.stocks && workerJson.stocks.length > 0) {
+            const normalized = workerJson.stocks.map(s => ({
+              ticker: s.ticker,
+              price: s.closing_price,
+              priceYesterday: s.previous_closing_price,
+              volume: s.volume,
+              changePct: s.change_pct,
+              live: true, ts: Date.now()
+            }));
+            await saveToCache(normalized);
+            const count = applyLiveData(normalized);
+            return { source: 'cloudflare-worker', count };
+          }
+        }
+      } catch { /* passe au niveau suivant */ }
+    }
+
+    // 3. Tentative live — Android Bridge
     const androidData = await fetchViaAndroid();
     if (androidData && Array.isArray(androidData) && androidData.length > 0) {
       await saveToCache(androidData);
@@ -235,7 +263,7 @@ const BRVMFetcher = (() => {
       return { source: 'android', count: androidData.length };
     }
 
-    // 3. Tentative via proxies CORS (sans clé API)
+    // 4. Tentative via proxies CORS (sans clé API)
     if (navigator.onLine) {
       for (const proxy of CORS_PROXIES) {
         const html = await fetchViaProxy(proxy);
@@ -250,7 +278,7 @@ const BRVMFetcher = (() => {
       }
     }
 
-    // 4. Fallback: données embarquées avec variation simulée réaliste
+    // 5. Fallback: données embarquées avec variation simulée réaliste
     const today = new Date().toDateString();
     const simKey = 'sim_' + today;
     const alreadySimulated = await dbGet('meta', simKey);
