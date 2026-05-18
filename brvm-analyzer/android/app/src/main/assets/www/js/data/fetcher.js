@@ -299,12 +299,67 @@ const BRVMFetcher = (() => {
     return { source: 'embedded', count: BRVM_STOCKS.length };
   }
 
-  // ─── Récupérer historique d'un titre ──────────────────────────────────────
+  // ─── Récupérer historique réel depuis le Worker Cloudflare ───────────────
+  async function fetchRealHistory(ticker) {
+    if (!navigator.onLine) return null;
+    try {
+      const resp = await Promise.race([
+        fetch(`${WORKER_URL}/history/${ticker}`),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))
+      ]);
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      if (data.prices && data.prices.length >= 14) {
+        // Sauvegarder en cache IndexedDB
+        await dbPut('history', {
+          ticker,
+          prices: data.prices,
+          volumes: new Array(data.prices.length).fill(0),
+          ts: Date.now(),
+          real: true   // Flag : données réelles, pas synthétiques
+        });
+        if (BRVM_INDEX[ticker]) {
+          BRVM_INDEX[ticker].history  = data.prices;
+          BRVM_INDEX[ticker].volumes  = new Array(data.prices.length).fill(0);
+          BRVM_INDEX[ticker].realData = true;
+        }
+        return data;
+      }
+    } catch {}
+    return null;
+  }
+
+  // ─── Récupérer historique d'un titre (réel > cache > synthétique) ─────────
   async function getHistory(ticker) {
+    // 1. Cache IndexedDB avec données réelles
     const stored = await dbGet('history', ticker);
-    if (stored && stored.prices) return stored;
+    if (stored && stored.prices && stored.real) return stored;
+
+    // 2. Tentative live depuis le Worker
+    if (navigator.onLine) {
+      const live = await fetchRealHistory(ticker);
+      if (live) return { prices: live.prices, volumes: new Array(live.prices.length).fill(0), real: true };
+    }
+
+    // 3. Cache IndexedDB (potentiellement synthétique)
+    if (stored && stored.prices) return { ...stored, real: false };
+
+    // 4. Données synthétiques embarquées
     const stock = BRVM_INDEX[ticker];
-    return stock ? { prices: stock.history, volumes: stock.volumes } : null;
+    return stock ? { prices: stock.history, volumes: stock.volumes, real: false } : null;
+  }
+
+  // ─── Précharger l'historique réel de tous les titres en arrière-plan ───────
+  async function prefetchAllHistories() {
+    if (!navigator.onLine) return;
+    for (const stock of BRVM_STOCKS) {
+      const stored = await dbGet('history', stock.ticker);
+      // Ne refetch que si absent ou pas réel ou > 24h
+      if (!stored || !stored.real || (Date.now() - stored.ts) > 24 * 60 * 60 * 1000) {
+        await fetchRealHistory(stock.ticker);
+        await new Promise(r => setTimeout(r, 300)); // 300ms entre requêtes pour ne pas saturer
+      }
+    }
   }
 
   // ─── Statut marché BRVM ───────────────────────────────────────────────────
@@ -354,5 +409,5 @@ const BRVMFetcher = (() => {
     } catch {}
   }
 
-  return { fetchAll, getHistory, getMarketStatus, getMacro, clearCache, isCacheValid };
+  return { fetchAll, getHistory, getMarketStatus, getMacro, clearCache, isCacheValid, prefetchAllHistories, fetchRealHistory };
 })();

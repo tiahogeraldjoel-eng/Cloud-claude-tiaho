@@ -242,6 +242,78 @@ async function getStockData(ctx, forceRefresh = false) {
   return data;
 }
 
+// ─── Historique réel SikaFinance ──────────────────────────────────────────────
+async function fetchSikaHistory(ticker) {
+  const urls = [
+    `https://www.sikafinance.com/marches/historique_ligne/${ticker}`,
+    `https://www.sikafinance.com/marches/historique/${ticker}`,
+  ];
+  for (const url of urls) {
+    try {
+      const resp = await fetch(url, {
+        headers: SCRAPE_HEADERS,
+        cf: { cacheTtl: 3600, cacheEverything: true },
+      });
+      if (!resp.ok) continue;
+      const html = await resp.text();
+      const prices = parseSikaHistory(html);
+      if (prices.length >= 10) return prices;
+    } catch (e) {
+      console.error(`[sika-history] ${ticker}:`, e.message);
+    }
+  }
+  return null;
+}
+
+function parseSikaHistory(html) {
+  const rows = [];
+  const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+  let rowM;
+  while ((rowM = rowRe.exec(html)) !== null) {
+    const cells = [];
+    const cRe = new RegExp(cellRe.source, 'gi');
+    let cM;
+    while ((cM = cRe.exec(rowM[1])) !== null) cells.push(stripTags(cM[1]));
+    if (cells.length < 2) continue;
+    // Chercher une date et un prix valide dans la ligne
+    let date = null, price = null, volume = 0;
+    for (const c of cells) {
+      if (!date && /\d{2}[\/\-]\d{2}[\/\-]\d{2,4}/.test(c)) date = c;
+      if (!price) {
+        const v = parseNum(c);
+        if (v !== null && v > 1 && v < 10_000_000) price = v;
+      }
+      if (!volume && /^\d{1,8}$/.test(c.replace(/\s/g, ''))) {
+        const v = parseInt(c.replace(/\s/g, ''), 10);
+        if (v > 0 && v < 100_000_000) volume = v;
+      }
+    }
+    if (price !== null) rows.push({ date, price, volume });
+  }
+  // Trier du plus ancien au plus récent, retourner série de prix
+  rows.reverse();
+  return rows.map(r => r.price);
+}
+
+async function getHistoryData(ticker, ctx) {
+  const cache = caches.default;
+  const cacheKey = new Request(`https://brvm-edge-cache/history-v1-${ticker}`);
+  const cached = await cache.match(cacheKey);
+  if (cached) return await cached.json();
+
+  const prices = await fetchSikaHistory(ticker);
+  if (!prices || prices.length < 10) return null;
+
+  const result = { ticker, prices, count: prices.length, source: 'sikafinance', ts: new Date().toISOString() };
+  ctx.waitUntil(
+    cache.put(cacheKey, new Response(JSON.stringify(result), {
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=3600' },
+    }))
+  );
+  return result;
+}
+
 export default {
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
@@ -251,9 +323,9 @@ export default {
     const path = url.pathname.replace(/\/$/, '') || '/';
 
     const forceRefresh = url.searchParams.get('force') === '1';
-    const stockData = await getStockData(ctx, forceRefresh);
 
     if (path === '/health') {
+      const stockData = await getStockData(ctx, forceRefresh);
       return jsonResponse({
         status: 'ok',
         last_updated: stockData.last_updated ?? null,
@@ -262,6 +334,18 @@ export default {
         cache_ttl: CACHE_TTL_SECONDS,
       });
     }
+
+    // GET /history/:ticker — historique réel des 120 dernières séances
+    const histMatch = path.match(/^\/history\/([A-Za-z0-9]+)$/);
+    if (histMatch) {
+      const sym = histMatch[1].toUpperCase();
+      if (!KNOWN_TICKERS.has(sym)) return jsonResponse({ error: `Ticker "${sym}" inconnu` }, 404);
+      const hist = await getHistoryData(sym, ctx);
+      if (!hist) return jsonResponse({ error: 'Historique indisponible', ticker: sym }, 503);
+      return jsonResponse(hist);
+    }
+
+    const stockData = await getStockData(ctx, forceRefresh);
 
     if (path === '/' || path === '/stocks') return jsonResponse(stockData);
 

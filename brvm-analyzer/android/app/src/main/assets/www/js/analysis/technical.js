@@ -244,6 +244,7 @@ const TechnicalAnalysis = (() => {
   function analyze(stock, settings) {
     const prices  = stock.history || [];
     const volumes = stock.volumes || [];
+    const isSynthetic = !stock.realData; // true si historique généré aléatoirement
 
     if (prices.length < 20) {
       return { score: 50, trend: 'neutre', rsi: null, signals: [],
@@ -297,9 +298,20 @@ const TechnicalAnalysis = (() => {
       metrics.push({ label: 'Pattern', value: p.name, signal: p.bull ? '✅' : '🔴', detail: '' });
     });
 
+    // Avertissement si données synthétiques
+    if (isSynthetic) {
+      metrics.unshift({
+        label: '⚠️ Données simulées',
+        value: 'Historique non réel',
+        signal: '🟠',
+        detail: 'RSI, MACD, Bollinger calculés sur données synthétiques — chiffres indicatifs uniquement'
+      });
+    }
+
     return {
       score, techSignal, techLabel,
       trend: trendData.trend, rsi: currentRSI,
+      synthetic: isSynthetic,
       ma20: ma20val, ma50: ma50val, ma200: ma200val,
       support: srData.support, resistance: srData.resistance,
       signals, metrics, patterns,
