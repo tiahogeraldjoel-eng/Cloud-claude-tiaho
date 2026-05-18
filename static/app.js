@@ -1020,11 +1020,14 @@ function renderRecommendationBox(containerId, reco) {
           return `<div class="bg-slate-900/50 rounded-lg p-3">
             <div class="font-semibold mb-2 capitalize" style="color:${scoreColor(a.score)}">${ax.charAt(0).toUpperCase()+ax.slice(1)} : ${a.score}/100</div>
             <p class="text-slate-400 mb-2 text-xs leading-snug">${a.summary||''}</p>
-            <div class="space-y-1">
+            <div class="space-y-1.5">
               ${(a.details||[]).map(d=>`
-                <div class="flex justify-between gap-1 text-xs">
-                  <span class="text-slate-500 truncate">${d.label}</span>
-                  <span class="font-semibold shrink-0 ml-1" style="color:${scoreColor(d.score)}">${d.score}</span>
+                <div class="text-xs">
+                  <div class="flex justify-between gap-1">
+                    <span class="text-slate-400 truncate font-medium">${d.label}</span>
+                    <span class="font-bold shrink-0 ml-1" style="color:${scoreColor(d.score)}">${d.score}/100</span>
+                  </div>
+                  ${d.detail ? `<div class="text-slate-500 text-xs mt-0.5 leading-snug">${d.detail}</div>` : ''}
                 </div>`).join('')}
             </div>
           </div>`;
