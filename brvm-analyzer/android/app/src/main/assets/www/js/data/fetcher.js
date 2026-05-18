@@ -281,14 +281,17 @@ const BRVMFetcher = (() => {
 
   // ─── Statut marché BRVM ───────────────────────────────────────────────────
   function getMarketStatus() {
+    // Toujours évaluer en heure d'Abidjan (UTC+0)
     const now = new Date();
-    const day = now.getDay(); // 0=dim, 6=sam
-    const h = now.getHours();
-    const m = now.getMinutes();
+    const abidjanStr = now.toLocaleString('en-US', { timeZone: 'Africa/Abidjan' });
+    const abidjan = new Date(abidjanStr);
+    const day = abidjan.getDay(); // 0=dim, 6=sam
+    const h = abidjan.getHours();
+    const m = abidjan.getMinutes();
     const mins = h * 60 + m;
     const isWeekday = day >= 1 && day <= 5;
-    const isOpen = isWeekday && mins >= 9 * 60 && mins <= 15 * 60 + 30;
-    const isFixing = isWeekday && mins >= 12 * 60 && mins <= 12 * 60 + 30;
+    const isOpen = isWeekday && mins >= 9 * 60 && mins < 15 * 60 + 30;
+    const isFixing = isWeekday && mins >= 12 * 60 && mins < 12 * 60 + 30;
     return {
       isOpen, isFixing,
       label: isOpen ? (isFixing ? '⚡ Fixing en cours' : '🟢 Séance ouverte') : '🔴 Marché fermé',

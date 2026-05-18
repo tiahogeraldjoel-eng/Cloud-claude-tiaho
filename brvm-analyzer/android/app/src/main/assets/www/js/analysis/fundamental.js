@@ -29,9 +29,10 @@ const FundamentalAnalysis = (() => {
   }
 
   function estimateShares(stock) {
-    // Estimation nbre d'actions via capitalisation implicite
     if (stock.shares) return stock.shares;
-    return Math.round((stock.netIncome || 1000) / (stock.eps || 1));
+    // netIncome est en millions FCFA, eps en FCFA/action → shares en millions
+    // On multiplie par 1 000 000 pour obtenir le nombre d'actions réel
+    return Math.round(((stock.netIncome || 1000) * 1e6) / (stock.eps || 1));
   }
 
   // ─── Valeur intrinsèque par DCF simplifié ─────────────────────────────────
@@ -52,7 +53,8 @@ const FundamentalAnalysis = (() => {
     const terminalValue = (fcf * (1 + g2)) / (wacc - g2);
     pv += terminalValue / Math.pow(1 + wacc, 5);
 
-    const intrinsicValue = (pv / shares) * 1000; // En FCFA (en milliers)
+    // pv en millions FCFA, shares en actions réelles → FCFA/action × 1 000 000
+    const intrinsicValue = (pv * 1e6) / shares;
     const upside = ((intrinsicValue - stock.price) / stock.price) * 100;
     return { intrinsicValue: Math.round(intrinsicValue), upside: Math.round(upside * 10) / 10 };
   }
