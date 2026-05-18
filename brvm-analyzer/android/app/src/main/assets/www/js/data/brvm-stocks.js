@@ -353,13 +353,6 @@ const BRVM_STOCKS = [
   }
 ];
 
-// Données des obligations BRVM (sélection) — mai 2026
-const BRVM_BONDS = [
-  { code: "TPCI.O23", name: "Bon du Trésor CI 6.50% 2023-2030", rate: 6.50, maturity: "2030-04-15", country: "CI", price: 98.8, yield: 6.72 },
-  { code: "TPSN.O23", name: "Bon du Trésor Sénégal 6.00% 2023-2030", rate: 6.00, maturity: "2030-06-15", country: "SN", price: 97.5, yield: 6.38 },
-  { code: "TPBF.O22", name: "Bon du Trésor BF 6.75% 2022-2029", rate: 6.75, maturity: "2029-09-15", country: "BF", price: 95.2, yield: 7.58 },
-  { code: "TPCI.O25", name: "Eurobond CI 7.625% 2025-2033", rate: 7.625, maturity: "2033-01-16", country: "CI", price: 101.2, yield: 7.45 }
-];
 
 // Indices BRVM — valeurs de référence mai 2026
 const BRVM_INDICES = {
