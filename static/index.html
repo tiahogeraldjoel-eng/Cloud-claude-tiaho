@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BRVM Analytics — L'Étoile du Taureau d'Or</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon"    href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml"   href="/static/logo.svg" />
+  <link rel="apple-touch-icon"            href="/static/logo.png" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            surface:  '#0f172a',
+            card:     '#1e293b',
+            cardHov:  '#273449',
+            border:   '#334155',
+            up:       '#22c55e',
+            down:     '#ef4444',
+            neutral:  '#eab308',
+          },
+          fontFamily: { sans: ['Inter','ui-sans-serif','system-ui'] },
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Lightweight Charts (TradingView) -->
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+
+<body class="bg-surface text-slate-100 font-sans min-h-screen">
+
+<!-- ═══════════════════════════════ HEADER ═══════════════════════════════ -->
+<header class="sticky top-0 z-50 bg-card border-b border-border shadow-xl">
+  <div class="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between">
+    <!-- Logo -->
+    <div class="flex items-center gap-3">
+      <!-- Médaillon SVG "L'Étoile du Taureau d'Or" -->
+      <img src="/static/logo.svg" alt="BRVM Analytics"
+           class="w-11 h-11 drop-shadow-lg"
+           onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='flex'"/>
+      <div id="logo-fallback" style="display:none"
+           class="w-11 h-11 rounded-full bg-gradient-to-br from-yellow-500 to-amber-700 flex items-center justify-center font-black text-sm text-white shadow-lg">B</div>
+      <div>
+        <div class="font-black text-lg leading-none tracking-wide"
+             style="background:linear-gradient(135deg,#ffffff,#fde68a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+          BRVM Analytics
+        </div>
+        <div class="text-xs text-amber-600/80 font-medium tracking-wider">
+          L'Étoile du Taureau d'Or ✦ Bourse Régionale
+        </div>
+      </div>
+    </div>
+
+    <!-- Indicateurs rapides -->
+    <div class="hidden md:flex items-center gap-6 text-sm">
+      <div class="flex flex-col items-center">
+        <span class="text-slate-400 text-xs">BRVM Composite</span>
+        <span id="hdr-composite" class="font-semibold">—</span>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-slate-400 text-xs">BRVM-30</span>
+        <span id="hdr-brvm10" class="font-semibold">—</span>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-slate-400 text-xs">Séance</span>
+        <span id="hdr-session" class="font-semibold text-xs px-2 py-0.5 rounded-full bg-slate-700">—</span>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-slate-400 text-xs">Abidjan</span>
+        <span id="abidjan-time" class="font-semibold text-xs font-mono">—</span>
+      </div>
+    </div>
+
+    <!-- Statut & Refresh -->
+    <div class="flex items-center gap-3">
+      <div class="text-xs text-slate-400 hidden sm:block">
+        <span id="last-update-label">Dernière MàJ: </span>
+        <span id="last-update">—</span>
+      </div>
+      <button id="btn-refresh" onclick="manualRefresh()" title="Rafraîchir les données"
+        class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-medium transition-colors">
+        <svg id="refresh-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Actualiser
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════ NAVIGATION ═══════════════════════════ -->
+<nav class="bg-card border-b border-border sticky top-16 z-40">
+  <div class="max-w-screen-2xl mx-auto px-4">
+    <div class="flex gap-1 overflow-x-auto hide-scrollbar">
+      <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        <span class="tab-label">Tableau de Bord</span>
+      </button>
+      <button class="tab-btn" data-tab="technical" onclick="switchTab('technical')">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+        </svg>
+        <span class="tab-label">Analyse Technique</span>
+      </button>
+      <button class="tab-btn" data-tab="fundamental" onclick="switchTab('fundamental')">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <span class="tab-label">Analyse Fondamentale</span>
+      </button>
+      <button class="tab-btn" data-tab="psychology" onclick="switchTab('psychology')">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+        <span class="tab-label">Psychologie du Marché</span>
+      </button>
+      <button class="tab-btn" data-tab="portfolio" onclick="switchTab('portfolio')">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+        </svg>
+        <span class="tab-label">Mon Portefeuille</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════ CONTENU PRINCIPAL ════════════════════ -->
+<main class="max-w-screen-2xl mx-auto px-4 py-6">
+
+  <!-- ────────────────── TABLEAU DE BORD ────────────────── -->
+  <div id="tab-dashboard" class="tab-content">
+
+    <!-- Cartes résumé marché -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="metric-card">
+        <span class="metric-label">BRVM Composite</span>
+        <span id="mc-composite" class="metric-value">—</span>
+        <span id="mc-composite-var" class="metric-var">—</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">BRVM-30</span>
+        <span id="mc-brvm10" class="metric-value">—</span>
+        <span id="mc-brvm10-var" class="metric-var">—</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Hausses / Baisses</span>
+        <span id="mc-adv" class="metric-value text-up">—</span>
+        <span id="mc-dec" class="metric-var text-down">—</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Volume Total</span>
+        <span id="mc-vol" class="metric-value">—</span>
+        <span class="metric-var text-slate-400">Titres échangés</span>
+      </div>
+    </div>
+
+    <!-- Top mouvements + Tableau complet -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+
+      <!-- Top Hausses -->
+      <div class="bg-card rounded-xl border border-border p-4">
+        <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-up inline-block"></span>Top 5 Hausses
+        </h3>
+        <div id="top-gains" class="space-y-2">
+          <div class="skeleton h-8 rounded"></div>
+          <div class="skeleton h-8 rounded"></div>
+          <div class="skeleton h-8 rounded"></div>
+        </div>
+      </div>
+
+      <!-- Top Baisses -->
+      <div class="bg-card rounded-xl border border-border p-4">
+        <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-down inline-block"></span>Top 5 Baisses
+        </h3>
+        <div id="top-losses" class="space-y-2">
+          <div class="skeleton h-8 rounded"></div>
+          <div class="skeleton h-8 rounded"></div>
+          <div class="skeleton h-8 rounded"></div>
+        </div>
+      </div>
+
+      <!-- Actualités BRVM -->
+      <div class="bg-card rounded-xl border border-border p-4 flex flex-col">
+        <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <h3 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>Actualités BRVM
+          </h3>
+          <!-- Source tabs -->
+          <div class="flex gap-1 flex-wrap" id="news-source-tabs">
+            <button onclick="filterNewsBySource('all')"
+              class="news-src-btn active text-xs px-2 py-0.5 rounded border border-slate-600 text-slate-300 hover:border-blue-500 transition-colors"
+              data-src="all">Toutes</button>
+            <button onclick="filterNewsBySource('sikafinance.com')"
+              class="news-src-btn text-xs px-2 py-0.5 rounded border border-slate-700 text-slate-500 hover:border-blue-500 transition-colors"
+              data-src="sikafinance.com">🔵 Sika</button>
+            <button onclick="filterNewsBySource('richbourse.com')"
+              class="news-src-btn text-xs px-2 py-0.5 rounded border border-slate-700 text-slate-500 hover:border-purple-500 transition-colors"
+              data-src="richbourse.com">🟣 Rich</button>
+            <button onclick="filterNewsBySource('lejecos.com')"
+              class="news-src-btn text-xs px-2 py-0.5 rounded border border-slate-700 text-slate-500 hover:border-green-500 transition-colors"
+              data-src="lejecos.com">🟢 Ecos</button>
+          </div>
+        </div>
+        <div id="news-list" class="space-y-1.5 max-h-72 overflow-y-auto flex-1">
+          <div class="skeleton h-6 rounded"></div>
+          <div class="skeleton h-6 rounded"></div>
+          <div class="skeleton h-6 rounded"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tableau de tous les titres -->
+    <div class="bg-card rounded-xl border border-border">
+      <div id="stocks-filters" class="p-4 border-b border-border flex items-center justify-between flex-wrap gap-2">
+        <h3 class="font-semibold text-slate-200">Tous les Titres Cotés</h3>
+        <div class="flex items-center gap-2 flex-wrap">
+          <input id="search-stocks" type="text" placeholder="Rechercher..." oninput="filterTable(this.value)"
+            class="bg-surface border border-border rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-40" />
+          <select id="filter-sector" onchange="filterBySector(this.value)"
+            class="bg-surface border border-border rounded-lg px-2 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="">Tous secteurs</option>
+          </select>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table id="stocks-table" class="w-full text-sm">
+          <thead>
+            <tr class="text-slate-400 text-xs uppercase border-b border-border">
+              <th class="px-4 py-3 text-left cursor-pointer hover:text-white" onclick="sortTable('symbol')">Ticker</th>
+              <th class="px-4 py-3 text-left cursor-pointer hover:text-white" onclick="sortTable('name')">Société</th>
+              <th class="px-4 py-3 text-left">Secteur</th>
+              <th class="px-4 py-3 text-right cursor-pointer hover:text-white" onclick="sortTable('close')">Cours (FCFA)</th>
+              <th class="px-4 py-3 text-right cursor-pointer hover:text-white" onclick="sortTable('variation_pct')">Var. %</th>
+              <th class="px-4 py-3 text-right cursor-pointer hover:text-white" onclick="sortTable('volume')">Volume</th>
+              <th class="px-4 py-3 text-right cursor-pointer hover:text-white" onclick="sortTable('market_cap')">Capitalisation</th>
+              <th class="px-4 py-3 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="stocks-table-body">
+            <tr><td colspan="8" class="text-center py-8 text-slate-500">Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────── ANALYSE TECHNIQUE ────────────────── -->
+  <div id="tab-technical" class="tab-content hidden">
+
+    <!-- Sélecteur de titre -->
+    <div class="flex flex-wrap items-center gap-4 mb-6">
+      <div class="flex-1 min-w-64">
+        <label class="block text-xs text-slate-400 mb-1">Titre</label>
+        <select id="tech-stock-select" onchange="loadTechnical(this.value)"
+          class="w-full bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+          <option value="">-- Sélectionner un titre --</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Période</label>
+        <div class="flex gap-1">
+          <button class="period-btn" data-days="30" onclick="setPeriod(30)">1M</button>
+          <button class="period-btn" data-days="90" onclick="setPeriod(90)">3M</button>
+          <button class="period-btn" data-days="180" onclick="setPeriod(180)">6M</button>
+          <button class="period-btn active" data-days="365" onclick="setPeriod(365)">1A</button>
+          <button class="period-btn" data-days="730" onclick="setPeriod(730)">2A</button>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Indicateurs</label>
+        <div class="flex gap-2 text-xs">
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="show-ma" checked onchange="toggleIndicators()" class="accent-indigo-500"> MA
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="show-bb" onchange="toggleIndicators()" class="accent-indigo-500"> Bollinger
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="show-vol" checked onchange="toggleIndicators()" class="accent-indigo-500"> Volume
+          </label>
+        </div>
+      </div>
+      <div>
+        <button onclick="fetchHistory()" class="mt-5 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-medium transition-colors">
+          Charger Historique
+        </button>
+      </div>
+    </div>
+
+    <!-- Statut historique -->
+    <div id="history-status" class="mb-3 text-xs text-slate-400 italic hidden"></div>
+
+    <!-- Signaux de trading -->
+    <div id="signals-container" class="mb-4 hidden">
+      <h4 class="text-xs text-slate-400 mb-2 uppercase tracking-wider">Signaux Détectés</h4>
+      <div id="signals-list" class="flex flex-wrap gap-2"></div>
+    </div>
+
+    <!-- Zone graphique principale -->
+    <div class="bg-card rounded-xl border border-border overflow-hidden mb-4">
+      <div class="px-4 py-3 border-b border-border flex items-center justify-between">
+        <div>
+          <span id="chart-title" class="font-semibold text-slate-200">Sélectionner un titre</span>
+          <span id="chart-subtitle" class="text-xs text-slate-400 ml-2"></span>
+        </div>
+        <div id="chart-price-info" class="text-right text-sm hidden">
+          <span id="cp-close" class="font-bold text-lg"></span>
+          <span id="cp-var" class="ml-2 text-sm"></span>
+        </div>
+      </div>
+      <div id="chart-main" class="w-full chart-main"></div>
+    </div>
+
+    <!-- Panneau RSI -->
+    <div class="bg-card rounded-xl border border-border overflow-hidden mb-4">
+      <div class="px-4 py-2 border-b border-border flex items-center justify-between">
+        <span class="text-xs text-slate-400 font-medium">RSI (14)</span>
+        <div class="flex gap-4 text-xs text-slate-500">
+          <span class="text-red-400">70 — Surachat</span>
+          <span class="text-green-400">30 — Survente</span>
+        </div>
+      </div>
+      <div id="chart-rsi" class="w-full chart-sub"></div>
+    </div>
+
+    <!-- Panneau MACD -->
+    <div class="bg-card rounded-xl border border-border overflow-hidden mb-4">
+      <div class="px-4 py-2 border-b border-border">
+        <span class="text-xs text-slate-400 font-medium">MACD (12,26,9)</span>
+      </div>
+      <div id="chart-macd" class="w-full chart-sub"></div>
+    </div>
+
+    <!-- ─── Bougies Japonaises ─── -->
+    <div class="bg-card rounded-xl border border-border overflow-hidden mb-4">
+      <div class="px-4 py-3 border-b border-border flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-base">🕯️</span>
+          <span class="text-sm font-semibold text-slate-200">Figures en Chandeliers Japonais</span>
+        </div>
+        <span class="text-xs text-slate-500">60 dernières séances · détection automatique</span>
+      </div>
+      <div id="candle-patterns-panel" class="p-4">
+        <p class="text-xs text-slate-500 text-center py-4 italic">Sélectionnez un titre pour voir les figures.</p>
+      </div>
+    </div>
+
+    <!-- Bloc dividende uniforme — même format que l'onglet Fondamentale -->
+    <div id="tech-div-block" class="mb-4"></div>
+
+    <!-- Saison dividendes 2025 — contexte pipeline pour ce titre -->
+    <div id="tech-div-2025-ctx" class="mb-4"></div>
+
+    <!-- Recommandation Technique -->
+    <div id="tech-reco-box"></div>
+
+    <!-- Bouton export PDF -->
+    <div id="pdf-export-section" class="mt-4 hidden">
+      <button id="btn-export-pdf" onclick="exportPDF()"
+        class="flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 active:scale-95
+               text-white font-semibold rounded-lg transition-all shadow-lg text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Télécharger le Rapport PDF
+      </button>
+      <span class="text-xs text-slate-500 ml-3">Rapport complet · Analyse Technique + Fondamentale + Psychologie</span>
+    </div>
+  </div>
+
+  <!-- ────────────────── ANALYSE FONDAMENTALE ────────────────── -->
+  <div id="tab-fundamental" class="tab-content hidden">
+
+    <div class="flex flex-wrap items-center gap-4 mb-6">
+      <div class="flex-1 min-w-64">
+        <label class="block text-xs text-slate-400 mb-1">Titre</label>
+        <select id="fund-stock-select" onchange="loadFundamental(this.value)"
+          class="w-full bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+          <option value="">-- Sélectionner un titre --</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="fundamental-content">
+      <div class="text-center py-20 text-slate-500">
+        <svg class="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <p>Sélectionnez un titre pour voir l'analyse fondamentale</p>
+      </div>
+    </div>
+
+    <!-- Contexte dividendes 2025 — comparatif avec les autres titres annoncés -->
+    <div id="fund-div-2025-ctx" class="mt-5"></div>
+
+    <!-- Bouton export PDF (onglet fondamental) -->
+    <div id="pdf-export-section-fund" class="mt-4 hidden">
+      <button id="btn-export-pdf-fund" onclick="exportPDF()"
+        class="flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 active:scale-95
+               text-white font-semibold rounded-lg transition-all shadow-lg text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Télécharger le Rapport PDF
+      </button>
+      <span class="text-xs text-slate-500 ml-3">Rapport complet · Analyse Technique + Fondamentale + Psychologie</span>
+    </div>
+  </div>
+
+  <!-- ────────────────── PSYCHOLOGIE DU MARCHÉ ────────────────── -->
+  <div id="tab-psychology" class="tab-content hidden">
+
+    <!-- ══ BANNIÈRE : Mécanique de l'Euphorie BRVM ══════════════════════════ -->
+    <div class="rounded-xl border mb-6 overflow-hidden"
+         style="background:linear-gradient(135deg,#0f172a 0%,#1a2a1a 60%,#1f2d1a 100%);border-color:#2d4a2d">
+      <div class="p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="text-3xl">🌡️</div>
+          <div>
+            <h2 class="text-base font-bold text-green-300">Mécanique de l'Euphorie BRVM</h2>
+            <p class="text-xs text-slate-400">Dividendes exercice <strong class="text-yellow-400">2025</strong> annoncés aux AGO 2026 + bons résultats → marché euphorique</p>
+          </div>
+          <div id="psych-euphoria-badge" class="ml-auto px-3 py-1.5 rounded-full text-xs font-bold hidden"></div>
+        </div>
+        <!-- Cycle en 3 étapes -->
+        <div class="grid grid-cols-3 gap-3 mb-4">
+          <div class="rounded-lg p-3 border border-red-800/40 bg-red-900/15 text-center">
+            <div class="text-xl mb-1">😨</div>
+            <div class="text-xs font-bold text-red-400">PEUR</div>
+            <div class="text-xs text-slate-500 mt-1">Pas de dividende<br>Résultats décevants</div>
+          </div>
+          <div class="rounded-lg p-3 border border-yellow-800/40 bg-yellow-900/10 text-center">
+            <div class="text-xl mb-1">😐</div>
+            <div class="text-xs font-bold text-yellow-400">NEUTRE</div>
+            <div class="text-xs text-slate-500 mt-1">Quelques dividendes<br>Résultats mitigés</div>
+          </div>
+          <div class="rounded-lg p-3 border border-green-700/40 bg-green-900/20 text-center">
+            <div class="text-xl mb-1">🤑</div>
+            <div class="text-xs font-bold text-green-400">EUPHORIE</div>
+            <div class="text-xs text-slate-500 mt-1">Bons dividendes +<br>Bons résultats</div>
+          </div>
+        </div>
+        <!-- Narrative dynamique -->
+        <div id="psych-narrative" class="text-xs text-slate-300 leading-relaxed italic border-t border-slate-700/50 pt-3">
+          Chargement du diagnostic de marché…
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Jauge + Composantes ══════════════════════════════════════════════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+      <!-- Jauge Fear & Greed -->
+      <div class="bg-card rounded-xl border border-border p-6 flex flex-col items-center">
+        <h3 class="text-base font-semibold text-slate-200 mb-1">Indice Peur &amp; Avidité BRVM</h3>
+        <p class="text-xs text-slate-400 mb-6">Composite de 6 indicateurs — dividendes en priorité</p>
+        <div class="relative flex items-center justify-center">
+          <canvas id="gauge-canvas" width="300" height="170"></canvas>
+          <div class="absolute bottom-2 text-center">
+            <div id="gauge-score" class="text-4xl font-bold">—</div>
+            <div id="gauge-label" class="text-sm font-medium mt-1">—</div>
+            <div id="gauge-emoji" class="text-2xl mt-1">—</div>
+          </div>
+        </div>
+        <div class="mt-4 flex gap-3 text-xs text-slate-400 flex-wrap justify-center">
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span>Peur Extrême</span>
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-500"></span>Peur</span>
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-500"></span>Neutre</span>
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-lime-500"></span>Avidité</span>
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span>Euphorie</span>
+        </div>
+      </div>
+
+      <!-- Composantes -->
+      <div class="bg-card rounded-xl border border-border p-6">
+        <h3 class="text-base font-semibold text-slate-200 mb-4">Composantes du Sentiment</h3>
+        <div id="sentiment-components" class="space-y-4">
+          <div class="skeleton h-12 rounded"></div>
+          <div class="skeleton h-12 rounded"></div>
+          <div class="skeleton h-12 rounded"></div>
+          <div class="skeleton h-12 rounded"></div>
+          <div class="skeleton h-12 rounded"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Champions du Dividende + Statut ══════════════════════════════════ -->
+    <div class="bg-card rounded-xl border border-border p-5 mb-6">
+      <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center text-sm">💰</div>
+          <div>
+            <h3 class="text-base font-semibold text-slate-200">Champions du Dividende BRVM</h3>
+            <p class="text-xs text-slate-400">Rendement NET après retenue fiscale UEMOA · statut de l'annonce</p>
+          </div>
+        </div>
+        <!-- Légende statut -->
+        <div class="flex gap-3 text-xs flex-wrap">
+          <span class="flex items-center gap-1.5">
+            <span class="px-1.5 py-0.5 rounded text-xs font-bold bg-green-900/60 text-green-300 border border-green-700/50">OFFICIEL</span>
+            <span class="text-slate-500">Publié au BOC BRVM</span>
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="px-1.5 py-0.5 rounded text-xs font-bold bg-yellow-900/60 text-yellow-300 border border-yellow-700/50">ANNONCÉ</span>
+            <span class="text-slate-500">AGO / communiqué</span>
+          </span>
+        </div>
+      </div>
+      <div id="dividend-leaders" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="skeleton h-24 rounded-lg"></div>
+        <div class="skeleton h-24 rounded-lg"></div>
+        <div class="skeleton h-24 rounded-lg"></div>
+        <div class="skeleton h-24 rounded-lg"></div>
+      </div>
+    </div>
+
+    <!-- ══ Synthèse complète : Tableau dividendes exercice 2025 ════════════ -->
+    <div class="bg-card rounded-xl border border-border p-5 mb-6">
+      <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-600 to-teal-600 flex items-center justify-center text-sm">📊</div>
+          <div>
+            <h3 class="text-base font-semibold text-slate-200">Tableau Synthèse — Dividendes Exercice 2025</h3>
+            <p class="text-xs text-slate-400">Source : sikafinance.com · 16 titres annoncés aux AGO 2026 · NET après IRVM UEMOA</p>
+          </div>
+        </div>
+        <!-- Tri -->
+        <div class="flex gap-1 flex-wrap text-xs" id="div2025-sort-btns">
+          <button onclick="sortDiv2025('yield')" class="div2025-sort active px-2 py-1 rounded border border-slate-600 text-slate-300 hover:border-emerald-500" data-sort="yield">Rdt NET ↓</button>
+          <button onclick="sortDiv2025('dps')" class="div2025-sort px-2 py-1 rounded border border-slate-700 text-slate-500 hover:border-emerald-500" data-sort="dps">DPS</button>
+          <button onclick="sortDiv2025('status')" class="div2025-sort px-2 py-1 rounded border border-slate-700 text-slate-500 hover:border-emerald-500" data-sort="status">Statut</button>
+        </div>
+      </div>
+      <div id="div-2025-table" class="overflow-x-auto">
+        <div class="skeleton h-40 rounded-lg"></div>
+      </div>
+    </div>
+
+    <!-- ══ Catalyseurs de l'Euphorie : Résultats + Calendrier ════════════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+      <!-- Résultats des sociétés -->
+      <div class="bg-card rounded-xl border border-border p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="text-xl">📈</span>
+          <div>
+            <h3 class="text-sm font-semibold text-slate-200">Résultats des Sociétés — Exercice 2025</h3>
+            <p class="text-xs text-slate-400">BPA exercice 2025 — fort BPA + dividende annoncé = euphorie 🤑</p>
+          </div>
+        </div>
+        <div id="results-tracker" class="space-y-2">
+          <div class="skeleton h-8 rounded"></div>
+          <div class="skeleton h-8 rounded"></div>
+          <div class="skeleton h-8 rounded"></div>
+        </div>
+      </div>
+
+      <!-- Calendrier dividendes annoncés -->
+      <div class="bg-card rounded-xl border border-border p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="text-xl">📅</span>
+          <div>
+            <h3 class="text-sm font-semibold text-slate-200">Dividendes Annoncés — Exercice 2025</h3>
+            <p class="text-xs text-slate-400">Votés aux AGO 2026 · annoncé (en attente BOC) ou officiel (publié au BOC)</p>
+          </div>
+        </div>
+        <div id="dividend-calendar" class="space-y-2">
+          <div class="skeleton h-8 rounded"></div>
+          <div class="skeleton h-8 rounded"></div>
+          <div class="skeleton h-8 rounded"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Historique sentiment + Breadth ══════════════════════════════════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="bg-card rounded-xl border border-border p-4">
+        <h3 class="text-sm font-semibold text-slate-300 mb-3">Historique Hausse/Baisse (30j)</h3>
+        <canvas id="breadth-chart" height="160"></canvas>
+      </div>
+      <div class="bg-card rounded-xl border border-border p-4">
+        <h3 class="text-sm font-semibold text-slate-300 mb-3">Performance par Secteur</h3>
+        <canvas id="sector-chart" height="160"></canvas>
+      </div>
+    </div>
+
+    <!-- ══ Signal global + Actualités ══════════════════════════════════════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="bg-card rounded-xl border border-border p-5">
+        <h3 class="text-sm font-semibold text-slate-300 mb-4">Signal Global du Marché</h3>
+        <div id="global-signal" class="text-center py-4">
+          <div id="signal-badge" class="text-2xl font-bold mb-2">—</div>
+          <div id="signal-desc" class="text-xs text-slate-400"></div>
+        </div>
+        <div id="market-stats" class="mt-4 space-y-2 text-sm"></div>
+      </div>
+      <div class="bg-card rounded-xl border border-border p-5 lg:col-span-2">
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <h3 class="text-sm font-semibold text-slate-300">Actualités BRVM / UEMOA</h3>
+          <div class="flex gap-1 flex-wrap text-xs">
+            <span class="px-2 py-0.5 rounded bg-blue-900/40 text-blue-300 border border-blue-800/50">🔵 sikafinance</span>
+            <span class="px-2 py-0.5 rounded bg-purple-900/40 text-purple-300 border border-purple-800/50">🟣 richbourse</span>
+            <span class="px-2 py-0.5 rounded bg-green-900/40 text-green-300 border border-green-800/50">🟢 lejecos</span>
+          </div>
+        </div>
+        <div id="psych-news" class="space-y-2 max-h-80 overflow-y-auto"></div>
+      </div>
+    </div>
+  </div>
+
+<!-- ═══════════════════════════════ MODAL NOTE ═══════════════════════════ -->
+<!-- (modal fixed-position, hors du flux principal — OK sémantiquement) -->
+<div id="note-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-card rounded-xl border border-border w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold">Ajouter une Note — <span id="note-symbol"></span></h3>
+      <button onclick="closeNoteModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
+    </div>
+    <div class="space-y-3">
+      <div>
+        <label class="text-xs text-slate-400 block mb-1">Signal</label>
+        <select id="note-signal" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+          <option value="ACHAT">ACHAT</option>
+          <option value="VENTE">VENTE</option>
+          <option value="SURVEILLER">SURVEILLER</option>
+          <option value="NEUTRE" selected>NEUTRE</option>
+          <option value="EVITER">EVITER</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-slate-400 block mb-1">Note</label>
+        <textarea id="note-text" rows="4" placeholder="Votre analyse..."
+          class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+      </div>
+      <button onclick="submitNote()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition-colors">
+        Sauvegarder
+      </button>
+    </div>
+  </div>
+</div>
+
+  <!-- ────────────────── MON PORTEFEUILLE ────────────────── -->
+  <div id="tab-portfolio" class="tab-content hidden">
+
+    <!-- Import Multi-format -->
+    <div class="bg-card rounded-xl border border-border p-6 mb-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-2xl">📁</span>
+        <div>
+          <h3 class="text-base font-semibold text-slate-200">Importer votre Portefeuille</h3>
+          <p class="text-xs text-slate-400">Relevé BRVM · PDF, CSV ou Excel acceptés · SGBCI, BRM, Coris Bourse, NSIA Finance…</p>
+        </div>
+      </div>
+
+      <!-- Badges formats supportés -->
+      <div class="flex flex-wrap gap-2 mb-4">
+        <span class="text-xs px-2 py-1 bg-red-900/30 border border-red-700/40 text-red-300 rounded font-medium">📄 PDF</span>
+        <span class="text-xs px-2 py-1 bg-green-900/30 border border-green-700/40 text-green-300 rounded font-medium">📊 CSV</span>
+        <span class="text-xs px-2 py-1 bg-blue-900/30 border border-blue-700/40 text-blue-300 rounded font-medium">📋 Excel (.xlsx)</span>
+        <span class="text-xs text-slate-500 self-center ml-1">· colonnes : Symbole, Quantité, Prix d'achat</span>
+      </div>
+
+      <!-- Zone de dépôt universelle -->
+      <div id="ptf-drop-zone"
+           class="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center cursor-pointer transition-all hover:border-indigo-500 hover:bg-indigo-950/10"
+           onclick="document.getElementById('ptf-file-input').click()"
+           ondragover="ptfDragOver(event)" ondragleave="ptfDragLeave(event)" ondrop="ptfDrop(event)">
+        <div class="flex flex-col items-center gap-3">
+          <svg class="w-12 h-12 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+          </svg>
+          <div>
+            <p class="text-slate-300 font-medium">Déposer votre relevé ici</p>
+            <p class="text-xs text-slate-500 mt-1">PDF, CSV, Excel — ou cliquer pour sélectionner · Max 20 Mo</p>
+          </div>
+        </div>
+      </div>
+      <input type="file" id="ptf-file-input" accept=".pdf,.csv,.tsv,.xlsx,.xls,.ods,.txt" class="hidden" onchange="ptfFileSelected(event)">
+
+      <!-- Saisie manuelle -->
+      <div class="mt-4 pt-4 border-t border-border">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm text-slate-400">Ou saisir manuellement :</span>
+          <button onclick="toggleManualEntry()" class="text-xs text-indigo-400 hover:text-indigo-300">
+            ➕ Ajouter des titres
+          </button>
+        </div>
+        <div id="manual-entry-zone" class="hidden">
+          <div id="manual-holdings-list" class="space-y-2 mb-3">
+            <!-- Lignes ajoutées dynamiquement -->
+          </div>
+          <button onclick="addManualRow()" class="text-xs text-indigo-400 hover:text-indigo-300 border border-indigo-800 rounded px-3 py-1.5">
+            ➕ Ajouter un titre
+          </button>
+          <button onclick="analyzeManual()" class="ml-3 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-1.5 transition-colors">
+            Analyser le portefeuille →
+          </button>
+        </div>
+      </div>
+
+      <!-- Statut upload -->
+      <div id="ptf-upload-status" class="hidden mt-4">
+        <div class="flex items-center gap-3 p-3 bg-slate-800 rounded-lg">
+          <div id="ptf-spinner" class="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+          <span id="ptf-status-text" class="text-sm text-slate-300">Analyse en cours...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Résultats d'analyse -->
+    <div id="ptf-results" class="hidden">
+
+      <!-- Barre d'actions rapides -->
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <span class="text-sm font-semibold text-slate-300">📊 Analyse du Portefeuille</span>
+        <div class="flex gap-2">
+          <button id="btn-ptf-download"
+                  onclick="downloadPortfolioReport()"
+                  class="flex items-center gap-2 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Télécharger rapport
+          </button>
+          <button id="btn-export-pdf-ptf" onclick="exportPDF()"
+                  class="flex items-center gap-2 px-3 py-1.5 bg-amber-700 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+            Rapport PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Résumé global -->
+      <div id="ptf-summary-card" class="bg-card rounded-xl border border-border p-6 mb-6"></div>
+
+      <!-- Recommandations globales -->
+      <div id="ptf-global-advice" class="bg-indigo-950/30 border border-indigo-800/50 rounded-xl p-4 mb-6 hidden">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-base">🎯</span>
+          <span class="text-sm font-semibold text-indigo-300">Recommandations Globales</span>
+        </div>
+        <ul id="ptf-advice-list" class="space-y-1.5"></ul>
+      </div>
+
+      <!-- Répartition sectorielle -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <div class="lg:col-span-2 bg-card rounded-xl border border-border p-4">
+          <h4 class="text-sm font-semibold text-slate-300 mb-3">📊 Analyse par Position</h4>
+          <div id="ptf-holdings-grid" class="space-y-3"></div>
+        </div>
+        <div class="bg-card rounded-xl border border-border p-4">
+          <h4 class="text-sm font-semibold text-slate-300 mb-3">🥧 Répartition Sectorielle</h4>
+          <div id="ptf-sector-alloc" class="space-y-2"></div>
+          <div class="mt-4 pt-3 border-t border-border">
+            <h4 class="text-sm font-semibold text-slate-300 mb-2">💰 Revenus Dividendes</h4>
+            <div id="ptf-dividend-summary"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ptf-results -->
+
+    <!-- ── Admin : Mise à jour dividendes ─────────────────────────────────── -->
+    <div class="bg-card rounded-xl border border-border p-4 mt-4 opacity-80">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🔄</span>
+          <div>
+            <p class="text-xs font-semibold text-slate-300">Mise à jour des dividendes</p>
+            <p class="text-xs text-slate-500">Scanne les BOC BRVM de l'année et les CR d'Assemblées Générales</p>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="previewDividendSources()"
+                  class="text-xs border border-slate-600 text-slate-400 hover:text-slate-200 hover:border-slate-400 rounded px-3 py-1.5 transition-colors">
+            👁 Prévisualiser
+          </button>
+          <button onclick="refreshAllDividendSources()"
+                  class="text-xs bg-indigo-700 hover:bg-indigo-600 text-white rounded px-3 py-1.5 transition-colors">
+            ↻ Scanner &amp; Mettre à jour
+          </button>
+        </div>
+      </div>
+      <div id="div-refresh-status" class="hidden mt-3 text-xs text-slate-400"></div>
+    </div>
+
+  </div><!-- /tab-portfolio -->
+
+</main>
+
+<!-- Toast notification -->
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden">
+  <div id="toast-inner" class="bg-slate-800 border border-border rounded-xl px-4 py-3 text-sm shadow-xl max-w-xs">
+    <span id="toast-msg"></span>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

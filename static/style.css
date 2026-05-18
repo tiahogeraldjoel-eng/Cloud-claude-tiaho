@@ -1,0 +1,300 @@
+/* ═══════════════════════════════════════════════════════════
+   BRVM Analytics — Styles personnalisés (complément Tailwind)
+   ══════════════════════════════════════════════════════════ */
+
+/* ─── Base ─────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #1e293b; }
+::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ─── Navigation tabs ──────────────────────────────────────── */
+.tab-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 16px;
+  font-size: 13px; font-weight: 500; white-space: nowrap;
+  color: #94a3b8;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  background: none; border-top: none; border-left: none; border-right: none;
+  cursor: pointer;
+}
+.tab-btn:hover { color: #e2e8f0; }
+.tab-btn.active { color: #818cf8; border-bottom-color: #818cf8; }
+
+/* ─── Metric cards (header KPIs) ──────────────────────────── */
+.metric-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.metric-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+.metric-value { font-size: 22px; font-weight: 700; line-height: 1.2; }
+.metric-var   { font-size: 12px; font-weight: 500; }
+
+/* ─── Boutons période graphique ────────────────────────────── */
+.period-btn {
+  padding: 5px 12px;
+  font-size: 12px; font-weight: 500;
+  background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+  color: #94a3b8; cursor: pointer; transition: all 0.15s;
+}
+.period-btn:hover { background: #273449; color: #e2e8f0; }
+.period-btn.active { background: #4338ca; border-color: #4338ca; color: #fff; }
+
+/* ─── Skeleton loader ──────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #273449 50%, #1e293b 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Stocks table ─────────────────────────────────────────── */
+#stocks-table-body tr {
+  border-bottom: 1px solid #1e293b;
+  transition: background 0.15s;
+}
+#stocks-table-body tr:hover { background: #1e293b; cursor: pointer; }
+#stocks-table-body td { padding: 10px 16px; }
+
+.var-up   { color: #22c55e; font-weight: 600; }
+.var-down { color: #ef4444; font-weight: 600; }
+.var-zero { color: #94a3b8; }
+
+/* ─── Signal badges ────────────────────────────────────────── */
+.signal-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.signal-ACHAT      { background: #14532d; color: #4ade80; border: 1px solid #166534; }
+.signal-VENTE      { background: #450a0a; color: #f87171; border: 1px solid #7f1d1d; }
+.signal-NEUTRE     { background: #1c1917; color: #a8a29e; border: 1px solid #44403c; }
+.signal-HAUSSIÈRE  { background: #052e16; color: #86efac; border: 1px solid #166534; }
+.signal-BAISSIÈRE  { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+.signal-SURVEILLER { background: #0c1a2e; color: #7dd3fc; border: 1px solid #1d4ed8; }
+.signal-EVITER     { background: #1c0d00; color: #fb923c; border: 1px solid #9a3412; }
+.signal-fort       { background: rgba(99,102,241,0.2); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); }
+.signal-moyen      { background: rgba(234,179,8,0.15); color: #fde047; border: 1px solid rgba(234,179,8,0.3); }
+.signal-faible     { background: rgba(148,163,184,0.1); color: #94a3b8; border: 1px solid rgba(148,163,184,0.2); }
+
+/* ─── Jauge SVG (Fear & Greed) ─────────────────────────────── */
+#gauge-canvas { display: block; }
+
+/* ─── Composante barre de sentiment ──────────────────────────  */
+.sentiment-bar-track {
+  height: 6px; background: #334155; border-radius: 3px; overflow: hidden;
+}
+.sentiment-bar-fill {
+  height: 100%; border-radius: 3px; transition: width 0.8s ease;
+}
+
+/* ─── Cartes info fondamentale ─────────────────────────────── */
+.fund-metric {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.fund-metric .label { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+.fund-metric .value { font-size: 18px; font-weight: 700; }
+.fund-metric .sub   { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+/* ─── Performance sparkline couleurs ──────────────────────── */
+.perf-pos { color: #22c55e; }
+.perf-neg { color: #ef4444; }
+.perf-na  { color: #475569; }
+
+/* ─── Toast ────────────────────────────────────────────────── */
+#toast { transition: opacity 0.3s; }
+#toast.show { display: block !important; }
+
+/* ─── Lightweight charts override ─────────────────────────── */
+#chart-main, #chart-rsi, #chart-macd { background: #1e293b !important; }
+
+/* ─── Chart container heights (défaut desktop) ─────────────── */
+.chart-main { height: 380px; }
+.chart-sub  { height: 120px; }
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE MOBILE  (≤ 640 px)
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+
+  /* ── Header compact ────────────────────────────────────── */
+  header .max-w-screen-2xl { padding-left: 10px; padding-right: 10px; }
+  header .font-black.text-lg { font-size: 15px; }
+  header .text-xs.text-amber-600\/80 { display: none; }  /* sous-titre masqué */
+  header img.w-11 { width: 32px; height: 32px; }
+  header #logo-fallback { width: 32px; height: 32px; font-size: 11px; }
+  /* Bouton Actualiser : icône seulement */
+  #btn-refresh span { display: none; }
+  #btn-refresh { padding: 6px 8px; }
+
+  /* ── Navigation : icônes seulement ────────────────────── */
+  .tab-btn       { padding: 10px 12px; gap: 0; min-height: 48px; justify-content: center; }
+  .tab-btn svg   { width: 20px; height: 20px; }
+  .tab-label     { display: none; }
+
+  /* ── Main padding ──────────────────────────────────────── */
+  main { padding-left: 10px !important; padding-right: 10px !important; }
+  main.max-w-screen-2xl { padding-top: 14px; padding-bottom: 14px; }
+
+  /* ── Metric cards ──────────────────────────────────────── */
+  .metric-value  { font-size: 17px; }
+  .metric-card   { padding: 10px 12px; }
+  .metric-label  { font-size: 10px; }
+
+  /* ── Tableau titres : masquer colonnes lourdes ─────────── */
+  /* Secteur (col 3), Volume (col 6), Capitalisation (col 7) */
+  #stocks-table thead tr th:nth-child(3),
+  #stocks-table thead tr th:nth-child(6),
+  #stocks-table thead tr th:nth-child(7),
+  #stocks-table-body tr td:nth-child(3),
+  #stocks-table-body tr td:nth-child(6),
+  #stocks-table-body tr td:nth-child(7) { display: none; }
+
+  #stocks-table-body td { padding: 8px 8px; font-size: 12px; }
+  #stocks-table thead th { padding: 8px 8px; font-size: 10px; }
+
+  /* Barre recherche/filtre : pleine largeur */
+  #stocks-filters { flex-direction: column; align-items: stretch; }
+  #stocks-filters .flex.items-center { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+  #search-stocks  { flex: 1; min-width: 0; width: auto; }
+  #filter-sector  { flex: 1; min-width: 0; }
+
+  /* ── Graphiques ────────────────────────────────────────── */
+  .chart-main { height: 230px; }
+  .chart-sub  { height: 72px;  }
+
+  /* ── Sélecteurs onglet Technique ───────────────────────── */
+  #tab-technical .flex.flex-wrap.items-center.gap-4 { flex-direction: column; align-items: stretch; }
+  #tab-technical .flex-1.min-w-64 { min-width: 0 !important; }
+  #tab-technical select { width: 100%; }
+  .period-btn { padding: 4px 8px; font-size: 11px; }
+
+  /* ── Indicateurs checkboxes : espacement ──────────────── */
+  #tab-technical .flex.gap-2.text-xs { gap: 8px; flex-wrap: wrap; }
+
+  /* ── Psychologie : cycle Peur/Neutre/Euphorie → 1 col ── */
+  #tab-psychology .grid.grid-cols-3 {
+    grid-template-columns: 1fr !important;
+    gap: 8px;
+  }
+
+  /* ── Dividende leaders : déjà 2×2, compacter ───────────── */
+  #dividend-leaders { gap: 8px; }
+
+  /* ── Tableau dividendes : scroll horizontal si besoin ── */
+  #div-2025-table { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── Charts breadth / sector ───────────────────────────── */
+  #breadth-chart, #sector-chart { height: 130px !important; }
+
+  /* ── Portfolio drop zone ───────────────────────────────── */
+  #ptf-drop-zone { padding: 18px 12px; }
+  #ptf-drop-zone svg { width: 32px; height: 32px; }
+  #ptf-drop-zone p.text-slate-300 { font-size: 13px; }
+
+  /* ── Badges portefeuille formats ───────────────────────── */
+  #tab-portfolio .flex.flex-wrap.gap-2.mb-4 span.text-xs:last-child { display: none; }
+
+  /* ── Signaux détectés ──────────────────────────────────── */
+  .signal-badge { font-size: 10px; padding: 3px 7px; }
+  #signals-list { gap: 6px; }
+
+  /* ── Modal notes : pleine largeur ─────────────────────── */
+  #note-modal { padding: 16px; }
+  #note-modal > div.bg-card { width: 100%; max-width: none; border-radius: 14px; }
+
+  /* ── Fund metric cards ─────────────────────────────────── */
+  .fund-metric .value { font-size: 15px; }
+  .fund-metric        { padding: 10px 11px; }
+
+  /* ── Bougies japonaises : sous-titre masqué ───────────── */
+  #candle-patterns-panel ~ * .text-xs.text-slate-500,
+  #tab-technical .text-xs.text-slate-500 { }   /* intentionnellement vide */
+
+  /* ── Boutons d'action principaux ───────────────────────── */
+  #btn-export-pdf, #btn-export-pdf-fund, #btn-export-pdf-ptf,
+  #btn-ptf-download { font-size: 11px; padding: 7px 10px; }
+
+  /* ── Titre section bougies : compacter ────────────────── */
+  #tab-technical .text-base { font-size: 13px; }
+
+  /* ── Actualités : tabs source ──────────────────────────── */
+  #news-source-tabs { gap: 4px; }
+  .news-src-btn { font-size: 10px; padding: 2px 6px; }
+
+  /* ── Tri dividendes ────────────────────────────────────── */
+  #div2025-sort-btns button { font-size: 10px; padding: 3px 6px; }
+
+  /* ── Légende jauge F&G ─────────────────────────────────── */
+  #gauge-canvas { width: 260px !important; height: 150px !important; }
+  #tab-psychology .flex.gap-3.text-xs { gap: 6px; font-size: 10px; }
+
+  /* ── Saisie manuelle portefeuille ──────────────────────── */
+  #manual-entry-zone button { font-size: 11px; padding: 5px 10px; }
+}
+
+/* ─── Refresh icon spin ────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinning { animation: spin 1s linear infinite; }
+
+/* ─── Cartes figures de chandeliers ───────────────────────────────────────── */
+.candle-pattern-card {
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.candle-pattern-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+/* ─── Notes card ───────────────────────────────────────────── */
+.note-card {
+  background: #0f172a;
+  border-left: 3px solid #4338ca;
+  border-radius: 0 8px 8px 0;
+  padding: 10px 14px;
+  font-size: 12px;
+}
+.note-card .note-date { color: #64748b; font-size: 11px; }
+
+/* ─── Hover effect for movers rows ────────────────────────── */
+.mover-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 8px; border-radius: 8px;
+  cursor: pointer; transition: background 0.15s;
+}
+.mover-row:hover { background: #0f172a; }
+
+/* ─── Animation fade-in pour onglets ─────────────────────── */
+.tab-content { animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ─── News source filter buttons ─────────────────────────── */
+.news-src-btn.active {
+  background: #1e3a5f;
+  color: #93c5fd;
+  border-color: #3b82f6;
+}
+
+/* ─── Div2025 sort buttons ───────────────────────────────── */
+.div2025-sort.active {
+  background: #052e16;
+  color: #6ee7b7;
+  border-color: #10b981;
+}
