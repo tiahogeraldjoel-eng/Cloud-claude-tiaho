@@ -364,7 +364,7 @@ function chartOpts(w, h) {
 
 function sma(vals, p) {
   const r=new Array(vals.length).fill(null);
-  for(let i=p-1;i<vals.length;i++) r[i]=vals.slice(i-p+1,i+1).reduce((a,v)=>a+(v||0),0)/p;
+  for(let i=p-1;i<vals.length;i++) r[i]=vals.slice(i-p+1,i+1).reduce((a,v)=>a+(v??0),0)/p;
   return r;
 }
 

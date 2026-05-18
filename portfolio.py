@@ -712,7 +712,7 @@ def analyze_portfolio(holdings: List[Dict], db, ind, rec) -> Dict:
         mkt_val   = qty * current_price if qty and current_price else h.get("market_value") or 0
 
         pnl     = (mkt_val - buy_val) if has_cost and buy_val else None
-        pnl_pct = (pnl / buy_val * 100) if pnl is not None and buy_val else None
+        pnl_pct = (pnl / buy_val * 100) if pnl is not None and buy_val and buy_val > 0 else None
 
         # ── Analyse technique ─────────────────────────────────────────────
         prices  = db.get_prices(sym, 365)

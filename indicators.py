@@ -100,7 +100,7 @@ def macd(
         valid_signals = ema(valid_macd_vals, signal_period)
         j = 0
         for i in range(first_valid, n):
-            if macd_line[i] is not None:
+            if macd_line[i] is not None and j < len(valid_signals):
                 signal_line[i] = valid_signals[j]
                 j += 1
 
@@ -163,7 +163,7 @@ def stochastic(
         d_sma = sma(valid_k, d_period)
         j = 0
         for i in range(first_k, n):
-            if k_values[i] is not None:
+            if k_values[i] is not None and j < len(d_sma):
                 d_values[i] = d_sma[j]
                 j += 1
 
