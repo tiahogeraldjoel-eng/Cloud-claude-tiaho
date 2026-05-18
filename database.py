@@ -1,0 +1,587 @@
+"""Couche base de données SQLite pour BRVM Analytics."""
+import sqlite3
+import os
+from pathlib import Path
+from datetime import datetime, date
+from typing import List, Dict, Optional, Any
+
+DB_PATH = Path(__file__).parent / "data" / "brvm.db"
+
+# ─── 47 valeurs officiellement cotées à la BRVM (mis à jour avril 2026) ──────
+# Sources : brvm.org, afx.kwayisi.org, sikafinance.com
+# Changements récents :
+#   LNBB (Loterie Nationale Bénin) : introduction 13 déc. 2024
+#   BICB (BIIC Bénin) : introduction 28 avr. 2025
+#   SVOC (Movis CI, ex-SOVO) : radiation 26 juin 2025
+#   TTSN / TTBN / TTBF : jamais cotées à la BRVM
+#   SEMC : rebaptisée Eviosys Packaging SIEM (ex-Crown SIEM)
+#   SDSC : rebaptisée AGL CI (ex-Bolloré Transport & Logistique)
+#   SIVC : rebaptisée Erium CI (ex-Air Liquide CI)
+#   SDCC : SODECI (distribution d'eau), pas SODE agricole
+#   UNXC : Uniwax CI (textile), UNLC : Unilever CI
+#   Symboles corrigés : BOAC (pas BOACI), BOAS (pas BOASN),
+#                       NSBC (pas NSIAC), NTLC (pas NSTC),
+#                       SLBC (pas SLBA), STBC (pas STAB)
+SEED_STOCKS = [
+    # ── Télécommunications (3) ───────────────────────────────────────────────
+    ("SNTS",  "Sonatel",                                        "Télécommunications",    "Sénégal",       "SN0000000020"),
+    ("ORAC",  "Orange Côte d'Ivoire",                          "Télécommunications",    "Côte d'Ivoire", "CI0000000097"),
+    ("ONTBF", "ONATEL Burkina Faso",                           "Télécommunications",    "Burkina Faso",  "BF0000000016"),
+    # ── Finance / Banques (17) ───────────────────────────────────────────────
+    ("BICC",  "BICI Côte d'Ivoire",                            "Finance",               "Côte d'Ivoire", "CI0000000030"),
+    ("BICB",  "BIIC Bénin",                                    "Finance",               "Bénin",         "BJ0000000020"),
+    ("BOAB",  "Bank Of Africa Bénin",                          "Finance",               "Bénin",         "BJ0000000012"),
+    ("BOABF", "Bank Of Africa Burkina Faso",                   "Finance",               "Burkina Faso",  "BF0000000008"),
+    ("BOAC",  "Bank Of Africa Côte d'Ivoire",                  "Finance",               "Côte d'Ivoire", "CI0000000055"),
+    ("BOAM",  "Bank Of Africa Mali",                           "Finance",               "Mali",          "ML0000000012"),
+    ("BOAN",  "Bank Of Africa Niger",                          "Finance",               "Niger",         "NE0000000004"),
+    ("BOAS",  "Bank Of Africa Sénégal",                        "Finance",               "Sénégal",       "SN0000000038"),
+    ("CABC",  "Compagnie Africaine de Banque CI",              "Finance",               "Côte d'Ivoire", ""),
+    ("CBIBF", "Coris Bank International Burkina Faso",         "Finance",               "Burkina Faso",  "BF0000000024"),
+    ("ECOC",  "Ecobank Côte d'Ivoire",                         "Finance",               "Côte d'Ivoire", "CI0000000063"),
+    ("ETIT",  "Ecobank Transnational Incorporated",            "Finance",               "Togo",          "TG0000000047"),
+    ("NSBC",  "NSIA Banque Côte d'Ivoire",                     "Finance",               "Côte d'Ivoire", "CI0000000170"),
+    ("ORGT",  "Oragroup Togo",                                 "Finance",               "Togo",          "TG0000000063"),
+    ("SAFC",  "SAFCA — Alios Finance Côte d'Ivoire",           "Finance",               "Côte d'Ivoire", "CI0000000186"),
+    ("SGBC",  "Société Générale de Banques en Côte d'Ivoire",  "Finance",               "Côte d'Ivoire", "CI0000000071"),
+    ("SIBC",  "Société Ivoirienne de Banque",                  "Finance",               "Côte d'Ivoire", "CI0000000188"),
+    # ── Distribution Pétrolière (3) ──────────────────────────────────────────
+    ("SHEC",  "Vivo Energy Côte d'Ivoire",                     "Distribution Pétrolière","Côte d'Ivoire","CI0000000156"),
+    ("TTLC",  "TotalEnergies Marketing Côte d'Ivoire",         "Distribution Pétrolière","Côte d'Ivoire","CI0000000022"),
+    ("TTLS",  "TotalEnergies Marketing Sénégal",               "Distribution Pétrolière","Sénégal",      "SN0000000012"),
+    # ── Industrie / Agroalimentaire (12) ─────────────────────────────────────
+    ("BNBC",  "Bernabé Côte d'Ivoire",                         "Industrie",             "Côte d'Ivoire", "CI0000000196"),
+    ("CFAC",  "CFAO Motors Côte d'Ivoire",                     "Industrie",             "Côte d'Ivoire", "CI0000000153"),
+    ("FTSC",  "Filtisac Côte d'Ivoire",                        "Industrie",             "Côte d'Ivoire", "CI0000000105"),
+    ("NEIC",  "NEI-CEDA Côte d'Ivoire",                        "Industrie",             "Côte d'Ivoire", "CI0000000162"),
+    ("NTLC",  "Nestlé Côte d'Ivoire",                          "Industrie",             "Côte d'Ivoire", "CI0000000014"),
+    ("SEMC",  "Eviosys Packaging SIEM Côte d'Ivoire",          "Industrie",             "Côte d'Ivoire", "CI0000000113"),
+    ("SICC",  "SICABLE Côte d'Ivoire",                         "Industrie",             "Côte d'Ivoire", "CI0000000089"),
+    ("SIVC",  "Erium Côte d'Ivoire (ex-Air Liquide CI)",       "Industrie",             "Côte d'Ivoire", "CI0000000121"),
+    ("SLBC",  "Solibra Côte d'Ivoire",                         "Industrie",             "Côte d'Ivoire", "CI0000000006"),
+    ("SMBC",  "SMB — Sté Multinationale de Bitumes CI",        "Industrie",             "Côte d'Ivoire", "CI0000000148"),
+    ("STBC",  "SITAB — Sté Ivoirienne des Tabacs",             "Industrie",             "Côte d'Ivoire", "CI0000000136"),
+    ("UNXC",  "Uniwax Côte d'Ivoire",                          "Industrie",             "Côte d'Ivoire", "CI0000000048"),
+    # ── Agriculture / Plantations (6) ────────────────────────────────────────
+    ("PALC",  "Palm Côte d'Ivoire",                            "Agriculture",           "Côte d'Ivoire", "CI0000000038"),
+    ("PRSC",  "Tractafric Motors Côte d'Ivoire",               "Agriculture",           "Côte d'Ivoire", "CI0000000178"),
+    ("SCRC",  "Sucrivoire Côte d'Ivoire",                      "Agriculture",           "Côte d'Ivoire", "CI0000000144"),
+    ("SOGC",  "SOGB — Sté des Caoutchoucs de Grand-Béréby",    "Agriculture",           "Côte d'Ivoire", "CI0000000079"),
+    ("SPHC",  "SAPH — Sté Africaine de Plantations d'Hévéas",  "Agriculture",           "Côte d'Ivoire", "CI0000000087"),
+    ("UNLC",  "Unilever Côte d'Ivoire",                        "Agriculture",           "Côte d'Ivoire", "CI0000000160"),
+    # ── Énergie / Services Publics (3) ───────────────────────────────────────
+    ("CIEC",  "CIE — Compagnie Ivoirienne d'Électricité",      "Énergie",               "Côte d'Ivoire", "CI0000000046"),
+    ("SDCC",  "SODECI — Sté de Distribution d'Eau de CI",      "Services Publics",      "Côte d'Ivoire", "CI0000000154"),
+    # ── Transport / Logistique (2) ────────────────────────────────────────────
+    ("ABJC",  "Servair Abidjan Côte d'Ivoire",                 "Transport",             "Côte d'Ivoire", "CI0000000129"),
+    ("SDSC",  "AGL CI — Africa Global Logistics",              "Transport",             "Côte d'Ivoire", "CI0000000145"),
+    # ── Services (3) ─────────────────────────────────────────────────────────
+    ("LNBB",  "Loterie Nationale du Bénin",                    "Services",              "Bénin",         "BJ0000000016"),
+    ("STAC",  "SETAO — Sté d'Études et de Travaux d'AO CI",    "Services",              "Côte d'Ivoire", "CI0000000172"),
+]
+
+
+def get_connection() -> sqlite3.Connection:
+    DB_PATH.parent.mkdir(exist_ok=True)
+    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys=ON")
+    return conn
+
+
+def init_db() -> None:
+    conn = get_connection()
+    c = conn.cursor()
+    c.executescript("""
+        CREATE TABLE IF NOT EXISTS stocks (
+            symbol       TEXT PRIMARY KEY,
+            name         TEXT NOT NULL,
+            sector       TEXT,
+            country      TEXT,
+            isin         TEXT,
+            created_at   TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS prices (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol          TEXT NOT NULL,
+            date            TEXT NOT NULL,
+            open            REAL,
+            high            REAL,
+            low             REAL,
+            close           REAL NOT NULL,
+            volume          REAL,
+            market_cap      REAL,
+            variation_pct   REAL,
+            reference_price REAL,
+            UNIQUE(symbol, date),
+            FOREIGN KEY (symbol) REFERENCES stocks(symbol)
+        );
+
+        CREATE TABLE IF NOT EXISTS market_data (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            date            TEXT NOT NULL UNIQUE,
+            brvm_composite  REAL,
+            brvm_10         REAL,
+            advances        INTEGER DEFAULT 0,
+            declines        INTEGER DEFAULT 0,
+            unchanged       INTEGER DEFAULT 0,
+            total_volume    REAL,
+            total_value     REAL
+        );
+
+        CREATE TABLE IF NOT EXISTS fundamentals (
+            symbol              TEXT PRIMARY KEY,
+            per                 REAL,
+            dividend_yield      REAL,
+            dividend_per_share  REAL,
+            book_value          REAL,
+            revenue             REAL,
+            net_income          REAL,
+            eps                 REAL,
+            last_updated        TEXT,
+            FOREIGN KEY (symbol) REFERENCES stocks(symbol)
+        );
+
+        CREATE TABLE IF NOT EXISTS news (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            title       TEXT NOT NULL UNIQUE,
+            url         TEXT,
+            source      TEXT,
+            published   TEXT,
+            fetched_at  TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS notes (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol      TEXT NOT NULL,
+            signal      TEXT,
+            note        TEXT,
+            created_at  TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_prices_sym_date  ON prices(symbol, date);
+        CREATE INDEX IF NOT EXISTS idx_market_date      ON market_data(date);
+    """)
+    # ── Migration 1 : ajouter colonne dividend_per_share si absente ──────────
+    try:
+        c.execute("ALTER TABLE fundamentals ADD COLUMN dividend_per_share REAL")
+        conn.commit()
+    except Exception:
+        pass
+
+    # ── Migration 5 : statut du dividende annoncé / officiel BRVM ────────────
+    # 'aucun'    = pas de dividende cette année
+    # 'annoncé'  = dividende annoncé en AGO ou par la société (non encore publié au BOC)
+    # 'officiel' = dividende officialisé et publié au Bulletin Officiel de la Cote (BOC)
+    try:
+        c.execute("ALTER TABLE fundamentals ADD COLUMN div_status TEXT DEFAULT 'aucun'")
+        conn.commit()
+    except Exception:
+        pass
+
+    # ── Migration 6 : date de mise en paiement du dividende ──────────────────
+    try:
+        c.execute("ALTER TABLE fundamentals ADD COLUMN div_payment_date TEXT")
+        conn.commit()
+    except Exception:
+        pass
+
+    # ── Migration 7 : exercice fiscal du dividende ────────────────────────────
+    # Exemple : dividende de l'exercice 2025 annoncé lors de l'AGO d'avril 2026
+    #   → div_exercice_year = 2025
+    # Permet de distinguer les dividendes actuels (exercice récent) des anciens (déjà payés)
+    try:
+        c.execute("ALTER TABLE fundamentals ADD COLUMN div_exercice_year INTEGER")
+        conn.commit()
+    except Exception:
+        pass
+
+    # ── Migration 2 : corriger les symboles erronés hérités ──────────────────
+    # Renommage symboles → symboles officiels BRVM actuels
+    _SYMBOL_RENAMES = [
+        ("BOACI", "BOAC"),   # Bank Of Africa CI
+        ("BOASN", "BOAS"),   # Bank Of Africa Sénégal
+        ("NSIAC", "NSBC"),   # NSIA Banque CI
+        ("NSTC",  "NTLC"),   # Nestlé CI
+        ("SLBA",  "SLBC"),   # Solibra CI
+        ("STAB",  "STBC"),   # SITAB CI
+    ]
+    for old_sym, new_sym in _SYMBOL_RENAMES:
+        # Stocks table — OR IGNORE évite la violation de contrainte si le nouveau symbole existe déjà
+        c.execute("UPDATE OR IGNORE stocks SET symbol=? WHERE symbol=?", (new_sym, old_sym))
+        c.execute("DELETE FROM stocks WHERE symbol=?", (old_sym,))  # nettoyer l'ancien si resté
+        # Prices table
+        c.execute("UPDATE OR IGNORE prices SET symbol=? WHERE symbol=?", (new_sym, old_sym))
+        c.execute("DELETE FROM prices WHERE symbol=?", (old_sym,))
+        # Fundamentals table
+        c.execute("UPDATE OR IGNORE fundamentals SET symbol=? WHERE symbol=?", (new_sym, old_sym))
+        c.execute("DELETE FROM fundamentals WHERE symbol=?", (old_sym,))
+
+    # ── Migration 3 : supprimer les titres non cotés à la BRVM ──────────────
+    _NOT_LISTED = ["TTBF", "TTBN", "TTSN", "SVOC", "SOLC", "SONC", "SOBFC",
+                   "STLC", "BNKC", "BOASN", "BOACI", "NSIAC", "NSTC",
+                   "SLBA", "STAB"]
+    for sym in _NOT_LISTED:
+        c.execute("DELETE FROM fundamentals WHERE symbol=?", (sym,))
+        c.execute("DELETE FROM prices WHERE symbol=?", (sym,))
+        c.execute("DELETE FROM stocks WHERE symbol=?", (sym,))
+
+    # ── Migration 4 : corriger secteurs et noms mis à jour ───────────────────
+    _STOCK_UPDATES = [
+        # symbol, name, sector, country
+        ("SDCC",  "SODECI — Sté de Distribution d'Eau de CI",     "Services Publics",      "Côte d'Ivoire"),
+        ("SDSC",  "AGL CI — Africa Global Logistics",             "Transport",             "Côte d'Ivoire"),
+        ("SEMC",  "Eviosys Packaging SIEM Côte d'Ivoire",         "Industrie",             "Côte d'Ivoire"),
+        ("SIVC",  "Erium Côte d'Ivoire (ex-Air Liquide CI)",      "Industrie",             "Côte d'Ivoire"),
+        ("SMBC",  "SMB — Sté Multinationale de Bitumes CI",       "Industrie",             "Côte d'Ivoire"),
+        ("UNXC",  "Uniwax Côte d'Ivoire",                         "Industrie",             "Côte d'Ivoire"),
+        ("UNLC",  "Unilever Côte d'Ivoire",                       "Agriculture",           "Côte d'Ivoire"),
+        ("STBC",  "SITAB — Sté Ivoirienne des Tabacs",            "Industrie",             "Côte d'Ivoire"),
+        ("SLBC",  "Solibra Côte d'Ivoire",                        "Industrie",             "Côte d'Ivoire"),
+        ("NTLC",  "Nestlé Côte d'Ivoire",                         "Industrie",             "Côte d'Ivoire"),
+        ("BOAC",  "Bank Of Africa Côte d'Ivoire",                 "Finance",               "Côte d'Ivoire"),
+        ("BOAS",  "Bank Of Africa Sénégal",                       "Finance",               "Sénégal"),
+        ("NSBC",  "NSIA Banque Côte d'Ivoire",                    "Finance",               "Côte d'Ivoire"),
+        ("PRSC",  "Tractafric Motors Côte d'Ivoire",              "Agriculture",           "Côte d'Ivoire"),
+        ("SAFC",  "SAFCA — Alios Finance Côte d'Ivoire",          "Finance",               "Côte d'Ivoire"),
+        ("SGBC",  "Société Générale de Banques en Côte d'Ivoire", "Finance",               "Côte d'Ivoire"),
+        ("SHEC",  "Vivo Energy Côte d'Ivoire",                    "Distribution Pétrolière","Côte d'Ivoire"),
+        ("CFAC",  "CFAO Motors Côte d'Ivoire",                    "Industrie",             "Côte d'Ivoire"),
+        ("SICC",  "SICABLE Côte d'Ivoire",                        "Industrie",             "Côte d'Ivoire"),
+        ("BNBC",  "Bernabé Côte d'Ivoire",                        "Industrie",             "Côte d'Ivoire"),
+        ("SCRC",  "Sucrivoire Côte d'Ivoire",                     "Agriculture",           "Côte d'Ivoire"),
+        ("STAC",  "SETAO — Sté d'Études et de Travaux d'AO CI",   "Services",              "Côte d'Ivoire"),
+        ("ABJC",  "Servair Abidjan Côte d'Ivoire",                "Transport",             "Côte d'Ivoire"),
+        # Correctifs pays manquants (INSERT OR IGNORE ne met pas à jour les lignes existantes)
+        ("NEIC",  "NEI-CEDA Côte d'Ivoire",                        "Industrie",             "Côte d'Ivoire"),
+        ("ORGT",  "Oragroup Togo",                                  "Finance",               "Togo"),
+    ]
+    for sym, name, sector, country in _STOCK_UPDATES:
+        c.execute(
+            "UPDATE stocks SET name=?, sector=?, country=? WHERE symbol=?",
+            (name, sector, country, sym)
+        )
+
+    conn.commit()
+
+    # ── Seed stocks (INSERT OR IGNORE — ne touche pas aux lignes existantes) ─
+    c.executemany(
+        "INSERT OR IGNORE INTO stocks (symbol, name, sector, country, isin) VALUES (?,?,?,?,?)",
+        SEED_STOCKS,
+    )
+    conn.commit()
+    conn.close()
+
+
+# ─── Stocks ─────────────────────────────────────────────────────────────────
+
+def get_all_stocks() -> List[Dict]:
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT symbol, name, sector, country FROM stocks ORDER BY symbol"
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_stock(symbol: str) -> Optional[Dict]:
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT * FROM stocks WHERE symbol=?", (symbol.upper(),)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+# ─── Prices ─────────────────────────────────────────────────────────────────
+
+def upsert_price(data: Dict) -> None:
+    conn = get_connection()
+    conn.execute("""
+        INSERT INTO prices (symbol,date,open,high,low,close,volume,market_cap,variation_pct,reference_price)
+        VALUES (:symbol,:date,:open,:high,:low,:close,:volume,:market_cap,:variation_pct,:reference_price)
+        ON CONFLICT(symbol,date) DO UPDATE SET
+            open=excluded.open, high=excluded.high, low=excluded.low,
+            close=excluded.close, volume=excluded.volume,
+            market_cap=excluded.market_cap,
+            variation_pct=excluded.variation_pct,
+            reference_price=excluded.reference_price
+    """, data)
+    conn.commit()
+    conn.close()
+
+
+def upsert_prices_bulk(rows: List[Dict]) -> None:
+    if not rows:
+        return
+    conn = get_connection()
+    conn.executemany("""
+        INSERT INTO prices (symbol,date,open,high,low,close,volume,market_cap,variation_pct,reference_price)
+        VALUES (:symbol,:date,:open,:high,:low,:close,:volume,:market_cap,:variation_pct,:reference_price)
+        ON CONFLICT(symbol,date) DO UPDATE SET
+            open=excluded.open, high=excluded.high, low=excluded.low,
+            close=excluded.close, volume=excluded.volume,
+            market_cap=excluded.market_cap,
+            variation_pct=excluded.variation_pct,
+            reference_price=excluded.reference_price
+    """, rows)
+    conn.commit()
+    conn.close()
+
+
+def get_prices(symbol: str, days: int = 365) -> List[Dict]:
+    """Retourne les cours des `days` derniers jours calendaires (filtre par date, pas LIMIT)."""
+    conn = get_connection()
+    rows = conn.execute(
+        """SELECT date,open,high,low,close,volume,market_cap,variation_pct
+           FROM prices
+           WHERE symbol = ?
+             AND date >= date('now', ? || ' days')
+           ORDER BY date ASC""",
+        (symbol.upper(), f"-{days}"),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_latest_price(symbol: str) -> Optional[Dict]:
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT * FROM prices WHERE symbol=? ORDER BY date DESC LIMIT 1",
+        (symbol.upper(),),
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_latest_prices_all() -> List[Dict]:
+    """Last price for each stock with stock info joined."""
+    conn = get_connection()
+    rows = conn.execute("""
+        SELECT s.symbol, s.name, s.sector, s.country,
+               p.date, p.close, p.volume, p.market_cap, p.variation_pct, p.reference_price
+        FROM stocks s
+        LEFT JOIN prices p ON p.symbol = s.symbol
+            AND p.date = (SELECT MAX(date) FROM prices WHERE symbol = s.symbol)
+        ORDER BY s.symbol
+    """).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+# ─── Market data ─────────────────────────────────────────────────────────────
+
+def upsert_market_data(data: Dict) -> None:
+    conn = get_connection()
+    conn.execute("""
+        INSERT INTO market_data (date,brvm_composite,brvm_10,advances,declines,unchanged,total_volume,total_value)
+        VALUES (:date,:brvm_composite,:brvm_10,:advances,:declines,:unchanged,:total_volume,:total_value)
+        ON CONFLICT(date) DO UPDATE SET
+            brvm_composite=excluded.brvm_composite, brvm_10=excluded.brvm_10,
+            advances=excluded.advances, declines=excluded.declines,
+            unchanged=excluded.unchanged, total_volume=excluded.total_volume,
+            total_value=excluded.total_value
+    """, data)
+    conn.commit()
+    conn.close()
+
+
+def get_market_history(days: int = 90) -> List[Dict]:
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM market_data ORDER BY date DESC LIMIT ?", (days,)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in reversed(rows)]
+
+
+def get_latest_market() -> Optional[Dict]:
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT * FROM market_data ORDER BY date DESC LIMIT 1"
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+# ─── Fundamentals ────────────────────────────────────────────────────────────
+
+def upsert_fundamental(data: Dict) -> None:
+    conn = get_connection()
+    data["last_updated"] = datetime.utcnow().isoformat()
+    # S'assurer que les clés manquantes sont présentes (None par défaut)
+    for col in ("per","dividend_yield","dividend_per_share","book_value","revenue","net_income",
+                "eps","div_status","div_payment_date","div_exercice_year"):
+        data.setdefault(col, None)
+    conn.execute("""
+        INSERT INTO fundamentals
+            (symbol,per,dividend_yield,dividend_per_share,book_value,revenue,net_income,eps,
+             div_status,div_payment_date,div_exercice_year,last_updated)
+        VALUES
+            (:symbol,:per,:dividend_yield,:dividend_per_share,:book_value,:revenue,:net_income,:eps,
+             :div_status,:div_payment_date,:div_exercice_year,:last_updated)
+        ON CONFLICT(symbol) DO UPDATE SET
+            per=COALESCE(excluded.per, per),
+            -- ── Protection données sikafinance (exercice 2025) ─────────────────
+            -- Si la DB a déjà un div_exercice_year (= seedé depuis sikafinance)
+            -- ET que la mise à jour n'apporte PAS de div_exercice_year (= scraper AFX sans contexte)
+            -- → ne JAMAIS écraser les valeurs dividende officielles
+            dividend_yield = CASE
+                WHEN div_exercice_year IS NOT NULL AND excluded.div_exercice_year IS NULL
+                THEN dividend_yield
+                ELSE COALESCE(excluded.dividend_yield, dividend_yield)
+            END,
+            dividend_per_share = CASE
+                WHEN div_exercice_year IS NOT NULL AND excluded.div_exercice_year IS NULL
+                THEN dividend_per_share
+                ELSE COALESCE(excluded.dividend_per_share, dividend_per_share)
+            END,
+            div_status = CASE
+                WHEN div_exercice_year IS NOT NULL AND excluded.div_exercice_year IS NULL
+                THEN div_status
+                ELSE COALESCE(excluded.div_status, div_status)
+            END,
+            div_payment_date = CASE
+                WHEN div_exercice_year IS NOT NULL AND excluded.div_exercice_year IS NULL
+                THEN div_payment_date
+                ELSE COALESCE(excluded.div_payment_date, div_payment_date)
+            END,
+            div_exercice_year = CASE
+                WHEN div_exercice_year IS NOT NULL AND excluded.div_exercice_year IS NULL
+                THEN div_exercice_year
+                ELSE COALESCE(excluded.div_exercice_year, div_exercice_year)
+            END,
+            -- ── Autres colonnes : comportement COALESCE standard ───────────────
+            book_value=COALESCE(excluded.book_value, book_value),
+            revenue=COALESCE(excluded.revenue, revenue),
+            net_income=COALESCE(excluded.net_income, net_income),
+            eps=COALESCE(excluded.eps, eps),
+            last_updated=excluded.last_updated
+    """, data)
+    conn.commit()
+    conn.close()
+
+
+def get_fundamental(symbol: str) -> Optional[Dict]:
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT * FROM fundamentals WHERE symbol=?", (symbol.upper(),)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def force_upsert_dividend(data: Dict) -> None:
+    """
+    Mise à jour autoritaire des colonnes dividende d'un titre.
+    Contrairement à upsert_fundamental() qui utilise COALESCE (préserve l'existant),
+    cette fonction ÉCRASE TOUJOURS les champs dividende — conçue pour le seeding
+    des données officielles (ex : tableau sikafinance).
+    Les autres colonnes (per, eps, book_value…) ne sont pas touchées.
+    """
+    conn = get_connection()
+    data["last_updated"] = datetime.utcnow().isoformat()
+    # Créer la ligne si elle n'existe pas encore (INSERT OR IGNORE)
+    conn.execute(
+        "INSERT OR IGNORE INTO fundamentals (symbol, last_updated) VALUES (:symbol, :last_updated)",
+        {"symbol": data["symbol"], "last_updated": data["last_updated"]},
+    )
+    # Forcer la mise à jour des colonnes dividende sans COALESCE
+    conn.execute("""
+        UPDATE fundamentals
+        SET dividend_per_share  = :dividend_per_share,
+            dividend_yield      = :dividend_yield,
+            div_status          = :div_status,
+            div_payment_date    = :div_payment_date,
+            div_exercice_year   = :div_exercice_year,
+            last_updated        = :last_updated
+        WHERE symbol = :symbol
+    """, data)
+    conn.commit()
+    conn.close()
+
+
+# ─── News ────────────────────────────────────────────────────────────────────
+
+def save_news(items: List[Dict]) -> None:
+    """
+    Insère des articles dans la table news.
+    INSERT OR IGNORE garantit la déduplication grâce au UNIQUE sur title.
+    En cas de collision (même titre), l'ancienne entrée est conservée.
+    """
+    if not items:
+        return
+    conn = get_connection()
+    conn.executemany("""
+        INSERT OR IGNORE INTO news (title, url, source, published)
+        VALUES (:title, :url, :source, :published)
+    """, items)
+    conn.commit()
+    conn.close()
+
+
+def get_news(limit: int = 15) -> List[Dict]:
+    """
+    Retourne les N dernières news uniques par titre, ordonnées par date de publication
+    (puis par fetched_at pour les articles sans date).
+    """
+    conn = get_connection()
+    rows = conn.execute(
+        """
+        SELECT title, url, source, published
+        FROM news
+        GROUP BY title
+        ORDER BY MAX(published) DESC, MAX(fetched_at) DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+# ─── Notes ───────────────────────────────────────────────────────────────────
+
+def save_note(symbol: str, signal: str, note: str) -> None:
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO notes (symbol,signal,note) VALUES (?,?,?)",
+        (symbol.upper(), signal, note),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_notes(symbol: str) -> List[Dict]:
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT signal,note,created_at FROM notes WHERE symbol=? ORDER BY created_at DESC LIMIT 10",
+        (symbol.upper(),),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+# ─── Analytics helpers ───────────────────────────────────────────────────────
+
+def count_prices(symbol: str) -> int:
+    conn = get_connection()
+    n = conn.execute(
+        "SELECT COUNT(*) FROM prices WHERE symbol=?", (symbol.upper(),)
+    ).fetchone()[0]
+    conn.close()
+    return n
+
+
+def get_52w_highlow(symbol: str) -> Dict:
+    conn = get_connection()
+    row = conn.execute("""
+        SELECT MAX(close) as high_52w, MIN(close) as low_52w
+        FROM prices
+        WHERE symbol=?
+          AND date >= date('now','-365 days')
+    """, (symbol.upper(),)).fetchone()
+    conn.close()
+    return {"high_52w": row["high_52w"], "low_52w": row["low_52w"]} if row else {}

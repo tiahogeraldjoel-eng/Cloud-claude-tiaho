@@ -161,9 +161,11 @@ const BRVMCharts = (() => {
     const canvas = document.getElementById(canvasId);
     if (!canvas || !rsiData) return;
     const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
     const W = canvas.offsetWidth || 340;
     const H = 70;
-    canvas.width  = W; canvas.height = H;
+    canvas.width  = W * dpr; canvas.height = H * dpr;
+    ctx.scale(dpr, dpr);
 
     ctx.fillStyle = '#1A2B3C';
     ctx.fillRect(0, 0, W, H);
@@ -212,11 +214,12 @@ const BRVMCharts = (() => {
     const canvas = document.getElementById(canvasId);
     if (!canvas || !positions || positions.length === 0) return;
     const ctx = canvas.getContext('2d');
-    const size = Math.min(canvas.offsetWidth, 200);
-    canvas.width  = canvas.offsetWidth || 340;
-    canvas.height = 160;
-    const W = canvas.width;
-    const H = canvas.height;
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.offsetWidth || 340;
+    const H = 160;
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    ctx.scale(dpr, dpr);
     ctx.fillStyle = '#1A2B3C';
     ctx.fillRect(0, 0, W, H);
 
@@ -266,9 +269,11 @@ const BRVMCharts = (() => {
     const canvas = document.getElementById(canvasId);
     if (!canvas || !data || data.length < 2) return;
     const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
     const W = canvas.offsetWidth || 340;
     const H = canvas.offsetHeight || 160;
-    canvas.width = W; canvas.height = H;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.scale(dpr, dpr);
     ctx.fillStyle = '#1A2B3C';
     ctx.fillRect(0, 0, W, H);
 

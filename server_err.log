@@ -1,0 +1,85 @@
+INFO:     Started server process [896]
+INFO:     Waiting for application startup.
+2026-04-20 11:35:28 [INFO] app — Initialisation DB...
+2026-04-20 11:35:28 [INFO] app — Chargement dividendes 2025 (sikafinance)...
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [officiel] BOABF  : NET=  397.00 FCFA  BRUT=  453.71 FCFA  Rdt brut=8.10%  Rdt net=7.05%  Paiement=2026-04-22
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [officiel] BOAC   : NET=  594.50 FCFA  BRUT=  833.80 FCFA  Rdt brut=9.58%  Rdt net=6.91%  Paiement=2026-05-04
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [officiel] SNTS   : NET= 1740.00 FCFA  BRUT= 2047.06 FCFA  Rdt brut=7.06%  Rdt net=6.11%  Paiement=2026-05-22
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [officiel] BOAS   : NET=  450.00 FCFA  BRUT=  529.41 FCFA  Rdt brut=7.79%  Rdt net=6.62%  Paiement=2026-05-28
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [officiel] BOAM   : NET=  305.04 FCFA  BRUT=  358.87 FCFA  Rdt brut=7.64%  Rdt net=6.49%  Paiement=2026-06-01
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [officiel] ONTBF  : NET=  145.32 FCFA  BRUT=  166.08 FCFA  Rdt brut=6.11%  Rdt net=5.34%  Paiement=2026-06-12
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [annoncé ] ECOC   : NET=  781.00 FCFA  BRUT= 1095.37 FCFA  Rdt brut=6.85%  Rdt net=4.81%  Paiement=à fixer
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [annoncé ] SGBC   : NET= 2293.28 FCFA  BRUT= 3216.38 FCFA  Rdt brut=9.78%  Rdt net=6.95%  Paiement=à fixer
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [annoncé ] BOAB   : NET=  585.00 FCFA  BRUT=  688.24 FCFA  Rdt brut=8.60%  Rdt net=7.33%  Paiement=à fixer
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [annoncé ] ETIT   : NET=    0.93 FCFA  BRUT=    1.09 FCFA  Rdt brut=4.04%  Rdt net=3.58%  Paiement=à fixer
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [annoncé ] CBIBF  : NET=  900.00 FCFA  BRUT= 1028.57 FCFA  Rdt brut=6.10%  Rdt net=5.36%  Paiement=à fixer
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [annoncé ] TTLC   : NET=  139.77 FCFA  BRUT=  196.03 FCFA  Rdt brut=7.03%  Rdt net=5.00%  Paiement=à fixer
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [annoncé ] PALC   : NET=  441.76 FCFA  BRUT=  619.58 FCFA  Rdt brut=7.65%  Rdt net=5.45%  Paiement=à fixer
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [annoncé ] SPHC   : NET=  430.32 FCFA  BRUT=  603.53 FCFA  Rdt brut=8.21%  Rdt net=5.89%  Paiement=à fixer
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [annoncé ] ORAC   : NET=  704.00 FCFA  BRUT=  987.38 FCFA  Rdt brut=6.54%  Rdt net=4.79%  Paiement=à fixer
+2026-04-20 11:35:28 [INFO] app —   DIV 2025 [annoncé ] SICC   : NET=  152.02 FCFA  BRUT=  213.21 FCFA  Rdt brut=4.90%  Rdt net=4.00%  Paiement=à fixer
+2026-04-20 11:35:28 [INFO] app — seed_dividends_2025 terminé : 16 titres chargés
+2026-04-20 11:35:28 [INFO] app — Chargement historique pour 47 titres...
+2026-04-20 11:35:28 [INFO] apscheduler.scheduler — Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-04-20 11:35:28 [INFO] apscheduler.scheduler — Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-04-20 11:35:28 [INFO] apscheduler.scheduler — Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-04-20 11:35:28 [INFO] apscheduler.scheduler — Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-04-20 11:35:28 [INFO] apscheduler.scheduler — Added job "_refresh_data" to job store "default"
+2026-04-20 11:35:28 [INFO] apscheduler.scheduler — Added job "_refresh_data" to job store "default"
+2026-04-20 11:35:28 [INFO] apscheduler.scheduler — Added job "_refresh_data" to job store "default"
+2026-04-20 11:35:28 [INFO] apscheduler.scheduler — Added job "_refresh_news" to job store "default"
+2026-04-20 11:35:28 [INFO] apscheduler.scheduler — Scheduler started
+2026-04-20 11:35:28 [INFO] app — Planificateur démarré — rafraîchissement toutes les 20 min + triggers 11h15/15h45
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-04-20 11:35:28 [INFO] app — Historique chargé pour tous les titres ✓
+2026-04-20 11:35:30 [INFO] scraper — brvm.org : 47 titres (cours de clôture officiels)
+2026-04-20 11:35:31 [INFO] scraper — afx indices: Composite=399.03, BRVM10=None
+2026-04-20 11:35:33 [INFO] scraper — brvm.org indices: Composite=400.68, BRVM30=188.09
+2026-04-20 11:35:34 [INFO] scraper — _get_sika https://www.sikafinance.com/marches/actualites_bourse_brvm: HTTP 200, 32185 bytes
+2026-04-20 11:35:34 [INFO] scraper — sikafinance https://www.sikafinance.com/marches/actualites_bourse_brvm: 10 li.news-item trouvés
+2026-04-20 11:35:34 [INFO] scraper — _get_sika https://www.sikafinance.com/marches/communiques_brvm: HTTP 200, 26002 bytes
+2026-04-20 11:35:34 [INFO] scraper — sikafinance https://www.sikafinance.com/marches/communiques_brvm: 0 li.news-item trouvés
+2026-04-20 11:35:34 [INFO] scraper — sikafinance news: 10 articles
+2026-04-20 11:35:37 [INFO] scraper — richbourse news: 30 articles
+2026-04-20 11:35:40 [INFO] scraper — news total : 38 articles (10 sika + 20 richbourse)
+2026-04-20 11:35:40 [INFO] app — 47 cours sauvegardés
+2026-04-20 11:35:40 [INFO] app — Données rafraîchies (#1)
+2026-04-20 11:40:00 [INFO] apscheduler.executors.default — Running job "_refresh_data (trigger: cron[day_of_week='mon-fri', hour='8-16', minute='0,20,40'], next run at: 2026-04-20 11:40:00 UTC)" (scheduled at 2026-04-20 11:40:00+00:00)
+2026-04-20 11:40:02 [INFO] scraper — brvm.org : 47 titres (cours de clôture officiels)
+2026-04-20 11:40:03 [INFO] scraper — afx indices: Composite=399.03, BRVM10=None
+2026-04-20 11:40:05 [INFO] scraper — brvm.org indices: Composite=400.68, BRVM30=188.09
+2026-04-20 11:40:05 [INFO] scraper — _get_sika https://www.sikafinance.com/marches/actualites_bourse_brvm: HTTP 200, 32187 bytes
+2026-04-20 11:40:05 [INFO] scraper — sikafinance https://www.sikafinance.com/marches/actualites_bourse_brvm: 10 li.news-item trouvés
+2026-04-20 11:40:06 [INFO] scraper — _get_sika https://www.sikafinance.com/marches/communiques_brvm: HTTP 200, 26002 bytes
+2026-04-20 11:40:06 [INFO] scraper — sikafinance https://www.sikafinance.com/marches/communiques_brvm: 0 li.news-item trouvés
+2026-04-20 11:40:06 [INFO] scraper — sikafinance news: 10 articles
+2026-04-20 11:40:08 [INFO] scraper — richbourse news: 30 articles
+2026-04-20 11:40:09 [INFO] scraper — news total : 38 articles (10 sika + 20 richbourse)
+2026-04-20 11:40:09 [INFO] app — 47 cours sauvegardés
+2026-04-20 11:40:09 [INFO] app — Données rafraîchies (#2)
+2026-04-20 11:40:09 [INFO] apscheduler.executors.default — Job "_refresh_data (trigger: cron[day_of_week='mon-fri', hour='8-16', minute='0,20,40'], next run at: 2026-04-20 12:00:00 UTC)" executed successfully
+2026-04-20 12:00:00 [INFO] apscheduler.executors.default — Running job "_refresh_data (trigger: cron[day_of_week='mon-fri', hour='8-16', minute='0,20,40'], next run at: 2026-04-20 12:20:00 UTC)" (scheduled at 2026-04-20 12:00:00+00:00)
+2026-04-20 12:00:03 [INFO] scraper — brvm.org : 47 titres (cours de clôture officiels)
+2026-04-20 12:00:04 [INFO] scraper — afx indices: Composite=399.03, BRVM10=None
+2026-04-20 12:00:09 [INFO] scraper — brvm.org indices: Composite=400.7, BRVM30=188.06
+2026-04-20 12:00:10 [INFO] scraper — _get_sika https://www.sikafinance.com/marches/actualites_bourse_brvm: HTTP 200, 32187 bytes
+2026-04-20 12:00:10 [INFO] scraper — sikafinance https://www.sikafinance.com/marches/actualites_bourse_brvm: 10 li.news-item trouvés
+2026-04-20 12:00:11 [INFO] scraper — _get_sika https://www.sikafinance.com/marches/communiques_brvm: HTTP 200, 26002 bytes
+2026-04-20 12:00:11 [INFO] scraper — sikafinance https://www.sikafinance.com/marches/communiques_brvm: 0 li.news-item trouvés
+2026-04-20 12:00:11 [INFO] scraper — sikafinance news: 10 articles
+2026-04-20 12:00:14 [INFO] scraper — richbourse news: 30 articles
+2026-04-20 12:00:16 [INFO] scraper — news total : 38 articles (10 sika + 20 richbourse)
+2026-04-20 12:00:16 [INFO] app — 47 cours sauvegardés
+2026-04-20 12:00:17 [INFO] app — Données rafraîchies (#3)
+2026-04-20 12:00:17 [INFO] apscheduler.executors.default — Job "_refresh_data (trigger: cron[day_of_week='mon-fri', hour='8-16', minute='0,20,40'], next run at: 2026-04-20 12:20:00 UTC)" executed successfully
+2026-04-20 12:15:00 [INFO] apscheduler.executors.default — Running job "_refresh_news (trigger: cron[day_of_week='mon-fri', hour='*/2', minute='15'], next run at: 2026-04-20 14:15:00 UTC)" (scheduled at 2026-04-20 12:15:00+00:00)
+2026-04-20 12:15:02 [INFO] scraper — _get_sika https://www.sikafinance.com/marches/actualites_bourse_brvm: HTTP 200, 32151 bytes
+2026-04-20 12:15:02 [INFO] scraper — sikafinance https://www.sikafinance.com/marches/actualites_bourse_brvm: 10 li.news-item trouvés
+2026-04-20 12:15:02 [INFO] scraper — _get_sika https://www.sikafinance.com/marches/communiques_brvm: HTTP 200, 26002 bytes
+2026-04-20 12:15:02 [INFO] scraper — sikafinance https://www.sikafinance.com/marches/communiques_brvm: 0 li.news-item trouvés
+2026-04-20 12:15:02 [INFO] scraper — sikafinance news: 10 articles
+2026-04-20 12:15:10 [INFO] scraper — richbourse news: 30 articles
+2026-04-20 12:15:11 [INFO] scraper — news total : 38 articles (10 sika + 20 richbourse)
+2026-04-20 12:15:11 [INFO] app — Actualités sauvegardées : 30 articles
+2026-04-20 12:15:11 [INFO] apscheduler.executors.default — Job "_refresh_news (trigger: cron[day_of_week='mon-fri', hour='*/2', minute='15'], next run at: 2026-04-20 14:15:00 UTC)" executed successfully

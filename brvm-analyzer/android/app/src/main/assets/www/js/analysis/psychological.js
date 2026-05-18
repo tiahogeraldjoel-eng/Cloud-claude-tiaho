@@ -12,14 +12,14 @@ const PsychologicalAnalysis = (() => {
 
   // ─── Calendrier dividendes et résultats ───────────────────────────────────
   const DIVIDEND_EVENTS = {
-    "SNTS": { divDate: "2025-06-15", resultsDate: "2025-02-20", expectedDiv: 1450 },
-    "PALC": { divDate: "2025-05-20", resultsDate: "2025-02-15", expectedDiv: 600 },
-    "SIAC": { divDate: "2025-05-25", resultsDate: "2025-02-25", expectedDiv: 280 },
-    "BOAC": { divDate: "2025-06-10", resultsDate: "2025-03-10", expectedDiv: 420 },
-    "SGBC": { divDate: "2025-06-20", resultsDate: "2025-03-05", expectedDiv: 900 },
-    "ETIT": { divDate: "2025-05-30", resultsDate: "2025-02-28", expectedDiv: 1.2 },
-    "ORGT": { divDate: "2025-07-01", resultsDate: "2025-03-15", expectedDiv: 960 },
-    "NSBC": { divDate: "2025-06-05", resultsDate: "2025-03-08", expectedDiv: 480 }
+    "SNTS": { divDate: "2026-06-15", resultsDate: "2026-02-20", expectedDiv: 1450 },
+    "PALC": { divDate: "2026-05-20", resultsDate: "2026-02-15", expectedDiv: 600 },
+    "SIAC": { divDate: "2026-05-25", resultsDate: "2026-02-25", expectedDiv: 280 },
+    "BOAC": { divDate: "2026-06-10", resultsDate: "2026-03-10", expectedDiv: 420 },
+    "SGBC": { divDate: "2026-06-20", resultsDate: "2026-03-05", expectedDiv: 900 },
+    "ETIT": { divDate: "2026-05-30", resultsDate: "2026-02-28", expectedDiv: 1.2 },
+    "ORGT": { divDate: "2026-07-01", resultsDate: "2026-03-15", expectedDiv: 960 },
+    "NSBC": { divDate: "2026-06-05", resultsDate: "2026-03-08", expectedDiv: 480 }
   };
 
   // ─── Patterns comportementaux BRVM documentés ─────────────────────────────
@@ -91,7 +91,6 @@ const PsychologicalAnalysis = (() => {
   // ─── Analyse liquidité ─────────────────────────────────────────────────────
   function assessLiquidity(stock) {
     const avgVol = stock.volumeAvg20 || stock.volume || 0;
-    const marketCap = stock.price * (stock.netIncome / (stock.eps || 1));
     let level, score, comment, risk;
 
     if (avgVol >= 5000)      { level = '✅ Très liquide';  score = 90; risk = 'faible';  comment = `${avgVol.toLocaleString('fr-FR')} titres/j — facile à négocier`; }
@@ -211,7 +210,7 @@ const PsychologicalAnalysis = (() => {
     pts += liqAdj;
     factors.push({ name: 'Liquidité', value: liq.level, adj: Math.round(liqAdj) });
 
-    // Risque pays (±20 pts)
+    // Risque pays (±15 pts)
     const cr  = assessCountryRisk(stock.country);
     const crAdj = (cr.riskScore - 5) * 3;
     pts += crAdj;

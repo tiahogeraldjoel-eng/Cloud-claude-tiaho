@@ -47,8 +47,11 @@ const TechnicalAnalysis = (() => {
       const loss = change < 0 ? Math.abs(change) : 0;
       avgGain = (avgGain * (period - 1) + gain) / period;
       avgLoss = (avgLoss * (period - 1) + loss) / period;
-      const rs  = avgLoss === 0 ? 100 : avgGain / avgLoss;
-      result[i] = Math.round((100 - 100 / (1 + rs)) * 10) / 10;
+      if (avgLoss === 0) {
+        result[i] = avgGain === 0 ? 50 : 100;
+      } else {
+        result[i] = Math.round((100 - 100 / (1 + avgGain / avgLoss)) * 10) / 10;
+      }
     }
     return result;
   }
@@ -88,8 +91,8 @@ const TechnicalAnalysis = (() => {
     const recent = prices.slice(-lookback);
     const high = Math.max(...recent);
     const low  = Math.min(...recent);
-    const resistance = Math.round(high * 1.005);
-    const support    = Math.round(low  * 0.995);
+    const resistance = Math.round(high);
+    const support    = Math.round(low);
     const mid        = Math.round((high + low) / 2);
     return { support, resistance, mid };
   }
@@ -176,7 +179,7 @@ const TechnicalAnalysis = (() => {
     let score = 50; // Neutre par défaut
     const signals = [];
 
-    // RSI (0-25 pts)
+    // RSI (±20 pts)
     if (rsiVal !== null) {
       if (rsiVal < rsiOversold) {
         score += 20; signals.push({ label: `RSI ${rsiVal}`, type: 'bull', msg: 'Zone de survente — opportunité achat' });
@@ -189,7 +192,7 @@ const TechnicalAnalysis = (() => {
       }
     }
 
-    // MACD (0-20 pts)
+    // MACD (±18 pts)
     const n = prices.length;
     const lastMacd = macdData.macdLine[n - 1];
     const lastSignal = macdData.signalLine[n - 1];
@@ -205,7 +208,7 @@ const TechnicalAnalysis = (() => {
       }
     }
 
-    // Bollinger (0-15 pts)
+    // Bollinger (±15 pts)
     const lastPrice = prices[n - 1];
     const bbUpper = bbData.upper[n - 1];
     const bbLower = bbData.lower[n - 1];
@@ -220,14 +223,14 @@ const TechnicalAnalysis = (() => {
       if (bbWidth < 0.03) signals.push({ label: 'Bollinger', type: 'neutral', msg: 'Bandes resserrées — breakout imminent' });
     }
 
-    // Tendance (0-20 pts)
+    // Tendance (±15 pts)
     if (trendData.trend === 'haussier') {
       score += 15; signals.push({ label: 'Tendance', type: 'bull', msg: `Tendance haussière (${trendData.bullPoints}/5 MA alignées)` });
     } else if (trendData.trend === 'baissier') {
       score -= 15; signals.push({ label: 'Tendance', type: 'bear', msg: `Tendance baissière (${trendData.bullPoints}/5 MA alignées)` });
     }
 
-    // Volume (0-10 pts)
+    // Volume (±10 pts)
     if (volData.ratio > 1.5 && trendData.trend === 'haussier') {
       score += 10; signals.push({ label: 'Volume', type: 'bull', msg: 'Volume en hausse confirme la tendance' });
     } else if (volData.ratio < 0.5) {
@@ -241,6 +244,7 @@ const TechnicalAnalysis = (() => {
   function analyze(stock, settings) {
     const prices  = stock.history || [];
     const volumes = stock.volumes || [];
+    const isSynthetic = !stock.realData; // true si historique généré aléatoirement
 
     if (prices.length < 20) {
       return { score: 50, trend: 'neutre', rsi: null, signals: [],
@@ -249,7 +253,8 @@ const TechnicalAnalysis = (() => {
 
     const ma20arr    = sma(prices, 20);
     const ma50arr    = sma(prices, 50);
-    const ma200arr   = sma(prices, prices.length >= 200 ? 200 : Math.floor(prices.length / 2));
+    const ma200period = prices.length >= 200 ? 200 : prices.length >= 100 ? 100 : Math.min(50, prices.length);
+    const ma200arr   = sma(prices, ma200period);
     const rsiArr     = rsi(prices, 14);
     const macdData   = macd(prices);
     const bbData     = bollingerBands(prices, 20);
@@ -281,7 +286,7 @@ const TechnicalAnalysis = (() => {
         detail: 'vs. signal' },
       { label: 'MA20',              value: ma20val?.toFixed(0) || '--', signal: currentPrice > ma20val ? '✅ Prix > MA20' : '🔴 Prix < MA20', detail: '' },
       { label: 'MA50',              value: ma50val?.toFixed(0) || '--', signal: currentPrice > ma50val ? '✅ Prix > MA50' : '🔴 Prix < MA50', detail: '' },
-      { label: 'MA200 / long terme',value: ma200val?.toFixed(0) || '--', signal: currentPrice > ma200val ? '✅ Tendance LT haussière' : '🔴 Tendance LT baissière', detail: '' },
+      { label: `MA${ma200period} / long terme`, value: ma200val?.toFixed(0) || '--', signal: currentPrice > ma200val ? '✅ Tendance LT haussière' : '🔴 Tendance LT baissière', detail: ma200period < 200 ? `Historique insuffisant (MA${ma200period} utilisée)` : '' },
       { label: 'Boll. sup.',        value: bbData.upper[n-1]?.toFixed(0) || '--', signal: '🟡', detail: 'Résistance dynamique' },
       { label: 'Boll. inf.',        value: bbData.lower[n-1]?.toFixed(0) || '--', signal: '🟡', detail: 'Support dynamique' },
       { label: 'Support',           value: srData.support.toLocaleString('fr-FR'),    signal: '✅', detail: 'Niveau clé à surveiller' },
@@ -293,9 +298,20 @@ const TechnicalAnalysis = (() => {
       metrics.push({ label: 'Pattern', value: p.name, signal: p.bull ? '✅' : '🔴', detail: '' });
     });
 
+    // Avertissement si données synthétiques
+    if (isSynthetic) {
+      metrics.unshift({
+        label: '⚠️ Données simulées',
+        value: 'Historique non réel',
+        signal: '🟠',
+        detail: 'RSI, MACD, Bollinger calculés sur données synthétiques — chiffres indicatifs uniquement'
+      });
+    }
+
     return {
       score, techSignal, techLabel,
       trend: trendData.trend, rsi: currentRSI,
+      synthetic: isSynthetic,
       ma20: ma20val, ma50: ma50val, ma200: ma200val,
       support: srData.support, resistance: srData.resistance,
       signals, metrics, patterns,

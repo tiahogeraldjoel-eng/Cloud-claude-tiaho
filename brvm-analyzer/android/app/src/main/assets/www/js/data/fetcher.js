@@ -2,9 +2,10 @@
  * BRVM Data Fetcher — Stratégie multi-niveaux sans dépendance API
  *
  * Niveau 1: Cache IndexedDB récent (< 4h)
- * Niveau 2: Scraping BRVM via proxy CORS-safe
- * Niveau 3: Parsing HTML brvm.org via AndroidBridge (WebView natif)
- * Niveau 4: Données embarquées BRVM_STOCKS (toujours disponibles)
+ * Niveau 2: Worker Cloudflare brvm-prices (API edge scraping brvm.org en temps réel)
+ * Niveau 3: Scraping BRVM via proxy CORS-safe
+ * Niveau 4: Parsing HTML brvm.org via AndroidBridge (WebView natif)
+ * Niveau 5: Données embarquées BRVM_STOCKS (toujours disponibles)
  *
  * Aucune clé API requise — fonctionne 100% hors ligne.
  */
@@ -12,6 +13,7 @@ const BRVMFetcher = (() => {
   const DB_NAME = 'brvm_cache';
   const DB_VERSION = 2;
   const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4h
+  const WORKER_URL = 'https://brvm-prices.tiahogeraldjoel-eng.workers.dev';
   const CORS_PROXIES = [
     'https://api.allorigins.win/raw?url=',
     'https://corsproxy.io/?',
@@ -227,7 +229,33 @@ const BRVMFetcher = (() => {
       }
     }
 
-    // 2. Tentative live — Android Bridge
+    // 2. Tentative live — Worker Cloudflare (source principale)
+    if (navigator.onLine) {
+      try {
+        const workerResp = await Promise.race([
+          fetch(`${WORKER_URL}/stocks`),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+        ]);
+        if (workerResp.ok) {
+          const workerJson = await workerResp.json();
+          if (workerJson.stocks && workerJson.stocks.length > 0) {
+            const normalized = workerJson.stocks.map(s => ({
+              ticker: s.ticker,
+              price: s.closing_price,
+              priceYesterday: s.previous_closing_price,
+              volume: s.volume,
+              changePct: s.change_pct,
+              live: true, ts: Date.now()
+            }));
+            await saveToCache(normalized);
+            const count = applyLiveData(normalized);
+            return { source: 'cloudflare-worker', count };
+          }
+        }
+      } catch { /* passe au niveau suivant */ }
+    }
+
+    // 3. Tentative live — Android Bridge
     const androidData = await fetchViaAndroid();
     if (androidData && Array.isArray(androidData) && androidData.length > 0) {
       await saveToCache(androidData);
@@ -235,7 +263,7 @@ const BRVMFetcher = (() => {
       return { source: 'android', count: androidData.length };
     }
 
-    // 3. Tentative via proxies CORS (sans clé API)
+    // 4. Tentative via proxies CORS (sans clé API)
     if (navigator.onLine) {
       for (const proxy of CORS_PROXIES) {
         const html = await fetchViaProxy(proxy);
@@ -250,7 +278,7 @@ const BRVMFetcher = (() => {
       }
     }
 
-    // 4. Fallback: données embarquées avec variation simulée réaliste
+    // 5. Fallback: données embarquées avec variation simulée réaliste
     const today = new Date().toDateString();
     const simKey = 'sim_' + today;
     const alreadySimulated = await dbGet('meta', simKey);
@@ -271,24 +299,82 @@ const BRVMFetcher = (() => {
     return { source: 'embedded', count: BRVM_STOCKS.length };
   }
 
-  // ─── Récupérer historique d'un titre ──────────────────────────────────────
+  // ─── Récupérer historique réel depuis le Worker Cloudflare ───────────────
+  async function fetchRealHistory(ticker) {
+    if (!navigator.onLine) return null;
+    try {
+      const resp = await Promise.race([
+        fetch(`${WORKER_URL}/history/${ticker}`),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))
+      ]);
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      if (data.prices && data.prices.length >= 14) {
+        // Sauvegarder en cache IndexedDB
+        await dbPut('history', {
+          ticker,
+          prices: data.prices,
+          volumes: new Array(data.prices.length).fill(0),
+          ts: Date.now(),
+          real: true   // Flag : données réelles, pas synthétiques
+        });
+        if (BRVM_INDEX[ticker]) {
+          BRVM_INDEX[ticker].history  = data.prices;
+          BRVM_INDEX[ticker].volumes  = new Array(data.prices.length).fill(0);
+          BRVM_INDEX[ticker].realData = true;
+        }
+        return data;
+      }
+    } catch {}
+    return null;
+  }
+
+  // ─── Récupérer historique d'un titre (réel > cache > synthétique) ─────────
   async function getHistory(ticker) {
+    // 1. Cache IndexedDB avec données réelles
     const stored = await dbGet('history', ticker);
-    if (stored && stored.prices) return stored;
+    if (stored && stored.prices && stored.real) return stored;
+
+    // 2. Tentative live depuis le Worker
+    if (navigator.onLine) {
+      const live = await fetchRealHistory(ticker);
+      if (live) return { prices: live.prices, volumes: new Array(live.prices.length).fill(0), real: true };
+    }
+
+    // 3. Cache IndexedDB (potentiellement synthétique)
+    if (stored && stored.prices) return { ...stored, real: false };
+
+    // 4. Données synthétiques embarquées
     const stock = BRVM_INDEX[ticker];
-    return stock ? { prices: stock.history, volumes: stock.volumes } : null;
+    return stock ? { prices: stock.history, volumes: stock.volumes, real: false } : null;
+  }
+
+  // ─── Précharger l'historique réel de tous les titres en arrière-plan ───────
+  async function prefetchAllHistories() {
+    if (!navigator.onLine) return;
+    for (const stock of BRVM_STOCKS) {
+      const stored = await dbGet('history', stock.ticker);
+      // Ne refetch que si absent ou pas réel ou > 24h
+      if (!stored || !stored.real || (Date.now() - stored.ts) > 24 * 60 * 60 * 1000) {
+        await fetchRealHistory(stock.ticker);
+        await new Promise(r => setTimeout(r, 300)); // 300ms entre requêtes pour ne pas saturer
+      }
+    }
   }
 
   // ─── Statut marché BRVM ───────────────────────────────────────────────────
   function getMarketStatus() {
+    // Toujours évaluer en heure d'Abidjan (UTC+0)
     const now = new Date();
-    const day = now.getDay(); // 0=dim, 6=sam
-    const h = now.getHours();
-    const m = now.getMinutes();
+    const abidjanStr = now.toLocaleString('en-US', { timeZone: 'Africa/Abidjan' });
+    const abidjan = new Date(abidjanStr);
+    const day = abidjan.getDay(); // 0=dim, 6=sam
+    const h = abidjan.getHours();
+    const m = abidjan.getMinutes();
     const mins = h * 60 + m;
     const isWeekday = day >= 1 && day <= 5;
-    const isOpen = isWeekday && mins >= 9 * 60 && mins <= 15 * 60 + 30;
-    const isFixing = isWeekday && mins >= 12 * 60 && mins <= 12 * 60 + 30;
+    const isOpen = isWeekday && mins >= 9 * 60 && mins < 15 * 60 + 30;
+    const isFixing = isWeekday && mins >= 12 * 60 && mins < 12 * 60 + 30;
     return {
       isOpen, isFixing,
       label: isOpen ? (isFixing ? '⚡ Fixing en cours' : '🟢 Séance ouverte') : '🔴 Marché fermé',
@@ -323,5 +409,5 @@ const BRVMFetcher = (() => {
     } catch {}
   }
 
-  return { fetchAll, getHistory, getMarketStatus, getMacro, clearCache, isCacheValid };
+  return { fetchAll, getHistory, getMarketStatus, getMacro, clearCache, isCacheValid, prefetchAllHistories, fetchRealHistory };
 })();

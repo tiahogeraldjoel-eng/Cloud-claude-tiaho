@@ -64,7 +64,6 @@ const ScoringEngine = (() => {
     const dcfTarget  = fundamentalResult.dcf?.intrinsicValue || price;
     const techUpper  = technicalResult.resistance || price * 1.08;
     const techLower  = technicalResult.support    || price * 0.92;
-    const divAdjustedTarget = price * (1 + (stock.dividendPerShare || 0) / price);
 
     // Objectif consensus
     const bullTarget  = Math.round(Math.max(dcfTarget, techUpper, price * 1.10));
