@@ -60,7 +60,7 @@ def rsi(values: List[float], period: int = 14) -> List[Optional[float]]:
 
     for i in range(period, len(values)):
         if avg_loss == 0:
-            result[i] = 100.0
+            result[i] = 50.0 if avg_gain == 0 else 100.0
         else:
             rs = avg_gain / avg_loss
             result[i] = 100.0 - (100.0 / (1.0 + rs))
@@ -91,9 +91,18 @@ def macd(
         for i in range(n)
     ]
 
-    # Valeurs non-None du MACD pour calculer la signal line
-    macd_values = [v if v is not None else 0.0 for v in macd_line]
-    signal_line = ema(macd_values, signal_period)
+    # Signal line : EMA calculée uniquement sur les valeurs MACD valides
+    # (évite la distorsion causée par le remplissage à 0 des premières périodes)
+    first_valid = next((i for i, v in enumerate(macd_line) if v is not None), None)
+    signal_line: List[Optional[float]] = [None] * n
+    if first_valid is not None:
+        valid_macd_vals = [v for v in macd_line[first_valid:] if v is not None]
+        valid_signals = ema(valid_macd_vals, signal_period)
+        j = 0
+        for i in range(first_valid, n):
+            if macd_line[i] is not None:
+                signal_line[i] = valid_signals[j]
+                j += 1
 
     histogram: List[Optional[float]] = [
         macd_line[i] - signal_line[i]  # type: ignore
@@ -146,8 +155,17 @@ def stochastic(
         else:
             k_values[i] = (close - ll) / (hh - ll) * 100
 
-    k_vals = [v if v is not None else 0.0 for v in k_values]
-    d_values = sma(k_vals, d_period)
+    # D = SMA(K, 3) — calculé uniquement sur les valeurs K valides
+    first_k = next((i for i, v in enumerate(k_values) if v is not None), None)
+    d_values: List[Optional[float]] = [None] * n
+    if first_k is not None:
+        valid_k = [v for v in k_values[first_k:] if v is not None]
+        d_sma = sma(valid_k, d_period)
+        j = 0
+        for i in range(first_k, n):
+            if k_values[i] is not None:
+                d_values[i] = d_sma[j]
+                j += 1
 
     return {"k": k_values, "d": d_values}
 
@@ -229,7 +247,8 @@ def compute_technical(prices: List[Dict]) -> Dict:
         "d": series(st["d"]),
     }
 
-    result["obv"] = [{"date": dates[i], "value": obv(prices)[i]}
+    obv_vals = obv(prices)
+    result["obv"] = [{"date": dates[i], "value": obv_vals[i]}
                      for i in range(len(prices))]
 
     # ─── Génération des signaux ───────────────────────────────────────────────
