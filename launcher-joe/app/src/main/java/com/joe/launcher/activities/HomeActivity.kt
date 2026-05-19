@@ -20,15 +20,20 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.launch
 import com.joe.launcher.R
 import com.joe.launcher.adapters.DockAdapter
 import com.joe.launcher.adapters.HomePageAdapter
 import com.joe.launcher.databinding.ActivityHomeBinding
 import com.joe.launcher.models.AppInfo
+import com.joe.launcher.models.WeatherData
 import com.joe.launcher.utils.AppLoader
+import com.joe.launcher.utils.LocationHelper
 import com.joe.launcher.utils.PrefsManager
+import com.joe.launcher.utils.WeatherFetcher
 import java.util.Calendar
 import java.util.Locale
 import kotlin.math.abs
@@ -40,6 +45,7 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var timeHandler: Handler
     private lateinit var timeRunnable: Runnable
     private lateinit var dockAdapter: DockAdapter
+    private var lastWeatherData: WeatherData? = null
 
     private val timeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -59,6 +65,7 @@ class HomeActivity : AppCompatActivity() {
         requestPermissions()
         updateDateTime()
         startClock()
+        setupWeatherWidget()
     }
 
     private fun setupGestures() {
@@ -214,6 +221,50 @@ class HomeActivity : AppCompatActivity() {
         // Show wallpaper/settings bottom sheet
         val dialog = HomeOptionsDialog()
         dialog.show(supportFragmentManager, "home_options")
+    }
+
+    private fun setupWeatherWidget() {
+        binding.cardWeather.setOnClickListener {
+            startActivity(Intent(this, WeatherActivity::class.java))
+        }
+        loadWeather()
+    }
+
+    private fun loadWeather() {
+        if (!LocationHelper.hasPermission(this)) {
+            binding.tvWeatherTemp.text = "--°"
+            binding.tvWeatherCity.text = "Météo indisponible"
+            binding.tvWeatherEmoji.text = "📍"
+            return
+        }
+
+        lifecycleScope.launch {
+            try {
+                val location = try {
+                    LocationHelper.getCurrentLocation(this@HomeActivity).also {
+                        LocationHelper.saveLocation(this@HomeActivity, it.latitude, it.longitude)
+                    }
+                } catch (e: Exception) {
+                    val saved = LocationHelper.getSavedLocation(this@HomeActivity)
+                    if (saved != null) {
+                        android.location.Location("saved").apply {
+                            latitude = saved.first; longitude = saved.second
+                        }
+                    } else return@launch
+                }
+
+                val weather = WeatherFetcher.fetchWeather(location.latitude, location.longitude)
+                lastWeatherData = weather
+
+                binding.tvWeatherEmoji.text = weather.conditionEmoji
+                binding.tvWeatherTemp.text = "${weather.temperature.toInt()}°C"
+                binding.tvWeatherCity.text = weather.cityName
+                binding.tvWeatherCondition.text = weather.condition
+
+            } catch (e: Exception) {
+                // Garder les dernières données
+            }
+        }
     }
 
     private fun requestPermissions() {
