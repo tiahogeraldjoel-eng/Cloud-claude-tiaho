@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.LauncherJoe" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Background -->
+        <item name="android:windowBackground">@color/bg_primary</item>
+        <item name="android:colorBackground">@color/bg_primary</item>
+        <item name="colorSurface">@color/bg_surface</item>
+        <item name="colorPrimary">@color/accent_primary</item>
+        <item name="colorPrimaryDark">@color/bg_secondary</item>
+        <item name="colorAccent">@color/accent_primary</item>
+        <item name="colorOnPrimary">@color/text_on_accent</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+
+        <!-- Text -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/transparent</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowLightStatusBar">false</item>
+
+        <!-- Navigation bar -->
+        <item name="android:navigationBarColor">@color/transparent</item>
+        <item name="android:windowTranslucentNavigation">true</item>
+
+        <!-- Window -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowFullscreen">false</item>
+
+        <!-- Ripple -->
+        <item name="colorControlHighlight">#40E94560</item>
+    </style>
+
+    <style name="Theme.LauncherJoe.Translucent" parent="Theme.LauncherJoe">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@color/overlay_dark</item>
+        <item name="android:backgroundDimEnabled">true</item>
+    </style>
+
+    <style name="Theme.LauncherJoe.Fullscreen" parent="Theme.LauncherJoe">
+        <item name="android:windowFullscreen">true</item>
+    </style>
+
+    <!-- Card styles -->
+    <style name="CardStyle.Dark" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/bg_card</item>
+        <item name="cardElevation">8dp</item>
+        <item name="cardCornerRadius">16dp</item>
+    </style>
+
+    <!-- Button styles -->
+    <style name="Button.Joe" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/accent_primary</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="cornerRadius">12dp</item>
+    </style>
+
+    <!-- Toolbar -->
+    <style name="Toolbar.Joe" parent="Widget.MaterialComponents.Toolbar">
+        <item name="android:background">@color/bg_secondary</item>
+        <item name="titleTextColor">@color/text_primary</item>
+    </style>
+
+    <!-- Tab Layout -->
+    <style name="TabLayout.Joe" parent="Widget.MaterialComponents.TabLayout">
+        <item name="tabBackground">@color/transparent</item>
+        <item name="tabSelectedTextColor">@color/accent_primary</item>
+        <item name="tabTextColor">@color/text_secondary</item>
+        <item name="tabIndicatorColor">@color/accent_primary</item>
+    </style>
+</resources>

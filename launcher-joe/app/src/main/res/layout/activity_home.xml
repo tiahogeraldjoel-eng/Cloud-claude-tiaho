@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_primary">
+
+    <!-- Wallpaper -->
+    <ImageView
+        android:id="@+id/iv_wallpaper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:contentDescription="@null" />
+
+    <!-- Dark overlay gradient -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_home_overlay" />
+
+    <!-- Main content -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Status bar spacer -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="32dp" />
+
+        <!-- Clock & Date area -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/tv_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="12:00"
+                android:textColor="@color/text_primary"
+                android:textSize="72sp"
+                android:fontFamily="sans-serif-light"
+                android:shadowColor="#80000000"
+                android:shadowRadius="8"
+                android:shadowDx="2"
+                android:shadowDy="2" />
+
+            <TextView
+                android:id="@+id/tv_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Lundi 19 Mai 2026"
+                android:textColor="@color/text_secondary"
+                android:textSize="16sp"
+                android:layout_marginTop="4dp"
+                android:shadowColor="#80000000"
+                android:shadowRadius="4"
+                android:shadowDx="1"
+                android:shadowDy="1" />
+        </LinearLayout>
+
+        <!-- Quick actions row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="32dp"
+            android:gravity="center"
+            android:paddingHorizontal="16dp">
+
+            <!-- Claude AI Button -->
+            <LinearLayout
+                android:id="@+id/btn_claude"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="12dp"
+                android:background="@drawable/bg_quick_action_claude"
+                android:layout_marginHorizontal="6dp">
+
+                <TextView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:text="🤖"
+                    android:textSize="24sp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Joe AI"
+                    android:textColor="@color/text_primary"
+                    android:textSize="11sp"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+
+            <!-- BRVM Button -->
+            <LinearLayout
+                android:id="@+id/btn_brvm"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="12dp"
+                android:background="@drawable/bg_quick_action_brvm"
+                android:layout_marginHorizontal="6dp">
+
+                <TextView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:text="📈"
+                    android:textSize="24sp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="BRVM"
+                    android:textColor="@color/text_primary"
+                    android:textSize="11sp"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+
+            <!-- Birthdays Button -->
+            <LinearLayout
+                android:id="@+id/btn_birthdays"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="12dp"
+                android:background="@drawable/bg_quick_action_birthday"
+                android:layout_marginHorizontal="6dp">
+
+                <TextView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:text="🎂"
+                    android:textSize="24sp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Anniv."
+                    android:textColor="@color/text_primary"
+                    android:textSize="11sp"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+
+            <!-- Apps Button -->
+            <LinearLayout
+                android:id="@+id/btn_apps"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="12dp"
+                android:background="@drawable/bg_quick_action_apps"
+                android:layout_marginHorizontal="6dp">
+
+                <TextView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:text="⬡"
+                    android:textSize="24sp"
+                    android:gravity="center"
+                    android:textColor="@color/text_primary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Apps"
+                    android:textColor="@color/text_primary"
+                    android:textSize="11sp"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+
+            <!-- Settings Button -->
+            <LinearLayout
+                android:id="@+id/btn_settings"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="12dp"
+                android:background="@drawable/bg_quick_action_settings"
+                android:layout_marginHorizontal="6dp">
+
+                <TextView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:text="⚙️"
+                    android:textSize="24sp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Config"
+                    android:textColor="@color/text_primary"
+                    android:textSize="11sp"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Spacer -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Swipe up hint -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="↑ Glisser pour les apps"
+            android:textColor="@color/text_tertiary"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Dock -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_dock"
+            android:paddingVertical="12dp"
+            android:paddingHorizontal="8dp"
+            android:layout_marginBottom="16dp">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_dock"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:overScrollMode="never" />
+        </LinearLayout>
+
+    </LinearLayout>
+</FrameLayout>

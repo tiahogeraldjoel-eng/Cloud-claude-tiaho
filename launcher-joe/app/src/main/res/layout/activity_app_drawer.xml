@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Dim overlay -->
+    <View
+        android:id="@+id/overlay_dim"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:background="@drawable/bg_drawer_top_fade" />
+
+    <!-- Main drawer container -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@drawable/bg_drawer"
+        android:layout_marginTop="60dp">
+
+        <!-- Handle + Close -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="12dp">
+
+            <View
+                android:layout_width="40dp"
+                android:layout_height="4dp"
+                android:background="@drawable/bg_drawer_handle"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Search bar -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_search_bar"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="12dp">
+
+                <TextView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:text="🔍"
+                    android:textSize="14sp" />
+
+                <EditText
+                    android:id="@+id/et_search"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:hint="@string/search_apps"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_tertiary"
+                    android:textSize="14sp"
+                    android:paddingHorizontal="8dp"
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:singleLine="true" />
+
+                <ImageView
+                    android:id="@+id/iv_clear_search"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_close"
+                    android:visibility="gone"
+                    android:contentDescription="@null" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/btn_close"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_close"
+                android:padding="6dp"
+                android:layout_marginStart="8dp"
+                android:contentDescription="@null"
+                android:background="@drawable/bg_icon_button" />
+        </LinearLayout>
+
+        <!-- App count -->
+        <TextView
+            android:id="@+id/tv_app_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 applications"
+            android:textColor="@color/text_tertiary"
+            android:textSize="12sp"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="4dp" />
+
+        <!-- Loading -->
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+
+        <!-- Apps grid -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_apps"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingHorizontal="8dp"
+            android:paddingBottom="16dp"
+            android:overScrollMode="never"
+            android:clipToPadding="false" />
+
+    </LinearLayout>
+</FrameLayout>

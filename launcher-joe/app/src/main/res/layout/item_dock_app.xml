@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="60dp"
+    android:padding="4dp">
+
+    <ImageView
+        android:id="@+id/iv_dock_icon"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:layout_gravity="center"
+        android:contentDescription="@null"
+        android:scaleType="fitCenter" />
+</FrameLayout>
