@@ -1,0 +1,6 @@
+name = "brvm-prices"
+main = "brvm-prices/src/index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+CACHE_TTL = "3600"
