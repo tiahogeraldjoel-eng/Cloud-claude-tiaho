@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark theme palette -->
+    <color name="bg_primary">#0D0D0D</color>
+    <color name="bg_secondary">#1A1A2E</color>
+    <color name="bg_card">#16213E</color>
+    <color name="bg_elevated">#0F3460</color>
+    <color name="bg_surface">#1E1E2E</color>
+
+    <!-- Accent colors -->
+    <color name="accent_primary">#E94560</color>
+    <color name="accent_secondary">#533483</color>
+    <color name="accent_claude">#7C3AED</color>
+    <color name="accent_brvm">#10B981</color>
+    <color name="accent_birthday">#F59E0B</color>
+
+    <!-- Text colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0B0C0</color>
+    <color name="text_tertiary">#6B6B80</color>
+    <color name="text_on_accent">#FFFFFF</color>
+
+    <!-- BRVM specific -->
+    <color name="brvm_up">#10B981</color>
+    <color name="brvm_down">#EF4444</color>
+    <color name="brvm_neutral">#6B7280</color>
+    <color name="brvm_bg">#0A2540</color>
+
+    <!-- Birthday specific -->
+    <color name="birthday_today">#F59E0B</color>
+    <color name="birthday_soon">#F97316</color>
+    <color name="birthday_week">#6366F1</color>
+
+    <!-- Glass effect -->
+    <color name="glass_bg">#801A1A2E</color>
+    <color name="glass_border">#40FFFFFF</color>
+
+    <!-- Dock -->
+    <color name="dock_bg">#B0000000</color>
+    <color name="dock_indicator">#E94560</color>
+
+    <!-- System -->
+    <color name="transparent">#00000000</color>
+    <color name="overlay_dark">#80000000</color>
+    <color name="overlay_medium">#40000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+
+    <!-- Gradient start/end -->
+    <color name="gradient_start">#0D0D0D</color>
+    <color name="gradient_end">#1A1A2E</color>
+</resources>

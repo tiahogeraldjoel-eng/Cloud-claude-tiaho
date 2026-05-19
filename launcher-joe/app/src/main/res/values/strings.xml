@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Launcher Joe</string>
+
+    <!-- Notification channels -->
+    <string name="channel_birthday_name">Anniversaires</string>
+    <string name="channel_birthday_desc">Rappels d\'anniversaires de vos contacts</string>
+    <string name="channel_brvm_name">BRVM Marchés</string>
+    <string name="channel_brvm_desc">Alertes sur les marchés boursiers BRVM</string>
+    <string name="channel_claude_name">Assistant Joe</string>
+
+    <!-- Home screen -->
+    <string name="widget_clock_label">Horloge Joe</string>
+
+    <!-- App Drawer -->
+    <string name="app_count">%d applications</string>
+    <string name="search_apps">Rechercher des apps...</string>
+
+    <!-- Claude AI -->
+    <string name="claude_welcome">Bonjour ! Je suis Joe, votre assistant IA. Comment puis-je vous aider aujourd\'hui ?</string>
+    <string name="claude_welcome_no_key">Bonjour ! Pour utiliser l\'assistant Joe, veuillez configurer votre clé API Claude dans les paramètres.</string>
+    <string name="claude_no_api_key">Clé API non configurée. Allez dans Paramètres pour ajouter votre clé API Claude.</string>
+    <string name="claude_error">Erreur de communication: %s</string>
+    <string name="no_api_key">Aucune clé API configurée</string>
+    <string name="api_key_saved">Clé API sauvegardée</string>
+    <string name="api_key_hint">Entrez votre clé API Claude (sk-ant-...)</string>
+
+    <!-- BRVM -->
+    <string name="brvm_tab_all">Toutes</string>
+    <string name="brvm_tab_top">Hausse</string>
+    <string name="brvm_tab_bottom">Baisse</string>
+    <string name="brvm_tab_favorites">Favoris</string>
+    <string name="last_update">Mise à jour: %s</string>
+    <string name="market_summary">↑%d  ↓%d  =%d</string>
+    <string name="brvm_error">Erreur: %s</string>
+    <string name="stock_count">%d actions</string>
+
+    <!-- Birthdays -->
+    <string name="birthday_tab_today">Aujourd\'hui</string>
+    <string name="birthday_tab_week">Cette semaine</string>
+    <string name="birthday_tab_month">Ce mois</string>
+    <string name="birthday_tab_all">Tous</string>
+    <string name="birthdays_today_count">%d anniversaire(s) aujourd\'hui</string>
+    <string name="birthdays_week_count">%d cette semaine</string>
+    <string name="birthday_count">%d anniversaire(s)</string>
+    <string name="birthday_today">🎂 Aujourd\'hui!</string>
+    <string name="birthday_tomorrow">Demain</string>
+    <string name="birthday_days">Dans %d jours</string>
+    <string name="age_years">%d ans</string>
+
+    <!-- Settings -->
+    <string name="reset_title">Réinitialiser</string>
+    <string name="reset_message">Remettre tous les paramètres par défaut ?</string>
+    <string name="confirm">Confirmer</string>
+    <string name="cancel">Annuler</string>
+    <string name="reset_done">Paramètres réinitialisés</string>
+    <string name="choose_wallpaper">Choisir un fond d\'écran</string>
+    <string name="about_title">À propos</string>
+    <string name="about_message">Launcher Joe v1.0\n\nLauncher Android complet avec:\n• Écran d\'accueil personnalisable\n• Tiroir d\'applications\n• Assistant IA Claude\n• Module BRVM (Bourse)\n• Anniversaires\n• Thème sombre\n\nDéveloppé avec ❤️ pour l\'Afrique de l\'Ouest</string>
+</resources>
