@@ -14,7 +14,7 @@ data class BirthdayContact(
     val age: Int?
         get() = birthdayYear?.let {
             val current = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
-            current - it + if (daysUntilBirthday > 0) 1 else 0
+            current - it - if (daysUntilBirthday > 0) 1 else 0
         }
 
     val birthdayString: String

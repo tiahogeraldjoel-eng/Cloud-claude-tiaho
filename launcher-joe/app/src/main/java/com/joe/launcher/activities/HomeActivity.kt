@@ -15,8 +15,6 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AnimationUtils
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -26,7 +24,6 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.launch
 import com.joe.launcher.R
 import com.joe.launcher.adapters.DockAdapter
-import com.joe.launcher.adapters.HomePageAdapter
 import com.joe.launcher.databinding.ActivityHomeBinding
 import com.joe.launcher.models.AppInfo
 import com.joe.launcher.models.WeatherData
