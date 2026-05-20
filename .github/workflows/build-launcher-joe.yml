@@ -17,10 +17,15 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Accept Android licenses
+      - name: Setup Android SDK
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1 || true
+
+      - name: Download Gradle wrapper JAR
+        run: |
+          curl -L -o launcher-joe/gradle/wrapper/gradle-wrapper.jar \
+            https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar
 
       - name: Build APK
         working-directory: launcher-joe
