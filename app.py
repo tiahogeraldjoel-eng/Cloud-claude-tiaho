@@ -416,7 +416,19 @@ def _refresh_news():
 @app.get("/", include_in_schema=False)
 async def index():
     f = STATIC_DIR / "index.html"
-    return FileResponse(str(f)) if f.exists() else JSONResponse({"error": "Frontend introuvable"}, 404)
+    if not f.exists():
+        return JSONResponse({"error": "Frontend introuvable"}, 404)
+    # Injecter un hash du fichier app.js dans la balise script pour forcer le rechargement
+    import hashlib
+    js_file = STATIC_DIR / "app.js"
+    js_hash = hashlib.md5(js_file.read_bytes()).hexdigest()[:8] if js_file.exists() else "0"
+    html = f.read_text(encoding="utf-8").replace(
+        'src="/static/app.js"', f'src="/static/app.js?v={js_hash}"'
+    ).replace(
+        'href="/static/style.css"', f'href="/static/style.css?v={js_hash}"'
+    )
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html)
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
