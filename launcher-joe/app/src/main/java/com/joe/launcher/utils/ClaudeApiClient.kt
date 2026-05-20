@@ -16,7 +16,7 @@ object ClaudeApiClient {
 
     private const val BASE_URL = "https://api.anthropic.com/v1/messages"
     private const val MODEL = "claude-sonnet-4-20250514"
-    private const val MAX_TOKENS = 1024
+    private const val MAX_TOKENS = 2048
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
