@@ -19,7 +19,6 @@ import com.joe.launcher.utils.BirthdayScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.Calendar
 
 class BirthdaysActivity : AppCompatActivity() {
 
@@ -127,8 +126,6 @@ class BirthdaysActivity : AppCompatActivity() {
     }
 
     private fun filterBirthdays(tabIndex: Int) {
-        val today = Calendar.getInstance()
-
         val filtered = when (tabIndex) {
             0 -> allBirthdays.filter { it.daysUntilBirthday == 0 }
             1 -> allBirthdays.filter { it.daysUntilBirthday in 0..7 }

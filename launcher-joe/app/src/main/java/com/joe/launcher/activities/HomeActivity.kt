@@ -24,7 +24,6 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.joe.launcher.R
 import com.joe.launcher.adapters.DockAdapter
-import com.joe.launcher.adapters.HomePageAdapter
 import com.joe.launcher.databinding.ActivityHomeBinding
 import com.joe.launcher.models.AppInfo
 import com.joe.launcher.utils.AppLoader
@@ -125,7 +124,7 @@ class HomeActivity : AppCompatActivity() {
             startActivity(Intent(this, ClaudeActivity::class.java))
         }
 
-        binding.btnBRVM.setOnClickListener {
+        binding.btnBrvm.setOnClickListener {
             val anim = AnimationUtils.loadAnimation(this, R.anim.scale_in)
             it.startAnimation(anim)
             startActivity(Intent(this, BRVMActivity::class.java))

@@ -30,9 +30,8 @@ class AppOptionsDialog : DialogFragment() {
             .setItems(arrayOf("Ouvrir", "Infos de l'application", "Désinstaller")) { _, which ->
                 val pkg = arguments?.getString(ARG_PACKAGE) ?: return@setItems
                 when (which) {
-                    0 -> requireContext().startActivity(
-                        requireContext().packageManager.getLaunchIntentForPackage(pkg)
-                    )
+                    0 -> requireContext().packageManager.getLaunchIntentForPackage(pkg)
+                            ?.let { requireContext().startActivity(it) }
                     1 -> startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                         data = Uri.parse("package:$pkg")
                     })
