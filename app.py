@@ -258,16 +258,17 @@ def _start_scheduler():
     """
     Calendrier de rafraîchissement BRVM (Abidjan = UTC+0, pas de DST) :
 
-    La BRVM fonctionne par FIXING (cotation au fixing) :
-      - 09h00-11h00 : saisie des ordres
-      - ~11h00      : fixing — prix officiels déterminés ← moment critique
-      - 11h00-15h30 : exécution au prix fixé
-      - 15h30       : clôture officielle
+    Horaires officiels BRVM :
+      - 08h30       : pré-séance
+      - 09h00-09h45 : pré-ouverture (saisie des ordres)
+      - 09h45       : fixing d'ouverture + début négociation continue
+      - 09h45-15h00 : séance de négociation continue
+      - 15h00       : clôture officielle
 
     Stratégie :
-      • Toutes les 20 min de 8h30 à 16h30 → couvre pré-marché, séance et post-clôture
-      • Trigger dédié à 11h15 (post-fixing) → capte les prix officiels dès leur publication
-      • Trigger dédié à 15h45 (post-clôture) → capte les EOD officiels
+      • Toutes les 20 min de 8h30 à 15h30 → couvre pré-marché, séance et post-clôture
+      • Trigger dédié à 09h50 (post-fixing ouverture) → capte les premiers prix
+      • Trigger dédié à 15h10 (post-clôture) → capte les EOD officiels
       • Actualités toutes les 2h en semaine
     """
     try:
@@ -276,21 +277,21 @@ def _start_scheduler():
 
         sch = BackgroundScheduler(timezone="UTC")
 
-        # Rafraîchissement toutes les 20 min, 8h30 → 16h30 (lun-ven)
+        # Rafraîchissement toutes les 20 min, 8h30 → 15h30 (lun-ven)
         sch.add_job(_refresh_data, CronTrigger(
             day_of_week="mon-fri",
-            hour="8-16",
+            hour="8-15",
             minute="0,20,40"),
             id="every20min")
 
-        # Trigger post-fixing (11h15 UTC = 11h15 Abidjan) — prix de fixing publiés
+        # Trigger post-fixing ouverture (09h50 UTC) — premiers prix officiels
         sch.add_job(_refresh_data, CronTrigger(
-            day_of_week="mon-fri", hour="11", minute="15"),
-            id="post_fixing")
+            day_of_week="mon-fri", hour="9", minute="50"),
+            id="post_opening_fixing")
 
-        # Trigger post-clôture (15h45 UTC = 15h45 Abidjan) — EOD définitifs
+        # Trigger post-clôture (15h10 UTC = 15h10 Abidjan) — EOD définitifs après clôture 15h00
         sch.add_job(_refresh_data, CronTrigger(
-            day_of_week="mon-fri", hour="15", minute="45"),
+            day_of_week="mon-fri", hour="15", minute="10"),
             id="post_close")
 
         # Actualités toutes les 2h
@@ -299,7 +300,7 @@ def _start_scheduler():
             id="news")
 
         sch.start()
-        logger.info("Planificateur démarré — rafraîchissement toutes les 20 min + triggers 11h15/15h45")
+        logger.info("Planificateur démarré — rafraîchissement toutes les 20 min + triggers 09h50/15h10")
     except Exception as e:
         logger.warning(f"Planificateur non démarré: {e}")
 

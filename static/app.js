@@ -125,24 +125,29 @@ function updateMarketClock() {
 
   const isWeekday  = day >= 1 && day <= 5;
   const isHoliday  = isBrvmHoliday(now);
-  const totalMin   = utcH * 60 + utcM;
-  const preMin     = 8  * 60 + 30;  // 08h30 pré-séance
-  const openMin    = 9  * 60;        // 09h00 ouverture
-  const closeMin   = 15 * 60 + 30;  // 15h30 clôture
+  const totalMin    = utcH * 60 + utcM;
+  const preOpenMin  = 8  * 60 + 30;  // 08h30 pré-séance
+  const openMin     = 9  * 60;        // 09h00 pré-ouverture
+  const fixingMin   = 9  * 60 + 45;  // 09h45 fixing d'ouverture + négo continue
+  const closeMin    = 15 * 60;        // 15h00 clôture officielle BRVM
 
   let statusTxt, statusCls, statusTitle;
   if (!isWeekday || isHoliday) {
     statusTxt   = '● FERMÉ';
     statusCls   = 'bg-slate-700 text-slate-400';
     statusTitle = isHoliday ? 'Marché fermé (jour férié)' : 'Marché fermé (week-end)';
-  } else if (totalMin >= preMin && totalMin < openMin) {
+  } else if (totalMin >= preOpenMin && totalMin < openMin) {
     statusTxt   = '● PRÉ-SÉANCE';
     statusCls   = 'bg-yellow-900 text-yellow-400';
-    statusTitle = 'Pré-séance — Ouverture à 09h00 (heure Abidjan)';
-  } else if (totalMin >= openMin && totalMin < closeMin) {
+    statusTitle = 'Pré-séance — Pré-ouverture à 09h00 (heure Abidjan)';
+  } else if (totalMin >= openMin && totalMin < fixingMin) {
+    statusTxt   = '● PRÉ-OUVERTURE';
+    statusCls   = 'bg-orange-900 text-orange-400';
+    statusTitle = 'Pré-ouverture — Saisie des ordres jusqu\'au fixing 09h45';
+  } else if (totalMin >= fixingMin && totalMin < closeMin) {
     statusTxt   = '● OUVERT';
     statusCls   = 'bg-green-900 text-green-400';
-    statusTitle = 'Séance en cours — Clôture à 15h30 (heure Abidjan)';
+    statusTitle = 'Séance en cours — Clôture officielle à 15h00 (heure Abidjan)';
   } else {
     statusTxt   = '● FERMÉ';
     statusCls   = 'bg-slate-700 text-slate-400';
