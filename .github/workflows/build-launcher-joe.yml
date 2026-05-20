@@ -41,11 +41,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ERROR=$(grep -E "error:|FAILED|Exception|unresolved|cannot find|What went wrong" /tmp/build.log | head -40 || tail -50 /tmp/build.log)
-          gh pr comment 45 --body "## ❌ Build failure log
-          \`\`\`
-          $ERROR
-          \`\`\`"
+          # Kotlin errors start with "e: " - grab them all
+          KOTLIN_ERRORS=$(grep -E "^e: |error: |unresolved reference|cannot access|overload resolution" /tmp/build.log | head -60)
+          if [ -z "$KOTLIN_ERRORS" ]; then
+            KOTLIN_ERRORS=$(tail -80 /tmp/build.log)
+          fi
+          gh pr comment 45 --body "## ❌ Kotlin compilation errors
+\`\`\`
+$KOTLIN_ERRORS
+\`\`\`"
 
       - name: Fail build if error
         if: steps.build.outputs.exit_code != '0'
