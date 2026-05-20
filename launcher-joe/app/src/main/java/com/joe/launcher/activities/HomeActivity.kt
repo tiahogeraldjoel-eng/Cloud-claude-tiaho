@@ -24,7 +24,6 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.joe.launcher.R
 import com.joe.launcher.adapters.DockAdapter
-import com.joe.launcher.adapters.HomePageAdapter
 import com.joe.launcher.databinding.ActivityHomeBinding
 import com.joe.launcher.models.AppInfo
 import com.joe.launcher.utils.AppLoader
