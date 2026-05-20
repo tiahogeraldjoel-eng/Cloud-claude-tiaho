@@ -41,22 +41,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Strategy 1: grab lines between compileDebugKotlin start and FAILURE
           KOTLIN_ERRORS=$(awk '/compileDebugKotlin/{found=1} found && /^FAILURE:/{exit} found{print}' /tmp/build.log | grep -v "^> Task\|^$" | head -80)
-          # Strategy 2: any .kt file path line
           if [ -z "$KOTLIN_ERRORS" ]; then
             KOTLIN_ERRORS=$(grep -E "\.kt:" /tmp/build.log | head -60)
           fi
-          # Strategy 3: last 100 lines
           if [ -z "$KOTLIN_ERRORS" ]; then
             KOTLIN_ERRORS=$(tail -100 /tmp/build.log)
           fi
-          # Also attach full log line count for debugging
           TOTAL_LINES=$(wc -l < /tmp/build.log)
-          gh pr comment 45 --body "## ❌ Build error (log: ${TOTAL_LINES} lines)
-\`\`\`
-$KOTLIN_ERRORS
-\`\`\`"
+          BODY="## Build error (log: ${TOTAL_LINES} lines)"$'\n''```'$'\n'"${KOTLIN_ERRORS}"$'\n''```'
+          gh pr comment 45 --body "$BODY"
 
       - name: Fail build if error
         if: steps.build.outputs.exit_code != '0'
