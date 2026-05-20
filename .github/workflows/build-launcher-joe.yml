@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -26,14 +28,31 @@ jobs:
         run: echo "sdk.dir=$ANDROID_HOME" > launcher-joe/local.properties
 
       - name: Build APK
+        id: build
         working-directory: launcher-joe
+        continue-on-error: true
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      - name: Post error to PR
+        if: steps.build.outputs.exit_code != '0'
         env:
-          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ERROR=$(grep -E "error:|FAILED|Exception|unresolved|cannot find|What went wrong" /tmp/build.log | head -40 || tail -50 /tmp/build.log)
+          gh pr comment 45 --body "## ❌ Build failure log
+          \`\`\`
+          $ERROR
+          \`\`\`"
+
+      - name: Fail build if error
+        if: steps.build.outputs.exit_code != '0'
+        run: exit 1
 
       - name: Upload APK
+        if: steps.build.outputs.exit_code == '0'
         uses: actions/upload-artifact@v4
         with:
           name: LauncherJoe-debug
