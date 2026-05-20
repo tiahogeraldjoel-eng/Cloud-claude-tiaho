@@ -41,12 +41,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Kotlin errors start with "e: " - grab them all
-          KOTLIN_ERRORS=$(grep -E "^e: |error: |unresolved reference|cannot access|overload resolution" /tmp/build.log | head -60)
+          # Capture lines between "compileDebugKotlin" task start and "FAILURE:" — that's where e: errors live
+          KOTLIN_ERRORS=$(awk '/^> Task :app:compileDebugKotlin$/{found=1;next} found && /^FAILURE:/{exit} found{print}' /tmp/build.log | head -80)
+          if [ -z "$KOTLIN_ERRORS" ]; then
+            # Broader fallback: any line with a .kt file path or "error:"
+            KOTLIN_ERRORS=$(grep -E "\.kt:|error:" /tmp/build.log | head -60)
+          fi
           if [ -z "$KOTLIN_ERRORS" ]; then
             KOTLIN_ERRORS=$(tail -80 /tmp/build.log)
           fi
-          gh pr comment 45 --body "## ❌ Kotlin compilation errors
+          gh pr comment 45 --body "## ❌ Build error details
 \`\`\`
 $KOTLIN_ERRORS
 \`\`\`"
