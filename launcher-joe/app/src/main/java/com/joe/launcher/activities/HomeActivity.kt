@@ -124,7 +124,7 @@ class HomeActivity : AppCompatActivity() {
             startActivity(Intent(this, ClaudeActivity::class.java))
         }
 
-        binding.btnBRVM.setOnClickListener {
+        binding.btnBrvm.setOnClickListener {
             val anim = AnimationUtils.loadAnimation(this, R.anim.scale_in)
             it.startAnimation(anim)
             startActivity(Intent(this, BRVMActivity::class.java))
