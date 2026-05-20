@@ -17,19 +17,19 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.4'
-
-      - name: Setup Android SDK
+      - name: Setup Android SDK licenses
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1 || true
 
+      - name: Create local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > launcher-joe/local.properties
+
       - name: Build APK
         working-directory: launcher-joe
-        run: gradle assembleDebug --no-daemon --stacktrace
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
         env:
           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
 
