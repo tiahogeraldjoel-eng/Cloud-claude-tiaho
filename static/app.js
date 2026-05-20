@@ -70,30 +70,95 @@ function switchTab(name) {
 }
 
 // ─── HORLOGE MARCHÉ (BRVM = UTC+0 / GMT, séance 09h00-15h30) ─────────────────
-function updateMarketClock() {
-  const now   = new Date();
-  // Abidjan = GMT (UTC+0), pas de changement d'heure
-  const utcH  = now.getUTCHours();
-  const utcM  = now.getUTCMinutes();
-  const day   = now.getUTCDay();   // 0=dim,1=lun,…,5=ven,6=sam
-  const timeF = String(utcH).padStart(2,'0')+':'+String(utcM).padStart(2,'0');
-  const isWeekday = day >= 1 && day <= 5;
-  // BRVM séance 09h00-15h30 WAT (= 09h00-15h30 UTC car Abidjan = UTC+0)
-  const totalMin = utcH * 60 + utcM;
-  const openMin  = 9  * 60;        // 09h00
-  const closeMin = 15 * 60 + 30;   // 15h30
-  const isOpen   = isWeekday && totalMin >= openMin && totalMin < closeMin;
 
-  const el = document.getElementById('hdr-session');
-  if(el) {
-    el.textContent = isOpen ? '● OUVERT' : '● FERMÉ';
-    el.className = `font-semibold text-xs px-2 py-0.5 rounded-full ${isOpen?'bg-green-900 text-green-400':'bg-slate-700 text-slate-400'}`;
-    el.title = isOpen ? `Séance ouverte jusqu'à 15h30 (heure Abidjan)` : `Fermé — Séance 09h00–15h30 heure Abidjan`;
+// Jours fériés BRVM — format "MM-DD" pour dates fixes, objets pour dates mobiles
+const BRVM_HOLIDAYS_FIXED = new Set([
+  '01-01', // Jour de l'An
+  '05-01', // Fête du Travail
+  '08-07', // Fête nationale CI
+  '08-15', // Assomption
+  '11-01', // Toussaint
+  '11-15', // Journée nationale de la paix (CI)
+  '12-25', // Noël
+]);
+
+// Dates mobiles 2025-2027 (Pâques, Ascension, Pentecôte, fêtes islamiques approximatives)
+const BRVM_HOLIDAYS_MOVEABLE = new Set([
+  // 2025
+  '2025-04-18', // Vendredi Saint
+  '2025-04-21', // Lundi de Pâques
+  '2025-05-29', // Ascension
+  '2025-06-09', // Lundi de Pentecôte
+  '2025-03-30', // Eid al-Fitr (approx)
+  '2025-06-06', // Eid al-Adha (approx)
+  '2025-09-04', // Mouloud (approx)
+  // 2026
+  '2026-04-03', // Vendredi Saint
+  '2026-04-06', // Lundi de Pâques
+  '2026-05-14', // Ascension
+  '2026-05-25', // Lundi de Pentecôte
+  '2026-03-20', // Eid al-Fitr (approx)
+  '2026-05-27', // Eid al-Adha (approx)
+  '2026-08-25', // Mouloud (approx)
+  // 2027
+  '2027-03-26', // Vendredi Saint
+  '2027-03-29', // Lundi de Pâques
+  '2027-05-06', // Ascension
+  '2027-05-17', // Lundi de Pentecôte
+]);
+
+function isBrvmHoliday(utcDate) {
+  const mm = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(utcDate.getUTCDate()).padStart(2, '0');
+  const yyyy = utcDate.getUTCFullYear();
+  return BRVM_HOLIDAYS_FIXED.has(`${mm}-${dd}`) ||
+         BRVM_HOLIDAYS_MOVEABLE.has(`${yyyy}-${mm}-${dd}`);
+}
+
+function updateMarketClock() {
+  const now  = new Date();
+  // Abidjan = UTC+0 (GMT), aucun changement d'heure
+  const utcH = now.getUTCHours();
+  const utcM = now.getUTCMinutes();
+  const day  = now.getUTCDay(); // 0=dim … 6=sam
+  const timeF = String(utcH).padStart(2,'0') + ':' + String(utcM).padStart(2,'0');
+
+  const isWeekday  = day >= 1 && day <= 5;
+  const isHoliday  = isBrvmHoliday(now);
+  const totalMin   = utcH * 60 + utcM;
+  const preMin     = 8  * 60 + 30;  // 08h30 pré-séance
+  const openMin    = 9  * 60;        // 09h00 ouverture
+  const closeMin   = 15 * 60 + 30;  // 15h30 clôture
+
+  let statusTxt, statusCls, statusTitle;
+  if (!isWeekday || isHoliday) {
+    statusTxt   = '● FERMÉ';
+    statusCls   = 'bg-slate-700 text-slate-400';
+    statusTitle = isHoliday ? 'Marché fermé (jour férié)' : 'Marché fermé (week-end)';
+  } else if (totalMin >= preMin && totalMin < openMin) {
+    statusTxt   = '● PRÉ-SÉANCE';
+    statusCls   = 'bg-yellow-900 text-yellow-400';
+    statusTitle = 'Pré-séance — Ouverture à 09h00 (heure Abidjan)';
+  } else if (totalMin >= openMin && totalMin < closeMin) {
+    statusTxt   = '● OUVERT';
+    statusCls   = 'bg-green-900 text-green-400';
+    statusTitle = 'Séance en cours — Clôture à 15h30 (heure Abidjan)';
+  } else {
+    statusTxt   = '● FERMÉ';
+    statusCls   = 'bg-slate-700 text-slate-400';
+    statusTitle = 'Marché fermé — Prochaine séance 09h00 (heure Abidjan)';
   }
 
-  // Heure locale Abidjan dans le header
+  const el = document.getElementById('hdr-session');
+  if (el) {
+    el.textContent = statusTxt;
+    el.className   = `font-semibold text-xs px-2 py-0.5 rounded-full ${statusCls}`;
+    el.title       = statusTitle;
+  }
+
+  // Heure Abidjan dans le header
   const timeEl = document.getElementById('abidjan-time');
-  if(timeEl) timeEl.textContent = timeF;
+  if (timeEl) timeEl.textContent = timeF;
 }
 
 // ─── Chargement liste des stocks ─────────────────────────────────────────────
