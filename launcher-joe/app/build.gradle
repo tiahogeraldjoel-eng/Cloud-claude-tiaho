@@ -79,6 +79,9 @@ dependencies {
     // Coroutines
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
 
+    // HTML parsing (carnet d'ordres BRVM)
+    implementation 'org.jsoup:jsoup:1.17.2'
+
     // SharedPreferences encrypted
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 
