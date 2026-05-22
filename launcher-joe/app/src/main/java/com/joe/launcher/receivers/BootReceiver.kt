@@ -7,6 +7,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.joe.launcher.services.BRVMUpdateWorker
+import com.joe.launcher.services.PreOpenScannerWorker
 import com.joe.launcher.utils.PrefsManager
 import java.util.concurrent.TimeUnit
 
@@ -29,6 +30,9 @@ class BootReceiver : BroadcastReceiver() {
                     workRequest
                 )
             }
+
+            // Planifier le scanner pré-ouverture à 9h35 GMT chaque jour de cotation
+            PreOpenScannerWorker.scheduleDailyAt935(context)
         }
     }
 }
