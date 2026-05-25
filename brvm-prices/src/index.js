@@ -14,16 +14,38 @@
 const BRVM_URL  = 'https://www.brvm.org/fr/cours-des-actions/0/all';
 const CACHE_TTL = 3600;
 
-// Valeurs liquides surveillées + volumes journaliers moyens de référence
+// Toutes les actions BRVM surveillées + volumes journaliers moyens de référence
 const WATCH_LIST = {
-  SNTS:  { name: 'Sonatel',               avgVol: 890,   refPrice: 15500 },
-  CBBF:  { name: 'Coris Bank BF',         avgVol: 520,   refPrice: 8750  },
-  STBC:  { name: 'Société Générale BF',   avgVol: 340,   refPrice: 5300  },
-  ONAT:  { name: 'Onatel BF',             avgVol: 310,   refPrice: 4950  },
-  TTLC:  { name: 'Total CI',              avgVol: 3400,  refPrice: 1875  },
-  ETIT:  { name: 'Ecobank Transnational', avgVol: 48000, refPrice: 22    },
-  SGBC:  { name: 'SGB CI',               avgVol: 290,   refPrice: 18200 },
-  ORAC:  { name: 'Orange CI',             avgVol: 5400,  refPrice: 14750 },
+  BICC:  { name: 'Bourse Ivoire Caoutchouc',   avgVol: 180,   refPrice: 1250   },
+  BNBC:  { name: 'Brasseries du Bénin',         avgVol: 95,    refPrice: 4200   },
+  BOAB:  { name: 'Bank of Africa Bénin',        avgVol: 320,   refPrice: 5500   },
+  BOABF: { name: 'Bank of Africa BF',           avgVol: 180,   refPrice: 5200   },
+  BOACI: { name: 'Bank of Africa CI',           avgVol: 420,   refPrice: 5850   },
+  BOAM:  { name: 'Bank of Africa Mali',         avgVol: 95,    refPrice: 4900   },
+  BOAN:  { name: 'Bank of Africa Niger',        avgVol: 75,    refPrice: 4100   },
+  CABC:  { name: 'Compagnie Agricole de CI',    avgVol: 2300,  refPrice: 950    },
+  CBBF:  { name: 'Coris Bank BF',               avgVol: 520,   refPrice: 8750   },
+  CFAC:  { name: 'Coraf',                       avgVol: 1500,  refPrice: 800    },
+  ECOC:  { name: 'Ecobank CI',                  avgVol: 650,   refPrice: 10500  },
+  ETIT:  { name: 'Ecobank Transnational',       avgVol: 48000, refPrice: 22     },
+  NEIC:  { name: 'NEI-CEDA',                    avgVol: 800,   refPrice: 620    },
+  ONAT:  { name: 'Onatel BF',                   avgVol: 310,   refPrice: 4950   },
+  ORAC:  { name: 'Orange CI',                   avgVol: 5400,  refPrice: 14750  },
+  PALC:  { name: 'Palm CI',                     avgVol: 980,   refPrice: 7200   },
+  PRSC:  { name: 'Prestige CI',                 avgVol: 450,   refPrice: 3200   },
+  SAFC:  { name: 'SAPH CI',                     avgVol: 320,   refPrice: 4500   },
+  SGBC:  { name: 'SGB CI',                      avgVol: 290,   refPrice: 18200  },
+  SIBC:  { name: 'SIB CI',                      avgVol: 350,   refPrice: 5600   },
+  SICC:  { name: 'SICOR CI',                    avgVol: 220,   refPrice: 3800   },
+  SLBC:  { name: 'Solibra',                     avgVol: 45,    refPrice: 122000 },
+  SMBC:  { name: 'SMB CI',                      avgVol: 120,   refPrice: 15000  },
+  SNTS:  { name: 'Sonatel',                     avgVol: 890,   refPrice: 15500  },
+  STAC:  { name: 'STAB',                        avgVol: 190,   refPrice: 4500   },
+  STBC:  { name: 'Société Générale BF',         avgVol: 340,   refPrice: 5300   },
+  SVOC:  { name: 'SVO CI',                      avgVol: 680,   refPrice: 2200   },
+  TTLC:  { name: 'Total CI',                    avgVol: 3400,  refPrice: 1875   },
+  UNLC:  { name: 'Unilever CI',                 avgVol: 420,   refPrice: 6800   },
+  UNXC:  { name: 'Unacoopec CI',                avgVol: 260,   refPrice: 2800   },
 };
 
 // Seuils d'alerte
