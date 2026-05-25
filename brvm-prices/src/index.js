@@ -170,6 +170,12 @@ async function runPreOpenScan(env) {
     stocks = generateSimulatedData();
   }
 
+  // scrapeBRVM() peut retourner null si le HTML est valide mais sans données BRVM
+  if (!stocks || stocks.length < 5) {
+    console.warn('Données scrappées insuffisantes — fallback sur données simulées.');
+    stocks = generateSimulatedData();
+  }
+
   console.log(`Analyse de ${stocks.length} valeurs BRVM...`);
 
   // 2. Analyser TOUTES les valeurs retournées par le scraper
