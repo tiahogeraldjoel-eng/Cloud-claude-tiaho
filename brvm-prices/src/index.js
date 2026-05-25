@@ -72,7 +72,11 @@ function getMetaForStock(stock) {
 // Seuils d'alerte
 const MPR_THRESHOLD     = 2.5;
 const OBI_THRESHOLD     = 0.85;
-const VOL_SPIKE_FACTOR  = 3.0;   // volume > N× la moyenne = signal iceberg
+const VOL_SPIKE_FACTOR  = 3.0;
+
+// Budget investisseur (configurable via variable d'env BUDGET_FCFA, défaut 75 000 F)
+// 80% du budget maximum engagé par trade, 20% de réserve toujours conservé
+const BUDGET_RESERVE_PCT = 0.20;
 
 // ─── Données statiques de fallback ───────────────────────────────────────────
 const STATIC_STOCKS = [
@@ -233,42 +237,75 @@ function analyzeSignal(symbol, stock, meta) {
   };
 }
 
+// ─── Calcul de position adapté au budget ────────────────────────────────────
+function calcPosition(price, budgetFcfa) {
+  const capital    = budgetFcfa * (1 - BUDGET_RESERVE_PCT); // 80% du budget
+  const nbTitres   = Math.floor(capital / price);           // titres achetables
+  if (nbTitres === 0) return null;                          // titre trop cher
+  const coutTotal  = nbTitres * price;
+  const reserve    = budgetFcfa - coutTotal;
+  // Objectif : +4% réaliste sur BRVM / Stop loss : -3% (risque limité)
+  const gainCible  = Math.round(nbTitres * price * 0.04);
+  const gainMax    = Math.round(nbTitres * price * 0.075); // limite BRVM +7.5%
+  const pertMax    = Math.round(nbTitres * price * 0.03);
+  const prixStopLoss = Math.round(price * 0.97);
+  const prixCible    = Math.round(price * 1.04);
+  return { nbTitres, coutTotal, reserve, gainCible, gainMax, pertMax, prixStopLoss, prixCible };
+}
+
 
 // ─── Envoi Telegram ───────────────────────────────────────────────────────────
 
 async function sendTelegram(signal, env) {
-  const token  = env.TELEGRAM_BOT_TOKEN;
-  const chatId = env.TELEGRAM_CHAT_ID;
+  const token      = env.TELEGRAM_BOT_TOKEN;
+  const chatId     = env.TELEGRAM_CHAT_ID;
+  const budgetFcfa = parseInt(env.BUDGET_FCFA || '75000', 10);
 
   if (!token || !chatId) {
     console.error('TELEGRAM_BOT_TOKEN ou TELEGRAM_CHAT_ID non configuré.');
     return;
   }
 
-  const emoji  = signal.confidence === 'HIGH' ? '🔴' : signal.confidence === 'MEDIUM' ? '🟠' : '🟡';
+  const emoji   = signal.confidence === 'HIGH' ? '🔴' : signal.confidence === 'MEDIUM' ? '🟠' : '🟡';
   const reasons = signal.reasons.map(r => `  • ${r}`).join('\n');
   const icebergLine = signal.iceberg
-    ? `\n🐋 *Ordre iceberg* : ${signal.volume} titres (${(signal.volume / signal.avgVol).toFixed(1)}× moyenne)`
+    ? `\n🐋 *Iceberg* : ${signal.volume} titres = ${(signal.volume / signal.avgVol).toFixed(1)}× vol. moyen`
     : '';
+
+  // Calcul de position personnalisé
+  const pos = calcPosition(signal.price, budgetFcfa);
+  const posBlock = pos
+    ? [
+        `──────────────────────`,
+        `💼 *RECOMMANDATION (budget ${budgetFcfa.toLocaleString()} F)*`,
+        `📌 *Acheter* : ${pos.nbTitres} titre${pos.nbTitres > 1 ? 's' : ''} ${signal.symbol}`,
+        `💸 *Coût total* : ${pos.coutTotal.toLocaleString()} FCFA`,
+        `🏦 *Réserve gardée* : ${pos.reserve.toLocaleString()} FCFA`,
+        `──────────────────────`,
+        `🎯 *Objectif* : ${pos.prixCible.toLocaleString()} FCFA (+4%) → *+${pos.gainCible.toLocaleString()} F*`,
+        `🚀 *Max BRVM* : ${Math.round(signal.price * 1.075).toLocaleString()} FCFA (+7.5%) → *+${pos.gainMax.toLocaleString()} F*`,
+        `🛑 *Stop loss* : ${pos.prixStopLoss.toLocaleString()} FCFA (-3%) → max -${pos.pertMax.toLocaleString()} F`,
+      ].join('\n')
+    : `\n⚠️ _Titre trop cher pour ton budget actuel (${signal.price.toLocaleString()} FCFA/titre)_`;
 
   const text = [
     `${emoji} *FLASH BRVM — Pré-Ouverture*`,
     `━━━━━━━━━━━━━━━━━━━━━`,
     `📌 *Titre* : ${signal.symbol} (${signal.name})`,
-    `⏰ *Heure* : 9h35 GMT`,
-    `💰 *Cours actuel* : ${signal.price.toLocaleString()} FCFA`,
+    `⏰ *9h35 GMT* — Fixing dans 10 min`,
+    `💰 *Cours* : ${signal.price.toLocaleString()} FCFA`,
     `📊 *Variation* : ${signal.change > 0 ? '+' : ''}${signal.change.toFixed(2)}%`,
-    `🛒 *Volume observé* : ${signal.volume.toLocaleString()} titres${icebergLine}`,
+    `🛒 *Volume* : ${signal.volume.toLocaleString()} titres${icebergLine}`,
     `──────────────────────`,
     `📈 *MPR* : ${signal.mpr.toFixed(2)}  _(seuil > 2.5)_`,
     `⚖️ *OBI* : ${signal.obi.toFixed(3)}  _(seuil > 0.85)_`,
     `──────────────────────`,
-    `*Motifs :*`,
+    `*Signaux :*`,
     reasons,
+    posBlock,
     `──────────────────────`,
-    `⚡ *Pression Acheteuse Critique*`,
-    `🎯 Position recommandée *avant 9h45 GMT*`,
-    `_Confiance : ${signal.confidence}_`,
+    `⚡ *Passe l'ordre avant 9h45 GMT*`,
+    `_Confiance : ${signal.confidence} | ⚠️ Pas un conseil financier certifié_`,
   ].join('\n');
 
   try {
