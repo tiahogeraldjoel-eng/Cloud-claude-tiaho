@@ -1,22 +1,24 @@
 /**
  * BRVM Prices — Cloudflare Worker
  *
- * Endpoints HTTP :
- *   GET /          → JSON toutes les actions BRVM
- *   GET /stock/:symbol → JSON détail d'une action
- *   GET /health    → statut du worker
+ * Cron 9h35 GMT lun-ven → signaux pré-ouverture → alerte Telegram (données LIVE uniquement)
  *
- * Cron trigger (9h35 GMT, lundi-vendredi) :
- *   → Calcule les signaux de pré-ouverture (MPR/OBI/Iceberg)
- *   → Envoie une alerte Telegram si signal détecté
+ * Cascade de sources :
+ *   1. BRVM.org direct (3 variantes d'URL)
+ *   2. Proxy allorigins.win → BRVM.org
+ *   3. Yahoo Finance (tickers .CI / .SN / .BF / .TG / .BJ …)
+ *   4. Sika.finance
+ *   → Si toutes échouent : message Telegram "données indisponibles"
  */
+
+// ─── Sources ─────────────────────────────────────────────────────────────────
 
 const BRVM_URLS = [
   'https://www.brvm.org/fr/cours-des-actions/0/all',
+  'https://www.brvm.org/fr/cours0/0/all',
   'https://www.brvm.org/en/cours-des-actions/0/all',
 ];
 const PROXY_URL = 'https://api.allorigins.win/get?url=';
-const CACHE_TTL = 3600;
 
 const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -24,102 +26,77 @@ const USER_AGENTS = [
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
 ];
 
-// Référence des valeurs BRVM — noms et volumes moyens journaliers.
-// Les prix de référence sont mis à jour automatiquement par le scraper live.
+// Correspondance ticker BRVM → ticker Yahoo Finance
+const YAHOO_MAP = {
+  BICC:  'BICC.CI',  BNBC:  'BNBC.BJ',  BOAB:  'BOAB.BJ',  BOABF: 'BOABF.BF',
+  BOACI: 'BOACI.CI', BOAM:  'BOAM.ML',  BOAN:  'BOAN.NE',  BOAS:  'BOAS.SN',
+  CABC:  'CABC.CI',  CBBF:  'CBBF.BF',  CFAC:  'CFAC.CI',  ECOC:  'ECOC.CI',
+  ETIT:  'ETIT.TG',  FTSC:  'FTSC.CI',  NEIC:  'NEIC.CI',  NSBC:  'NSBC.CI',
+  ONAT:  'ONAT.BF',  ORAC:  'ORAC.CI',  ORGT:  'ORGT.TG',  PALC:  'PALC.CI',
+  PRSC:  'PRSC.CI',  SAFC:  'SAFC.CI',  SCRC:  'SCRC.CI',  SDCC:  'SDCC.CI',
+  SGBC:  'SGBC.CI',  SHEC:  'SHEC.CI',  SIBC:  'SIBC.CI',  SICC:  'SICC.CI',
+  SLBC:  'SLBC.CI',  SMBC:  'SMBC.CI',  SNTS:  'SNTS.SN',  SPHC:  'SPHC.CI',
+  STAC:  'STAC.TG',  STBC:  'STBC.BF',  SVOC:  'SVOC.CI',  TPCI:  'TPCI.CI',
+  TTLC:  'TTLC.CI',  TTLS:  'TTLS.SN',  UNLC:  'UNLC.CI',  UNXC:  'UNXC.CI',
+};
+const YAHOO_REVERSE = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b, y]) => [y, b]));
+
+// ─── Référentiel des valeurs BRVM ─────────────────────────────────────────────
 const KNOWN_STOCKS = {
-  BICC:  { name: 'BICICI (BNP Paribas CI)',         avgVol: 180,   refPrice: 5500   },
-  BNBC:  { name: 'BOA Niger — Bénin',               avgVol: 95,    refPrice: 3800   },
-  BOAB:  { name: 'Bank of Africa Bénin',            avgVol: 320,   refPrice: 5500   },
-  BOABF: { name: 'Bank of Africa Burkina Faso',     avgVol: 180,   refPrice: 5200   },
-  BOACI: { name: 'Bank of Africa Côte d\'Ivoire',   avgVol: 420,   refPrice: 5850   },
-  BOAM:  { name: 'Bank of Africa Mali',             avgVol: 95,    refPrice: 4900   },
-  BOAN:  { name: 'Bank of Africa Niger',            avgVol: 75,    refPrice: 4100   },
-  BOAS:  { name: 'Bank of Africa Sénégal',          avgVol: 110,   refPrice: 3800   },
-  CABC:  { name: 'Compagnie Agricole de CI',        avgVol: 2300,  refPrice: 950    },
-  CBBF:  { name: 'Coris Bank International BF',     avgVol: 520,   refPrice: 8750   },
-  CFAC:  { name: 'CORAF (Raffinage CI)',             avgVol: 1500,  refPrice: 800    },
-  ECOC:  { name: 'Ecobank CI',                      avgVol: 650,   refPrice: 10500  },
-  ETIT:  { name: 'Ecobank Transnational Inc.',      avgVol: 48000, refPrice: 22     },
-  FTSC:  { name: 'Filtisac CI',                     avgVol: 140,   refPrice: 1850   },
-  NEIC:  { name: 'NEI-CEDA CI',                     avgVol: 800,   refPrice: 620    },
-  NSBC:  { name: 'Nsia Banque CI',                  avgVol: 230,   refPrice: 6200   },
-  ONAT:  { name: 'Onatel (Télécoms BF)',            avgVol: 310,   refPrice: 4950   },
-  ORAC:  { name: 'Orange CI',                       avgVol: 5400,  refPrice: 14750  },
-  ORGT:  { name: 'Orange CI (GDR Togo)',            avgVol: 380,   refPrice: 3200   },
-  PALC:  { name: 'Palm CI',                         avgVol: 980,   refPrice: 7200   },
-  PRSC:  { name: 'Prestige Assurances CI',          avgVol: 450,   refPrice: 3200   },
-  SAFC:  { name: 'SAPH CI (Plantations Hévéas)',    avgVol: 320,   refPrice: 4500   },
-  SCRC:  { name: 'Sucrivoire CI',                   avgVol: 560,   refPrice: 680    },
-  SDCC:  { name: 'SODE CI (Développement Élevage)', avgVol: 95,    refPrice: 2900   },
-  SGBC:  { name: 'SGB CI (Société Générale)',       avgVol: 290,   refPrice: 18200  },
-  SHEC:  { name: 'Société d\'Hévéiculture CI',      avgVol: 75,    refPrice: 4100   },
-  SIBC:  { name: 'SIB CI (Société Ivoirienne)',     avgVol: 350,   refPrice: 5600   },
-  SICC:  { name: 'SICOR CI (Coton)',                avgVol: 220,   refPrice: 3800   },
-  SLBC:  { name: 'Solibra CI (Brasserie)',          avgVol: 45,    refPrice: 122000 },
-  SMBC:  { name: 'SMB CI (Manufacture de Bois)',    avgVol: 120,   refPrice: 15000  },
-  SNTS:  { name: 'Sonatel (Téléphonie SN)',         avgVol: 890,   refPrice: 15500  },
-  SPHC:  { name: 'SAPH CI Prioritaire',             avgVol: 85,    refPrice: 4200   },
-  STAC:  { name: 'Setaci (Textile CI)',              avgVol: 190,   refPrice: 4500   },
-  STBC:  { name: 'SGB-BF (Soc. Générale BF)',       avgVol: 340,   refPrice: 5300   },
-  SVOC:  { name: 'SVO CI (Savonnes)',               avgVol: 680,   refPrice: 2200   },
-  TPCI:  { name: 'Tropical Partners CI',            avgVol: 60,    refPrice: 1100   },
-  TTLC:  { name: 'TotalEnergies Marketing CI',      avgVol: 3400,  refPrice: 1875   },
-  TTLS:  { name: 'TotalEnergies Marketing SN',      avgVol: 1200,  refPrice: 2100   },
-  UNLC:  { name: 'Unilever CI',                     avgVol: 420,   refPrice: 6800   },
-  UNXC:  { name: 'Unacoopec-CI',                    avgVol: 260,   refPrice: 2800   },
+  BICC:  { name: 'BICICI CI (BNP Paribas)',              avgVol: 180,   refPrice: 5500   },
+  BNBC:  { name: 'Brasseries du Bénin',                  avgVol: 95,    refPrice: 3800   },
+  BOAB:  { name: 'Bank of Africa Bénin',                 avgVol: 320,   refPrice: 5500   },
+  BOABF: { name: 'Bank of Africa Burkina Faso',          avgVol: 180,   refPrice: 5200   },
+  BOACI: { name: 'Bank of Africa Côte d\'Ivoire',        avgVol: 420,   refPrice: 5850   },
+  BOAM:  { name: 'Bank of Africa Mali',                  avgVol: 95,    refPrice: 4900   },
+  BOAN:  { name: 'Bank of Africa Niger',                 avgVol: 75,    refPrice: 4100   },
+  BOAS:  { name: 'Bank of Africa Sénégal',               avgVol: 110,   refPrice: 3800   },
+  CABC:  { name: 'Compagnie Agricole de CI',             avgVol: 2300,  refPrice: 950    },
+  CBBF:  { name: 'Coris Bank International BF',          avgVol: 520,   refPrice: 8750   },
+  CFAC:  { name: 'CORAF — Raffinage CI',                 avgVol: 1500,  refPrice: 800    },
+  ECOC:  { name: 'Ecobank Côte d\'Ivoire',               avgVol: 650,   refPrice: 10500  },
+  ETIT:  { name: 'Ecobank Transnational Inc. (ETI)',     avgVol: 48000, refPrice: 22     },
+  FTSC:  { name: 'Filtisac CI',                          avgVol: 140,   refPrice: 1850   },
+  NEIC:  { name: 'NEI-CEDA CI',                          avgVol: 800,   refPrice: 620    },
+  NSBC:  { name: 'Nsia Banque CI',                       avgVol: 230,   refPrice: 6200   },
+  ONAT:  { name: 'Onatel — Télécoms Burkina Faso',       avgVol: 310,   refPrice: 4950   },
+  ORAC:  { name: 'Orange Côte d\'Ivoire',                avgVol: 5400,  refPrice: 14750  },
+  ORGT:  { name: 'Orange CI (GDR — Togo)',               avgVol: 380,   refPrice: 3200   },
+  PALC:  { name: 'Palm CI',                              avgVol: 980,   refPrice: 7200   },
+  PRSC:  { name: 'Prestige Assurances CI',               avgVol: 450,   refPrice: 3200   },
+  SAFC:  { name: 'SAPH CI — Plantations d\'Hévéas',     avgVol: 320,   refPrice: 4500   },
+  SCRC:  { name: 'Sucrivoire CI',                        avgVol: 560,   refPrice: 680    },
+  SDCC:  { name: 'SODE CI',                              avgVol: 95,    refPrice: 2900   },
+  SGBC:  { name: 'SGB CI — Société Générale',            avgVol: 290,   refPrice: 18200  },
+  SHEC:  { name: 'Société d\'Hévéiculture CI',           avgVol: 75,    refPrice: 4100   },
+  SIBC:  { name: 'SIB CI — Soc. Ivoirienne de Banque',  avgVol: 350,   refPrice: 5600   },
+  SICC:  { name: 'SICOR CI — Industrie du Coton',        avgVol: 220,   refPrice: 3800   },
+  SLBC:  { name: 'Solibra CI — Brasserie',               avgVol: 45,    refPrice: 122000 },
+  SMBC:  { name: 'SMB CI — Manufacture de Bois',        avgVol: 120,   refPrice: 15000  },
+  SNTS:  { name: 'Sonatel — Téléphonie Sénégal',         avgVol: 890,   refPrice: 15500  },
+  SPHC:  { name: 'SAPH CI — Actions Prioritaires',       avgVol: 85,    refPrice: 4200   },
+  STAC:  { name: 'Setaci CI — Textile',                  avgVol: 190,   refPrice: 4500   },
+  STBC:  { name: 'SGB-BF — Soc. Générale Burkina',       avgVol: 340,   refPrice: 5300   },
+  SVOC:  { name: 'SVO CI — Savonnerie',                  avgVol: 680,   refPrice: 2200   },
+  TPCI:  { name: 'Tropical Partners CI',                 avgVol: 60,    refPrice: 1100   },
+  TTLC:  { name: 'TotalEnergies Marketing CI',           avgVol: 3400,  refPrice: 1875   },
+  TTLS:  { name: 'TotalEnergies Marketing Sénégal',      avgVol: 1200,  refPrice: 2100   },
+  UNLC:  { name: 'Unilever CI',                          avgVol: 420,   refPrice: 6800   },
+  UNXC:  { name: 'Unacoopec-CI',                         avgVol: 260,   refPrice: 2800   },
 };
 
-// Construit dynamiquement : toutes les valeurs scrapées sont analysées.
-// Les valeurs inconnues reçoivent un avgVol par défaut basé sur leur capitalisation estimée.
 function getMetaForStock(stock) {
   if (KNOWN_STOCKS[stock.symbol]) return KNOWN_STOCKS[stock.symbol];
-  // Valeur inconnue / nouvelle cotation : paramètres estimés
-  const estimatedAvgVol = stock.price < 500 ? 5000 : stock.price < 5000 ? 500 : 150;
-  return { name: stock.name || stock.symbol, avgVol: estimatedAvgVol, refPrice: stock.previousPrice || stock.price };
+  const avgVol = stock.price < 500 ? 5000 : stock.price < 5000 ? 500 : 150;
+  return { name: stock.name || stock.symbol, avgVol, refPrice: stock.previousPrice || stock.price };
 }
 
-// Seuils d'alerte
+// ─── Seuils et paramètres ─────────────────────────────────────────────────────
 const MPR_THRESHOLD     = 2.5;
 const OBI_THRESHOLD     = 0.85;
 const VOL_SPIKE_FACTOR  = 3.0;
-
-// Budget investisseur (configurable via variable d'env BUDGET_FCFA, défaut 75 000 F)
-// 80% du budget maximum engagé par trade, 20% de réserve toujours conservé
 const BUDGET_RESERVE_PCT = 0.20;
-
-// ─── Données statiques de fallback ───────────────────────────────────────────
-const STATIC_STOCKS = [
-  { symbol: 'BICC',  name: 'Bourse Ivoire Caoutchouc',     price: 1250,   country: 'CI', sector: 'Agriculture'  },
-  { symbol: 'BNBC',  name: 'Brasseries du Bénin',          price: 4200,   country: 'BJ', sector: 'Industrie'    },
-  { symbol: 'BOAB',  name: 'Bank of Africa Bénin',         price: 5500,   country: 'BJ', sector: 'Finance'      },
-  { symbol: 'BOABF', name: 'Bank of Africa BF',            price: 5200,   country: 'BF', sector: 'Finance'      },
-  { symbol: 'BOACI', name: 'Bank of Africa CI',            price: 5850,   country: 'CI', sector: 'Finance'      },
-  { symbol: 'BOAM',  name: 'Bank of Africa Mali',          price: 4900,   country: 'ML', sector: 'Finance'      },
-  { symbol: 'BOAN',  name: 'Bank of Africa Niger',         price: 4100,   country: 'NE', sector: 'Finance'      },
-  { symbol: 'CABC',  name: "Compagnie Agricole de CI",     price: 950,    country: 'CI', sector: 'Agriculture'  },
-  { symbol: 'CFAC',  name: 'Coraf',                        price: 800,    country: 'CI', sector: 'Énergie'      },
-  { symbol: 'CBBF',  name: 'Coris Bank BF',                price: 8750,   country: 'BF', sector: 'Finance'      },
-  { symbol: 'ECOC',  name: 'Ecobank CI',                   price: 10500,  country: 'CI', sector: 'Finance'      },
-  { symbol: 'ETIT',  name: 'Ecobank Transnational',        price: 22,     country: 'TG', sector: 'Finance'      },
-  { symbol: 'NEIC',  name: 'NEI-CEDA',                     price: 620,    country: 'CI', sector: 'Industrie'    },
-  { symbol: 'ONAT',  name: 'Onatel BF',                    price: 4950,   country: 'BF', sector: 'Télécom'      },
-  { symbol: 'ORAC',  name: 'Orange CI',                    price: 14750,  country: 'CI', sector: 'Télécom'      },
-  { symbol: 'PALC',  name: 'Palm CI',                      price: 7200,   country: 'CI', sector: 'Agriculture'  },
-  { symbol: 'PRSC',  name: 'Prestige CI',                  price: 3200,   country: 'CI', sector: 'Assurance'    },
-  { symbol: 'SAFC',  name: 'SAPH CI',                      price: 4500,   country: 'CI', sector: 'Agriculture'  },
-  { symbol: 'SGBC',  name: 'SGB CI',                       price: 18200,  country: 'CI', sector: 'Finance'      },
-  { symbol: 'SIBC',  name: 'SIB CI',                       price: 5600,   country: 'CI', sector: 'Finance'      },
-  { symbol: 'SICC',  name: 'SICOR CI',                     price: 3800,   country: 'CI', sector: 'Agriculture'  },
-  { symbol: 'SLBC',  name: 'Solibra',                      price: 122000, country: 'CI', sector: 'Industrie'    },
-  { symbol: 'SMBC',  name: 'SMB CI',                       price: 15000,  country: 'CI', sector: 'Industrie'    },
-  { symbol: 'SNTS',  name: 'Sonatel',                      price: 15500,  country: 'SN', sector: 'Télécom'      },
-  { symbol: 'STAC',  name: 'STAB',                         price: 4500,   country: 'TG', sector: 'Finance'      },
-  { symbol: 'STBC',  name: 'Société Générale BF',          price: 5300,   country: 'BF', sector: 'Finance'      },
-  { symbol: 'SVOC',  name: 'SVO CI',                       price: 2200,   country: 'CI', sector: 'Industrie'    },
-  { symbol: 'TTLC',  name: 'Total CI',                     price: 1875,   country: 'CI', sector: 'Énergie'      },
-  { symbol: 'UNLC',  name: 'Unilever CI',                  price: 6800,   country: 'CI', sector: 'Consommation' },
-  { symbol: 'UNXC',  name: 'Unacoopec CI',                 price: 2800,   country: 'CI', sector: 'Finance'      },
-];
+const CACHE_TTL          = 3600;
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin':  '*',
@@ -130,34 +107,23 @@ const CORS_HEADERS = {
 
 // ─── Handler principal ────────────────────────────────────────────────────────
 export default {
-
-  // Requêtes HTTP normales
   async fetch(request, env, ctx) {
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: CORS_HEADERS });
-    }
-    const url  = new URL(request.url);
-    const path = url.pathname;
-
-    if (path === '/health') {
-      return jsonResponse({ status: 'ok', worker: 'brvm-prices', timestamp: Date.now() });
-    }
-    if (path.startsWith('/stock/')) {
-      const symbol = path.replace('/stock/', '').toUpperCase();
-      const stocks = await getStocks(env, ctx);
+    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS });
+    const { pathname } = new URL(request.url);
+    if (pathname === '/health') return jsonResponse({ status: 'ok', worker: 'brvm-prices', timestamp: Date.now() });
+    if (pathname.startsWith('/stock/')) {
+      const symbol = pathname.replace('/stock/', '').toUpperCase();
+      const stocks = await getStocksHttp(env, ctx);
       const stock  = stocks.find(s => s.symbol === symbol);
-      return stock
-        ? jsonResponse(stock)
-        : jsonResponse({ error: 'Stock not found', symbol }, 404);
+      return stock ? jsonResponse(stock) : jsonResponse({ error: 'Stock not found', symbol }, 404);
     }
-    if (path === '/' || path === '/stocks') {
-      const stocks = await getStocks(env, ctx);
+    if (pathname === '/' || pathname === '/stocks') {
+      const stocks = await getStocksHttp(env, ctx);
       return jsonResponse({ stocks, count: stocks.length, timestamp: Date.now(), market: getMarketStatus() });
     }
-    return jsonResponse({ error: 'Not found', path }, 404);
+    return jsonResponse({ error: 'Not found', path: pathname }, 404);
   },
 
-  // ─── Cron 9h35 GMT lundi-vendredi ─────────────────────────────────────────
   async scheduled(event, env, ctx) {
     console.log('BRVM Pre-Open Scanner déclenché :', new Date().toISOString());
     ctx.waitUntil(runPreOpenScan(env));
@@ -166,23 +132,20 @@ export default {
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  MOTEUR DE SIGNAL PRÉ-OUVERTURE
+//  MOTEUR SIGNAL PRÉ-OUVERTURE
 // ═══════════════════════════════════════════════════════════════════════════════
 
 async function runPreOpenScan(env) {
-  // 1. Récupérer les données de marché LIVE
   const { stocks, source } = await fetchLiveStocks();
 
-  // Si aucune source live disponible → avertissement Telegram, pas de fausses alertes
   if (source === 'unavailable') {
-    console.warn('Toutes les sources BRVM inaccessibles — aucune alerte envoyée.');
+    console.warn('Toutes les sources BRVM inaccessibles.');
     await sendTelegramUnavailable(env);
     return;
   }
 
-  console.log(`Analyse de ${stocks.length} valeurs BRVM (source: ${source})...`);
+  console.log(`${stocks.length} valeurs chargées depuis "${source}".`);
 
-  // 2. Analyser toutes les valeurs
   const alerts = [];
   for (const stock of stocks) {
     const meta   = getMetaForStock(stock);
@@ -190,26 +153,21 @@ async function runPreOpenScan(env) {
     if (signal.alert) alerts.push(signal);
   }
 
-  // 3. Envoyer les alertes Telegram
   if (alerts.length === 0) {
     console.log('Marché calme — aucune alerte envoyée.');
     return;
   }
 
-  console.log(`${alerts.length} alerte(s) détectée(s) — envoi Telegram...`);
-  for (const signal of alerts) {
-    await sendTelegram(signal, env);
-  }
+  console.log(`${alerts.length} alerte(s) — envoi Telegram...`);
+  for (const signal of alerts) await sendTelegram(signal, env, source);
 }
 
+
+// ─── Cascade de sources ───────────────────────────────────────────────────────
+
 async function fetchLiveStocks() {
-  // Source 1 : BRVM direct (plusieurs variantes d'URL)
-  const brvmUrls = [
-    'https://www.brvm.org/fr/cours-des-actions/0/all',
-    'https://www.brvm.org/fr/cours0/0/all',
-    'https://www.brvm.org/en/cours-des-actions/0/all',
-  ];
-  for (const url of brvmUrls) {
+  // 1. BRVM.org direct — plusieurs URL
+  for (const url of BRVM_URLS) {
     try {
       const resp = await fetch(url, {
         headers: {
@@ -217,143 +175,158 @@ async function fetchLiveStocks() {
           'Accept': 'text/html,application/xhtml+xml,*/*;q=0.9',
           'Accept-Language': 'fr-FR,fr;q=0.9',
           'Referer': 'https://www.google.com/',
-          'Cache-Control': 'no-cache',
         },
       });
       if (resp.ok) {
         const stocks = parseBRVMHtml(await resp.text());
-        if (stocks && stocks.length >= 5) return { stocks, source: 'brvm-direct' };
+        if (stocks) return { stocks, source: 'brvm-direct' };
       }
     } catch {}
   }
 
-  // Source 2 : Proxy allorigins.win (contourne le blocage IP Cloudflare)
+  // 2. Proxy allorigins → BRVM.org
   try {
-    const proxyUrl = PROXY_URL + encodeURIComponent('https://www.brvm.org/fr/cours-des-actions/0/all');
-    const resp = await fetch(proxyUrl, { cf: { cacheTtl: 0 } });
+    const url  = PROXY_URL + encodeURIComponent(BRVM_URLS[0]);
+    const resp = await fetch(url);
     if (resp.ok) {
-      const json = await resp.json();
-      if (json.contents) {
-        const stocks = parseBRVMHtml(json.contents);
-        if (stocks && stocks.length >= 5) return { stocks, source: 'proxy-allorigins' };
-      }
+      const json   = await resp.json();
+      const stocks = json.contents ? parseBRVMHtml(json.contents) : null;
+      if (stocks) return { stocks, source: 'brvm-via-proxy' };
     }
   } catch {}
 
-  // Source 3 : Sika Finance (agrégateur BRVM alternatif)
+  // 3. Yahoo Finance — couvre ~35 valeurs BRVM en JSON temps réel
+  try {
+    const stocks = await fetchYahooFinance();
+    if (stocks) return { stocks, source: 'yahoo-finance' };
+  } catch {}
+
+  // 4. Sika Finance
   try {
     const resp = await fetch('https://sika.finance/bourse/brvm/cours', {
       headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'text/html' },
     });
     if (resp.ok) {
       const stocks = parseSikaHtml(await resp.text());
-      if (stocks && stocks.length >= 5) return { stocks, source: 'sika-finance' };
+      if (stocks) return { stocks, source: 'sika-finance' };
     }
   } catch {}
 
   return { stocks: [], source: 'unavailable' };
 }
 
+// Yahoo Finance API — retourne les cours live pour toutes les valeurs BRVM mappées
+async function fetchYahooFinance() {
+  const tickers = Object.values(YAHOO_MAP).join(',');
+  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers}` +
+              `&fields=symbol,shortName,regularMarketPrice,regularMarketPreviousClose,` +
+              `regularMarketChangePercent,regularMarketVolume,regularMarketChange`;
 
-// ─── Analyse d'un titre ───────────────────────────────────────────────────────
+  const resp = await fetch(url, {
+    headers: {
+      'User-Agent': USER_AGENTS[0],
+      'Accept': 'application/json',
+      'Accept-Language': 'fr-FR,fr;q=0.9',
+    },
+  });
+  if (!resp.ok) throw new Error(`Yahoo HTTP ${resp.status}`);
+
+  const data   = await resp.json();
+  const quotes = data?.quoteResponse?.result;
+  if (!quotes || quotes.length < 5) return null;
+
+  return quotes
+    .map(q => {
+      const brvmTicker = YAHOO_REVERSE[q.symbol];
+      if (!brvmTicker) return null;
+      const meta = KNOWN_STOCKS[brvmTicker];
+      return {
+        symbol:        brvmTicker,
+        name:          meta?.name || q.shortName || brvmTicker,
+        price:         Math.round(q.regularMarketPrice   || 0),
+        previousPrice: Math.round(q.regularMarketPreviousClose || q.regularMarketPrice || 0),
+        change:        Math.round(q.regularMarketChange  || 0),
+        changePercent: Math.round((q.regularMarketChangePercent || 0) * 100) / 100,
+        volume:        q.regularMarketVolume || 0,
+        source:        'yahoo',
+        timestamp:     Date.now(),
+      };
+    })
+    .filter(s => s && s.price > 0);
+}
+
+
+// ─── Analyse signal ───────────────────────────────────────────────────────────
 
 function analyzeSignal(symbol, stock, meta) {
-  const { avgVol, refPrice } = meta;
-
-  // Sur la base des données disponibles (cours + volume),
-  // on estime un MPR et OBI par proxy :
-  //   - MPR proxy : ratio volume observé / volume moyen × momentum
-  //   - OBI proxy : signe et intensité de la variation de prix
-  const volRatio   = avgVol > 0 ? (stock.volume / avgVol) : 1;
-  const momentum   = stock.changePercent / 7.5;   // normalisé sur limite BRVM ±7.5%
-  const mpr        = Math.max(0, volRatio * (1 + Math.max(0, momentum)));
-  const obi        = Math.min(1, Math.max(-1, momentum * volRatio * 0.5));
-  const iceberg    = stock.volume > avgVol * VOL_SPIKE_FACTOR;
-  const theoOpen   = stock.price;
+  const volRatio = meta.avgVol > 0 ? stock.volume / meta.avgVol : 1;
+  const momentum = stock.changePercent / 7.5;
+  const mpr      = Math.max(0, volRatio * (1 + Math.max(0, momentum)));
+  const obi      = Math.min(1, Math.max(-1, momentum * volRatio * 0.5));
+  const iceberg  = stock.volume > meta.avgVol * VOL_SPIKE_FACTOR;
 
   const reasons = [];
   if (mpr > MPR_THRESHOLD)
-    reasons.push(`MPR≈${mpr.toFixed(2)} > ${MPR_THRESHOLD} (volume ${stock.volume} titres = ${volRatio.toFixed(1)}× moyenne)`);
+    reasons.push(`MPR≈${mpr.toFixed(2)} > ${MPR_THRESHOLD} (vol ${stock.volume} = ${volRatio.toFixed(1)}× moy)`);
   if (obi >= OBI_THRESHOLD)
-    reasons.push(`OBI≈${obi.toFixed(3)} ≈ 1 (pression acheteuse dominante)`);
+    reasons.push(`OBI≈${obi.toFixed(3)} ≈ 1 (pression acheteuse forte)`);
   if (iceberg && reasons.length > 0)
-    reasons.push(`Ordre iceberg : ${stock.volume} titres = ${volRatio.toFixed(1)}× vol. journalier moyen (${avgVol})`);
+    reasons.push(`Iceberg : ${stock.volume} titres = ${volRatio.toFixed(1)}× vol. moyen (${meta.avgVol})`);
 
   const confidence = reasons.length >= 3 ? 'HIGH' : reasons.length >= 2 ? 'MEDIUM' : reasons.length === 1 ? 'LOW' : 'NONE';
-
-  return {
-    symbol,
-    name:        meta.name,
-    theoOpen,
-    refPrice,
-    price:       stock.price,
-    change:      stock.changePercent,
-    volume:      stock.volume,
-    avgVol,
-    mpr,
-    obi,
-    iceberg,
-    reasons,
-    confidence,
-    alert:       reasons.length > 0,
-  };
+  return { symbol, name: meta.name, price: stock.price, change: stock.changePercent,
+           volume: stock.volume, avgVol: meta.avgVol, mpr, obi, iceberg, reasons, confidence,
+           alert: reasons.length > 0 };
 }
 
-// ─── Calcul de position adapté au budget ────────────────────────────────────
 function calcPosition(price, budgetFcfa) {
-  const capital    = budgetFcfa * (1 - BUDGET_RESERVE_PCT); // 80% du budget
-  const nbTitres   = Math.floor(capital / price);           // titres achetables
-  if (nbTitres === 0) return null;                          // titre trop cher
-  const coutTotal  = nbTitres * price;
-  const reserve    = budgetFcfa - coutTotal;
-  // Objectif : +4% réaliste sur BRVM / Stop loss : -3% (risque limité)
-  const gainCible  = Math.round(nbTitres * price * 0.04);
-  const gainMax    = Math.round(nbTitres * price * 0.075); // limite BRVM +7.5%
-  const pertMax    = Math.round(nbTitres * price * 0.03);
-  const prixStopLoss = Math.round(price * 0.97);
-  const prixCible    = Math.round(price * 1.04);
-  return { nbTitres, coutTotal, reserve, gainCible, gainMax, pertMax, prixStopLoss, prixCible };
+  const nbTitres = Math.floor(budgetFcfa * (1 - BUDGET_RESERVE_PCT) / price);
+  if (nbTitres === 0) return null;
+  const cout = nbTitres * price;
+  return {
+    nbTitres,
+    coutTotal:    cout,
+    reserve:      budgetFcfa - cout,
+    gainCible:    Math.round(cout * 0.04),
+    gainMax:      Math.round(cout * 0.075),
+    pertMax:      Math.round(cout * 0.03),
+    prixCible:    Math.round(price * 1.04),
+    prixStopLoss: Math.round(price * 0.97),
+  };
 }
 
 
 // ─── Envoi Telegram ───────────────────────────────────────────────────────────
 
-async function sendTelegram(signal, env) {
+async function sendTelegram(signal, env, source) {
   const token      = env.TELEGRAM_BOT_TOKEN;
   const chatId     = env.TELEGRAM_CHAT_ID;
   const budgetFcfa = parseInt(env.BUDGET_FCFA || '75000', 10);
-
-  if (!token || !chatId) {
-    console.error('TELEGRAM_BOT_TOKEN ou TELEGRAM_CHAT_ID non configuré.');
-    return;
-  }
+  if (!token || !chatId) { console.error('Secrets Telegram manquants.'); return; }
 
   const emoji   = signal.confidence === 'HIGH' ? '🔴' : signal.confidence === 'MEDIUM' ? '🟠' : '🟡';
   const reasons = signal.reasons.map(r => `  • ${r}`).join('\n');
   const icebergLine = signal.iceberg
-    ? `\n🐋 *Iceberg* : ${signal.volume} titres = ${(signal.volume / signal.avgVol).toFixed(1)}× vol. moyen`
-    : '';
+    ? `\n🐋 *Iceberg* : ${signal.volume} titres = ${(signal.volume/signal.avgVol).toFixed(1)}× vol. moyen` : '';
+  const sourceTag = source !== 'brvm-direct' ? `\n_📡 Source : ${source}_` : '';
 
-  // Calcul de position personnalisé
-  const pos = calcPosition(signal.price, budgetFcfa);
-  const posBlock = pos
-    ? [
-        `──────────────────────`,
-        `💼 *RECOMMANDATION (budget ${budgetFcfa.toLocaleString()} F)*`,
-        `📌 *Acheter* : ${pos.nbTitres} titre${pos.nbTitres > 1 ? 's' : ''} ${signal.symbol}`,
-        `💸 *Coût total* : ${pos.coutTotal.toLocaleString()} FCFA`,
-        `🏦 *Réserve gardée* : ${pos.reserve.toLocaleString()} FCFA`,
-        `──────────────────────`,
-        `🎯 *Objectif* : ${pos.prixCible.toLocaleString()} FCFA (+4%) → *+${pos.gainCible.toLocaleString()} F*`,
-        `🚀 *Max BRVM* : ${Math.round(signal.price * 1.075).toLocaleString()} FCFA (+7.5%) → *+${pos.gainMax.toLocaleString()} F*`,
-        `🛑 *Stop loss* : ${pos.prixStopLoss.toLocaleString()} FCFA (-3%) → max -${pos.pertMax.toLocaleString()} F`,
-      ].join('\n')
-    : `\n⚠️ _Titre trop cher pour ton budget actuel (${signal.price.toLocaleString()} FCFA/titre)_`;
+  const pos      = calcPosition(signal.price, budgetFcfa);
+  const posBlock = pos ? [
+    `──────────────────────`,
+    `💼 *RECOMMANDATION (budget ${budgetFcfa.toLocaleString()} F)*`,
+    `📌 *Acheter* : ${pos.nbTitres} titre${pos.nbTitres > 1 ? 's' : ''} ${signal.symbol}`,
+    `💸 *Coût total* : ${pos.coutTotal.toLocaleString()} FCFA`,
+    `🏦 *Réserve gardée* : ${pos.reserve.toLocaleString()} FCFA`,
+    `──────────────────────`,
+    `🎯 *Objectif* : ${pos.prixCible.toLocaleString()} FCFA (+4%) → *+${pos.gainCible.toLocaleString()} F*`,
+    `🚀 *Max BRVM* : ${Math.round(signal.price*1.075).toLocaleString()} FCFA (+7.5%) → *+${pos.gainMax.toLocaleString()} F*`,
+    `🛑 *Stop loss* : ${pos.prixStopLoss.toLocaleString()} FCFA (-3%) → max -${pos.pertMax.toLocaleString()} F`,
+  ].join('\n') : `\n⚠️ _Titre trop cher pour ton budget (${signal.price.toLocaleString()} FCFA/titre)_`;
 
   const text = [
     `${emoji} *FLASH BRVM — Pré-Ouverture*`,
     `━━━━━━━━━━━━━━━━━━━━━`,
-    `📌 *Titre* : ${signal.symbol} (${signal.name})`,
+    `📌 *${signal.symbol}* — ${signal.name}`,
     `⏰ *9h35 GMT* — Fixing dans 10 min`,
     `💰 *Cours* : ${signal.price.toLocaleString()} FCFA`,
     `📊 *Variation* : ${signal.change > 0 ? '+' : ''}${signal.change.toFixed(2)}%`,
@@ -362,12 +335,11 @@ async function sendTelegram(signal, env) {
     `📈 *MPR* : ${signal.mpr.toFixed(2)}  _(seuil > 2.5)_`,
     `⚖️ *OBI* : ${signal.obi.toFixed(3)}  _(seuil > 0.85)_`,
     `──────────────────────`,
-    `*Signaux :*`,
-    reasons,
+    `*Signaux :*\n${reasons}`,
     posBlock,
     `──────────────────────`,
     `⚡ *Passe l'ordre avant 9h45 GMT*`,
-    `_Confiance : ${signal.confidence} | ⚠️ Pas un conseil financier certifié_`,
+    `_Confiance : ${signal.confidence} | ⚠️ Pas un conseil financier certifié_${sourceTag}`,
   ].join('\n');
 
   try {
@@ -377,85 +349,11 @@ async function sendTelegram(signal, env) {
       body:    JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }),
     });
     const data = await resp.json();
-    if (data.ok) {
-      console.log(`[${signal.symbol}] Alerte Telegram envoyée.`);
-    } else {
-      console.error(`[${signal.symbol}] Telegram erreur :`, data.description);
-    }
+    if (data.ok) console.log(`[${signal.symbol}] Telegram OK.`);
+    else         console.error(`[${signal.symbol}] Telegram erreur :`, data.description);
   } catch (e) {
     console.error(`[${signal.symbol}] Telegram exception :`, e.message);
   }
-}
-
-
-// ═══════════════════════════════════════════════════════════════════════════════
-//  DONNÉES DE MARCHÉ (identique à la version précédente)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-async function getStocks(env, ctx) {
-  if (env.BRVM_CACHE) {
-    try {
-      const cached = await env.BRVM_CACHE.get('stocks', { type: 'json' });
-      if (cached?.ts && (Date.now() - cached.ts) < CACHE_TTL * 1000) return cached.data;
-    } catch {}
-  }
-  let stocks = null;
-  try { stocks = await scrapeBRVM(); } catch (e) { console.error('Scrape:', e.message); }
-  if (!stocks || stocks.length < 5) stocks = generateSimulatedData();
-  if (env.BRVM_CACHE) {
-    ctx.waitUntil(
-      env.BRVM_CACHE.put('stocks', JSON.stringify({ data: stocks, ts: Date.now() }), { expirationTtl: CACHE_TTL })
-    );
-  }
-  return stocks;
-}
-
-async function scrapeBRVM() {
-  const resp = await fetch(BRVM_URLS[0], {
-    headers: {
-      'User-Agent': USER_AGENTS[0],
-      'Accept':     'text/html,application/xhtml+xml',
-    },
-    cf: { cacheTtl: 300 },
-  });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  return parseBRVMHtml(await resp.text());
-}
-
-// Parser alternatif pour sika.finance
-function parseSikaHtml(html) {
-  const stocks = [];
-  const rowRe  = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-  const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
-  const strip  = /<[^>]+>/g;
-  let row;
-  while ((row = rowRe.exec(html)) !== null) {
-    const cells = [];
-    let cell;
-    const cm = new RegExp(cellRe.source, 'gi');
-    while ((cell = cm.exec(row[1])) !== null) {
-      cells.push(cell[1].replace(strip, '').trim());
-    }
-    if (cells.length >= 4) {
-      const symbol = cells[0].replace(/\s/g, '').toUpperCase();
-      const price  = parseFloat(cells[1].replace(/[\s ]/g, '').replace(',', '.'));
-      const chg    = parseFloat(cells[2].replace('%', '').replace(',', '.'));
-      if (symbol.length >= 2 && symbol.length <= 6 && price > 0) {
-        stocks.push({
-          symbol,
-          name:          KNOWN_STOCKS[symbol]?.name || symbol,
-          price:         Math.round(price),
-          previousPrice: Math.round(price / (1 + (chg || 0) / 100)),
-          change:        Math.round(price * (chg || 0) / 100),
-          changePercent: Math.round((chg || 0) * 100) / 100,
-          volume:        parseInt(cells[3]?.replace(/\s/g, '') || '0') || 0,
-          source:        'live',
-          timestamp:     Date.now(),
-        });
-      }
-    }
-  }
-  return stocks.length >= 5 ? stocks : null;
 }
 
 async function sendTelegramUnavailable(env) {
@@ -463,11 +361,11 @@ async function sendTelegramUnavailable(env) {
   const chatId = env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) return;
   const text = [
-    '⚠️ *BRVM Pré-Ouverture — Données Indisponibles*',
+    '⚠️ *BRVM Pré-Ouverture — Sources Indisponibles*',
     '━━━━━━━━━━━━━━━━━━━━━',
-    '🌐 Le site BRVM est inaccessible aujourd\'hui à 9h35.',
+    '🌐 BRVM.org, Yahoo Finance et Sika Finance sont tous inaccessibles ce matin.',
     '',
-    '_Aucun signal de trading généré — données live requises._',
+    '_Aucun signal généré — données live introuvables._',
     '_Réessai automatique demain à 9h35 GMT._',
   ].join('\n');
   try {
@@ -479,60 +377,107 @@ async function sendTelegramUnavailable(env) {
   } catch {}
 }
 
+
+// ─── Parsers HTML ─────────────────────────────────────────────────────────────
+
 function parseBRVMHtml(html) {
-  const stocks  = [];
-  const rowRe   = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-  const cellRe  = /<td[^>]*>([\s\S]*?)<\/td>/gi;
-  const stripRe = /<[^>]+>/g;
+  const stocks = [];
+  const rowRe  = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+  const strip  = /<[^>]+>/g;
   let row;
   while ((row = rowRe.exec(html)) !== null) {
     const cells = [];
     let cell;
-    const cellMatcher = new RegExp(cellRe.source, 'gi');
-    while ((cell = cellMatcher.exec(row[1])) !== null) {
-      cells.push(cell[1].replace(stripRe, '').trim());
-    }
+    const cm = new RegExp(cellRe.source, 'gi');
+    while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
     if (cells.length >= 5) {
       const symbol    = cells[0].toUpperCase();
       const price     = parseFloat(cells[2].replace(/\s/g, '').replace(',', '.'));
       const changePct = parseFloat(cells[4].replace('%', '').replace(/\s/g, '').replace(',', '.'));
       if (symbol.length >= 2 && symbol.length <= 6 && price > 0) {
-        const previousPrice = price / (1 + changePct / 100);
+        const prev = price / (1 + changePct / 100);
         stocks.push({
           symbol,
-          name:          symbol,
+          name:          KNOWN_STOCKS[symbol]?.name || symbol,
           price:         Math.round(price),
-          previousPrice: Math.round(previousPrice),
-          change:        Math.round(price - previousPrice),
+          previousPrice: Math.round(prev),
+          change:        Math.round(price - prev),
           changePercent: Math.round(changePct * 100) / 100,
           volume:        parseInt(cells[5]?.replace(/\s/g, '') || '0') || 0,
-          source:        'live',
-          timestamp:     Date.now(),
+          source: 'live', timestamp: Date.now(),
         });
       }
     }
   }
-  return stocks.length > 5 ? stocks : null;
+  return stocks.length >= 5 ? stocks : null;
 }
 
-function generateSimulatedData() {
-  const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-  return STATIC_STOCKS.map((s, i) => {
-    const rng      = mulberry32(seed + i);
-    const change   = Math.max(-0.075, Math.min(0.075, 0.08 / 252 + (rng() - 0.48) * 0.024));
-    const newPrice = Math.round(s.price * (1 + change));
+function parseSikaHtml(html) {
+  const stocks = [];
+  const rowRe  = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+  const strip  = /<[^>]+>/g;
+  let row;
+  while ((row = rowRe.exec(html)) !== null) {
+    const cells = [];
+    let cell;
+    const cm = new RegExp(cellRe.source, 'gi');
+    while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
+    if (cells.length >= 4) {
+      const symbol = cells[0].replace(/\s/g, '').toUpperCase();
+      const price  = parseFloat(cells[1].replace(/[\s ]/g, '').replace(',', '.'));
+      const chg    = parseFloat(cells[2].replace('%', '').replace(',', '.')) || 0;
+      if (symbol.length >= 2 && symbol.length <= 6 && price > 0) {
+        stocks.push({
+          symbol,
+          name:          KNOWN_STOCKS[symbol]?.name || symbol,
+          price:         Math.round(price),
+          previousPrice: Math.round(price / (1 + chg / 100)),
+          change:        Math.round(price * chg / 100),
+          changePercent: Math.round(chg * 100) / 100,
+          volume:        parseInt(cells[3]?.replace(/\s/g, '') || '0') || 0,
+          source: 'live', timestamp: Date.now(),
+        });
+      }
+    }
+  }
+  return stocks.length >= 5 ? stocks : null;
+}
+
+
+// ─── HTTP endpoint stocks ─────────────────────────────────────────────────────
+
+async function getStocksHttp(env, ctx) {
+  if (env.BRVM_CACHE) {
+    try {
+      const cached = await env.BRVM_CACHE.get('stocks', { type: 'json' });
+      if (cached?.ts && (Date.now() - cached.ts) < CACHE_TTL * 1000) return cached.data;
+    } catch {}
+  }
+  const { stocks } = await fetchLiveStocks();
+  const result = stocks.length >= 5 ? stocks : generateFallbackData();
+  if (env.BRVM_CACHE && result.length > 0) {
+    ctx.waitUntil(
+      env.BRVM_CACHE.put('stocks', JSON.stringify({ data: result, ts: Date.now() }), { expirationTtl: CACHE_TTL })
+    );
+  }
+  return result;
+}
+
+function generateFallbackData() {
+  const seed = Math.floor(Date.now() / 86400000);
+  return Object.entries(KNOWN_STOCKS).map(([symbol, meta], i) => {
+    const rng    = mulberry32(seed + i);
+    const change = Math.max(-0.075, Math.min(0.075, 0.0003 + (rng() - 0.5) * 0.02));
+    const price  = Math.round(meta.refPrice * (1 + change));
     return {
-      symbol:        s.symbol,
-      name:          s.name,
-      price:         newPrice,
-      previousPrice: s.price,
-      change:        newPrice - s.price,
+      symbol, name: meta.name, price,
+      previousPrice: meta.refPrice,
+      change: price - meta.refPrice,
       changePercent: Math.round(change * 10000) / 100,
-      volume:        Math.round(1000 * (0.5 + rng() * 1.5)),
-      country:       s.country,
-      sector:        s.sector,
-      source:        'simulated',
-      timestamp:     Date.now(),
+      volume: Math.round(meta.avgVol * (0.5 + rng() * 1.5)),
+      source: 'simulated', timestamp: Date.now(),
     };
   });
 }
@@ -547,16 +492,15 @@ function mulberry32(seed) {
 }
 
 function getMarketStatus() {
-  const now  = new Date();
-  const day  = now.getUTCDay();
-  const mins = now.getUTCHours() * 60 + now.getUTCMinutes();
-  const isWeekday = day >= 1 && day <= 5;
-  const isOpen    = isWeekday && mins >= 9 * 60 && mins <= 15 * 60 + 30;
+  const now     = new Date();
+  const day     = now.getUTCDay();
+  const mins    = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const weekday = day >= 1 && day <= 5;
   return {
-    isOpen,
-    isPreOpen: isWeekday && mins >= 9 * 60 && mins < 9 * 60 + 45,
-    isFixing:  isWeekday && mins >= 12 * 60 && mins <= 12 * 60 + 30,
-    label:     isOpen ? 'Séance ouverte' : 'Marché fermé',
+    isOpen:    weekday && mins >= 540 && mins <= 930,
+    isPreOpen: weekday && mins >= 540 && mins < 585,
+    isFixing:  weekday && mins >= 720 && mins <= 750,
+    label:     (weekday && mins >= 540 && mins <= 930) ? 'Séance ouverte' : 'Marché fermé',
   };
 }
 
