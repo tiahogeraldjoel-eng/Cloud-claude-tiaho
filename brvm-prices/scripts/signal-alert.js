@@ -1,9 +1,6 @@
 #!/usr/bin/env node
-/**
- * BRVM Pre-Open Signal Alert — script Node.js pour GitHub Actions
- * Pas de CORS en Node.js → scraping brvm.org direct, sans proxy, sans Cloudflare.
- * Cron : 9h35 UTC lun-ven (voir .github/workflows/brvm-signal-alert.yml)
- */
+// BRVM Pre-Open Signal Alert - GitHub Actions Node.js script
+// Pas de CORS en Node.js -> scraping brvm.org direct, sans Cloudflare.
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID   = process.env.TELEGRAM_CHAT_ID;
@@ -37,51 +34,51 @@ const YAHOO_MAP = {
 const YAHOO_REVERSE = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b,y]) => [y,b]));
 
 const KNOWN_STOCKS = {
-  ABJC: { name:'Bernabé CI',                           avgVol:380,   refPrice:2100   },
+  ABJC: { name:'Bernabe CI',                           avgVol:380,   refPrice:2100   },
   BICC: { name:'BICICI CI (BNP Paribas)',              avgVol:180,   refPrice:5500   },
-  BNBC: { name:'Brasseries du Bénin',                  avgVol:95,    refPrice:3800   },
-  BOAB: { name:'Bank of Africa Bénin',                 avgVol:980,   refPrice:5250   },
+  BNBC: { name:'Brasseries du Benin',                  avgVol:95,    refPrice:3800   },
+  BOAB: { name:'Bank of Africa Benin',                 avgVol:980,   refPrice:5250   },
   BOABF:{ name:'Bank of Africa Burkina Faso',          avgVol:180,   refPrice:5200   },
-  BOACI:{ name:"Bank of Africa Côte d'Ivoire",         avgVol:2800,  refPrice:6450   },
+  BOACI:{ name:'Bank of Africa Cote Ivoire',           avgVol:2800,  refPrice:6450   },
   BOAM: { name:'Bank of Africa Mali',                  avgVol:95,    refPrice:4900   },
   BOAN: { name:'Bank of Africa Niger',                 avgVol:380,   refPrice:3800   },
-  BOAS: { name:'Bank of Africa Sénégal',               avgVol:750,   refPrice:4900   },
-  CABC: { name:'SICABLE CI — Câbles Électriques',      avgVol:820,   refPrice:2850   },
+  BOAS: { name:'Bank of Africa Senegal',               avgVol:750,   refPrice:4900   },
+  CABC: { name:'SICABLE CI Cables Electriques',        avgVol:820,   refPrice:2850   },
   CBBF: { name:'Coris Bank International BF',          avgVol:580,   refPrice:8750   },
   CFAC: { name:'CFAO Motors CI',                       avgVol:580,   refPrice:4800   },
-  ECOC: { name:"Ecobank Côte d'Ivoire",                avgVol:650,   refPrice:10500  },
-  ETIT: { name:'Ecobank Transnational Inc. (ETI)',     avgVol:98000, refPrice:18     },
+  ECOC: { name:'Ecobank Cote Ivoire',                  avgVol:650,   refPrice:10500  },
+  ETIT: { name:'Ecobank Transnational Inc. ETI',       avgVol:98000, refPrice:18     },
   LACI: { name:'Air Liquide CI',                       avgVol:240,   refPrice:6500   },
   NEIC: { name:'NEI-CEDA CI',                          avgVol:800,   refPrice:620    },
   NSBC: { name:'NSIA Banque CI',                       avgVol:950,   refPrice:7200   },
   NTLC: { name:'Filtisac CI',                          avgVol:720,   refPrice:1850   },
-  ONAT: { name:'Onatel — Télécoms Burkina Faso',       avgVol:310,   refPrice:4950   },
-  ORAC: { name:"Orange Côte d'Ivoire",                 avgVol:5400,  refPrice:14750  },
+  ONAT: { name:'Onatel Telecoms Burkina Faso',         avgVol:310,   refPrice:4950   },
+  ORAC: { name:'Orange Cote Ivoire',                   avgVol:5400,  refPrice:14750  },
   ORGT: { name:'Orange CI',                            avgVol:5200,  refPrice:11500  },
-  PALC: { name:'PALM-CI — Palmier à Huile',            avgVol:2200,  refPrice:7800   },
+  PALC: { name:'PALM-CI Palmier Huile',                avgVol:2200,  refPrice:7800   },
   PRSC: { name:'Prestige Assurances CI',               avgVol:450,   refPrice:3200   },
-  SAFC: { name:"SAPH CI — Plantations d'Hévéas",      avgVol:850,   refPrice:5100   },
-  SAPH: { name:'SAPH CI — Hévéaculture',               avgVol:850,   refPrice:5100   },
+  SAFC: { name:'SAPH CI Plantations Heveas',           avgVol:850,   refPrice:5100   },
+  SAPH: { name:'SAPH CI Heveas',                       avgVol:850,   refPrice:5100   },
   SCRC: { name:'Sucrivoire CI',                        avgVol:560,   refPrice:680    },
   SDCC: { name:'SODE CI',                              avgVol:95,    refPrice:2900   },
-  SEMC: { name:'Crown Siem CI — Emballages',           avgVol:3800,  refPrice:680    },
-  SGBC: { name:"Société Générale CI",                  avgVol:720,   refPrice:12500  },
-  SHEC: { name:"Société d'Hévéiculture CI",            avgVol:75,    refPrice:4100   },
-  SIAC: { name:'SIFCA CI — Agro-industrie',            avgVol:1500,  refPrice:4200   },
-  SIBC: { name:'SIB CI — Société Ivoirienne de Banque',avgVol:1400, refPrice:5800   },
-  SICC: { name:'SICOR CI — Industrie du Coton',        avgVol:220,   refPrice:3800   },
-  SIPH: { name:"SIPH CI — Plantations d'Hévéas",      avgVol:290,   refPrice:8900   },
-  SLBC: { name:'Solibra CI — Brasserie (Castel)',      avgVol:30,    refPrice:120000 },
-  SMBC: { name:'SMB CI — Manufacture de Bois',         avgVol:120,   refPrice:15000  },
-  SNTS: { name:'Sonatel (Orange Sénégal)',             avgVol:3800,  refPrice:15800  },
-  SOGB: { name:'SOGB CI — Caoutchoucs Grand-Béréby',  avgVol:520,   refPrice:3650   },
-  SPHC: { name:'SAPH CI — Actions Prioritaires',       avgVol:85,    refPrice:4200   },
-  STAC: { name:'SITAB CI (British American Tobacco)',  avgVol:340,   refPrice:21000  },
-  STBC: { name:'SGB-BF — Société Générale Burkina',   avgVol:340,   refPrice:5300   },
-  SVOC: { name:'SVO CI — Savonnerie',                  avgVol:680,   refPrice:2200   },
+  SEMC: { name:'Crown Siem CI Emballages',             avgVol:3800,  refPrice:680    },
+  SGBC: { name:'Societe Generale CI',                  avgVol:720,   refPrice:12500  },
+  SHEC: { name:'Societe Hevea CI',                     avgVol:75,    refPrice:4100   },
+  SIAC: { name:'SIFCA CI Agro-industrie',              avgVol:1500,  refPrice:4200   },
+  SIBC: { name:'SIB CI Societe Ivoirienne Banque',     avgVol:1400,  refPrice:5800   },
+  SICC: { name:'SICOR CI Industrie Coton',             avgVol:220,   refPrice:3800   },
+  SIPH: { name:'SIPH CI Plantations Heveas',           avgVol:290,   refPrice:8900   },
+  SLBC: { name:'Solibra CI Brasserie Castel',          avgVol:30,    refPrice:120000 },
+  SMBC: { name:'SMB CI Manufacture Bois',              avgVol:120,   refPrice:15000  },
+  SNTS: { name:'Sonatel Orange Senegal',               avgVol:3800,  refPrice:15800  },
+  SOGB: { name:'SOGB CI Caoutchoucs',                  avgVol:520,   refPrice:3650   },
+  SPHC: { name:'SAPH CI Actions Prioritaires',         avgVol:85,    refPrice:4200   },
+  STAC: { name:'SITAB CI British American Tobacco',    avgVol:340,   refPrice:21000  },
+  STBC: { name:'SGB-BF Societe Generale Burkina',      avgVol:340,   refPrice:5300   },
+  SVOC: { name:'SVO CI Savonnerie',                    avgVol:680,   refPrice:2200   },
   TPCI: { name:'Tropical Partners CI',                 avgVol:60,    refPrice:1100   },
   TTLC: { name:'TotalEnergies Marketing CI',           avgVol:2800,  refPrice:2150   },
-  TTLS: { name:'TotalEnergies Marketing Sénégal',      avgVol:1200,  refPrice:2100   },
+  TTLS: { name:'TotalEnergies Marketing Senegal',      avgVol:1200,  refPrice:2100   },
   UNLC: { name:'Unilever CI',                          avgVol:1100,  refPrice:5600   },
   UNXC: { name:'Unacoopec-CI',                         avgVol:260,   refPrice:2800   },
 };
@@ -92,8 +89,6 @@ const VOL_SPIKE_FACTOR = 3.0;
 const BUDGET_RESERVE   = 0.20;
 const FETCH_TIMEOUT_MS = 15000;
 
-// ─── Fetch avec timeout ───────────────────────────────────────────────────────
-
 async function fetchWithTimeout(url, opts = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -101,16 +96,10 @@ async function fetchWithTimeout(url, opts = {}) {
     const resp = await fetch(url, { ...opts, signal: controller.signal });
     clearTimeout(timer);
     return resp;
-  } catch (e) {
-    clearTimeout(timer);
-    throw e;
-  }
+  } catch (e) { clearTimeout(timer); throw e; }
 }
 
-// ─── Cascade de sources ───────────────────────────────────────────────────────
-
 async function fetchLiveStocks() {
-  // 1. BRVM.org direct — pas de CORS en Node.js, scraping natif
   for (const url of BRVM_URLS) {
     try {
       const resp = await fetchWithTimeout(url, {
@@ -123,18 +112,14 @@ async function fetchLiveStocks() {
       });
       if (resp.ok) {
         const stocks = parseBRVMHtml(await resp.text());
-        if (stocks) { console.log(`Source: brvm-direct (${url})`); return { stocks, source: 'brvm-direct' }; }
+        if (stocks) { console.log('Source: brvm-direct'); return { stocks, source: 'brvm-direct' }; }
       }
-    } catch (e) { console.warn(`brvm-direct ${url}: ${e.message}`); }
+    } catch (e) { console.warn('brvm-direct:', e.message); }
   }
-
-  // 2. Yahoo Finance — JSON temps réel
   try {
     const stocks = await fetchYahooFinance();
     if (stocks) { console.log('Source: yahoo-finance'); return { stocks, source: 'yahoo-finance' }; }
   } catch (e) { console.warn('Yahoo Finance:', e.message); }
-
-  // 3. Sika Finance
   try {
     const resp = await fetchWithTimeout('https://sika.finance/bourse/brvm/cours', {
       headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'text/html' },
@@ -144,19 +129,15 @@ async function fetchLiveStocks() {
       if (stocks) { console.log('Source: sika-finance'); return { stocks, source: 'sika-finance' }; }
     }
   } catch (e) { console.warn('Sika Finance:', e.message); }
-
   return { stocks: [], source: 'unavailable' };
 }
 
 async function fetchYahooFinance() {
   const tickers = Object.values(YAHOO_MAP).join(',');
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers}` +
-              `&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`;
-  const resp = await fetchWithTimeout(url, {
-    headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'application/json' },
-  });
+  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`;
+  const resp = await fetchWithTimeout(url, { headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'application/json' } });
   if (!resp.ok) throw new Error(`Yahoo HTTP ${resp.status}`);
-  const data   = await resp.json();
+  const data = await resp.json();
   const quotes = data?.quoteResponse?.result;
   if (!quotes || quotes.length < 5) return null;
   return quotes.map(q => {
@@ -164,19 +145,17 @@ async function fetchYahooFinance() {
     if (!sym) return null;
     const price = Math.round(q.regularMarketPrice || 0);
     const prev  = Math.round(q.regularMarketPreviousClose || price);
-    const chg   = Math.round((q.regularMarketChangePercent || 0) * 100) / 100;
     if (price <= 0) return null;
     return { symbol: sym, name: KNOWN_STOCKS[sym]?.name || sym, price, previousPrice: prev,
-             change: price - prev, changePercent: chg, volume: q.regularMarketVolume || 0 };
+             change: price - prev, changePercent: Math.round((q.regularMarketChangePercent || 0) * 100) / 100,
+             volume: q.regularMarketVolume || 0 };
   }).filter(Boolean);
 }
 
-// ─── Parsers HTML ─────────────────────────────────────────────────────────────
-
 function parseBRVMHtml(html) {
   const stocks = [];
-  const rowRe  = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-  const strip  = /<[^>]+>/g;
+  const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const strip = /<[^>]+>/g;
   let row;
   while ((row = rowRe.exec(html)) !== null) {
     const cells = [];
@@ -184,14 +163,14 @@ function parseBRVMHtml(html) {
     let cell;
     while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
     if (cells.length < 5) continue;
-    const symbol    = cells[0].toUpperCase().replace(/\s/g, '');
-    const price     = parseFloat(cells[2].replace(/\s/g, '').replace(',', '.'));
-    const changePct = parseFloat(cells[4].replace('%','').replace(/\s/g,'').replace(',','.')) || 0;
+    const symbol = cells[0].toUpperCase().replace(/\s/g, '');
+    const price  = parseFloat(cells[2].replace(/\s/g, '').replace(',', '.'));
+    const chg    = parseFloat(cells[4].replace('%','').replace(/\s/g,'').replace(',','.')) || 0;
     if (symbol.length >= 2 && symbol.length <= 6 && price > 0) {
-      const prev = price / (1 + changePct / 100);
+      const prev = price / (1 + chg / 100);
       stocks.push({ symbol, name: KNOWN_STOCKS[symbol]?.name || symbol,
         price: Math.round(price), previousPrice: Math.round(prev),
-        change: Math.round(price - prev), changePercent: Math.round(changePct * 100) / 100,
+        change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
         volume: parseInt(cells[5]?.replace(/\s/g,'') || '0') || 0 });
     }
   }
@@ -200,8 +179,8 @@ function parseBRVMHtml(html) {
 
 function parseSikaHtml(html) {
   const stocks = [];
-  const rowRe  = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-  const strip  = /<[^>]+>/g;
+  const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const strip = /<[^>]+>/g;
   let row;
   while ((row = rowRe.exec(html)) !== null) {
     const cells = [];
@@ -210,7 +189,7 @@ function parseSikaHtml(html) {
     while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
     if (cells.length < 4) continue;
     const symbol = cells[0].replace(/\s/g,'').toUpperCase();
-    const price  = parseFloat(cells[1].replace(/[\s ]/g,'').replace(',','.'));
+    const price  = parseFloat(cells[1].replace(/[\s ]/g,'').replace(',','.'));
     const chg    = parseFloat(cells[2].replace('%','').replace(',','.')) || 0;
     if (symbol.length >= 2 && symbol.length <= 6 && price > 0) {
       stocks.push({ symbol, name: KNOWN_STOCKS[symbol]?.name || symbol,
@@ -222,8 +201,6 @@ function parseSikaHtml(html) {
   return stocks.length >= 5 ? stocks : null;
 }
 
-// ─── Analyse signal ───────────────────────────────────────────────────────────
-
 function analyzeSignal(stock) {
   const meta     = KNOWN_STOCKS[stock.symbol] || { avgVol: 300, refPrice: stock.price };
   const volRatio = meta.avgVol > 0 ? stock.volume / meta.avgVol : 1;
@@ -231,15 +208,13 @@ function analyzeSignal(stock) {
   const mpr      = Math.max(0, volRatio * (1 + Math.max(0, momentum)));
   const obi      = Math.min(1, Math.max(-1, momentum * volRatio * 0.5));
   const iceberg  = stock.volume > meta.avgVol * VOL_SPIKE_FACTOR;
-
-  const reasons = [];
+  const reasons  = [];
   if (mpr > MPR_THRESHOLD)
-    reasons.push(`MPR≈${mpr.toFixed(2)} > ${MPR_THRESHOLD} (vol ${stock.volume} = ${volRatio.toFixed(1)}× moy)`);
+    reasons.push(`MPR=${mpr.toFixed(2)} (vol ${stock.volume} = ${volRatio.toFixed(1)}x moy)`);
   if (obi >= OBI_THRESHOLD)
-    reasons.push(`OBI≈${obi.toFixed(3)} ≈ 1 (pression acheteuse forte)`);
+    reasons.push(`OBI=${obi.toFixed(3)} pression acheteuse forte`);
   if (iceberg && reasons.length > 0)
-    reasons.push(`Iceberg : ${stock.volume} titres = ${volRatio.toFixed(1)}× vol. moyen (${meta.avgVol})`);
-
+    reasons.push(`Iceberg: ${stock.volume} titres = ${volRatio.toFixed(1)}x vol moyen (${meta.avgVol})`);
   const confidence = reasons.length >= 3 ? 'HIGH' : reasons.length >= 2 ? 'MEDIUM' : reasons.length >= 1 ? 'LOW' : 'NONE';
   return { ...stock, meta, mpr, obi, iceberg, reasons, confidence, alert: reasons.length > 0 };
 }
@@ -249,52 +224,34 @@ function calcPosition(price) {
   if (n === 0) return null;
   const cout = n * price;
   return { n, cout, reserve: BUDGET_FCFA - cout,
-    gainCible: Math.round(cout * 0.04), gainMax: Math.round(cout * 0.075),
-    pertMax: Math.round(cout * 0.03),
+    gainCible: Math.round(cout * 0.04), gainMax: Math.round(cout * 0.075), pertMax: Math.round(cout * 0.03),
     prixCible: Math.round(price * 1.04), prixStopLoss: Math.round(price * 0.97) };
 }
 
-// ─── Envoi Telegram ───────────────────────────────────────────────────────────
-
 async function sendTelegram(signal, source) {
-  const emoji    = signal.confidence === 'HIGH' ? '🔴' : signal.confidence === 'MEDIUM' ? '🟠' : '🟡';
-  const reasons  = signal.reasons.map(r => `  • ${r}`).join('\n');
-  const iceLine  = signal.iceberg
-    ? `\n🐋 *Iceberg* : ${signal.volume} titres = ${(signal.volume/signal.meta.avgVol).toFixed(1)}× vol. moyen` : '';
-  const srcTag   = source !== 'brvm-direct' ? `\n_📡 Source : ${source}_` : '';
-  const pos      = calcPosition(signal.price);
+  const emoji = signal.confidence === 'HIGH' ? '🔴' : signal.confidence === 'MEDIUM' ? '🟠' : '🟡';
+  const reasons = signal.reasons.map(r => `  * ${r}`).join('\n');
+  const srcTag = source !== 'brvm-direct' ? `\n_Source: ${source}_` : '';
+  const pos = calcPosition(signal.price);
   const posBlock = pos
-    ? [`──────────────────────`,
-       `💼 *RECOMMANDATION (budget ${BUDGET_FCFA.toLocaleString('fr-FR')} F)*`,
-       `📌 *Acheter* : ${pos.n} titre${pos.n > 1 ? 's' : ''} ${signal.symbol}`,
-       `💸 *Coût total* : ${pos.cout.toLocaleString('fr-FR')} FCFA`,
-       `🏦 *Réserve* : ${pos.reserve.toLocaleString('fr-FR')} FCFA`,
-       `──────────────────────`,
-       `🎯 *Objectif* : ${pos.prixCible.toLocaleString('fr-FR')} FCFA (+4%) → *+${pos.gainCible.toLocaleString('fr-FR')} F*`,
-       `🚀 *Max BRVM* : ${Math.round(signal.price*1.075).toLocaleString('fr-FR')} FCFA (+7.5%) → *+${pos.gainMax.toLocaleString('fr-FR')} F*`,
-       `🛑 *Stop loss* : ${pos.prixStopLoss.toLocaleString('fr-FR')} FCFA (-3%) → max -${pos.pertMax.toLocaleString('fr-FR')} F`,
-      ].join('\n')
-    : `\n⚠️ _Titre trop cher pour le budget (${signal.price.toLocaleString('fr-FR')} FCFA/titre)_`;
-
-  const text = [
-    `${emoji} *FLASH BRVM — Pré-Ouverture*`,
-    `━━━━━━━━━━━━━━━━━━━━━`,
-    `📌 *${signal.symbol}* — ${signal.name}`,
-    `⏰ *9h35 GMT* — Fixing dans 10 min`,
-    `💰 *Cours* : ${signal.price.toLocaleString('fr-FR')} FCFA`,
-    `📊 *Variation* : ${signal.changePercent > 0 ? '+' : ''}${signal.changePercent.toFixed(2)}%`,
-    `🛒 *Volume* : ${signal.volume.toLocaleString('fr-FR')} titres${iceLine}`,
-    `──────────────────────`,
-    `📈 *MPR* : ${signal.mpr.toFixed(2)}  _(seuil > 2.5)_`,
-    `⚖️ *OBI* : ${signal.obi.toFixed(3)}  _(seuil > 0.85)_`,
-    `──────────────────────`,
-    `*Signaux :*\n${reasons}`,
-    posBlock,
-    `──────────────────────`,
-    `⚡ *Passe l'ordre avant 9h45 GMT*`,
-    `_Confiance : ${signal.confidence} | ⚠️ Pas un conseil financier certifié_${srcTag}`,
-  ].join('\n');
-
+    ? `----------------------\n💼 RECOMMANDATION (budget ${BUDGET_FCFA.toLocaleString('fr-FR')} F)\n📌 Acheter: ${pos.n} titre(s) ${signal.symbol}\n💸 Cout: ${pos.cout.toLocaleString('fr-FR')} FCFA  |  Reserve: ${pos.reserve.toLocaleString('fr-FR')} FCFA\n🎯 Objectif: ${pos.prixCible.toLocaleString('fr-FR')} FCFA (+4%) -> +${pos.gainCible.toLocaleString('fr-FR')} F\n🚀 Max BRVM: +7.5% -> +${pos.gainMax.toLocaleString('fr-FR')} F\n🛑 Stop loss: ${pos.prixStopLoss.toLocaleString('fr-FR')} FCFA (-3%)`
+    : `Titre trop cher pour le budget (${signal.price.toLocaleString('fr-FR')} FCFA/titre)`;
+  const text = `${emoji} *FLASH BRVM Pre-Ouverture*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━\n` +
+    `📌 *${signal.symbol}* - ${signal.name}\n` +
+    `⏰ *9h35 GMT* - Fixing dans 10 min\n` +
+    `💰 *Cours*: ${signal.price.toLocaleString('fr-FR')} FCFA\n` +
+    `📊 *Variation*: ${signal.changePercent > 0 ? '+' : ''}${signal.changePercent.toFixed(2)}%\n` +
+    `🛒 *Volume*: ${signal.volume.toLocaleString('fr-FR')} titres\n` +
+    `----------------------\n` +
+    `📈 *MPR*: ${signal.mpr.toFixed(2)} (seuil > 2.5)\n` +
+    `⚖️ *OBI*: ${signal.obi.toFixed(3)} (seuil > 0.85)\n` +
+    `----------------------\n` +
+    `*Signaux:*\n${reasons}\n` +
+    `${posBlock}\n` +
+    `----------------------\n` +
+    `⚡ *Passe l ordre avant 9h45 GMT*\n` +
+    `_Confiance: ${signal.confidence}${srcTag}_`;
   const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -302,18 +259,11 @@ async function sendTelegram(signal, source) {
   });
   const data = await resp.json();
   if (data.ok) console.log(`[${signal.symbol}] Telegram OK`);
-  else         console.error(`[${signal.symbol}] Telegram erreur: ${data.description}`);
+  else console.error(`[${signal.symbol}] Telegram erreur: ${data.description}`);
 }
 
 async function sendTelegramUnavailable() {
-  const text = [
-    '⚠️ *BRVM Pré-Ouverture — Sources Indisponibles*',
-    '━━━━━━━━━━━━━━━━━━━━━',
-    '🌐 BRVM.org, Yahoo Finance et Sika Finance sont inaccessibles ce matin.',
-    '',
-    '_Aucun signal généré — données live introuvables._',
-    '_Réessai automatique demain à 9h35 GMT._',
-  ].join('\n');
+  const text = `⚠️ *BRVM Pre-Ouverture - Sources Indisponibles*\n━━━━━━━━━━━━━━━━━━━━━\nBRVM.org, Yahoo Finance et Sika Finance sont inaccessibles ce matin.\n\n_Aucun signal genere - donnees live introuvables._\n_Reessai automatique demain a 9h35 GMT._`;
   await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -321,37 +271,25 @@ async function sendTelegramUnavailable() {
   });
 }
 
-// ─── Point d'entrée ───────────────────────────────────────────────────────────
-
 async function main() {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-    console.error('Erreur : TELEGRAM_BOT_TOKEN et TELEGRAM_CHAT_ID doivent être définis.');
+    console.error('Erreur: TELEGRAM_BOT_TOKEN et TELEGRAM_CHAT_ID doivent etre definis.');
     process.exit(1);
   }
-
-  console.log(`BRVM Pre-Open Scanner — ${new Date().toISOString()}`);
-  console.log(`Budget : ${BUDGET_FCFA.toLocaleString('fr-FR')} FCFA`);
-
+  console.log(`BRVM Pre-Open Scanner - ${new Date().toISOString()}`);
+  console.log(`Budget: ${BUDGET_FCFA.toLocaleString('fr-FR')} FCFA`);
   const { stocks, source } = await fetchLiveStocks();
-
   if (!stocks.length) {
     console.warn('Toutes les sources inaccessibles.');
     await sendTelegramUnavailable();
     return;
   }
-
-  console.log(`${stocks.length} valeurs chargées depuis "${source}".`);
-
+  console.log(`${stocks.length} valeurs chargees depuis "${source}".`);
   const alerts = stocks.map(analyzeSignal).filter(s => s.alert);
-
-  if (!alerts.length) {
-    console.log('Marché calme — aucune alerte envoyée.');
-    return;
-  }
-
-  console.log(`${alerts.length} alerte(s) détectée(s) — envoi Telegram...`);
+  if (!alerts.length) { console.log('Marche calme - aucune alerte envoyee.'); return; }
+  console.log(`${alerts.length} alerte(s) - envoi Telegram...`);
   for (const alert of alerts) await sendTelegram(alert, source);
-  console.log('Terminé.');
+  console.log('Termine.');
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
