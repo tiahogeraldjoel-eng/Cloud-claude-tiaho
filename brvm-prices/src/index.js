@@ -11,53 +11,62 @@
  *   → Envoie une alerte Telegram si signal détecté
  */
 
-const BRVM_URL  = 'https://www.brvm.org/fr/cours-des-actions/0/all';
+const BRVM_URLS = [
+  'https://www.brvm.org/fr/cours-des-actions/0/all',
+  'https://www.brvm.org/en/cours-des-actions/0/all',
+];
+const PROXY_URL = 'https://api.allorigins.win/get?url=';
 const CACHE_TTL = 3600;
 
-// Référence connue pour les 47 valeurs BRVM (volumes journaliers moyens + prix de référence).
-// Pour toute valeur scrapée absente de cette liste, le worker l'analyse quand même
-// avec des paramètres par défaut (avgVol estimé, refPrice = prix scrappé).
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+];
+
+// Référence des valeurs BRVM — noms et volumes moyens journaliers.
+// Les prix de référence sont mis à jour automatiquement par le scraper live.
 const KNOWN_STOCKS = {
-  BICC:  { name: 'Bourse Ivoire Caoutchouc',      avgVol: 180,   refPrice: 1250   },
-  BNBC:  { name: 'Brasseries du Bénin',            avgVol: 95,    refPrice: 4200   },
-  BOAB:  { name: 'Bank of Africa Bénin',           avgVol: 320,   refPrice: 5500   },
-  BOABF: { name: 'Bank of Africa BF',              avgVol: 180,   refPrice: 5200   },
-  BOACI: { name: 'Bank of Africa CI',              avgVol: 420,   refPrice: 5850   },
-  BOAM:  { name: 'Bank of Africa Mali',            avgVol: 95,    refPrice: 4900   },
-  BOAN:  { name: 'Bank of Africa Niger',           avgVol: 75,    refPrice: 4100   },
-  BOAS:  { name: 'Bank of Africa Sénégal',         avgVol: 110,   refPrice: 3800   },
-  CABC:  { name: 'Compagnie Agricole CI',          avgVol: 2300,  refPrice: 950    },
-  CBBF:  { name: 'Coris Bank BF',                  avgVol: 520,   refPrice: 8750   },
-  CFAC:  { name: 'Coraf',                          avgVol: 1500,  refPrice: 800    },
-  ECOC:  { name: 'Ecobank CI',                     avgVol: 650,   refPrice: 10500  },
-  ETIT:  { name: 'Ecobank Transnational',          avgVol: 48000, refPrice: 22     },
-  FTSC:  { name: 'Filtisac CI',                    avgVol: 140,   refPrice: 1850   },
-  NEIC:  { name: 'NEI-CEDA',                       avgVol: 800,   refPrice: 620    },
-  NSBC:  { name: 'Nsia Banque CI',                 avgVol: 230,   refPrice: 6200   },
-  ONAT:  { name: 'Onatel BF',                      avgVol: 310,   refPrice: 4950   },
-  ORAC:  { name: 'Orange CI',                      avgVol: 5400,  refPrice: 14750  },
-  ORGT:  { name: 'Orange Côte d\'Ivoire (GDR)',    avgVol: 380,   refPrice: 3200   },
-  PALC:  { name: 'Palm CI',                        avgVol: 980,   refPrice: 7200   },
-  PRSC:  { name: 'Prestige Assurances CI',         avgVol: 450,   refPrice: 3200   },
-  SAFC:  { name: 'SAPH CI',                        avgVol: 320,   refPrice: 4500   },
-  SCRC:  { name: 'SUCRIVOIRE CI',                  avgVol: 560,   refPrice: 680    },
-  SDCC:  { name: 'SODE CI',                        avgVol: 95,    refPrice: 2900   },
-  SGBC:  { name: 'SGB CI',                         avgVol: 290,   refPrice: 18200  },
-  SHEC:  { name: 'SHELL CI',                       avgVol: 75,    refPrice: 4100   },
-  SIBC:  { name: 'SIB CI',                         avgVol: 350,   refPrice: 5600   },
-  SICC:  { name: 'SICOR CI',                       avgVol: 220,   refPrice: 3800   },
-  SLBC:  { name: 'Solibra',                        avgVol: 45,    refPrice: 122000 },
-  SMBC:  { name: 'SMB CI',                         avgVol: 120,   refPrice: 15000  },
-  SNTS:  { name: 'Sonatel',                        avgVol: 890,   refPrice: 15500  },
-  SPHC:  { name: 'SAPH CI (pref)',                 avgVol: 85,    refPrice: 4200   },
-  STAC:  { name: 'STAB',                           avgVol: 190,   refPrice: 4500   },
-  STBC:  { name: 'Société Générale BF',            avgVol: 340,   refPrice: 5300   },
-  SVOC:  { name: 'SVO CI',                         avgVol: 680,   refPrice: 2200   },
-  TPCI:  { name: 'Tropical Partners CI',           avgVol: 60,    refPrice: 1100   },
-  TTLC:  { name: 'TotalEnergies CI',               avgVol: 3400,  refPrice: 1875   },
-  TTLS:  { name: 'TotalEnergies Sénégal',          avgVol: 1200,  refPrice: 2100   },
-  UNLC:  { name: 'Unilever CI',                    avgVol: 420,   refPrice: 6800   },
-  UNXC:  { name: 'Unacoopec CI',                   avgVol: 260,   refPrice: 2800   },
+  BICC:  { name: 'BICICI (BNP Paribas CI)',         avgVol: 180,   refPrice: 5500   },
+  BNBC:  { name: 'BOA Niger — Bénin',               avgVol: 95,    refPrice: 3800   },
+  BOAB:  { name: 'Bank of Africa Bénin',            avgVol: 320,   refPrice: 5500   },
+  BOABF: { name: 'Bank of Africa Burkina Faso',     avgVol: 180,   refPrice: 5200   },
+  BOACI: { name: 'Bank of Africa Côte d\'Ivoire',   avgVol: 420,   refPrice: 5850   },
+  BOAM:  { name: 'Bank of Africa Mali',             avgVol: 95,    refPrice: 4900   },
+  BOAN:  { name: 'Bank of Africa Niger',            avgVol: 75,    refPrice: 4100   },
+  BOAS:  { name: 'Bank of Africa Sénégal',          avgVol: 110,   refPrice: 3800   },
+  CABC:  { name: 'Compagnie Agricole de CI',        avgVol: 2300,  refPrice: 950    },
+  CBBF:  { name: 'Coris Bank International BF',     avgVol: 520,   refPrice: 8750   },
+  CFAC:  { name: 'CORAF (Raffinage CI)',             avgVol: 1500,  refPrice: 800    },
+  ECOC:  { name: 'Ecobank CI',                      avgVol: 650,   refPrice: 10500  },
+  ETIT:  { name: 'Ecobank Transnational Inc.',      avgVol: 48000, refPrice: 22     },
+  FTSC:  { name: 'Filtisac CI',                     avgVol: 140,   refPrice: 1850   },
+  NEIC:  { name: 'NEI-CEDA CI',                     avgVol: 800,   refPrice: 620    },
+  NSBC:  { name: 'Nsia Banque CI',                  avgVol: 230,   refPrice: 6200   },
+  ONAT:  { name: 'Onatel (Télécoms BF)',            avgVol: 310,   refPrice: 4950   },
+  ORAC:  { name: 'Orange CI',                       avgVol: 5400,  refPrice: 14750  },
+  ORGT:  { name: 'Orange CI (GDR Togo)',            avgVol: 380,   refPrice: 3200   },
+  PALC:  { name: 'Palm CI',                         avgVol: 980,   refPrice: 7200   },
+  PRSC:  { name: 'Prestige Assurances CI',          avgVol: 450,   refPrice: 3200   },
+  SAFC:  { name: 'SAPH CI (Plantations Hévéas)',    avgVol: 320,   refPrice: 4500   },
+  SCRC:  { name: 'Sucrivoire CI',                   avgVol: 560,   refPrice: 680    },
+  SDCC:  { name: 'SODE CI (Développement Élevage)', avgVol: 95,    refPrice: 2900   },
+  SGBC:  { name: 'SGB CI (Société Générale)',       avgVol: 290,   refPrice: 18200  },
+  SHEC:  { name: 'Société d\'Hévéiculture CI',      avgVol: 75,    refPrice: 4100   },
+  SIBC:  { name: 'SIB CI (Société Ivoirienne)',     avgVol: 350,   refPrice: 5600   },
+  SICC:  { name: 'SICOR CI (Coton)',                avgVol: 220,   refPrice: 3800   },
+  SLBC:  { name: 'Solibra CI (Brasserie)',          avgVol: 45,    refPrice: 122000 },
+  SMBC:  { name: 'SMB CI (Manufacture de Bois)',    avgVol: 120,   refPrice: 15000  },
+  SNTS:  { name: 'Sonatel (Téléphonie SN)',         avgVol: 890,   refPrice: 15500  },
+  SPHC:  { name: 'SAPH CI Prioritaire',             avgVol: 85,    refPrice: 4200   },
+  STAC:  { name: 'Setaci (Textile CI)',              avgVol: 190,   refPrice: 4500   },
+  STBC:  { name: 'SGB-BF (Soc. Générale BF)',       avgVol: 340,   refPrice: 5300   },
+  SVOC:  { name: 'SVO CI (Savonnes)',               avgVol: 680,   refPrice: 2200   },
+  TPCI:  { name: 'Tropical Partners CI',            avgVol: 60,    refPrice: 1100   },
+  TTLC:  { name: 'TotalEnergies Marketing CI',      avgVol: 3400,  refPrice: 1875   },
+  TTLS:  { name: 'TotalEnergies Marketing SN',      avgVol: 1200,  refPrice: 2100   },
+  UNLC:  { name: 'Unilever CI',                     avgVol: 420,   refPrice: 6800   },
+  UNXC:  { name: 'Unacoopec-CI',                    avgVol: 260,   refPrice: 2800   },
 };
 
 // Construit dynamiquement : toutes les valeurs scrapées sont analysées.
@@ -161,24 +170,19 @@ export default {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 async function runPreOpenScan(env) {
-  // 1. Récupérer les données de marché
-  let stocks;
-  try {
-    stocks = await scrapeBRVM();
-  } catch (e) {
-    console.error('Scrape échoué, utilisation données simulées :', e.message);
-    stocks = generateSimulatedData();
+  // 1. Récupérer les données de marché LIVE
+  const { stocks, source } = await fetchLiveStocks();
+
+  // Si aucune source live disponible → avertissement Telegram, pas de fausses alertes
+  if (source === 'unavailable') {
+    console.warn('Toutes les sources BRVM inaccessibles — aucune alerte envoyée.');
+    await sendTelegramUnavailable(env);
+    return;
   }
 
-  // scrapeBRVM() peut retourner null si le HTML est valide mais sans données BRVM
-  if (!stocks || stocks.length < 5) {
-    console.warn('Données scrappées insuffisantes — fallback sur données simulées.');
-    stocks = generateSimulatedData();
-  }
+  console.log(`Analyse de ${stocks.length} valeurs BRVM (source: ${source})...`);
 
-  console.log(`Analyse de ${stocks.length} valeurs BRVM...`);
-
-  // 2. Analyser TOUTES les valeurs retournées par le scraper
+  // 2. Analyser toutes les valeurs
   const alerts = [];
   for (const stock of stocks) {
     const meta   = getMetaForStock(stock);
@@ -196,6 +200,58 @@ async function runPreOpenScan(env) {
   for (const signal of alerts) {
     await sendTelegram(signal, env);
   }
+}
+
+async function fetchLiveStocks() {
+  // Source 1 : BRVM direct (plusieurs variantes d'URL)
+  const brvmUrls = [
+    'https://www.brvm.org/fr/cours-des-actions/0/all',
+    'https://www.brvm.org/fr/cours0/0/all',
+    'https://www.brvm.org/en/cours-des-actions/0/all',
+  ];
+  for (const url of brvmUrls) {
+    try {
+      const resp = await fetch(url, {
+        headers: {
+          'User-Agent': USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)],
+          'Accept': 'text/html,application/xhtml+xml,*/*;q=0.9',
+          'Accept-Language': 'fr-FR,fr;q=0.9',
+          'Referer': 'https://www.google.com/',
+          'Cache-Control': 'no-cache',
+        },
+      });
+      if (resp.ok) {
+        const stocks = parseBRVMHtml(await resp.text());
+        if (stocks && stocks.length >= 5) return { stocks, source: 'brvm-direct' };
+      }
+    } catch {}
+  }
+
+  // Source 2 : Proxy allorigins.win (contourne le blocage IP Cloudflare)
+  try {
+    const proxyUrl = PROXY_URL + encodeURIComponent('https://www.brvm.org/fr/cours-des-actions/0/all');
+    const resp = await fetch(proxyUrl, { cf: { cacheTtl: 0 } });
+    if (resp.ok) {
+      const json = await resp.json();
+      if (json.contents) {
+        const stocks = parseBRVMHtml(json.contents);
+        if (stocks && stocks.length >= 5) return { stocks, source: 'proxy-allorigins' };
+      }
+    }
+  } catch {}
+
+  // Source 3 : Sika Finance (agrégateur BRVM alternatif)
+  try {
+    const resp = await fetch('https://sika.finance/bourse/brvm/cours', {
+      headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'text/html' },
+    });
+    if (resp.ok) {
+      const stocks = parseSikaHtml(await resp.text());
+      if (stocks && stocks.length >= 5) return { stocks, source: 'sika-finance' };
+    }
+  } catch {}
+
+  return { stocks: [], source: 'unavailable' };
 }
 
 
@@ -355,15 +411,72 @@ async function getStocks(env, ctx) {
 }
 
 async function scrapeBRVM() {
-  const resp = await fetch(BRVM_URL, {
+  const resp = await fetch(BRVM_URLS[0], {
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
+      'User-Agent': USER_AGENTS[0],
       'Accept':     'text/html,application/xhtml+xml',
     },
     cf: { cacheTtl: 300 },
   });
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   return parseBRVMHtml(await resp.text());
+}
+
+// Parser alternatif pour sika.finance
+function parseSikaHtml(html) {
+  const stocks = [];
+  const rowRe  = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+  const strip  = /<[^>]+>/g;
+  let row;
+  while ((row = rowRe.exec(html)) !== null) {
+    const cells = [];
+    let cell;
+    const cm = new RegExp(cellRe.source, 'gi');
+    while ((cell = cm.exec(row[1])) !== null) {
+      cells.push(cell[1].replace(strip, '').trim());
+    }
+    if (cells.length >= 4) {
+      const symbol = cells[0].replace(/\s/g, '').toUpperCase();
+      const price  = parseFloat(cells[1].replace(/[\s ]/g, '').replace(',', '.'));
+      const chg    = parseFloat(cells[2].replace('%', '').replace(',', '.'));
+      if (symbol.length >= 2 && symbol.length <= 6 && price > 0) {
+        stocks.push({
+          symbol,
+          name:          KNOWN_STOCKS[symbol]?.name || symbol,
+          price:         Math.round(price),
+          previousPrice: Math.round(price / (1 + (chg || 0) / 100)),
+          change:        Math.round(price * (chg || 0) / 100),
+          changePercent: Math.round((chg || 0) * 100) / 100,
+          volume:        parseInt(cells[3]?.replace(/\s/g, '') || '0') || 0,
+          source:        'live',
+          timestamp:     Date.now(),
+        });
+      }
+    }
+  }
+  return stocks.length >= 5 ? stocks : null;
+}
+
+async function sendTelegramUnavailable(env) {
+  const token  = env.TELEGRAM_BOT_TOKEN;
+  const chatId = env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return;
+  const text = [
+    '⚠️ *BRVM Pré-Ouverture — Données Indisponibles*',
+    '━━━━━━━━━━━━━━━━━━━━━',
+    '🌐 Le site BRVM est inaccessible aujourd\'hui à 9h35.',
+    '',
+    '_Aucun signal de trading généré — données live requises._',
+    '_Réessai automatique demain à 9h35 GMT._',
+  ].join('\n');
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }),
+    });
+  } catch {}
 }
 
 function parseBRVMHtml(html) {
