@@ -18,7 +18,13 @@ const BRVM_URLS = [
   'https://www.brvm.org/fr/cours0/0/all',
   'https://www.brvm.org/en/cours-des-actions/0/all',
 ];
-const PROXY_URL = 'https://api.allorigins.win/get?url=';
+
+// Proxies CORS indépendants — testés dans l'ordre, aucun lien avec le site Analytics
+const CORS_PROXIES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+  'https://cors-anywhere.herokuapp.com/',
+];
 
 const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -194,16 +200,18 @@ async function fetchLiveStocks() {
     } catch {}
   }
 
-  // 2. Proxy allorigins → BRVM.org
-  try {
-    const url  = PROXY_URL + encodeURIComponent(BRVM_URLS[0]);
-    const resp = await fetch(url);
-    if (resp.ok) {
-      const json   = await resp.json();
-      const stocks = json.contents ? parseBRVMHtml(json.contents) : null;
-      if (stocks) return { stocks, source: 'brvm-via-proxy' };
-    }
-  } catch {}
+  // 2. Proxies CORS indépendants → BRVM.org (3 fournisseurs, aucun lien avec le site Analytics)
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const resp = await fetch(proxy + encodeURIComponent(BRVM_URLS[0]), {
+        headers: { 'Accept': 'text/html' },
+      });
+      if (resp.ok) {
+        const stocks = parseBRVMHtml(await resp.text());
+        if (stocks) return { stocks, source: 'brvm-via-proxy' };
+      }
+    } catch {}
+  }
 
   // 3. Yahoo Finance — couvre ~35 valeurs BRVM en JSON temps réel
   try {
