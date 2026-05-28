@@ -85,7 +85,7 @@ const KNOWN_STOCKS = {
   SNTS:  { name: 'Sonatel (Orange Sénégal)',             avgVol: 3800,  refPrice: 15800  },
   SOGB:  { name: 'SOGB CI — Caoutchoucs Grand-Béréby',  avgVol: 520,   refPrice: 3650   },
   SPHC:  { name: 'SAPH CI — Actions Prioritaires',       avgVol: 85,    refPrice: 4200   },
-  STAC:  { name: 'SITAB CI (British American Tobacco)',  avgVol: 340,   refPrice: 8200   },
+  STAC:  { name: 'SITAB CI (British American Tobacco)',  avgVol: 340,   refPrice: 21000  },
   STBC:  { name: 'SGB-BF — Société Générale Burkina',    avgVol: 340,   refPrice: 5300   },
   SVOC:  { name: 'SVO CI — Savonnerie',                  avgVol: 680,   refPrice: 2200   },
   TPCI:  { name: 'Tropical Partners CI',                 avgVol: 60,    refPrice: 1100   },
