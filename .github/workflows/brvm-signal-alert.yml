@@ -1,0 +1,25 @@
+name: BRVM Pre-Open Signal Alert
+
+on:
+  schedule:
+    - cron: '35 9 * * 1-5'   # 9h35 UTC, lundi–vendredi
+  workflow_dispatch:           # Déclenchement manuel pour tester
+
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    name: Signaux pré-ouverture BRVM → Telegram
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run BRVM Signal Alert
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          BUDGET_FCFA: '75000'
+        run: node brvm-prices/scripts/signal-alert.js
