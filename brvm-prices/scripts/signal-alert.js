@@ -30,7 +30,9 @@ const YAHOO_MAP = {
   STBC:'STBC.BF',  SVOC:'SVOC.CI',  TPCI:'TPCI.CI',   TTLC:'TTLC.CI',
   TTLS:'TTLS.SN',  UNLC:'UNLC.CI',  UNXC:'UNXC.CI',
 };
-const YAHOO_REVERSE = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b,y]) => [y,b]));
+const YAHOO_REVERSE      = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b,y]) => [y,b]));
+// Also map base symbol (without exchange suffix .CI/.SN/etc.) for resilience
+const YAHOO_REVERSE_BASE = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b,y]) => [y.split('.')[0],b]));
 
 const KNOWN_STOCKS = {
   ABJC: { name:'Bernabe CI',                           avgVol:380,   refPrice:2100   },
@@ -121,7 +123,7 @@ const CHROME_HEADERS = {
 };
 
 async function fetchLiveStocks() {
-  // 1. FluxBourse (source principale)
+  // 1. FluxBourse (source principale demandee par l'utilisateur)
   try {
     const stocks = await fetchFluxBourse();
     if (stocks) { console.log(`Source: fluxbourse (${stocks.length} titres)`); return { stocks, source: 'fluxbourse' }; }
@@ -135,7 +137,7 @@ async function fetchLiveStocks() {
       if (resp.ok) {
         const html = await resp.text();
         console.log(`brvm-direct: ${html.length} bytes, contient ETIT: ${html.includes('ETIT')}`);
-        const stocks = parseBRVMHtmlFlexible(html);
+        const stocks = parseBRVMHtml(html);
         if (stocks) { console.log(`Source: brvm-direct (${stocks.length} titres)`); return { stocks, source: 'brvm-direct' }; }
         console.warn('brvm-direct: HTML recu mais table non parsee');
       }
@@ -153,14 +155,14 @@ async function fetchLiveStocks() {
       if (resp.ok) {
         const html = await resp.text();
         console.log(`proxy ${proxyHost}: ${html.length} bytes, contient ETIT: ${html.includes('ETIT')}`);
-        const stocks = parseBRVMHtmlFlexible(html);
+        const stocks = parseBRVMHtml(html);
         if (stocks) { console.log(`Source: brvm-proxy (${proxyHost}, ${stocks.length} titres)`); return { stocks, source: 'brvm-proxy' }; }
         console.warn(`proxy ${proxyHost}: HTML recu mais table non parsee`);
       }
     } catch (e) { console.warn(`proxy ${proxyHost}:`, e.message); }
   }
 
-  // 4. Yahoo Finance avec crumb
+  // 4. Yahoo Finance avec crumb (obligatoire depuis 2024)
   try {
     const stocks = await fetchYahooFinance();
     if (stocks) { console.log(`Source: yahoo-finance (${stocks.length} titres)`); return { stocks, source: 'yahoo-finance' }; }
@@ -192,64 +194,115 @@ async function fetchLiveStocks() {
 
 async function fetchFluxBourse() {
   const tryParse = (html, label) => {
+    // Diagnostic: debut de la page (structure generale)
+    console.log(`[${label}] debut: ${html.substring(0, 600).replace(/\s+/g, ' ')}`);
+    // Diagnostic: contexte autour du premier symbole BRVM trouve
     const diagSym = ['ETIT','SNTS','SGBC','ORAC'].find(s => html.includes(s));
     if (diagSym) {
       const idx = html.indexOf(diagSym);
-      const ctx = html.substring(Math.max(0, idx - 250), idx + 600).replace(/\s+/g, ' ');
-      console.log(`[${label}] contexte autour de ${diagSym}: ${ctx}`);
+      const ctx = html.substring(Math.max(0, idx - 500), idx + 1200).replace(/\s+/g, ' ');
+      console.log(`[${label}] ctx(${idx}) autour de ${diagSym}: ${ctx}`);
     }
     return parseNextData(html)
+      || parseWindowData(html)
       || parseScriptJson(html)
+      || parseHtmlAttributes(html)
       || parseBRVMHtmlFlexible(html)
       || parseFluxBourseText(html);
   };
 
-  // Tentative directe
-  try {
-    const resp = await fetchWithTimeout('https://fluxbourse.com/', { headers: CHROME_HEADERS });
-    console.log(`fluxbourse/: HTTP ${resp.status}`);
-    if (resp.ok) {
-      const html = await resp.text();
-      const hasData = html.includes('ETIT') || html.includes('SNTS') || html.includes('SGBC');
-      console.log(`fluxbourse/: ${html.length} bytes, donnees BRVM: ${hasData}`);
-      if (hasData) {
-        const stocks = tryParse(html, 'fluxbourse/');
-        if (stocks?.length >= 1) return stocks;
-        console.warn('fluxbourse/: donnees presentes mais tous parseurs ont echoue');
-      }
-    }
-  } catch (e) { console.warn('fluxbourse/:', e.message); }
+  // Tentatives: directe + 3 proxies CORS (tous ont montre HTTP 200 dans les logs)
+  const sources = [
+    { url: 'https://fluxbourse.com/',                                                                  label: 'direct',      headers: CHROME_HEADERS },
+    { url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://fluxbourse.com/'),      label: 'allorigins',  headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] } },
+    { url: 'https://corsproxy.io/?' + encodeURIComponent('https://fluxbourse.com/'),                   label: 'corsproxy',   headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] } },
+    { url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent('https://fluxbourse.com/'), label: 'codetabs',    headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] } },
+  ];
 
-  // Tentative via codetabs (HTTP 200 confirme dans les logs)
-  try {
-    const resp = await fetchWithTimeout('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent('https://fluxbourse.com/'), {
-      headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] },
-    });
-    console.log(`fluxbourse via codetabs: HTTP ${resp.status}`);
-    if (resp.ok) {
+  for (const src of sources) {
+    try {
+      const resp = await fetchWithTimeout(src.url, { headers: src.headers });
+      console.log(`fluxbourse [${src.label}]: HTTP ${resp.status}`);
+      if (!resp.ok) continue;
       const html = await resp.text();
       const hasData = html.includes('ETIT') || html.includes('SNTS') || html.includes('SGBC');
-      console.log(`fluxbourse via codetabs: ${html.length} bytes, donnees BRVM: ${hasData}`);
-      if (hasData) {
-        const stocks = tryParse(html, 'fluxbourse-codetabs');
-        if (stocks?.length >= 1) return stocks;
-      }
-    }
-  } catch (e) { console.warn('fluxbourse via codetabs:', e.message); }
+      console.log(`fluxbourse [${src.label}]: ${html.length} bytes, BRVM: ${hasData}`);
+      if (!hasData) continue;
+      const stocks = tryParse(html, `flux-${src.label}`);
+      if (stocks?.length >= 1) return stocks;
+      console.warn(`fluxbourse [${src.label}]: donnees presentes mais tous parseurs echoues`);
+    } catch (e) { console.warn(`fluxbourse [${src.label}]:`, e.message); }
+  }
 
   return null;
 }
 
+// Next.js hydration data (__NEXT_DATA__)
+function parseNextData(html) {
+  try {
+    const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    if (!m) return null;
+    const nextData = JSON.parse(m[1]);
+    const pp = nextData?.props?.pageProps;
+    if (!pp) return null;
+    const arr = pp.stocks || pp.cours || pp.actions || pp.cotations ||
+                pp.data?.stocks || pp.data?.cours || pp.data?.actions || pp.data;
+    if (!Array.isArray(arr) || !arr.length) return null;
+    console.log(`Next.js data: ${arr.length} elements, cles: ${Object.keys(arr[0] || {}).join(', ')}`);
+    return parseJsonArray(arr);
+  } catch (e) { console.warn('parseNextData:', e.message); return null; }
+}
+
+// Variables JS : window.X={...}, var/const/let X=[...] ou {...}
+function parseWindowData(html) {
+  const scriptRe = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+  let m;
+  while ((m = scriptRe.exec(html)) !== null) {
+    const src = m[1];
+    if (src.length < 50) continue;
+    const patterns = [
+      /(?:window\.\w+|self\.\w+)\s*=\s*(\{[\s\S]{30,40000}\})\s*[;,]/,
+      /(?:var|let|const)\s+\w+\s*=\s*(\[[\s\S]{30,40000}\])\s*[;,]/,
+      /(?:var|let|const)\s+\w+\s*=\s*(\{[\s\S]{30,40000}\})\s*[;,]/,
+    ];
+    for (const re of patterns) {
+      const pm = src.match(re);
+      if (!pm) continue;
+      try {
+        const data = JSON.parse(pm[1]);
+        const candidates = Array.isArray(data)
+          ? [data]
+          : [
+              data.stocks, data.cours, data.cotations, data.actions,
+              data.quotes, data.data?.stocks, data.data?.cours, data.data,
+              ...Object.values(data).filter(Array.isArray),
+            ].filter(a => Array.isArray(a) && a.length >= 2);
+        for (const arr of candidates) {
+          const stocks = parseJsonArray(arr);
+          if (stocks?.length >= 2) { console.log(`parseWindowData: ${stocks.length} stocks`); return stocks; }
+        }
+      } catch (e) {}
+    }
+  }
+  return null;
+}
+
+// JSON dans les balises <script> (arrays ET objets)
 function parseScriptJson(html) {
   const scriptRe = /<script[^>]*>([\s\S]*?)<\/script>/gi;
   let m;
   while ((m = scriptRe.exec(html)) !== null) {
     const src = m[1];
     if (src.length < 50) continue;
-    const arrMatches = src.match(/\[[\s\S]{50,5000}\]/g) || [];
-    for (const jsonStr of arrMatches) {
+    const matches = [
+      ...(src.match(/\[[\s\S]{50,40000}\]/g) || []),
+      ...(src.match(/\{[\s\S]{50,40000}\}/g) || []),
+    ];
+    for (const jsonStr of matches) {
       try {
-        const arr = JSON.parse(jsonStr);
+        const parsed = JSON.parse(jsonStr);
+        const arr = Array.isArray(parsed) ? parsed :
+          (parsed.stocks || parsed.cours || parsed.cotations || parsed.actions || parsed.data || []);
         if (Array.isArray(arr) && arr.length >= 3) {
           const stocks = parseJsonArray(arr);
           if (stocks?.length >= 3) { console.log(`parseScriptJson: ${stocks.length} stocks`); return stocks; }
@@ -260,6 +313,37 @@ function parseScriptJson(html) {
   return null;
 }
 
+// Attributs HTML data-ticker, data-symbol, data-code, etc.
+function parseHtmlAttributes(html) {
+  const stocks = [];
+  const rowRe = /<(?:tr|div|li)[^>]+>/gi;
+  let m;
+  while ((m = rowRe.exec(html)) !== null) {
+    const tag = m[0];
+    const symM = tag.match(/data-(?:ticker|symbol|code|sym|action|valeur|libelle)=["']([A-Z0-9.\-]{2,10})["']/i);
+    if (!symM) continue;
+    let rawSym = symM[1].toUpperCase().replace(/\s/g,'');
+    const sym = rawSym.replace(/\.[A-Z]{2}$/, '');
+    const meta = KNOWN_STOCKS[sym];
+    if (!meta) continue;
+    const priceM = tag.match(/data-(?:price|cours|last|close|dernier|prix)=["']([\d.,\s ]+)["']/i);
+    if (!priceM) continue;
+    const price = parseFloat(priceM[1].replace(/[\s ]/g,'').replace(',','.'));
+    if (price <= 0) continue;
+    const chgM = tag.match(/data-(?:change|variation|var|evol|pct)=["']([+-]?[\d.,]+)["']/i);
+    const chg = chgM ? parseFloat(chgM[1].replace(',','.')) : 0;
+    const volM = tag.match(/data-(?:vol|volume)=["'](\d+)["']/i);
+    const vol = volM ? parseInt(volM[1]) : 0;
+    const prev = price / (1 + chg / 100);
+    stocks.push({ symbol: sym, name: meta.name,
+      price: Math.round(price), previousPrice: Math.round(prev),
+      change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100, volume: vol });
+  }
+  if (stocks.length >= 3) { console.log(`parseHtmlAttributes: ${stocks.length} stocks`); return stocks; }
+  return null;
+}
+
+// Essaie toutes les combinaisons de colonnes [symCol, priceCol, chgCol, volCol]
 function parseBRVMHtmlFlexible(html) {
   const combos = [
     [0,2,4,5], [0,2,3,4], [0,1,2,3],
@@ -283,15 +367,16 @@ function parseBRVMHtmlFlexible(html) {
     const stocks = [];
     for (const cells of rows) {
       if (cells.length <= Math.max(sc, pc, cc)) continue;
-      const symbol = cells[sc]?.toUpperCase().replace(/\s/g,'');
-      const price  = parseFloat(cells[pc]?.replace(/[\s ]/g,'').replace(',','.'));
-      const chg    = parseFloat(cells[cc]?.replace('%','').replace(/[\s ]/g,'').replace(',','.')) || 0;
+      const rawSym = cells[sc]?.toUpperCase().replace(/\s/g,'');
+      const symbol = rawSym?.replace(/\.[A-Z]{2}$/, '');
+      const price  = parseFloat(cells[pc]?.replace(/[\s ]/g,'').replace(',','.'));
+      const chg    = parseFloat(cells[cc]?.replace('%','').replace(/[\s ]/g,'').replace(',','.')) || 0;
       if (symbol?.length >= 2 && symbol.length <= 6 && price > 0 && KNOWN_STOCKS[symbol]) {
         const prev = price / (1 + chg / 100);
         stocks.push({ symbol, name: KNOWN_STOCKS[symbol].name,
           price: Math.round(price), previousPrice: Math.round(prev),
           change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
-          volume: parseInt(cells[vc]?.replace(/[\s ]/g,'') || '0') || 0 });
+          volume: parseInt(cells[vc]?.replace(/[\s ]/g,'') || '0') || 0 });
       }
     }
     if (stocks.length >= 5) {
@@ -302,34 +387,44 @@ function parseBRVMHtmlFlexible(html) {
   return null;
 }
 
+// Parseur texte pur : supprime tout le HTML, cherche symboles connus + prix proches
 function parseFluxBourseText(html) {
   const lines = html
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<[^>]+>/g, '\n')
     .split('\n')
-    .map(l => l.trim())
+    .map(l => l.trim().replace(/ /g,' ').replace(/\s+/g,' '))
     .filter(Boolean);
 
   const stocks = [];
+  const seen = new Set();
   for (let i = 0; i < lines.length; i++) {
-    const sym = lines[i].toUpperCase().replace(/\s/g,'');
-    const meta = KNOWN_STOCKS[sym];
-    if (!meta) continue;
+    const rawSym = lines[i].toUpperCase().replace(/\s/g,'');
+    let sym = rawSym;
+    let meta = KNOWN_STOCKS[sym];
+    // Handle suffix variants like ETIT.TG -> ETIT
+    if (!meta && /\.[A-Z]{2}$/.test(rawSym)) {
+      sym = rawSym.replace(/\.[A-Z]{2}$/, '');
+      meta = KNOWN_STOCKS[sym];
+    }
+    if (!meta || seen.has(sym)) continue;
+
     let price = 0, chg = 0;
-    for (let j = i + 1; j < Math.min(i + 15, lines.length); j++) {
-      const tok = lines[j].replace(/\s/g,'').replace(',','.');
+    for (let j = i + 1; j < Math.min(i + 20, lines.length); j++) {
+      const tok = lines[j].replace(/[\s ]/g,'').replace(',','.');
       if (!price) {
         const n = parseFloat(tok);
         if (!isNaN(n) && n >= meta.refPrice * 0.1 && n <= meta.refPrice * 8) { price = n; continue; }
       }
       if (!chg && tok.includes('%')) {
-        const p = parseFloat(tok.replace('%',''));
+        const p = parseFloat(tok.replace('%','').replace('+',''));
         if (!isNaN(p) && Math.abs(p) <= 20) { chg = p; }
       }
       if (KNOWN_STOCKS[lines[j].toUpperCase().replace(/\s/g,'')]) break;
     }
     if (price > 0) {
+      seen.add(sym);
       const prev = price / (1 + chg / 100);
       stocks.push({ symbol: sym, name: meta.name, price: Math.round(price),
         previousPrice: Math.round(prev), change: Math.round(price - prev),
@@ -340,32 +435,19 @@ function parseFluxBourseText(html) {
   return null;
 }
 
-function parseNextData(html) {
-  try {
-    const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-    if (!m) return null;
-    const nextData = JSON.parse(m[1]);
-    const pp = nextData?.props?.pageProps;
-    if (!pp) return null;
-    const arr = pp.stocks || pp.cours || pp.actions || pp.cotations ||
-                pp.data?.stocks || pp.data?.cours || pp.data?.actions || pp.data;
-    if (!Array.isArray(arr) || !arr.length) return null;
-    console.log(`Next.js data: ${arr.length} elements, cles: ${Object.keys(arr[0] || {}).join(', ')}`);
-    return parseJsonArray(arr);
-  } catch (e) { console.warn('parseNextData:', e.message); return null; }
-}
-
+// Parse un tableau JSON generique en liste de stocks
 function parseJsonArray(arr) {
   const stocks = arr.map(item => {
-    const symbol = (item.symbol || item.ticker || item.code || item.symbole || '').toUpperCase().replace(/\s/g,'');
-    const price = parseFloat(item.price || item.cours || item.lastPrice || item.close || item.dernier || 0);
+    const rawSym = (item.symbol || item.ticker || item.code || item.symbole || item.SYMBOLE || item.valeur || '');
+    const symbol = rawSym.toUpperCase().replace(/\s/g,'').replace(/\.[A-Z]{2}$/,'');
+    const price = parseFloat(item.price || item.cours || item.lastPrice || item.close || item.dernier || item.last || item.prix || 0);
     if (!symbol || symbol.length < 2 || symbol.length > 6 || price <= 0) return null;
-    const chg = parseFloat(item.changePercent || item.variation || item.change_pct || item.var || 0);
+    const chg = parseFloat(item.changePercent || item.variation || item.change_pct || item.var || item.evol || item.taux || 0);
     const prev = price / (1 + chg / 100);
-    return { symbol, name: KNOWN_STOCKS[symbol]?.name || item.name || item.libelle || symbol,
+    return { symbol, name: KNOWN_STOCKS[symbol]?.name || item.name || item.libelle || item.nom || symbol,
              price: Math.round(price), previousPrice: Math.round(prev),
              change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
-             volume: parseInt(item.volume || item.vol || 0) };
+             volume: parseInt(item.volume || item.vol || item.quantite || 0) };
   }).filter(s => s && KNOWN_STOCKS[s.symbol]);
   return stocks.length >= 1 ? stocks : null;
 }
@@ -398,22 +480,31 @@ async function fetchYahooFinance() {
 
   try {
     const r = await fetchWithTimeout('https://query2.finance.yahoo.com/v1/test/getcrumb', {
-      headers: { 'User-Agent': USER_AGENTS[0], 'Accept': '*/*', 'Referer': 'https://finance.yahoo.com/', ...(cookies ? { 'Cookie': cookies } : {}) },
+      headers: {
+        'User-Agent': USER_AGENTS[0],
+        'Accept': '*/*',
+        'Referer': 'https://finance.yahoo.com/',
+        ...(cookies ? { 'Cookie': cookies } : {}),
+      },
     });
     console.log(`Yahoo getcrumb: HTTP ${r.status}`);
     if (r.ok) {
       crumb = (await r.text()).trim();
       console.log(`Yahoo crumb: "${crumb.substring(0, 15)}${crumb.length > 15 ? '...' : ''}"`);
     } else {
-      console.warn(`Yahoo crumb erreur: ${(await r.text()).substring(0, 100)}`);
+      const err = await r.text();
+      console.warn(`Yahoo crumb erreur: ${err.substring(0, 100)}`);
     }
   } catch (e) { console.warn('Yahoo getcrumb:', e.message); }
 
   const crumbSuffix = crumb ? `&crumb=${encodeURIComponent(crumb)}` : '';
   const headers = {
-    'User-Agent': USER_AGENTS[0], 'Accept': 'application/json, */*;q=0.9',
-    'Accept-Language': 'en-US,en;q=0.9', 'Referer': 'https://finance.yahoo.com/',
-    'Origin': 'https://finance.yahoo.com', ...(cookies ? { 'Cookie': cookies } : {}),
+    'User-Agent': USER_AGENTS[0],
+    'Accept': 'application/json, */*;q=0.9',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Referer': 'https://finance.yahoo.com/',
+    'Origin': 'https://finance.yahoo.com',
+    ...(cookies ? { 'Cookie': cookies } : {}),
   };
 
   const urls = [
@@ -428,21 +519,35 @@ async function fetchYahooFinance() {
     try {
       const resp = await fetchWithTimeout(url, { headers });
       console.log(`${label}: HTTP ${resp.status}`);
-      if (!resp.ok) { console.warn(`${label} erreur: ${(await resp.text()).substring(0, 150)}`); continue; }
+      if (!resp.ok) {
+        const errText = await resp.text();
+        console.warn(`${label} erreur: ${errText.substring(0, 150)}`);
+        continue;
+      }
       const data = await resp.json();
       const quotes = data?.quoteResponse?.result;
       const symList = (quotes||[]).slice(0,8).map(q=>q.symbol).join(', ');
       console.log(`${label}: ${quotes?.length || 0} tickers retournes: ${symList}`);
-      if (!quotes || !quotes.length) { console.warn(`${label}: result vide`); continue; }
+      if (!quotes || !quotes.length) {
+        console.warn(`${label}: result vide, erreur=${JSON.stringify(data?.quoteResponse?.error)}`);
+        continue;
+      }
       const stocks = quotes.map(q => {
-        const sym = YAHOO_REVERSE[q.symbol];
+        // Full match (ETIT.TG) then base match (ETIT without suffix)
+        const sym = YAHOO_REVERSE[q.symbol]
+          || YAHOO_REVERSE_BASE[q.symbol]
+          || YAHOO_REVERSE_BASE[q.symbol.split('.')[0]];
         if (!sym) return null;
         const price = Math.round(q.regularMarketPrice || 0);
         const prev  = Math.round(q.regularMarketPreviousClose || price);
         if (price <= 0) return null;
-        return { symbol: sym, name: KNOWN_STOCKS[sym]?.name || sym, price, previousPrice: prev,
-                 change: price - prev, changePercent: Math.round((q.regularMarketChangePercent || 0) * 100) / 100,
-                 volume: q.regularMarketVolume || 0 };
+        return {
+          symbol: sym, name: KNOWN_STOCKS[sym]?.name || sym,
+          price, previousPrice: prev,
+          change: price - prev,
+          changePercent: Math.round((q.regularMarketChangePercent || 0) * 100) / 100,
+          volume: q.regularMarketVolume || 0,
+        };
       }).filter(Boolean);
       console.log(`${label}: ${stocks.length} titres BRVM valides`);
       if (stocks.length >= 1) return stocks;
@@ -460,7 +565,11 @@ async function fetchAfricabourse() {
   for (const url of urls) {
     try {
       const resp = await fetchWithTimeout(url, {
-        headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'text/html,application/xhtml+xml', 'Accept-Language': 'fr-FR,fr;q=0.9' },
+        headers: {
+          'User-Agent': USER_AGENTS[0],
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'fr-FR,fr;q=0.9',
+        },
       });
       console.log(`africabourse (${url.split('/').slice(-2).join('/')}): HTTP ${resp.status}`);
       if (resp.ok) {
@@ -468,7 +577,7 @@ async function fetchAfricabourse() {
         const hasData = html.includes('ETIT') || html.includes('SNTS') || html.includes('SGBC');
         console.log(`africabourse: ${html.length} bytes, donnees BRVM: ${hasData}`);
         if (hasData) {
-          const stocks = parseBRVMHtmlFlexible(html);
+          const stocks = parseBRVMHtml(html);
           if (stocks) return stocks;
           console.warn('africabourse: HTML avec donnees mais table non parsee');
         }
@@ -476,6 +585,31 @@ async function fetchAfricabourse() {
     } catch (e) { console.warn(`africabourse (${url.split('/').slice(-2).join('/')}):`, e.message); }
   }
   return null;
+}
+
+function parseBRVMHtml(html) {
+  const stocks = [];
+  const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const strip = /<[^>]+>/g;
+  let row;
+  while ((row = rowRe.exec(html)) !== null) {
+    const cells = [];
+    const cm = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+    let cell;
+    while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
+    if (cells.length < 5) continue;
+    const symbol = cells[0].toUpperCase().replace(/\s/g, '');
+    const price  = parseFloat(cells[2].replace(/[\s ]/g, '').replace(',', '.'));
+    const chg    = parseFloat(cells[4].replace('%','').replace(/[\s ]/g,'').replace(',','.')) || 0;
+    if (symbol.length >= 2 && symbol.length <= 6 && price > 0 && KNOWN_STOCKS[symbol]) {
+      const prev = price / (1 + chg / 100);
+      stocks.push({ symbol, name: KNOWN_STOCKS[symbol]?.name || symbol,
+        price: Math.round(price), previousPrice: Math.round(prev),
+        change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
+        volume: parseInt(cells[5]?.replace(/[\s ]/g,'') || '0') || 0 });
+    }
+  }
+  return stocks.length >= 5 ? stocks : null;
 }
 
 function parseSikaHtml(html) {
@@ -490,7 +624,7 @@ function parseSikaHtml(html) {
     while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
     if (cells.length < 4) continue;
     const symbol = cells[0].replace(/\s/g,'').toUpperCase();
-    const price  = parseFloat(cells[1].replace(/[\s ]/g,'').replace(',','.'));
+    const price  = parseFloat(cells[1].replace(/[\s ]/g,'').replace(',','.'));
     const chg    = parseFloat(cells[2].replace('%','').replace(',','.')) || 0;
     if (symbol.length >= 2 && symbol.length <= 6 && price > 0) {
       stocks.push({ symbol, name: KNOWN_STOCKS[symbol]?.name || symbol,
@@ -537,9 +671,25 @@ async function sendTelegram(signal, source) {
   const posBlock = pos
     ? `----------------------\n💼 RECOMMANDATION (budget ${BUDGET_FCFA.toLocaleString('fr-FR')} F)\n📌 Acheter: ${pos.n} titre(s) ${signal.symbol}\n💸 Cout: ${pos.cout.toLocaleString('fr-FR')} FCFA  |  Reserve: ${pos.reserve.toLocaleString('fr-FR')} FCFA\n🎯 Objectif: ${pos.prixCible.toLocaleString('fr-FR')} FCFA (+4%) -> +${pos.gainCible.toLocaleString('fr-FR')} F\n🚀 Max BRVM: +7.5% -> +${pos.gainMax.toLocaleString('fr-FR')} F\n🛑 Stop loss: ${pos.prixStopLoss.toLocaleString('fr-FR')} FCFA (-3%)`
     : `Titre trop cher pour le budget (${signal.price.toLocaleString('fr-FR')} FCFA/titre)`;
-  const text = `${emoji} *FLASH BRVM Pre-Ouverture*\n━━━━━━━━━━━━━━━━━━━━━\n📌 *${signal.symbol}* - ${signal.name}\n⏰ *9h35 GMT* - Fixing dans 10 min\n💰 *Cours*: ${signal.price.toLocaleString('fr-FR')} FCFA\n📊 *Variation*: ${signal.changePercent > 0 ? '+' : ''}${signal.changePercent.toFixed(2)}%\n🛒 *Volume*: ${signal.volume.toLocaleString('fr-FR')} titres\n----------------------\n📈 *MPR*: ${signal.mpr.toFixed(2)} (seuil > 2.5)\n⚖️ *OBI*: ${signal.obi.toFixed(3)} (seuil > 0.85)\n----------------------\n*Signaux:*\n${reasons}\n${posBlock}\n----------------------\n⚡ *Passe l ordre avant 9h45 GMT*\n_Confiance: ${signal.confidence}${srcTag}_`;
+  const text = `${emoji} *FLASH BRVM Pre-Ouverture*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━\n` +
+    `📌 *${signal.symbol}* - ${signal.name}\n` +
+    `⏰ *9h35 GMT* - Fixing dans 10 min\n` +
+    `💰 *Cours*: ${signal.price.toLocaleString('fr-FR')} FCFA\n` +
+    `📊 *Variation*: ${signal.changePercent > 0 ? '+' : ''}${signal.changePercent.toFixed(2)}%\n` +
+    `🛒 *Volume*: ${signal.volume.toLocaleString('fr-FR')} titres\n` +
+    `----------------------\n` +
+    `📈 *MPR*: ${signal.mpr.toFixed(2)} (seuil > 2.5)\n` +
+    `⚖️ *OBI*: ${signal.obi.toFixed(3)} (seuil > 0.85)\n` +
+    `----------------------\n` +
+    `*Signaux:*\n${reasons}\n` +
+    `${posBlock}\n` +
+    `----------------------\n` +
+    `⚡ *Passe l ordre avant 9h45 GMT*\n` +
+    `_Confiance: ${signal.confidence}${srcTag}_`;
   const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text, parse_mode: 'Markdown' }),
   });
   const data = await resp.json();
@@ -548,9 +698,10 @@ async function sendTelegram(signal, source) {
 }
 
 async function sendTelegramUnavailable() {
-  const text = `⚠️ *BRVM Pre-Ouverture - Sources Indisponibles*\n━━━━━━━━━━━━━━━━━━━━━\nTous les flux sont inaccessibles ce matin.\n\n_Aucun signal genere._\n_Reessai automatique demain a 9h35 GMT._`;
+  const text = `⚠️ *BRVM Pre-Ouverture - Sources Indisponibles*\n━━━━━━━━━━━━━━━━━━━━━\nBRVM.org, Yahoo Finance et Sika Finance sont inaccessibles ce matin.\n\n_Aucun signal genere - donnees live introuvables._\n_Reessai automatique demain a 9h35 GMT._`;
   await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text, parse_mode: 'Markdown' }),
   });
 }
