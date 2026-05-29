@@ -99,7 +99,15 @@ async function fetchWithTimeout(url, opts = {}) {
   } catch (e) { clearTimeout(timer); throw e; }
 }
 
+// Proxies pour contourner le blocage géographique de brvm.org depuis GitHub Actions (US)
+const BRVM_PROXIES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+  'https://api.codetabs.com/v1/proxy?quest=',
+];
+
 async function fetchLiveStocks() {
+  // 1. BRVM.org direct
   for (const url of BRVM_URLS) {
     try {
       const resp = await fetchWithTimeout(url, {
@@ -116,10 +124,28 @@ async function fetchLiveStocks() {
       }
     } catch (e) { console.warn('brvm-direct:', e.message); }
   }
+
+  // 2. BRVM.org via proxies (GitHub Actions est bloqué depuis les USA)
+  for (const proxy of BRVM_PROXIES) {
+    try {
+      const resp = await fetchWithTimeout(proxy + encodeURIComponent(BRVM_URLS[0]), {
+        headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] },
+      });
+      if (resp.ok) {
+        const html = await resp.text();
+        const stocks = parseBRVMHtml(html);
+        if (stocks) { console.log(`Source: brvm-via-proxy (${proxy.split('/')[2]})`); return { stocks, source: 'brvm-proxy' }; }
+      }
+    } catch (e) { console.warn(`proxy ${proxy.split('/')[2]}:`, e.message); }
+  }
+
+  // 3. Yahoo Finance (endpoint v8, plus stable)
   try {
     const stocks = await fetchYahooFinance();
     if (stocks) { console.log('Source: yahoo-finance'); return { stocks, source: 'yahoo-finance' }; }
   } catch (e) { console.warn('Yahoo Finance:', e.message); }
+
+  // 4. Sika Finance
   try {
     const resp = await fetchWithTimeout('https://sika.finance/bourse/brvm/cours', {
       headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'text/html' },
@@ -129,27 +155,47 @@ async function fetchLiveStocks() {
       if (stocks) { console.log('Source: sika-finance'); return { stocks, source: 'sika-finance' }; }
     }
   } catch (e) { console.warn('Sika Finance:', e.message); }
+
   return { stocks: [], source: 'unavailable' };
 }
 
 async function fetchYahooFinance() {
   const tickers = Object.values(YAHOO_MAP).join(',');
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`;
-  const resp = await fetchWithTimeout(url, { headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'application/json' } });
-  if (!resp.ok) throw new Error(`Yahoo HTTP ${resp.status}`);
-  const data = await resp.json();
-  const quotes = data?.quoteResponse?.result;
-  if (!quotes || quotes.length < 5) return null;
-  return quotes.map(q => {
-    const sym = YAHOO_REVERSE[q.symbol];
-    if (!sym) return null;
-    const price = Math.round(q.regularMarketPrice || 0);
-    const prev  = Math.round(q.regularMarketPreviousClose || price);
-    if (price <= 0) return null;
-    return { symbol: sym, name: KNOWN_STOCKS[sym]?.name || sym, price, previousPrice: prev,
-             change: price - prev, changePercent: Math.round((q.regularMarketChangePercent || 0) * 100) / 100,
-             volume: q.regularMarketVolume || 0 };
-  }).filter(Boolean);
+  // Essayer query2 v8 puis query1 v7 en fallback
+  const urls = [
+    `https://query2.finance.yahoo.com/v8/finance/quote?symbols=${tickers}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
+    `https://query1.finance.yahoo.com/v8/finance/quote?symbols=${tickers}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
+    `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
+  ];
+  for (const url of urls) {
+    try {
+      const resp = await fetchWithTimeout(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'application/json',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Referer': 'https://finance.yahoo.com/',
+          'Origin': 'https://finance.yahoo.com',
+        },
+      });
+      if (!resp.ok) { console.warn(`Yahoo ${url.includes('v8') ? 'v8' : 'v7'}: HTTP ${resp.status}`); continue; }
+      const data = await resp.json();
+      const quotes = data?.quoteResponse?.result;
+      if (!quotes || quotes.length < 3) continue;
+      const stocks = quotes.map(q => {
+        const sym = YAHOO_REVERSE[q.symbol];
+        if (!sym) return null;
+        const price = Math.round(q.regularMarketPrice || 0);
+        const prev  = Math.round(q.regularMarketPreviousClose || price);
+        if (price <= 0) return null;
+        return { symbol: sym, name: KNOWN_STOCKS[sym]?.name || sym, price, previousPrice: prev,
+                 change: price - prev, changePercent: Math.round((q.regularMarketChangePercent || 0) * 100) / 100,
+                 volume: q.regularMarketVolume || 0 };
+      }).filter(Boolean);
+      if (stocks.length >= 3) return stocks;
+    } catch (e) { console.warn('Yahoo:', e.message); }
+  }
+  return null;
 }
 
 function parseBRVMHtml(html) {
