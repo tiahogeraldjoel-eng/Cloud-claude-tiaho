@@ -84,6 +84,15 @@ const KNOWN_STOCKS = {
   UNXC: { name:'Unacoopec-CI',                         avgVol:260,   refPrice:2800   },
 };
 
+// Decode HTML entities so &nbsp; thousands separators don't break parseFloat
+function decodeHtml(s) {
+  return s
+    .replace(/&nbsp;/gi, ' ').replace(/&#160;/g, ' ')
+    .replace(/&thinsp;/gi, ' ').replace(/&#8201;/g, ' ')
+    .replace(/ /g, ' ')
+    .replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>');
+}
+
 const MPR_THRESHOLD    = 2.5;
 const OBI_THRESHOLD    = 0.85;
 const VOL_SPIKE_FACTOR = 3.0;
@@ -193,7 +202,9 @@ async function fetchLiveStocks() {
 }
 
 async function fetchFluxBourse() {
-  const tryParse = (html, label) => {
+  const tryParse = (rawHtml, label) => {
+    // Decode HTML entities FIRST (&nbsp; -> space, etc.) so prices parse correctly
+    const html = decodeHtml(rawHtml);
     // Diagnostic: debut de la page (structure generale)
     console.log(`[${label}] debut: ${html.substring(0, 600).replace(/\s+/g, ' ')}`);
     // Diagnostic: contexte autour du premier symbole BRVM trouve
@@ -208,7 +219,8 @@ async function fetchFluxBourse() {
       || parseScriptJson(html)
       || parseHtmlAttributes(html)
       || parseBRVMHtmlFlexible(html)
-      || parseFluxBourseText(html);
+      || parseFluxBourseText(html)
+      || parseFluxBourseAggressive(html);
   };
 
   // Tentatives: directe + 3 proxies CORS (tous ont montre HTTP 200 dans les logs)
@@ -431,7 +443,54 @@ function parseFluxBourseText(html) {
         changePercent: Math.round(chg * 100) / 100, volume: 0 });
     }
   }
-  if (stocks.length >= 5) { console.log(`parseFluxBourseText: ${stocks.length} stocks`); return stocks; }
+  if (stocks.length >= 3) { console.log(`parseFluxBourseText: ${stocks.length} stocks`); return stocks; }
+  return null;
+}
+
+// Parseur agressif : trouve symboles n'importe ou dans le texte (pas seulement sur une ligne seule)
+function parseFluxBourseAggressive(html) {
+  const text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ');
+
+  const stocks = [];
+  const seen = new Set();
+
+  for (const [sym, meta] of Object.entries(KNOWN_STOCKS)) {
+    if (seen.has(sym)) continue;
+    let searchFrom = 0;
+    while (true) {
+      const idx = text.indexOf(sym, searchFrom);
+      if (idx === -1) break;
+      searchFrom = idx + 1;
+      // Word boundary: char before and after must not be alphanumeric
+      const cBefore = idx > 0 ? text[idx - 1] : ' ';
+      const cAfter  = idx + sym.length < text.length ? text[idx + sym.length] : ' ';
+      if (/[A-Za-z0-9]/.test(cBefore) || /[A-Za-z0-9]/.test(cAfter)) continue;
+      // Scan next 400 chars for a number in valid price range
+      const win = text.substring(idx, idx + 400);
+      const numRe = /\b(\d[\d ]*(?:[.,]\d+)?)\b/g;
+      let nm;
+      while ((nm = numRe.exec(win)) !== null) {
+        const n = parseFloat(nm[1].replace(/[ ]/g, '').replace(',', '.'));
+        if (isNaN(n) || n <= 0) continue;
+        if (n >= meta.refPrice * 0.1 && n <= meta.refPrice * 10) {
+          const pctM = win.match(/([+\-]?\d+[.,]?\d*)\s*%/);
+          const chg = pctM ? parseFloat(pctM[1].replace(',', '.')) : 0;
+          const prev = n / (1 + chg / 100);
+          seen.add(sym);
+          stocks.push({ symbol: sym, name: meta.name, price: Math.round(n),
+            previousPrice: Math.round(prev), change: Math.round(n - prev),
+            changePercent: Math.round(chg * 100) / 100, volume: 0 });
+          break;
+        }
+      }
+      if (seen.has(sym)) break;
+    }
+  }
+  if (stocks.length >= 3) { console.log(`parseFluxBourseAggressive: ${stocks.length} stocks`); return stocks; }
   return null;
 }
 
