@@ -134,34 +134,9 @@ const CHROME_HEADERS = {
   'upgrade-insecure-requests': '1',
 };
 
-// ─── Fallback RNG (identique au Worker Cloudflare) ───────────────────────────
-
-function mulberry32(seed) {
-  return function () {
-    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-function generateFallbackData() {
-  const seed = Math.floor(Date.now() / 86400000);
-  return Object.entries(KNOWN_STOCKS).map(([symbol, meta], i) => {
-    const rng    = mulberry32(seed + i);
-    const change = Math.max(-0.075, Math.min(0.075, 0.0003 + (rng() - 0.5) * 0.02));
-    const price  = Math.round(meta.refPrice * (1 + change));
-    return {
-      symbol, name: meta.name, price,
-      previousPrice: meta.refPrice,
-      change: price - meta.refPrice,
-      changePercent: Math.round(change * 10000) / 100,
-      volume: Math.round(meta.avgVol * (0.5 + rng() * 1.5)),
-    };
-  });
-}
-
 // ─── Source #0: Cloudflare Worker déployé ────────────────────────────────────
+// Le Worker tourne sur l'edge Cloudflare → pas de géo-blocage → atteint brvm.org directement.
+// Les données "simulated" du Worker sont rejetées ici — on veut uniquement des cours réels.
 
 async function fetchCloudflareWorker() {
   const resp = await fetchWithTimeout(`${BRVM_WORKER_URL}/stocks`, {
@@ -171,9 +146,15 @@ async function fetchCloudflareWorker() {
   const data = await resp.json();
   const arr = data.stocks || data;
   if (!Array.isArray(arr) || arr.length < 5) return null;
-  const sources = [...new Set(arr.map(s => s.source).filter(Boolean))];
-  console.log(`Worker: ${arr.length} titres, source-worker: ${sources.join(',')}`);
-  return arr.map(s => ({
+
+  // Rejeter les données simulées — uniquement les cours live
+  const live = arr.filter(s => s.source !== 'simulated');
+  if (live.length < 5) {
+    console.warn(`Worker: donnees simulees (${arr.length - live.length}/${arr.length}) — rejet, sources live introuvables.`);
+    return null;
+  }
+  console.log(`Worker: ${live.length} titres live (${[...new Set(live.map(s => s.source))].join(',')})`);
+  return live.map(s => ({
     symbol:        String(s.symbol || '').toUpperCase(),
     name:          s.name || KNOWN_STOCKS[s.symbol]?.name || s.symbol,
     price:         Math.round(parseFloat(s.price) || 0),
@@ -256,9 +237,7 @@ async function fetchLiveStocks() {
     }
   } catch (e) { console.warn('Sika Finance:', e.message); }
 
-  // Fallback final — données simulées basées sur cours de référence (jamais d'échec)
-  console.warn('Toutes les sources live inaccessibles — utilisation des cours de reference simules.');
-  return { stocks: generateFallbackData(), source: 'simulated' };
+  return { stocks: [], source: 'unavailable' };
 }
 
 // TradingView Scanner API — JSON public, aucune authentification requise
@@ -918,6 +897,11 @@ async function main() {
   if (BRVM_WORKER_URL) console.log(`Worker URL: ${BRVM_WORKER_URL}`);
 
   const { stocks, source } = await fetchLiveStocks();
+  if (!stocks.length) {
+    console.warn('Toutes les sources inaccessibles.');
+    await sendTelegramUnavailable();
+    return;
+  }
   console.log(`${stocks.length} valeurs chargees depuis "${source}".`);
 
   const alerts = stocks.map(analyzeSignal).filter(s => s.alert);

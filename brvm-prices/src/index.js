@@ -152,12 +152,12 @@ export default {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 async function runPreOpenScan(env) {
-  let { stocks, source } = await fetchLiveStocks();
+  const { stocks, source } = await fetchLiveStocks();
 
-  if (!stocks || stocks.length < 5) {
-    console.warn('Sources live indisponibles — utilisation des cours de reference simules.');
-    stocks = generateFallbackData();
-    source = 'simulated';
+  if (source === 'unavailable') {
+    console.warn('Toutes les sources BRVM inaccessibles.');
+    await sendTelegramUnavailable(env);
+    return;
   }
 
   console.log(`${stocks.length} valeurs chargées depuis "${source}".`);
