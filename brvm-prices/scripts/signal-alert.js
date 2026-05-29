@@ -132,13 +132,25 @@ const CHROME_HEADERS = {
 };
 
 async function fetchLiveStocks() {
-  // 1. FluxBourse (source principale demandee par l'utilisateur)
+  // 1. TradingView Scanner - API JSON publique, pas d'auth, couverture BRVM
+  try {
+    const stocks = await fetchTradingView();
+    if (stocks) { console.log(`Source: tradingview (${stocks.length} titres)`); return { stocks, source: 'tradingview' }; }
+  } catch (e) { console.warn('TradingView:', e.message); }
+
+  // 2. Stooq.com - CSV gratuit, pas d'auth, couverture globale
+  try {
+    const stocks = await fetchStooq();
+    if (stocks) { console.log(`Source: stooq (${stocks.length} titres)`); return { stocks, source: 'stooq' }; }
+  } catch (e) { console.warn('Stooq:', e.message); }
+
+  // 3. FluxBourse (source demandee par l'utilisateur)
   try {
     const stocks = await fetchFluxBourse();
     if (stocks) { console.log(`Source: fluxbourse (${stocks.length} titres)`); return { stocks, source: 'fluxbourse' }; }
   } catch (e) { console.warn('FluxBourse:', e.message); }
 
-  // 2. BRVM.org direct
+  // 4. BRVM.org direct
   for (const url of BRVM_URLS) {
     try {
       const resp = await fetchWithTimeout(url, { headers: CHROME_HEADERS });
@@ -153,7 +165,7 @@ async function fetchLiveStocks() {
     } catch (e) { console.warn(`brvm-direct (${url.split('/').pop()}):`, e.message); }
   }
 
-  // 3. BRVM.org via proxies
+  // 5. BRVM.org via proxies
   for (const proxy of BRVM_PROXIES) {
     const proxyHost = proxy.split('/')[2];
     try {
@@ -199,6 +211,87 @@ async function fetchLiveStocks() {
   } catch (e) { console.warn('Sika Finance:', e.message); }
 
   return { stocks: [], source: 'unavailable' };
+}
+
+// TradingView Scanner API — JSON public, aucune authentification requise
+async function fetchTradingView() {
+  const endpoints = [
+    'https://scanner.tradingview.com/global/scan',
+    'https://scanner.tradingview.com/africa/scan',
+  ];
+  const body = JSON.stringify({
+    filter: [{ left: 'exchange', operation: 'equal', right: 'BRVM' }],
+    columns: ['name', 'description', 'close', 'change', 'change_abs', 'volume', 'open'],
+    sort: { sortBy: 'name', sortOrder: 'asc' },
+    range: [0, 100],
+  });
+  const headers = {
+    'Content-Type': 'application/json',
+    'User-Agent': USER_AGENTS[0],
+    'Accept': 'application/json',
+    'Origin': 'https://www.tradingview.com',
+    'Referer': 'https://www.tradingview.com/',
+  };
+  for (const url of endpoints) {
+    try {
+      const resp = await fetchWithTimeout(url, { method: 'POST', headers, body });
+      console.log(`TradingView (${url.split('/')[4]}): HTTP ${resp.status}`);
+      if (!resp.ok) { console.warn(`TradingView erreur: ${(await resp.text()).substring(0,150)}`); continue; }
+      const data = await resp.json();
+      console.log(`TradingView: totalCount=${data.totalCount}, data=${data.data?.length}`);
+      if (!data.data?.length) continue;
+      const stocks = data.data.map(item => {
+        const symbol = item.s?.split(':')[1]?.toUpperCase().replace(/[^A-Z]/g,'');
+        if (!symbol || !KNOWN_STOCKS[symbol]) return null;
+        const [, , close, changePct, changeAbs, volume] = item.d || [];
+        const price = Math.round(parseFloat(close) || 0);
+        if (price <= 0) return null;
+        return { symbol, name: KNOWN_STOCKS[symbol].name,
+          price, previousPrice: Math.round(price - (parseFloat(changeAbs)||0)),
+          change: Math.round(parseFloat(changeAbs)||0),
+          changePercent: Math.round((parseFloat(changePct)||0)*100)/100,
+          volume: Math.round(parseFloat(volume)||0) };
+      }).filter(Boolean);
+      console.log(`TradingView: ${stocks.length} titres BRVM valides`);
+      if (stocks.length >= 2) return stocks;
+    } catch (e) { console.warn(`TradingView (${url.split('/')[4]}):`, e.message); }
+  }
+  return null;
+}
+
+// Stooq.com — CSV gratuit, format stable, couverture globale (ETIT.TG, SNTS.SN, etc.)
+async function fetchStooq() {
+  // Batch: tous les symboles en une requete
+  const syms = Object.values(YAHOO_MAP).map(s => s.toLowerCase()).join('+');
+  const url = `https://stooq.com/q/l/?s=${syms}&f=sd2t2ohlcv&h&e=csv`;
+  try {
+    const resp = await fetchWithTimeout(url, { headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'text/csv,text/plain' } });
+    console.log(`stooq batch: HTTP ${resp.status}`);
+    if (!resp.ok) return null;
+    const csv = await resp.text();
+    const lines = csv.trim().split('\n');
+    console.log(`stooq: ${lines.length - 1} lignes CSV`);
+    if (lines.length < 3) return null;
+    // CSV: Symbol,Date,Time,Open,High,Low,Close,Volume
+    const stocks = lines.slice(1).map(line => {
+      const p = line.split(',');
+      if (p.length < 7) return null;
+      const yahooSym = p[0].trim().toUpperCase();
+      const sym = YAHOO_REVERSE[yahooSym] || YAHOO_REVERSE_BASE[yahooSym] || YAHOO_REVERSE_BASE[yahooSym.split('.')[0]];
+      if (!sym) return null;
+      const close = parseFloat(p[6]);
+      const open  = parseFloat(p[3]);
+      if (!close || close <= 0 || close === open && open === 0) return null;
+      const changeAbs = close - open;
+      const changePct = open > 0 ? (changeAbs / open) * 100 : 0;
+      return { symbol: sym, name: KNOWN_STOCKS[sym].name,
+        price: Math.round(close), previousPrice: Math.round(open),
+        change: Math.round(changeAbs), changePercent: Math.round(changePct*100)/100,
+        volume: parseInt(p[7]||'0')||0 };
+    }).filter(Boolean);
+    console.log(`stooq: ${stocks.length} titres BRVM valides`);
+    return stocks.length >= 2 ? stocks : null;
+  } catch (e) { console.warn('stooq:', e.message); return null; }
 }
 
 async function fetchFluxBourse() {
