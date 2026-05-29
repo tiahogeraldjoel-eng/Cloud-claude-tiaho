@@ -193,80 +193,162 @@ async function fetchLiveStocks() {
 }
 
 async function fetchFluxBourse() {
-  // Pages candidates sur fluxbourse.com
-  const urls = [
-    'https://fluxbourse.com/',
-    'https://fluxbourse.com/cours',
-    'https://fluxbourse.com/cours-brvm',
-    'https://fluxbourse.com/bourse',
-    'https://fluxbourse.com/marche',
-    'https://fluxbourse.com/cotations',
-    'https://fluxbourse.com/actions-brvm',
-  ];
+  const tryParse = (html, label) => {
+    // Log contexte HTML autour du premier symbole trouve pour diagnostic
+    const diagSym = ['ETIT','SNTS','SGBC','ORAC'].find(s => html.includes(s));
+    if (diagSym) {
+      const idx = html.indexOf(diagSym);
+      const ctx = html.substring(Math.max(0, idx - 250), idx + 600).replace(/\s+/g, ' ');
+      console.log(`[${label}] contexte autour de ${diagSym}: ${ctx}`);
+    }
+    return parseNextData(html)
+      || parseScriptJson(html)
+      || parseBRVMHtmlFlexible(html)
+      || parseFluxBourseText(html);
+  };
 
-  // Tentative directe avec headers Chrome complets
-  for (const url of urls) {
-    try {
-      const resp = await fetchWithTimeout(url, { headers: CHROME_HEADERS });
-      const slug = url.replace('https://fluxbourse.com', '') || '/';
-      console.log(`fluxbourse${slug}: HTTP ${resp.status}`);
-      if (!resp.ok) continue;
-      const html = await resp.text();
-      const hasData = html.includes('ETIT') || html.includes('SNTS') || html.includes('SGBC') || html.includes('ORAC');
-      console.log(`fluxbourse${slug}: ${html.length} bytes, donnees BRVM: ${hasData}`);
-      if (hasData) {
-        // Essai 1: donnees Next.js (__NEXT_DATA__)
-        const stocks = parseNextData(html) || parseBRVMHtml(html) || parseSikaHtml(html);
-        if (stocks?.length >= 1) return stocks;
-        console.warn(`fluxbourse${slug}: donnees detectees mais non parsees, debut: ${html.substring(0, 400)}`);
-      } else {
-        // Meme si pas de symbole connu, log le debut pour diagnostic
-        console.log(`fluxbourse${slug}: debut HTML: ${html.substring(0, 300)}`);
-      }
-    } catch (e) { console.warn(`fluxbourse (${url.split('/').pop() || '/'}):`, e.message); }
-  }
-
-  // Endpoints API JSON potentiels
-  const apiUrls = [
-    'https://fluxbourse.com/api/cours',
-    'https://fluxbourse.com/api/brvm/cours',
-    'https://fluxbourse.com/api/v1/stocks',
-    'https://fluxbourse.com/api/stocks',
-    'https://fluxbourse.com/api/cotations',
-  ];
-  for (const url of apiUrls) {
-    try {
-      const resp = await fetchWithTimeout(url, {
-        headers: { ...CHROME_HEADERS, 'Accept': 'application/json, */*', 'Referer': 'https://fluxbourse.com/', 'Origin': 'https://fluxbourse.com' },
-      });
-      console.log(`fluxbourse-api (${url.split('/').slice(3).join('/')}): HTTP ${resp.status}`);
-      if (!resp.ok) continue;
-      const text = await resp.text();
-      console.log(`fluxbourse-api: ${text.length} bytes, debut: ${text.substring(0, 200)}`);
-      const stocks = parseJsonStocks(text);
-      if (stocks?.length >= 1) return stocks;
-    } catch (e) { console.warn(`fluxbourse-api (${url.split('/').slice(3).join('/')}):`, e.message); }
-  }
-
-  // Tentative via proxies CORS
-  for (const proxy of BRVM_PROXIES) {
-    const proxyHost = proxy.split('/')[2];
-    try {
-      const resp = await fetchWithTimeout(proxy + encodeURIComponent('https://fluxbourse.com/'), {
-        headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] },
-      });
-      console.log(`fluxbourse via ${proxyHost}: HTTP ${resp.status}`);
-      if (!resp.ok) continue;
+  // Tentative directe (la page principale retourne HTTP 200)
+  try {
+    const resp = await fetchWithTimeout('https://fluxbourse.com/', { headers: CHROME_HEADERS });
+    console.log(`fluxbourse/: HTTP ${resp.status}`);
+    if (resp.ok) {
       const html = await resp.text();
       const hasData = html.includes('ETIT') || html.includes('SNTS') || html.includes('SGBC');
-      console.log(`fluxbourse via ${proxyHost}: ${html.length} bytes, donnees BRVM: ${hasData}`);
+      console.log(`fluxbourse/: ${html.length} bytes, donnees BRVM: ${hasData}`);
       if (hasData) {
-        const stocks = parseNextData(html) || parseBRVMHtml(html);
+        const stocks = tryParse(html, 'fluxbourse/');
+        if (stocks?.length >= 1) return stocks;
+        console.warn('fluxbourse/: donnees presentes mais tous parseurs ont echoue');
+      }
+    }
+  } catch (e) { console.warn('fluxbourse/:', e.message); }
+
+  // Tentative via codetabs (qui a aussi retourne HTTP 200 dans les logs)
+  try {
+    const proxy = 'https://api.codetabs.com/v1/proxy?quest=';
+    const resp = await fetchWithTimeout(proxy + encodeURIComponent('https://fluxbourse.com/'), {
+      headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] },
+    });
+    console.log(`fluxbourse via codetabs: HTTP ${resp.status}`);
+    if (resp.ok) {
+      const html = await resp.text();
+      const hasData = html.includes('ETIT') || html.includes('SNTS') || html.includes('SGBC');
+      console.log(`fluxbourse via codetabs: ${html.length} bytes, donnees BRVM: ${hasData}`);
+      if (hasData) {
+        const stocks = tryParse(html, 'fluxbourse-codetabs');
         if (stocks?.length >= 1) return stocks;
       }
-    } catch (e) { console.warn(`fluxbourse via ${proxyHost}:`, e.message); }
-  }
+    }
+  } catch (e) { console.warn('fluxbourse via codetabs:', e.message); }
 
+  return null;
+}
+
+// Cherche des tableaux JSON dans les balises <script> (var data = [...])
+function parseScriptJson(html) {
+  const scriptRe = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+  let m;
+  while ((m = scriptRe.exec(html)) !== null) {
+    const src = m[1];
+    if (src.length < 50) continue;
+    // Chercher des tableaux JSON contenant des donnees de cours
+    const arrMatches = src.match(/\[[\s\S]{50,5000}\]/g) || [];
+    for (const jsonStr of arrMatches) {
+      try {
+        const arr = JSON.parse(jsonStr);
+        if (Array.isArray(arr) && arr.length >= 3) {
+          const stocks = parseJsonArray(arr);
+          if (stocks?.length >= 3) { console.log(`parseScriptJson: ${stocks.length} stocks`); return stocks; }
+        }
+      } catch(e) {}
+    }
+  }
+  return null;
+}
+
+// Essaie toutes les combinaisons de colonnes [symCol, priceCol, chgCol, volCol]
+function parseBRVMHtmlFlexible(html) {
+  const combos = [
+    [0,2,4,5], [0,2,3,4], [0,1,2,3],
+    [0,3,5,6], [0,3,4,5], [1,2,4,5],
+    [1,3,4,5], [0,4,5,6], [0,2,5,6],
+  ];
+  const rowRe0 = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const strip = /<[^>]+>/g;
+  // Pre-parse all rows once
+  const rows = [];
+  let row;
+  while ((row = rowRe0.exec(html)) !== null) {
+    const cells = [];
+    const cm = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+    let cell;
+    while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip,'').trim());
+    if (cells.length >= 3) rows.push(cells);
+  }
+  if (!rows.length) return null;
+
+  for (const [sc, pc, cc, vc] of combos) {
+    const stocks = [];
+    for (const cells of rows) {
+      if (cells.length <= Math.max(sc, pc, cc)) continue;
+      const symbol = cells[sc]?.toUpperCase().replace(/\s/g,'');
+      const price  = parseFloat(cells[pc]?.replace(/[\s ]/g,'').replace(',','.'));
+      const chg    = parseFloat(cells[cc]?.replace('%','').replace(/[\s ]/g,'').replace(',','.')) || 0;
+      if (symbol?.length >= 2 && symbol.length <= 6 && price > 0 && KNOWN_STOCKS[symbol]) {
+        const prev = price / (1 + chg / 100);
+        stocks.push({ symbol, name: KNOWN_STOCKS[symbol].name,
+          price: Math.round(price), previousPrice: Math.round(prev),
+          change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
+          volume: parseInt(cells[vc]?.replace(/[\s ]/g,'') || '0') || 0 });
+      }
+    }
+    if (stocks.length >= 5) {
+      console.log(`parseBRVMHtmlFlexible: ${stocks.length} stocks avec cols [${sc},${pc},${cc},${vc}]`);
+      return stocks;
+    }
+  }
+  return null;
+}
+
+// Parseur texte pur : supprime tout le HTML, cherche symboles connus + prix proches
+function parseFluxBourseText(html) {
+  const lines = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, '\n')
+    .split('\n')
+    .map(l => l.trim())
+    .filter(Boolean);
+
+  const stocks = [];
+  for (let i = 0; i < lines.length; i++) {
+    const sym = lines[i].toUpperCase().replace(/\s/g,'');
+    const meta = KNOWN_STOCKS[sym];
+    if (!meta) continue;
+
+    let price = 0, chg = 0;
+    // Chercher dans les 15 lignes suivantes
+    for (let j = i + 1; j < Math.min(i + 15, lines.length); j++) {
+      const tok = lines[j].replace(/\s/g,'').replace(',','.');
+      if (!price) {
+        const n = parseFloat(tok);
+        if (!isNaN(n) && n >= meta.refPrice * 0.1 && n <= meta.refPrice * 8) { price = n; continue; }
+      }
+      if (!chg && tok.includes('%')) {
+        const p = parseFloat(tok.replace('%',''));
+        if (!isNaN(p) && Math.abs(p) <= 20) { chg = p; }
+      }
+      // Arreter si on tombe sur un autre symbole connu
+      if (KNOWN_STOCKS[lines[j].toUpperCase().replace(/\s/g,'')]) break;
+    }
+    if (price > 0) {
+      const prev = price / (1 + chg / 100);
+      stocks.push({ symbol: sym, name: meta.name, price: Math.round(price),
+        previousPrice: Math.round(prev), change: Math.round(price - prev),
+        changePercent: Math.round(chg * 100) / 100, volume: 0 });
+    }
+  }
+  if (stocks.length >= 5) { console.log(`parseFluxBourseText: ${stocks.length} stocks`); return stocks; }
   return null;
 }
 
@@ -379,7 +461,8 @@ async function fetchYahooFinance() {
       }
       const data = await resp.json();
       const quotes = data?.quoteResponse?.result;
-      console.log(`${label}: ${quotes?.length || 0} tickers retournes`);
+      const symList = (quotes||[]).slice(0,8).map(q=>q.symbol).join(', ');
+      console.log(`${label}: ${quotes?.length || 0} tickers retournes: ${symList}`);
       if (!quotes || !quotes.length) {
         console.warn(`${label}: result vide, erreur=${JSON.stringify(data?.quoteResponse?.error)}`);
         continue;
