@@ -151,37 +151,22 @@ async function fetchLiveStocks() {
     if (stocks) { console.log(`Source: fluxbourse (${stocks.length} titres)`); return { stocks, source: 'fluxbourse' }; }
   } catch (e) { console.warn('FluxBourse:', e.message); }
 
-  // 4. BRVM.org direct
-  for (const url of BRVM_URLS) {
-    try {
-      const resp = await fetchWithTimeout(url, { headers: CHROME_HEADERS });
-      console.log(`brvm-direct ${url.split('/').pop()}: HTTP ${resp.status}`);
-      if (resp.ok) {
-        const html = await resp.text();
-        console.log(`brvm-direct: ${html.length} bytes, contient ETIT: ${html.includes('ETIT')}`);
-        const stocks = parseBRVMHtml(html);
-        if (stocks) { console.log(`Source: brvm-direct (${stocks.length} titres)`); return { stocks, source: 'brvm-direct' }; }
-        console.warn('brvm-direct: HTML recu mais table non parsee');
-      }
-    } catch (e) { console.warn(`brvm-direct (${url.split('/').pop()}):`, e.message); }
-  }
-
-  // 5. BRVM.org via proxies
+  // 4. BRVM.org via proxies CORS (direct bloque depuis GitHub Actions US)
   for (const proxy of BRVM_PROXIES) {
     const proxyHost = proxy.split('/')[2];
     try {
       const resp = await fetchWithTimeout(proxy + encodeURIComponent(BRVM_URLS[0]), {
         headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] },
       });
-      console.log(`proxy ${proxyHost}: HTTP ${resp.status}`);
+      console.log(`brvm-proxy ${proxyHost}: HTTP ${resp.status}`);
       if (resp.ok) {
         const html = await resp.text();
-        console.log(`proxy ${proxyHost}: ${html.length} bytes, contient ETIT: ${html.includes('ETIT')}`);
-        const stocks = parseBRVMHtml(html);
+        console.log(`brvm-proxy ${proxyHost}: ${html.length} bytes, ETIT: ${html.includes('ETIT')}`);
+        const stocks = parseBRVMHtml(html) || parseBRVMHtmlFlexible(html);
         if (stocks) { console.log(`Source: brvm-proxy (${proxyHost}, ${stocks.length} titres)`); return { stocks, source: 'brvm-proxy' }; }
-        console.warn(`proxy ${proxyHost}: HTML recu mais table non parsee`);
+        console.warn(`brvm-proxy ${proxyHost}: HTML recu mais table non parsee`);
       }
-    } catch (e) { console.warn(`proxy ${proxyHost}:`, e.message); }
+    } catch (e) { console.warn(`brvm-proxy ${proxyHost}:`, e.message); }
   }
 
   // 4. Yahoo Finance avec crumb (obligatoire depuis 2024)
@@ -853,7 +838,7 @@ async function sendTelegram(signal, source) {
 }
 
 async function sendTelegramUnavailable() {
-  const text = `⚠️ *BRVM Pre-Ouverture - Sources Indisponibles*\n━━━━━━━━━━━━━━━━━━━━━\nBRVM.org, Yahoo Finance et Sika Finance sont inaccessibles ce matin.\n\n_Aucun signal genere - donnees live introuvables._\n_Reessai automatique demain a 9h35 GMT._`;
+  const text = `⚠️ *BRVM Pre-Ouverture - Sources Indisponibles*\n━━━━━━━━━━━━━━━━━━━━━\nTradingView, Stooq, FluxBourse et BRVM.org sont inaccessibles ce matin.\n\n_Aucun signal genere - donnees live introuvables._\n_Reessai automatique demain a 9h35 GMT._`;
   await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
