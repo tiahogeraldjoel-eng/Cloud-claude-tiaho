@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 // BRVM Pre-Open Signal Alert - GitHub Actions Node.js script
-// Pas de CORS en Node.js -> scraping brvm.org direct, sans Cloudflare.
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID   = process.env.TELEGRAM_CHAT_ID;
@@ -87,7 +86,7 @@ const MPR_THRESHOLD    = 2.5;
 const OBI_THRESHOLD    = 0.85;
 const VOL_SPIKE_FACTOR = 3.0;
 const BUDGET_RESERVE   = 0.20;
-const FETCH_TIMEOUT_MS = 15000;
+const FETCH_TIMEOUT_MS = 18000;
 
 async function fetchWithTimeout(url, opts = {}) {
   const controller = new AbortController();
@@ -99,7 +98,7 @@ async function fetchWithTimeout(url, opts = {}) {
   } catch (e) { clearTimeout(timer); throw e; }
 }
 
-// Proxies pour contourner le blocage géographique de brvm.org depuis GitHub Actions (US)
+// CORS proxies pour contourner le blocage géographique depuis GitHub Actions (US)
 const BRVM_PROXIES = [
   'https://api.allorigins.win/raw?url=',
   'https://corsproxy.io/?',
@@ -118,41 +117,59 @@ async function fetchLiveStocks() {
           'Referer': 'https://www.google.com/',
         },
       });
+      console.log(`brvm-direct ${url.split('/').pop()}: HTTP ${resp.status}`);
       if (resp.ok) {
-        const stocks = parseBRVMHtml(await resp.text());
-        if (stocks) { console.log('Source: brvm-direct'); return { stocks, source: 'brvm-direct' }; }
+        const html = await resp.text();
+        console.log(`brvm-direct: ${html.length} bytes, contient ETIT: ${html.includes('ETIT')}`);
+        const stocks = parseBRVMHtml(html);
+        if (stocks) { console.log(`Source: brvm-direct (${stocks.length} titres)`); return { stocks, source: 'brvm-direct' }; }
+        console.warn('brvm-direct: HTML recu mais table non parsee');
       }
-    } catch (e) { console.warn('brvm-direct:', e.message); }
+    } catch (e) { console.warn(`brvm-direct (${url.split('/').pop()}):`, e.message); }
   }
 
-  // 2. BRVM.org via proxies (GitHub Actions est bloqué depuis les USA)
+  // 2. BRVM.org via proxies
   for (const proxy of BRVM_PROXIES) {
+    const proxyHost = proxy.split('/')[2];
     try {
       const resp = await fetchWithTimeout(proxy + encodeURIComponent(BRVM_URLS[0]), {
         headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] },
       });
+      console.log(`proxy ${proxyHost}: HTTP ${resp.status}`);
       if (resp.ok) {
         const html = await resp.text();
+        console.log(`proxy ${proxyHost}: ${html.length} bytes, contient ETIT: ${html.includes('ETIT')}`);
         const stocks = parseBRVMHtml(html);
-        if (stocks) { console.log(`Source: brvm-via-proxy (${proxy.split('/')[2]})`); return { stocks, source: 'brvm-proxy' }; }
+        if (stocks) { console.log(`Source: brvm-proxy (${proxyHost}, ${stocks.length} titres)`); return { stocks, source: 'brvm-proxy' }; }
+        console.warn(`proxy ${proxyHost}: HTML recu mais table non parsee`);
       }
-    } catch (e) { console.warn(`proxy ${proxy.split('/')[2]}:`, e.message); }
+    } catch (e) { console.warn(`proxy ${proxyHost}:`, e.message); }
   }
 
-  // 3. Yahoo Finance (endpoint v8, plus stable)
+  // 3. Yahoo Finance avec crumb (obligatoire depuis 2024)
   try {
     const stocks = await fetchYahooFinance();
-    if (stocks) { console.log('Source: yahoo-finance'); return { stocks, source: 'yahoo-finance' }; }
+    if (stocks) { console.log(`Source: yahoo-finance (${stocks.length} titres)`); return { stocks, source: 'yahoo-finance' }; }
   } catch (e) { console.warn('Yahoo Finance:', e.message); }
 
-  // 4. Sika Finance
+  // 4. Africabourse.net
+  try {
+    const stocks = await fetchAfricabourse();
+    if (stocks) { console.log(`Source: africabourse (${stocks.length} titres)`); return { stocks, source: 'africabourse' }; }
+  } catch (e) { console.warn('Africabourse:', e.message); }
+
+  // 5. Sika Finance
   try {
     const resp = await fetchWithTimeout('https://sika.finance/bourse/brvm/cours', {
-      headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'text/html' },
+      headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'text/html', 'Accept-Language': 'fr-FR,fr;q=0.9' },
     });
+    console.log(`sika-finance: HTTP ${resp.status}`);
     if (resp.ok) {
-      const stocks = parseSikaHtml(await resp.text());
-      if (stocks) { console.log('Source: sika-finance'); return { stocks, source: 'sika-finance' }; }
+      const html = await resp.text();
+      console.log(`sika-finance: ${html.length} bytes`);
+      const stocks = parseSikaHtml(html);
+      if (stocks) { console.log(`Source: sika-finance (${stocks.length} titres)`); return { stocks, source: 'sika-finance' }; }
+      console.warn('sika-finance: HTML recu mais table non parsee');
     }
   } catch (e) { console.warn('Sika Finance:', e.message); }
 
@@ -161,39 +178,125 @@ async function fetchLiveStocks() {
 
 async function fetchYahooFinance() {
   const tickers = Object.values(YAHOO_MAP).join(',');
-  // Essayer query2 v8 puis query1 v7 en fallback
+  let cookies = '';
+  let crumb = '';
+
+  // Obtenir les cookies Yahoo Finance (nécessaire pour le crumb depuis 2024)
+  try {
+    const r = await fetchWithTimeout('https://fc.yahoo.com/', {
+      headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'text/html', 'Accept-Language': 'en-US,en;q=0.9' },
+    });
+    console.log(`Yahoo fc.yahoo.com: HTTP ${r.status}`);
+    const sc = r.headers.get('set-cookie') || '';
+    if (sc) {
+      cookies = sc.split(',').map(c => c.split(';')[0].trim()).filter(c => c.includes('=')).join('; ');
+      console.log(`Yahoo cookies: ${cookies.length > 0 ? 'ok' : 'vide'}`);
+    }
+  } catch (e) { console.warn('Yahoo fc.yahoo.com:', e.message); }
+
+  // Obtenir le crumb Yahoo Finance
+  try {
+    const r = await fetchWithTimeout('https://query2.finance.yahoo.com/v1/test/getcrumb', {
+      headers: {
+        'User-Agent': USER_AGENTS[0],
+        'Accept': '*/*',
+        'Referer': 'https://finance.yahoo.com/',
+        ...(cookies ? { 'Cookie': cookies } : {}),
+      },
+    });
+    console.log(`Yahoo getcrumb: HTTP ${r.status}`);
+    if (r.ok) {
+      crumb = (await r.text()).trim();
+      console.log(`Yahoo crumb: "${crumb.substring(0, 15)}${crumb.length > 15 ? '...' : ''}"`);
+    } else {
+      const err = await r.text();
+      console.warn(`Yahoo crumb erreur: ${err.substring(0, 100)}`);
+    }
+  } catch (e) { console.warn('Yahoo getcrumb:', e.message); }
+
+  const crumbSuffix = crumb ? `&crumb=${encodeURIComponent(crumb)}` : '';
+  const headers = {
+    'User-Agent': USER_AGENTS[0],
+    'Accept': 'application/json, */*;q=0.9',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Referer': 'https://finance.yahoo.com/',
+    'Origin': 'https://finance.yahoo.com',
+    ...(cookies ? { 'Cookie': cookies } : {}),
+  };
+
   const urls = [
+    `https://query2.finance.yahoo.com/v8/finance/quote?symbols=${tickers}${crumbSuffix}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
+    `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers}${crumbSuffix}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
+    // Fallback sans crumb
     `https://query2.finance.yahoo.com/v8/finance/quote?symbols=${tickers}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
-    `https://query1.finance.yahoo.com/v8/finance/quote?symbols=${tickers}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
     `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
   ];
+
   for (const url of urls) {
+    const label = `Yahoo ${url.includes('v8') ? 'v8' : 'v7'}${url.includes('crumb') ? '+crumb' : ''}`;
     try {
-      const resp = await fetchWithTimeout(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
-          'Accept': 'application/json',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Referer': 'https://finance.yahoo.com/',
-          'Origin': 'https://finance.yahoo.com',
-        },
-      });
-      if (!resp.ok) { console.warn(`Yahoo ${url.includes('v8') ? 'v8' : 'v7'}: HTTP ${resp.status}`); continue; }
+      const resp = await fetchWithTimeout(url, { headers });
+      console.log(`${label}: HTTP ${resp.status}`);
+      if (!resp.ok) {
+        const errText = await resp.text();
+        console.warn(`${label} erreur: ${errText.substring(0, 150)}`);
+        continue;
+      }
       const data = await resp.json();
       const quotes = data?.quoteResponse?.result;
-      if (!quotes || quotes.length < 3) continue;
+      console.log(`${label}: ${quotes?.length || 0} tickers retournes`);
+      if (!quotes || !quotes.length) {
+        console.warn(`${label}: result vide, erreur=${JSON.stringify(data?.quoteResponse?.error)}`);
+        continue;
+      }
       const stocks = quotes.map(q => {
         const sym = YAHOO_REVERSE[q.symbol];
         if (!sym) return null;
         const price = Math.round(q.regularMarketPrice || 0);
         const prev  = Math.round(q.regularMarketPreviousClose || price);
         if (price <= 0) return null;
-        return { symbol: sym, name: KNOWN_STOCKS[sym]?.name || sym, price, previousPrice: prev,
-                 change: price - prev, changePercent: Math.round((q.regularMarketChangePercent || 0) * 100) / 100,
-                 volume: q.regularMarketVolume || 0 };
+        return {
+          symbol: sym, name: KNOWN_STOCKS[sym]?.name || sym,
+          price, previousPrice: prev,
+          change: price - prev,
+          changePercent: Math.round((q.regularMarketChangePercent || 0) * 100) / 100,
+          volume: q.regularMarketVolume || 0,
+        };
       }).filter(Boolean);
-      if (stocks.length >= 3) return stocks;
-    } catch (e) { console.warn('Yahoo:', e.message); }
+      console.log(`${label}: ${stocks.length} titres BRVM valides`);
+      if (stocks.length >= 1) return stocks;
+    } catch (e) { console.warn(`${label}:`, e.message); }
+  }
+  return null;
+}
+
+async function fetchAfricabourse() {
+  const urls = [
+    'https://africabourse.net/cours-actions-brvm/',
+    'https://www.africabourse.net/cotations/',
+    'https://africabourse.net/bourse/cotation/brvm/',
+  ];
+  for (const url of urls) {
+    try {
+      const resp = await fetchWithTimeout(url, {
+        headers: {
+          'User-Agent': USER_AGENTS[0],
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'fr-FR,fr;q=0.9',
+        },
+      });
+      console.log(`africabourse (${url.split('/').slice(-2).join('/')}): HTTP ${resp.status}`);
+      if (resp.ok) {
+        const html = await resp.text();
+        const hasData = html.includes('ETIT') || html.includes('SNTS') || html.includes('SGBC');
+        console.log(`africabourse: ${html.length} bytes, donnees BRVM: ${hasData}`);
+        if (hasData) {
+          const stocks = parseBRVMHtml(html);
+          if (stocks) return stocks;
+          console.warn('africabourse: HTML avec donnees mais table non parsee');
+        }
+      }
+    } catch (e) { console.warn(`africabourse (${url.split('/').slice(-2).join('/')}):`, e.message); }
   }
   return null;
 }
@@ -210,14 +313,14 @@ function parseBRVMHtml(html) {
     while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
     if (cells.length < 5) continue;
     const symbol = cells[0].toUpperCase().replace(/\s/g, '');
-    const price  = parseFloat(cells[2].replace(/\s/g, '').replace(',', '.'));
-    const chg    = parseFloat(cells[4].replace('%','').replace(/\s/g,'').replace(',','.')) || 0;
-    if (symbol.length >= 2 && symbol.length <= 6 && price > 0) {
+    const price  = parseFloat(cells[2].replace(/[\s ]/g, '').replace(',', '.'));
+    const chg    = parseFloat(cells[4].replace('%','').replace(/[\s ]/g,'').replace(',','.')) || 0;
+    if (symbol.length >= 2 && symbol.length <= 6 && price > 0 && KNOWN_STOCKS[symbol]) {
       const prev = price / (1 + chg / 100);
       stocks.push({ symbol, name: KNOWN_STOCKS[symbol]?.name || symbol,
         price: Math.round(price), previousPrice: Math.round(prev),
         change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
-        volume: parseInt(cells[5]?.replace(/\s/g,'') || '0') || 0 });
+        volume: parseInt(cells[5]?.replace(/[\s ]/g,'') || '0') || 0 });
     }
   }
   return stocks.length >= 5 ? stocks : null;
@@ -235,7 +338,7 @@ function parseSikaHtml(html) {
     while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
     if (cells.length < 4) continue;
     const symbol = cells[0].replace(/\s/g,'').toUpperCase();
-    const price  = parseFloat(cells[1].replace(/[\s ]/g,'').replace(',','.'));
+    const price  = parseFloat(cells[1].replace(/[\s ]/g,'').replace(',','.'));
     const chg    = parseFloat(cells[2].replace('%','').replace(',','.')) || 0;
     if (symbol.length >= 2 && symbol.length <= 6 && price > 0) {
       stocks.push({ symbol, name: KNOWN_STOCKS[symbol]?.name || symbol,
