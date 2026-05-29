@@ -98,25 +98,40 @@ async function fetchWithTimeout(url, opts = {}) {
   } catch (e) { clearTimeout(timer); throw e; }
 }
 
-// CORS proxies pour contourner le blocage depuis GitHub Actions (US)
 const BRVM_PROXIES = [
   'https://api.allorigins.win/raw?url=',
   'https://corsproxy.io/?',
   'https://api.codetabs.com/v1/proxy?quest=',
 ];
 
+// Headers Chrome complets pour contourner Cloudflare
+const CHROME_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+  'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+  'Connection': 'keep-alive',
+  'Cache-Control': 'max-age=0',
+  'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+  'sec-fetch-dest': 'document',
+  'sec-fetch-mode': 'navigate',
+  'sec-fetch-site': 'none',
+  'sec-fetch-user': '?1',
+  'upgrade-insecure-requests': '1',
+};
+
 async function fetchLiveStocks() {
-  // 1. BRVM.org direct
+  // 1. FluxBourse (source principale)
+  try {
+    const stocks = await fetchFluxBourse();
+    if (stocks) { console.log(`Source: fluxbourse (${stocks.length} titres)`); return { stocks, source: 'fluxbourse' }; }
+  } catch (e) { console.warn('FluxBourse:', e.message); }
+
+  // 2. BRVM.org direct
   for (const url of BRVM_URLS) {
     try {
-      const resp = await fetchWithTimeout(url, {
-        headers: {
-          'User-Agent': USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)],
-          'Accept': 'text/html,application/xhtml+xml,*/*;q=0.9',
-          'Accept-Language': 'fr-FR,fr;q=0.9',
-          'Referer': 'https://www.google.com/',
-        },
-      });
+      const resp = await fetchWithTimeout(url, { headers: CHROME_HEADERS });
       console.log(`brvm-direct ${url.split('/').pop()}: HTTP ${resp.status}`);
       if (resp.ok) {
         const html = await resp.text();
@@ -128,7 +143,7 @@ async function fetchLiveStocks() {
     } catch (e) { console.warn(`brvm-direct (${url.split('/').pop()}):`, e.message); }
   }
 
-  // 2. BRVM.org via proxies
+  // 3. BRVM.org via proxies
   for (const proxy of BRVM_PROXIES) {
     const proxyHost = proxy.split('/')[2];
     try {
@@ -146,22 +161,22 @@ async function fetchLiveStocks() {
     } catch (e) { console.warn(`proxy ${proxyHost}:`, e.message); }
   }
 
-  // 3. Yahoo Finance avec crumb (obligatoire depuis 2024)
+  // 4. Yahoo Finance avec crumb
   try {
     const stocks = await fetchYahooFinance();
     if (stocks) { console.log(`Source: yahoo-finance (${stocks.length} titres)`); return { stocks, source: 'yahoo-finance' }; }
   } catch (e) { console.warn('Yahoo Finance:', e.message); }
 
-  // 4. Africabourse.net
+  // 5. Africabourse.net
   try {
     const stocks = await fetchAfricabourse();
     if (stocks) { console.log(`Source: africabourse (${stocks.length} titres)`); return { stocks, source: 'africabourse' }; }
   } catch (e) { console.warn('Africabourse:', e.message); }
 
-  // 5. Sika Finance
+  // 6. Sika Finance
   try {
     const resp = await fetchWithTimeout('https://sika.finance/bourse/brvm/cours', {
-      headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'text/html', 'Accept-Language': 'fr-FR,fr;q=0.9' },
+      headers: { ...CHROME_HEADERS, 'Accept-Language': 'fr-FR,fr;q=0.9' },
     });
     console.log(`sika-finance: HTTP ${resp.status}`);
     if (resp.ok) {
@@ -176,12 +191,124 @@ async function fetchLiveStocks() {
   return { stocks: [], source: 'unavailable' };
 }
 
+async function fetchFluxBourse() {
+  const urls = [
+    'https://fluxbourse.com/',
+    'https://fluxbourse.com/cours',
+    'https://fluxbourse.com/cours-brvm',
+    'https://fluxbourse.com/bourse',
+    'https://fluxbourse.com/marche',
+    'https://fluxbourse.com/cotations',
+    'https://fluxbourse.com/actions-brvm',
+  ];
+
+  for (const url of urls) {
+    try {
+      const resp = await fetchWithTimeout(url, { headers: CHROME_HEADERS });
+      const slug = url.replace('https://fluxbourse.com', '') || '/';
+      console.log(`fluxbourse${slug}: HTTP ${resp.status}`);
+      if (!resp.ok) continue;
+      const html = await resp.text();
+      const hasData = html.includes('ETIT') || html.includes('SNTS') || html.includes('SGBC') || html.includes('ORAC');
+      console.log(`fluxbourse${slug}: ${html.length} bytes, donnees BRVM: ${hasData}`);
+      if (hasData) {
+        const stocks = parseNextData(html) || parseBRVMHtml(html) || parseSikaHtml(html);
+        if (stocks?.length >= 1) return stocks;
+        console.warn(`fluxbourse${slug}: donnees detectees mais non parsees, debut: ${html.substring(0, 400)}`);
+      } else {
+        console.log(`fluxbourse${slug}: debut HTML: ${html.substring(0, 300)}`);
+      }
+    } catch (e) { console.warn(`fluxbourse (${url.split('/').pop() || '/'}):`, e.message); }
+  }
+
+  // Endpoints API JSON potentiels
+  const apiUrls = [
+    'https://fluxbourse.com/api/cours',
+    'https://fluxbourse.com/api/brvm/cours',
+    'https://fluxbourse.com/api/v1/stocks',
+    'https://fluxbourse.com/api/stocks',
+    'https://fluxbourse.com/api/cotations',
+  ];
+  for (const url of apiUrls) {
+    try {
+      const resp = await fetchWithTimeout(url, {
+        headers: { ...CHROME_HEADERS, 'Accept': 'application/json, */*', 'Referer': 'https://fluxbourse.com/', 'Origin': 'https://fluxbourse.com' },
+      });
+      console.log(`fluxbourse-api (${url.split('/').slice(3).join('/')}): HTTP ${resp.status}`);
+      if (!resp.ok) continue;
+      const text = await resp.text();
+      console.log(`fluxbourse-api: ${text.length} bytes, debut: ${text.substring(0, 200)}`);
+      const stocks = parseJsonStocks(text);
+      if (stocks?.length >= 1) return stocks;
+    } catch (e) { console.warn(`fluxbourse-api (${url.split('/').slice(3).join('/')}):`, e.message); }
+  }
+
+  // Tentative via proxies CORS
+  for (const proxy of BRVM_PROXIES) {
+    const proxyHost = proxy.split('/')[2];
+    try {
+      const resp = await fetchWithTimeout(proxy + encodeURIComponent('https://fluxbourse.com/'), {
+        headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] },
+      });
+      console.log(`fluxbourse via ${proxyHost}: HTTP ${resp.status}`);
+      if (!resp.ok) continue;
+      const html = await resp.text();
+      const hasData = html.includes('ETIT') || html.includes('SNTS') || html.includes('SGBC');
+      console.log(`fluxbourse via ${proxyHost}: ${html.length} bytes, donnees BRVM: ${hasData}`);
+      if (hasData) {
+        const stocks = parseNextData(html) || parseBRVMHtml(html);
+        if (stocks?.length >= 1) return stocks;
+      }
+    } catch (e) { console.warn(`fluxbourse via ${proxyHost}:`, e.message); }
+  }
+
+  return null;
+}
+
+function parseNextData(html) {
+  try {
+    const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    if (!m) return null;
+    const nextData = JSON.parse(m[1]);
+    const pp = nextData?.props?.pageProps;
+    if (!pp) return null;
+    const arr = pp.stocks || pp.cours || pp.actions || pp.cotations ||
+                pp.data?.stocks || pp.data?.cours || pp.data?.actions || pp.data;
+    if (!Array.isArray(arr) || !arr.length) return null;
+    console.log(`Next.js data: ${arr.length} elements, cles: ${Object.keys(arr[0] || {}).join(', ')}`);
+    return parseJsonArray(arr);
+  } catch (e) { console.warn('parseNextData:', e.message); return null; }
+}
+
+function parseJsonArray(arr) {
+  const stocks = arr.map(item => {
+    const symbol = (item.symbol || item.ticker || item.code || item.symbole || '').toUpperCase().replace(/\s/g,'');
+    const price = parseFloat(item.price || item.cours || item.lastPrice || item.close || item.dernier || 0);
+    if (!symbol || symbol.length < 2 || symbol.length > 6 || price <= 0) return null;
+    const chg = parseFloat(item.changePercent || item.variation || item.change_pct || item.var || 0);
+    const prev = price / (1 + chg / 100);
+    return { symbol, name: KNOWN_STOCKS[symbol]?.name || item.name || item.libelle || symbol,
+             price: Math.round(price), previousPrice: Math.round(prev),
+             change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
+             volume: parseInt(item.volume || item.vol || 0) };
+  }).filter(s => s && KNOWN_STOCKS[s.symbol]);
+  return stocks.length >= 1 ? stocks : null;
+}
+
+function parseJsonStocks(text) {
+  try {
+    const data = JSON.parse(text);
+    const arr = Array.isArray(data) ? data : data.stocks || data.cours || data.actions || data.data || [];
+    if (Array.isArray(arr) && arr.length) return parseJsonArray(arr);
+  } catch (e) {}
+  return null;
+}
+
 async function fetchYahooFinance() {
   const tickers = Object.values(YAHOO_MAP).join(',');
   let cookies = '';
   let crumb = '';
 
-  // Obtenir les cookies Yahoo Finance (necessaire pour le crumb depuis 2024)
   try {
     const r = await fetchWithTimeout('https://fc.yahoo.com/', {
       headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'text/html', 'Accept-Language': 'en-US,en;q=0.9' },
@@ -194,40 +321,29 @@ async function fetchYahooFinance() {
     }
   } catch (e) { console.warn('Yahoo fc.yahoo.com:', e.message); }
 
-  // Obtenir le crumb Yahoo Finance
   try {
     const r = await fetchWithTimeout('https://query2.finance.yahoo.com/v1/test/getcrumb', {
-      headers: {
-        'User-Agent': USER_AGENTS[0],
-        'Accept': '*/*',
-        'Referer': 'https://finance.yahoo.com/',
-        ...(cookies ? { 'Cookie': cookies } : {}),
-      },
+      headers: { 'User-Agent': USER_AGENTS[0], 'Accept': '*/*', 'Referer': 'https://finance.yahoo.com/', ...(cookies ? { 'Cookie': cookies } : {}) },
     });
     console.log(`Yahoo getcrumb: HTTP ${r.status}`);
     if (r.ok) {
       crumb = (await r.text()).trim();
       console.log(`Yahoo crumb: "${crumb.substring(0, 15)}${crumb.length > 15 ? '...' : ''}"`);
     } else {
-      const err = await r.text();
-      console.warn(`Yahoo crumb erreur: ${err.substring(0, 100)}`);
+      console.warn(`Yahoo crumb erreur: ${(await r.text()).substring(0, 100)}`);
     }
   } catch (e) { console.warn('Yahoo getcrumb:', e.message); }
 
   const crumbSuffix = crumb ? `&crumb=${encodeURIComponent(crumb)}` : '';
   const headers = {
-    'User-Agent': USER_AGENTS[0],
-    'Accept': 'application/json, */*;q=0.9',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Referer': 'https://finance.yahoo.com/',
-    'Origin': 'https://finance.yahoo.com',
-    ...(cookies ? { 'Cookie': cookies } : {}),
+    'User-Agent': USER_AGENTS[0], 'Accept': 'application/json, */*;q=0.9',
+    'Accept-Language': 'en-US,en;q=0.9', 'Referer': 'https://finance.yahoo.com/',
+    'Origin': 'https://finance.yahoo.com', ...(cookies ? { 'Cookie': cookies } : {}),
   };
 
   const urls = [
     `https://query2.finance.yahoo.com/v8/finance/quote?symbols=${tickers}${crumbSuffix}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
     `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers}${crumbSuffix}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
-    // Fallback sans crumb
     `https://query2.finance.yahoo.com/v8/finance/quote?symbols=${tickers}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
     `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
   ];
@@ -237,31 +353,20 @@ async function fetchYahooFinance() {
     try {
       const resp = await fetchWithTimeout(url, { headers });
       console.log(`${label}: HTTP ${resp.status}`);
-      if (!resp.ok) {
-        const errText = await resp.text();
-        console.warn(`${label} erreur: ${errText.substring(0, 150)}`);
-        continue;
-      }
+      if (!resp.ok) { console.warn(`${label} erreur: ${(await resp.text()).substring(0, 150)}`); continue; }
       const data = await resp.json();
       const quotes = data?.quoteResponse?.result;
       console.log(`${label}: ${quotes?.length || 0} tickers retournes`);
-      if (!quotes || !quotes.length) {
-        console.warn(`${label}: result vide, erreur=${JSON.stringify(data?.quoteResponse?.error)}`);
-        continue;
-      }
+      if (!quotes || !quotes.length) { console.warn(`${label}: result vide`); continue; }
       const stocks = quotes.map(q => {
         const sym = YAHOO_REVERSE[q.symbol];
         if (!sym) return null;
         const price = Math.round(q.regularMarketPrice || 0);
         const prev  = Math.round(q.regularMarketPreviousClose || price);
         if (price <= 0) return null;
-        return {
-          symbol: sym, name: KNOWN_STOCKS[sym]?.name || sym,
-          price, previousPrice: prev,
-          change: price - prev,
-          changePercent: Math.round((q.regularMarketChangePercent || 0) * 100) / 100,
-          volume: q.regularMarketVolume || 0,
-        };
+        return { symbol: sym, name: KNOWN_STOCKS[sym]?.name || sym, price, previousPrice: prev,
+                 change: price - prev, changePercent: Math.round((q.regularMarketChangePercent || 0) * 100) / 100,
+                 volume: q.regularMarketVolume || 0 };
       }).filter(Boolean);
       console.log(`${label}: ${stocks.length} titres BRVM valides`);
       if (stocks.length >= 1) return stocks;
@@ -279,11 +384,7 @@ async function fetchAfricabourse() {
   for (const url of urls) {
     try {
       const resp = await fetchWithTimeout(url, {
-        headers: {
-          'User-Agent': USER_AGENTS[0],
-          'Accept': 'text/html,application/xhtml+xml',
-          'Accept-Language': 'fr-FR,fr;q=0.9',
-        },
+        headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'text/html,application/xhtml+xml', 'Accept-Language': 'fr-FR,fr;q=0.9' },
       });
       console.log(`africabourse (${url.split('/').slice(-2).join('/')}): HTTP ${resp.status}`);
       if (resp.ok) {
@@ -385,25 +486,9 @@ async function sendTelegram(signal, source) {
   const posBlock = pos
     ? `----------------------\n💼 RECOMMANDATION (budget ${BUDGET_FCFA.toLocaleString('fr-FR')} F)\n📌 Acheter: ${pos.n} titre(s) ${signal.symbol}\n💸 Cout: ${pos.cout.toLocaleString('fr-FR')} FCFA  |  Reserve: ${pos.reserve.toLocaleString('fr-FR')} FCFA\n🎯 Objectif: ${pos.prixCible.toLocaleString('fr-FR')} FCFA (+4%) -> +${pos.gainCible.toLocaleString('fr-FR')} F\n🚀 Max BRVM: +7.5% -> +${pos.gainMax.toLocaleString('fr-FR')} F\n🛑 Stop loss: ${pos.prixStopLoss.toLocaleString('fr-FR')} FCFA (-3%)`
     : `Titre trop cher pour le budget (${signal.price.toLocaleString('fr-FR')} FCFA/titre)`;
-  const text = `${emoji} *FLASH BRVM Pre-Ouverture*\n` +
-    `━━━━━━━━━━━━━━━━━━━━━\n` +
-    `📌 *${signal.symbol}* - ${signal.name}\n` +
-    `⏰ *9h35 GMT* - Fixing dans 10 min\n` +
-    `💰 *Cours*: ${signal.price.toLocaleString('fr-FR')} FCFA\n` +
-    `📊 *Variation*: ${signal.changePercent > 0 ? '+' : ''}${signal.changePercent.toFixed(2)}%\n` +
-    `🛒 *Volume*: ${signal.volume.toLocaleString('fr-FR')} titres\n` +
-    `----------------------\n` +
-    `📈 *MPR*: ${signal.mpr.toFixed(2)} (seuil > 2.5)\n` +
-    `⚖️ *OBI*: ${signal.obi.toFixed(3)} (seuil > 0.85)\n` +
-    `----------------------\n` +
-    `*Signaux:*\n${reasons}\n` +
-    `${posBlock}\n` +
-    `----------------------\n` +
-    `⚡ *Passe l ordre avant 9h45 GMT*\n` +
-    `_Confiance: ${signal.confidence}${srcTag}_`;
+  const text = `${emoji} *FLASH BRVM Pre-Ouverture*\n━━━━━━━━━━━━━━━━━━━━━\n📌 *${signal.symbol}* - ${signal.name}\n⏰ *9h35 GMT* - Fixing dans 10 min\n💰 *Cours*: ${signal.price.toLocaleString('fr-FR')} FCFA\n📊 *Variation*: ${signal.changePercent > 0 ? '+' : ''}${signal.changePercent.toFixed(2)}%\n🛒 *Volume*: ${signal.volume.toLocaleString('fr-FR')} titres\n----------------------\n📈 *MPR*: ${signal.mpr.toFixed(2)} (seuil > 2.5)\n⚖️ *OBI*: ${signal.obi.toFixed(3)} (seuil > 0.85)\n----------------------\n*Signaux:*\n${reasons}\n${posBlock}\n----------------------\n⚡ *Passe l ordre avant 9h45 GMT*\n_Confiance: ${signal.confidence}${srcTag}_`;
   const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text, parse_mode: 'Markdown' }),
   });
   const data = await resp.json();
@@ -412,10 +497,9 @@ async function sendTelegram(signal, source) {
 }
 
 async function sendTelegramUnavailable() {
-  const text = `⚠️ *BRVM Pre-Ouverture - Sources Indisponibles*\n━━━━━━━━━━━━━━━━━━━━━\nBRVM.org, Yahoo Finance et Sika Finance sont inaccessibles ce matin.\n\n_Aucun signal genere - donnees live introuvables._\n_Reessai automatique demain a 9h35 GMT._`;
+  const text = `⚠️ *BRVM Pre-Ouverture - Sources Indisponibles*\n━━━━━━━━━━━━━━━━━━━━━\nTous les flux sont inaccessibles ce matin (fluxbourse.com, brvm.org, Yahoo Finance).\n\n_Aucun signal genere._\n_Reessai automatique demain a 9h35 GMT._`;
   await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text, parse_mode: 'Markdown' }),
   });
 }
