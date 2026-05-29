@@ -6,9 +6,10 @@ const TELEGRAM_CHAT_ID   = process.env.TELEGRAM_CHAT_ID;
 const BUDGET_FCFA        = parseInt(process.env.BUDGET_FCFA || '75000', 10);
 
 const BRVM_URLS = [
+  'https://www.brvm.org/fr/cours-actions/0',
+  'https://www.brvm.org/fr/cours-actions/0/all',
+  'https://brvm.org/fr/cours-actions/0',
   'https://www.brvm.org/fr/cours-des-actions/0/all',
-  'https://www.brvm.org/fr/cours0/0/all',
-  'https://www.brvm.org/en/cours-des-actions/0/all',
 ];
 
 const USER_AGENTS = [
