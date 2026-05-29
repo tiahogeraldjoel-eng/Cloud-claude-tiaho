@@ -14,9 +14,10 @@
 // ─── Sources ─────────────────────────────────────────────────────────────────
 
 const BRVM_URLS = [
+  'https://www.brvm.org/fr/cours-actions/0',
+  'https://www.brvm.org/fr/cours-actions/0/all',
+  'https://brvm.org/fr/cours-actions/0',
   'https://www.brvm.org/fr/cours-des-actions/0/all',
-  'https://www.brvm.org/fr/cours0/0/all',
-  'https://www.brvm.org/en/cours-des-actions/0/all',
 ];
 
 // Proxies CORS indépendants — testés dans l'ordre, aucun lien avec le site Analytics
