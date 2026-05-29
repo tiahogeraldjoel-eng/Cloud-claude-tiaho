@@ -351,7 +351,7 @@ function parseHtmlAttributes(html) {
       price: Math.round(price), previousPrice: Math.round(prev),
       change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100, volume: vol });
   }
-  if (stocks.length >= 3) { console.log(`parseHtmlAttributes: ${stocks.length} stocks`); return stocks; }
+  if (stocks.length >= 2) { console.log(`parseHtmlAttributes: ${stocks.length} stocks`); return stocks; }
   return null;
 }
 
@@ -361,6 +361,8 @@ function parseBRVMHtmlFlexible(html) {
     [0,2,4,5], [0,2,3,4], [0,1,2,3],
     [0,3,5,6], [0,3,4,5], [1,2,4,5],
     [1,3,4,5], [0,4,5,6], [0,2,5,6],
+    [1,3,5,6], [0,1,3,4], [1,4,5,6],
+    [1,2,3,4], [2,4,5,6],
   ];
   const rowRe0 = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   const strip = /<[^>]+>/g;
@@ -391,7 +393,7 @@ function parseBRVMHtmlFlexible(html) {
           volume: parseInt(cells[vc]?.replace(/[\s ]/g,'') || '0') || 0 });
       }
     }
-    if (stocks.length >= 5) {
+    if (stocks.length >= 3) {
       console.log(`parseBRVMHtmlFlexible: ${stocks.length} stocks avec cols [${sc},${pc},${cc},${vc}]`);
       return stocks;
     }
@@ -490,7 +492,7 @@ function parseFluxBourseAggressive(html) {
       if (seen.has(sym)) break;
     }
   }
-  if (stocks.length >= 3) { console.log(`parseFluxBourseAggressive: ${stocks.length} stocks`); return stocks; }
+  if (stocks.length >= 2) { console.log(`parseFluxBourseAggressive: ${stocks.length} stocks`); return stocks; }
   return null;
 }
 
