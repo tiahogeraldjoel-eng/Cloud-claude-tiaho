@@ -30,7 +30,9 @@ const YAHOO_MAP = {
   STBC:'STBC.BF',  SVOC:'SVOC.CI',  TPCI:'TPCI.CI',   TTLC:'TTLC.CI',
   TTLS:'TTLS.SN',  UNLC:'UNLC.CI',  UNXC:'UNXC.CI',
 };
-const YAHOO_REVERSE = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b,y]) => [y,b]));
+const YAHOO_REVERSE      = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b,y]) => [y,b]));
+// Also map base symbol (without exchange suffix .CI/.SN/etc.) for resilience
+const YAHOO_REVERSE_BASE = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b,y]) => [y.split('.')[0],b]));
 
 const KNOWN_STOCKS = {
   ABJC: { name:'Bernabe CI',                           avgVol:380,   refPrice:2100   },
@@ -98,14 +100,12 @@ async function fetchWithTimeout(url, opts = {}) {
   } catch (e) { clearTimeout(timer); throw e; }
 }
 
-// CORS proxies pour contourner le blocage géographique depuis GitHub Actions (US)
 const BRVM_PROXIES = [
   'https://api.allorigins.win/raw?url=',
   'https://corsproxy.io/?',
   'https://api.codetabs.com/v1/proxy?quest=',
 ];
 
-// Headers Chrome complets pour contourner Cloudflare
 const CHROME_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
@@ -194,68 +194,115 @@ async function fetchLiveStocks() {
 
 async function fetchFluxBourse() {
   const tryParse = (html, label) => {
-    // Log contexte HTML autour du premier symbole trouve pour diagnostic
+    // Diagnostic: debut de la page (structure generale)
+    console.log(`[${label}] debut: ${html.substring(0, 600).replace(/\s+/g, ' ')}`);
+    // Diagnostic: contexte autour du premier symbole BRVM trouve
     const diagSym = ['ETIT','SNTS','SGBC','ORAC'].find(s => html.includes(s));
     if (diagSym) {
       const idx = html.indexOf(diagSym);
-      const ctx = html.substring(Math.max(0, idx - 250), idx + 600).replace(/\s+/g, ' ');
-      console.log(`[${label}] contexte autour de ${diagSym}: ${ctx}`);
+      const ctx = html.substring(Math.max(0, idx - 500), idx + 1200).replace(/\s+/g, ' ');
+      console.log(`[${label}] ctx(${idx}) autour de ${diagSym}: ${ctx}`);
     }
     return parseNextData(html)
+      || parseWindowData(html)
       || parseScriptJson(html)
+      || parseHtmlAttributes(html)
       || parseBRVMHtmlFlexible(html)
       || parseFluxBourseText(html);
   };
 
-  // Tentative directe (la page principale retourne HTTP 200)
-  try {
-    const resp = await fetchWithTimeout('https://fluxbourse.com/', { headers: CHROME_HEADERS });
-    console.log(`fluxbourse/: HTTP ${resp.status}`);
-    if (resp.ok) {
-      const html = await resp.text();
-      const hasData = html.includes('ETIT') || html.includes('SNTS') || html.includes('SGBC');
-      console.log(`fluxbourse/: ${html.length} bytes, donnees BRVM: ${hasData}`);
-      if (hasData) {
-        const stocks = tryParse(html, 'fluxbourse/');
-        if (stocks?.length >= 1) return stocks;
-        console.warn('fluxbourse/: donnees presentes mais tous parseurs ont echoue');
-      }
-    }
-  } catch (e) { console.warn('fluxbourse/:', e.message); }
+  // Tentatives: directe + 3 proxies CORS (tous ont montre HTTP 200 dans les logs)
+  const sources = [
+    { url: 'https://fluxbourse.com/',                                                                  label: 'direct',      headers: CHROME_HEADERS },
+    { url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://fluxbourse.com/'),      label: 'allorigins',  headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] } },
+    { url: 'https://corsproxy.io/?' + encodeURIComponent('https://fluxbourse.com/'),                   label: 'corsproxy',   headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] } },
+    { url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent('https://fluxbourse.com/'), label: 'codetabs',    headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] } },
+  ];
 
-  // Tentative via codetabs (qui a aussi retourne HTTP 200 dans les logs)
-  try {
-    const proxy = 'https://api.codetabs.com/v1/proxy?quest=';
-    const resp = await fetchWithTimeout(proxy + encodeURIComponent('https://fluxbourse.com/'), {
-      headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] },
-    });
-    console.log(`fluxbourse via codetabs: HTTP ${resp.status}`);
-    if (resp.ok) {
+  for (const src of sources) {
+    try {
+      const resp = await fetchWithTimeout(src.url, { headers: src.headers });
+      console.log(`fluxbourse [${src.label}]: HTTP ${resp.status}`);
+      if (!resp.ok) continue;
       const html = await resp.text();
       const hasData = html.includes('ETIT') || html.includes('SNTS') || html.includes('SGBC');
-      console.log(`fluxbourse via codetabs: ${html.length} bytes, donnees BRVM: ${hasData}`);
-      if (hasData) {
-        const stocks = tryParse(html, 'fluxbourse-codetabs');
-        if (stocks?.length >= 1) return stocks;
-      }
-    }
-  } catch (e) { console.warn('fluxbourse via codetabs:', e.message); }
+      console.log(`fluxbourse [${src.label}]: ${html.length} bytes, BRVM: ${hasData}`);
+      if (!hasData) continue;
+      const stocks = tryParse(html, `flux-${src.label}`);
+      if (stocks?.length >= 1) return stocks;
+      console.warn(`fluxbourse [${src.label}]: donnees presentes mais tous parseurs echoues`);
+    } catch (e) { console.warn(`fluxbourse [${src.label}]:`, e.message); }
+  }
 
   return null;
 }
 
-// Cherche des tableaux JSON dans les balises <script> (var data = [...])
+// Next.js hydration data (__NEXT_DATA__)
+function parseNextData(html) {
+  try {
+    const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    if (!m) return null;
+    const nextData = JSON.parse(m[1]);
+    const pp = nextData?.props?.pageProps;
+    if (!pp) return null;
+    const arr = pp.stocks || pp.cours || pp.actions || pp.cotations ||
+                pp.data?.stocks || pp.data?.cours || pp.data?.actions || pp.data;
+    if (!Array.isArray(arr) || !arr.length) return null;
+    console.log(`Next.js data: ${arr.length} elements, cles: ${Object.keys(arr[0] || {}).join(', ')}`);
+    return parseJsonArray(arr);
+  } catch (e) { console.warn('parseNextData:', e.message); return null; }
+}
+
+// Variables JS : window.X={...}, var/const/let X=[...] ou {...}
+function parseWindowData(html) {
+  const scriptRe = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+  let m;
+  while ((m = scriptRe.exec(html)) !== null) {
+    const src = m[1];
+    if (src.length < 50) continue;
+    const patterns = [
+      /(?:window\.\w+|self\.\w+)\s*=\s*(\{[\s\S]{30,40000}\})\s*[;,]/,
+      /(?:var|let|const)\s+\w+\s*=\s*(\[[\s\S]{30,40000}\])\s*[;,]/,
+      /(?:var|let|const)\s+\w+\s*=\s*(\{[\s\S]{30,40000}\})\s*[;,]/,
+    ];
+    for (const re of patterns) {
+      const pm = src.match(re);
+      if (!pm) continue;
+      try {
+        const data = JSON.parse(pm[1]);
+        const candidates = Array.isArray(data)
+          ? [data]
+          : [
+              data.stocks, data.cours, data.cotations, data.actions,
+              data.quotes, data.data?.stocks, data.data?.cours, data.data,
+              ...Object.values(data).filter(Array.isArray),
+            ].filter(a => Array.isArray(a) && a.length >= 2);
+        for (const arr of candidates) {
+          const stocks = parseJsonArray(arr);
+          if (stocks?.length >= 2) { console.log(`parseWindowData: ${stocks.length} stocks`); return stocks; }
+        }
+      } catch (e) {}
+    }
+  }
+  return null;
+}
+
+// JSON dans les balises <script> (arrays ET objets)
 function parseScriptJson(html) {
   const scriptRe = /<script[^>]*>([\s\S]*?)<\/script>/gi;
   let m;
   while ((m = scriptRe.exec(html)) !== null) {
     const src = m[1];
     if (src.length < 50) continue;
-    // Chercher des tableaux JSON contenant des donnees de cours
-    const arrMatches = src.match(/\[[\s\S]{50,5000}\]/g) || [];
-    for (const jsonStr of arrMatches) {
+    const matches = [
+      ...(src.match(/\[[\s\S]{50,40000}\]/g) || []),
+      ...(src.match(/\{[\s\S]{50,40000}\}/g) || []),
+    ];
+    for (const jsonStr of matches) {
       try {
-        const arr = JSON.parse(jsonStr);
+        const parsed = JSON.parse(jsonStr);
+        const arr = Array.isArray(parsed) ? parsed :
+          (parsed.stocks || parsed.cours || parsed.cotations || parsed.actions || parsed.data || []);
         if (Array.isArray(arr) && arr.length >= 3) {
           const stocks = parseJsonArray(arr);
           if (stocks?.length >= 3) { console.log(`parseScriptJson: ${stocks.length} stocks`); return stocks; }
@@ -263,6 +310,36 @@ function parseScriptJson(html) {
       } catch(e) {}
     }
   }
+  return null;
+}
+
+// Attributs HTML data-ticker, data-symbol, data-code, etc.
+function parseHtmlAttributes(html) {
+  const stocks = [];
+  const rowRe = /<(?:tr|div|li)[^>]+>/gi;
+  let m;
+  while ((m = rowRe.exec(html)) !== null) {
+    const tag = m[0];
+    const symM = tag.match(/data-(?:ticker|symbol|code|sym|action|valeur|libelle)=["']([A-Z0-9.\-]{2,10})["']/i);
+    if (!symM) continue;
+    let rawSym = symM[1].toUpperCase().replace(/\s/g,'');
+    const sym = rawSym.replace(/\.[A-Z]{2}$/, '');
+    const meta = KNOWN_STOCKS[sym];
+    if (!meta) continue;
+    const priceM = tag.match(/data-(?:price|cours|last|close|dernier|prix)=["']([\d.,\s ]+)["']/i);
+    if (!priceM) continue;
+    const price = parseFloat(priceM[1].replace(/[\s ]/g,'').replace(',','.'));
+    if (price <= 0) continue;
+    const chgM = tag.match(/data-(?:change|variation|var|evol|pct)=["']([+-]?[\d.,]+)["']/i);
+    const chg = chgM ? parseFloat(chgM[1].replace(',','.')) : 0;
+    const volM = tag.match(/data-(?:vol|volume)=["'](\d+)["']/i);
+    const vol = volM ? parseInt(volM[1]) : 0;
+    const prev = price / (1 + chg / 100);
+    stocks.push({ symbol: sym, name: meta.name,
+      price: Math.round(price), previousPrice: Math.round(prev),
+      change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100, volume: vol });
+  }
+  if (stocks.length >= 3) { console.log(`parseHtmlAttributes: ${stocks.length} stocks`); return stocks; }
   return null;
 }
 
@@ -275,7 +352,6 @@ function parseBRVMHtmlFlexible(html) {
   ];
   const rowRe0 = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   const strip = /<[^>]+>/g;
-  // Pre-parse all rows once
   const rows = [];
   let row;
   while ((row = rowRe0.exec(html)) !== null) {
@@ -291,15 +367,16 @@ function parseBRVMHtmlFlexible(html) {
     const stocks = [];
     for (const cells of rows) {
       if (cells.length <= Math.max(sc, pc, cc)) continue;
-      const symbol = cells[sc]?.toUpperCase().replace(/\s/g,'');
-      const price  = parseFloat(cells[pc]?.replace(/[\s ]/g,'').replace(',','.'));
-      const chg    = parseFloat(cells[cc]?.replace('%','').replace(/[\s ]/g,'').replace(',','.')) || 0;
+      const rawSym = cells[sc]?.toUpperCase().replace(/\s/g,'');
+      const symbol = rawSym?.replace(/\.[A-Z]{2}$/, '');
+      const price  = parseFloat(cells[pc]?.replace(/[\s ]/g,'').replace(',','.'));
+      const chg    = parseFloat(cells[cc]?.replace('%','').replace(/[\s ]/g,'').replace(',','.')) || 0;
       if (symbol?.length >= 2 && symbol.length <= 6 && price > 0 && KNOWN_STOCKS[symbol]) {
         const prev = price / (1 + chg / 100);
         stocks.push({ symbol, name: KNOWN_STOCKS[symbol].name,
           price: Math.round(price), previousPrice: Math.round(prev),
           change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
-          volume: parseInt(cells[vc]?.replace(/[\s ]/g,'') || '0') || 0 });
+          volume: parseInt(cells[vc]?.replace(/[\s ]/g,'') || '0') || 0 });
       }
     }
     if (stocks.length >= 5) {
@@ -317,31 +394,37 @@ function parseFluxBourseText(html) {
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<[^>]+>/g, '\n')
     .split('\n')
-    .map(l => l.trim())
+    .map(l => l.trim().replace(/ /g,' ').replace(/\s+/g,' '))
     .filter(Boolean);
 
   const stocks = [];
+  const seen = new Set();
   for (let i = 0; i < lines.length; i++) {
-    const sym = lines[i].toUpperCase().replace(/\s/g,'');
-    const meta = KNOWN_STOCKS[sym];
-    if (!meta) continue;
+    const rawSym = lines[i].toUpperCase().replace(/\s/g,'');
+    let sym = rawSym;
+    let meta = KNOWN_STOCKS[sym];
+    // Handle suffix variants like ETIT.TG -> ETIT
+    if (!meta && /\.[A-Z]{2}$/.test(rawSym)) {
+      sym = rawSym.replace(/\.[A-Z]{2}$/, '');
+      meta = KNOWN_STOCKS[sym];
+    }
+    if (!meta || seen.has(sym)) continue;
 
     let price = 0, chg = 0;
-    // Chercher dans les 15 lignes suivantes
-    for (let j = i + 1; j < Math.min(i + 15, lines.length); j++) {
-      const tok = lines[j].replace(/\s/g,'').replace(',','.');
+    for (let j = i + 1; j < Math.min(i + 20, lines.length); j++) {
+      const tok = lines[j].replace(/[\s ]/g,'').replace(',','.');
       if (!price) {
         const n = parseFloat(tok);
         if (!isNaN(n) && n >= meta.refPrice * 0.1 && n <= meta.refPrice * 8) { price = n; continue; }
       }
       if (!chg && tok.includes('%')) {
-        const p = parseFloat(tok.replace('%',''));
+        const p = parseFloat(tok.replace('%','').replace('+',''));
         if (!isNaN(p) && Math.abs(p) <= 20) { chg = p; }
       }
-      // Arreter si on tombe sur un autre symbole connu
       if (KNOWN_STOCKS[lines[j].toUpperCase().replace(/\s/g,'')]) break;
     }
     if (price > 0) {
+      seen.add(sym);
       const prev = price / (1 + chg / 100);
       stocks.push({ symbol: sym, name: meta.name, price: Math.round(price),
         previousPrice: Math.round(prev), change: Math.round(price - prev),
@@ -352,34 +435,19 @@ function parseFluxBourseText(html) {
   return null;
 }
 
-// Extrait les donnees des apps Next.js (champ __NEXT_DATA__ dans le HTML)
-function parseNextData(html) {
-  try {
-    const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-    if (!m) return null;
-    const nextData = JSON.parse(m[1]);
-    const pp = nextData?.props?.pageProps;
-    if (!pp) return null;
-    const arr = pp.stocks || pp.cours || pp.actions || pp.cotations ||
-                pp.data?.stocks || pp.data?.cours || pp.data?.actions || pp.data;
-    if (!Array.isArray(arr) || !arr.length) return null;
-    console.log(`Next.js data: ${arr.length} elements, cles: ${Object.keys(arr[0] || {}).join(', ')}`);
-    return parseJsonArray(arr);
-  } catch (e) { console.warn('parseNextData:', e.message); return null; }
-}
-
 // Parse un tableau JSON generique en liste de stocks
 function parseJsonArray(arr) {
   const stocks = arr.map(item => {
-    const symbol = (item.symbol || item.ticker || item.code || item.symbole || '').toUpperCase().replace(/\s/g,'');
-    const price = parseFloat(item.price || item.cours || item.lastPrice || item.close || item.dernier || 0);
+    const rawSym = (item.symbol || item.ticker || item.code || item.symbole || item.SYMBOLE || item.valeur || '');
+    const symbol = rawSym.toUpperCase().replace(/\s/g,'').replace(/\.[A-Z]{2}$/,'');
+    const price = parseFloat(item.price || item.cours || item.lastPrice || item.close || item.dernier || item.last || item.prix || 0);
     if (!symbol || symbol.length < 2 || symbol.length > 6 || price <= 0) return null;
-    const chg = parseFloat(item.changePercent || item.variation || item.change_pct || item.var || 0);
+    const chg = parseFloat(item.changePercent || item.variation || item.change_pct || item.var || item.evol || item.taux || 0);
     const prev = price / (1 + chg / 100);
-    return { symbol, name: KNOWN_STOCKS[symbol]?.name || item.name || item.libelle || symbol,
+    return { symbol, name: KNOWN_STOCKS[symbol]?.name || item.name || item.libelle || item.nom || symbol,
              price: Math.round(price), previousPrice: Math.round(prev),
              change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
-             volume: parseInt(item.volume || item.vol || 0) };
+             volume: parseInt(item.volume || item.vol || item.quantite || 0) };
   }).filter(s => s && KNOWN_STOCKS[s.symbol]);
   return stocks.length >= 1 ? stocks : null;
 }
@@ -398,7 +466,6 @@ async function fetchYahooFinance() {
   let cookies = '';
   let crumb = '';
 
-  // Obtenir les cookies Yahoo Finance (nécessaire pour le crumb depuis 2024)
   try {
     const r = await fetchWithTimeout('https://fc.yahoo.com/', {
       headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'text/html', 'Accept-Language': 'en-US,en;q=0.9' },
@@ -411,7 +478,6 @@ async function fetchYahooFinance() {
     }
   } catch (e) { console.warn('Yahoo fc.yahoo.com:', e.message); }
 
-  // Obtenir le crumb Yahoo Finance
   try {
     const r = await fetchWithTimeout('https://query2.finance.yahoo.com/v1/test/getcrumb', {
       headers: {
@@ -444,7 +510,6 @@ async function fetchYahooFinance() {
   const urls = [
     `https://query2.finance.yahoo.com/v8/finance/quote?symbols=${tickers}${crumbSuffix}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
     `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers}${crumbSuffix}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
-    // Fallback sans crumb
     `https://query2.finance.yahoo.com/v8/finance/quote?symbols=${tickers}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
     `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers}&fields=symbol,regularMarketPrice,regularMarketPreviousClose,regularMarketChangePercent,regularMarketVolume`,
   ];
@@ -468,7 +533,10 @@ async function fetchYahooFinance() {
         continue;
       }
       const stocks = quotes.map(q => {
-        const sym = YAHOO_REVERSE[q.symbol];
+        // Full match (ETIT.TG) then base match (ETIT without suffix)
+        const sym = YAHOO_REVERSE[q.symbol]
+          || YAHOO_REVERSE_BASE[q.symbol]
+          || YAHOO_REVERSE_BASE[q.symbol.split('.')[0]];
         if (!sym) return null;
         const price = Math.round(q.regularMarketPrice || 0);
         const prev  = Math.round(q.regularMarketPreviousClose || price);
