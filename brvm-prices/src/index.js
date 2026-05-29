@@ -18,6 +18,10 @@ const BRVM_URLS = [
   'https://www.brvm.org/fr/cours-actions/0/all',
   'https://brvm.org/fr/cours-actions/0',
   'https://www.brvm.org/fr/cours-des-actions/0/all',
+  'https://www.brvm.org/fr/cours-des-actions/0',
+  'https://brvm.org/fr/cours-des-actions/0',
+  'https://www.brvm.org/en/cours-actions/0',
+  'https://www.brvm.org/en/cours-des-actions/0/all',
 ];
 
 // Proxies CORS indépendants — testés dans l'ordre, aucun lien avec le site Analytics
@@ -201,17 +205,19 @@ async function fetchLiveStocks() {
     } catch {}
   }
 
-  // 2. Proxies CORS indépendants → BRVM.org (3 fournisseurs, aucun lien avec le site Analytics)
+  // 2. Proxies CORS indépendants × toutes les URLs BRVM
   for (const proxy of CORS_PROXIES) {
-    try {
-      const resp = await fetch(proxy + encodeURIComponent(BRVM_URLS[0]), {
-        headers: { 'Accept': 'text/html' },
-      });
-      if (resp.ok) {
-        const stocks = parseBRVMHtml(await resp.text());
-        if (stocks) return { stocks, source: 'brvm-via-proxy' };
-      }
-    } catch {}
+    for (const brvmUrl of BRVM_URLS) {
+      try {
+        const resp = await fetch(proxy + encodeURIComponent(brvmUrl), {
+          headers: { 'Accept': 'text/html' },
+        });
+        if (resp.ok) {
+          const stocks = parseBRVMHtml(await resp.text());
+          if (stocks) return { stocks, source: 'brvm-via-proxy' };
+        }
+      } catch {}
+    }
   }
 
   // 3. Yahoo Finance — couvre ~35 valeurs BRVM en JSON temps réel

@@ -12,6 +12,10 @@ const BRVM_URLS = [
   'https://www.brvm.org/fr/cours-actions/0/all',
   'https://brvm.org/fr/cours-actions/0',
   'https://www.brvm.org/fr/cours-des-actions/0/all',
+  'https://www.brvm.org/fr/cours-des-actions/0',
+  'https://brvm.org/fr/cours-des-actions/0',
+  'https://www.brvm.org/en/cours-actions/0',
+  'https://www.brvm.org/en/cours-des-actions/0/all',
 ];
 
 const USER_AGENTS = [
@@ -192,22 +196,24 @@ async function fetchLiveStocks() {
     if (stocks) { console.log(`Source: fluxbourse (${stocks.length} titres)`); return { stocks, source: 'fluxbourse' }; }
   } catch (e) { console.warn('FluxBourse:', e.message); }
 
-  // 4. BRVM.org via proxies CORS (direct bloque depuis GitHub Actions US)
+  // 4. BRVM.org via proxies CORS × toutes les URLs (direct bloque depuis GitHub Actions US)
   for (const proxy of BRVM_PROXIES) {
     const proxyHost = proxy.split('/')[2];
-    try {
-      const resp = await fetchWithTimeout(proxy + encodeURIComponent(BRVM_URLS[0]), {
-        headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] },
-      });
-      console.log(`brvm-proxy ${proxyHost}: HTTP ${resp.status}`);
-      if (resp.ok) {
-        const html = await resp.text();
-        console.log(`brvm-proxy ${proxyHost}: ${html.length} bytes, ETIT: ${html.includes('ETIT')}`);
-        const stocks = parseBRVMHtml(html) || parseBRVMHtmlFlexible(html);
-        if (stocks) { console.log(`Source: brvm-proxy (${proxyHost}, ${stocks.length} titres)`); return { stocks, source: 'brvm-proxy' }; }
-        console.warn(`brvm-proxy ${proxyHost}: HTML recu mais table non parsee`);
-      }
-    } catch (e) { console.warn(`brvm-proxy ${proxyHost}:`, e.message); }
+    for (const brvmUrl of BRVM_URLS) {
+      try {
+        const resp = await fetchWithTimeout(proxy + encodeURIComponent(brvmUrl), {
+          headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] },
+        });
+        console.log(`brvm-proxy ${proxyHost} [${brvmUrl.split('/').slice(-2).join('/')}]: HTTP ${resp.status}`);
+        if (resp.ok) {
+          const html = await resp.text();
+          console.log(`brvm-proxy ${proxyHost}: ${html.length} bytes, ETIT: ${html.includes('ETIT')}`);
+          const stocks = parseBRVMHtml(html) || parseBRVMHtmlFlexible(html);
+          if (stocks) { console.log(`Source: brvm-proxy (${proxyHost}, ${stocks.length} titres)`); return { stocks, source: 'brvm-proxy' }; }
+          console.warn(`brvm-proxy ${proxyHost}: HTML recu mais table non parsee`);
+        }
+      } catch (e) { console.warn(`brvm-proxy ${proxyHost}:`, e.message); }
+    }
   }
 
   // 4. Yahoo Finance avec crumb (obligatoire depuis 2024)
