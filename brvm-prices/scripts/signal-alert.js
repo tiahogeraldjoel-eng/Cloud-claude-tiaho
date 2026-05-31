@@ -178,25 +178,31 @@ async function fetchLiveStocks() {
     } catch (e) { console.warn('Cloudflare Worker:', e.message); }
   }
 
-  // 1. TradingView Scanner - API JSON publique, pas d'auth, couverture BRVM
+  // 1. AFX (afx.kwayisi.org) — confirmed working, real BRVM data, no geo-blocking
+  try {
+    const stocks = await fetchAFX();
+    if (stocks?.length >= 5) { console.log(`Source: afx (${stocks.length} titres)`); return { stocks, source: 'afx' }; }
+  } catch (e) { console.warn('AFX:', e.message); }
+
+  // 2. TradingView Scanner - API JSON publique, pas d'auth, couverture BRVM
   try {
     const stocks = await fetchTradingView();
     if (stocks) { console.log(`Source: tradingview (${stocks.length} titres)`); return { stocks, source: 'tradingview' }; }
   } catch (e) { console.warn('TradingView:', e.message); }
 
-  // 2. Stooq.com - CSV gratuit, pas d'auth, couverture globale
+  // 3. Stooq.com - CSV gratuit, pas d'auth, couverture globale
   try {
     const stocks = await fetchStooq();
     if (stocks) { console.log(`Source: stooq (${stocks.length} titres)`); return { stocks, source: 'stooq' }; }
   } catch (e) { console.warn('Stooq:', e.message); }
 
-  // 3. FluxBourse (source demandee par l'utilisateur)
+  // 4. FluxBourse (source demandee par l'utilisateur)
   try {
     const stocks = await fetchFluxBourse();
     if (stocks) { console.log(`Source: fluxbourse (${stocks.length} titres)`); return { stocks, source: 'fluxbourse' }; }
   } catch (e) { console.warn('FluxBourse:', e.message); }
 
-  // 4. BRVM.org via proxies CORS × toutes les URLs (direct bloque depuis GitHub Actions US)
+  // 5. BRVM.org via proxies CORS × toutes les URLs (direct bloque depuis GitHub Actions US)
   for (const proxy of BRVM_PROXIES) {
     const proxyHost = proxy.split('/')[2];
     for (const brvmUrl of BRVM_URLS) {
@@ -216,19 +222,19 @@ async function fetchLiveStocks() {
     }
   }
 
-  // 4. Yahoo Finance avec crumb (obligatoire depuis 2024)
+  // 6. Yahoo Finance avec crumb (obligatoire depuis 2024)
   try {
     const stocks = await fetchYahooFinance();
     if (stocks) { console.log(`Source: yahoo-finance (${stocks.length} titres)`); return { stocks, source: 'yahoo-finance' }; }
   } catch (e) { console.warn('Yahoo Finance:', e.message); }
 
-  // 5. Africabourse.net
+  // 7. Africabourse.net
   try {
     const stocks = await fetchAfricabourse();
     if (stocks) { console.log(`Source: africabourse (${stocks.length} titres)`); return { stocks, source: 'africabourse' }; }
   } catch (e) { console.warn('Africabourse:', e.message); }
 
-  // 6. Sika Finance
+  // 8. Sika Finance
   try {
     const resp = await fetchWithTimeout('https://sika.finance/bourse/brvm/cours', {
       headers: { ...CHROME_HEADERS, 'Accept-Language': 'fr-FR,fr;q=0.9' },
@@ -774,30 +780,106 @@ async function fetchAfricabourse() {
   return null;
 }
 
-function parseBRVMHtml(html) {
+function parseBRVMHtml(rawHtml) {
+  const html = decodeHtml(rawHtml);
   const stocks = [];
+  // Identify the main price table: header contains "cloture"/"variation" or "symbole"
+  const tableRe = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+  let tableMatch, targetHtml = '';
+  while ((tableMatch = tableRe.exec(html)) !== null) {
+    const firstRow = /<tr[^>]*>([\s\S]*?)<\/tr>/i.exec(tableMatch[1]);
+    if (!firstRow) continue;
+    const hdr = firstRow[1].replace(/<[^>]+>/g, ' ').toLowerCase();
+    if ((hdr.includes('cl') && hdr.includes('ture')) ||
+        (hdr.includes('symbole') && hdr.includes('variation'))) {
+      targetHtml = tableMatch[1]; break;
+    }
+  }
+  const searchHtml = targetHtml || html;
   const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   const strip = /<[^>]+>/g;
-  let row;
-  while ((row = rowRe.exec(html)) !== null) {
+  let row, skipHeader = !!targetHtml;
+  while ((row = rowRe.exec(searchHtml)) !== null) {
+    if (skipHeader) { skipHeader = false; continue; }
     const cells = [];
-    const cm = /<td[^>]*>([\s\S]*?)<\/td>/gi;
-    let cell;
+    const cm = /<td[^>]*>([\s\S]*?)<\/td>/gi; let cell;
     while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
     if (cells.length < 5) continue;
-    const symbol = cells[0].toUpperCase().replace(/\s/g, '');
-    const price  = parseFloat(cells[2].replace(/[\s ]/g, '').replace(',', '.'));
-    const chg    = parseFloat(cells[4].replace('%','').replace(/[\s ]/g,'').replace(',','.')) || 0;
-    if (symbol.length >= 2 && symbol.length <= 6 && price > 0 && KNOWN_STOCKS[symbol]) {
-      const prev = price / (1 + chg / 100);
-      stocks.push({ symbol, name: KNOWN_STOCKS[symbol]?.name || symbol,
-        price: Math.round(price), previousPrice: Math.round(prev),
-        change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
-        volume: parseInt(cells[5]?.replace(/[\s ]/g,'') || '0') || 0 });
-    }
+    const symbol = cells[0].toUpperCase().replace(/[\s\u00a0]/g, '');
+    if (!/^[A-Z]{2,8}$/.test(symbol) || !KNOWN_STOCKS[symbol]) continue;
+    // BRVM.org confirmed column structure (scraper.py):
+    // 0:Symbol 1:Name 2:Volume 3:RefPrice(veille) 4:OpenPrice 5:ClosePrice 6:Variation%
+    const vol   = parseFloat(cells[2]?.replace(/[\s\u00a0]/g, '').replace(',', '.')) || 0;
+    const ref   = parseFloat(cells[3]?.replace(/[\s\u00a0]/g, '').replace(',', '.'));
+    const open  = parseFloat(cells[4]?.replace(/[\s\u00a0]/g, '').replace(',', '.'));
+    const close = parseFloat(cells[5]?.replace(/[\s\u00a0]/g, '').replace(',', '.'));
+    const chg   = parseFloat(cells[6]?.replace('%', '').replace(/[\s\u00a0]/g, '').replace(',', '.')) || 0;
+    const price = close || open || ref;
+    if (!price || price <= 0) continue;
+    const prev = ref || price;
+    stocks.push({ symbol, name: KNOWN_STOCKS[symbol]?.name || cells[1] || symbol,
+      price: Math.round(price), previousPrice: Math.round(prev),
+      change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
+      volume: Math.round(vol) });
   }
   return stocks.length >= 5 ? stocks : null;
 }
+
+async function fetchAFX() {
+  // afx.kwayisi.org/brvm/ — confirmed working by scraper.py (no geo-blocking)
+  const resp = await fetchWithTimeout('https://afx.kwayisi.org/brvm/', {
+    headers: {
+      'User-Agent': USER_AGENTS[0],
+      'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+      'Accept-Language': 'fr-FR,fr;q=0.9',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache',
+    },
+  });
+  if (!resp.ok) throw new Error(`AFX HTTP ${resp.status}`);
+  const html = decodeHtml(await resp.text());
+  const stocks = parseAFXHtml(html);
+  console.log(`AFX: ${stocks?.length ?? 0} titres`);
+  return stocks;
+}
+
+function parseAFXHtml(html) {
+  // Table structure (confirmed by scraper.py):
+  // Tables[0]=Indices, [1-2]=Gainers/Losers (%), [3]=Main prices
+  // Table[3] columns: Ticker | Name | Volume | Price | ChangePts
+  const tableRe = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+  const tables = [];
+  let tm;
+  while ((tm = tableRe.exec(html)) !== null) tables.push(tm[1]);
+
+  const targetTable = tables[3] || tables[tables.length - 1];
+  if (!targetTable) return null;
+
+  const stocks = [];
+  const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const strip = /<[^>]+>/g;
+  let row, skipHeader = true;
+  while ((row = rowRe.exec(targetTable)) !== null) {
+    if (skipHeader) { skipHeader = false; continue; }
+    const cells = [];
+    const cm = /<td[^>]*>([\s\S]*?)<\/td>/gi; let cell;
+    while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
+    if (cells.length < 4) continue;
+    const symbol = cells[0].toUpperCase().replace(/[\s\u00a0]/g, '');
+    if (!/^[A-Z]{2,8}$/.test(symbol) || !KNOWN_STOCKS[symbol]) continue;
+    const vol      = parseFloat(cells[2]?.replace(/[\s\u00a0]/g, '').replace(',', '.')) || 0;
+    const price    = parseFloat(cells[3]?.replace(/[\s\u00a0]/g, '').replace(',', '.'));
+    const changePt = parseFloat(cells[4]?.replace(/[\s\u00a0]/g, '').replace(',', '.')) || 0;
+    if (!price || price <= 0) continue;
+    const prev = price - changePt;
+    const chg  = prev > 0 ? Math.round((changePt / prev) * 10000) / 100 : 0;
+    stocks.push({ symbol, name: KNOWN_STOCKS[symbol]?.name || cells[1] || symbol,
+      price: Math.round(price), previousPrice: Math.round(prev > 0 ? prev : price),
+      change: Math.round(changePt), changePercent: chg, volume: Math.round(vol) });
+  }
+  return stocks.length >= 5 ? stocks : null;
+}
+
 
 function parseSikaHtml(html) {
   const stocks = [];

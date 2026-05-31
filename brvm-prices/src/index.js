@@ -422,38 +422,54 @@ async function sendTelegramUnavailable(env) {
 // ─── Parsers HTML ─────────────────────────────────────────────────────────────
 
 function parseBRVMHtml(rawHtml) {
-  const html   = decodeHtml(rawHtml);
+  const html = decodeHtml(rawHtml);
   const stocks = [];
-  const rowRe  = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  // Identify the main price table: header contains "cloture"/"variation" or "symbole"
+  const tableRe = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+  let tableMatch, targetHtml = '';
+  while ((tableMatch = tableRe.exec(html)) !== null) {
+    const firstRow = /<tr[^>]*>([\s\S]*?)<\/tr>/i.exec(tableMatch[1]);
+    if (!firstRow) continue;
+    const hdr = firstRow[1].replace(/<[^>]+>/g, ' ').toLowerCase();
+    if ((hdr.includes('cl') && hdr.includes('ture')) ||
+        (hdr.includes('symbole') && hdr.includes('variation'))) {
+      targetHtml = tableMatch[1]; break;
+    }
+  }
+  const searchHtml = targetHtml || html;
+  const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
   const strip  = /<[^>]+>/g;
-  let row;
-  while ((row = rowRe.exec(html)) !== null) {
+  let row, skipHeader = !!targetHtml;
+  while ((row = rowRe.exec(searchHtml)) !== null) {
+    if (skipHeader) { skipHeader = false; continue; }
     const cells = [];
     let cell;
     const cm = new RegExp(cellRe.source, 'gi');
     while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
-    if (cells.length >= 5) {
-      const symbol    = cells[0].toUpperCase();
-      const price     = parseFloat(cells[2].replace(/[\s ]/g, '').replace(',', '.'));
-      const changePct = parseFloat(cells[4].replace('%', '').replace(/[\s ]/g, '').replace(',', '.'));
-      if (symbol.length >= 2 && symbol.length <= 6 && price > 0) {
-        const prev = price / (1 + changePct / 100);
-        stocks.push({
-          symbol,
-          name:          KNOWN_STOCKS[symbol]?.name || symbol,
-          price:         Math.round(price),
-          previousPrice: Math.round(prev),
-          change:        Math.round(price - prev),
-          changePercent: Math.round(changePct * 100) / 100,
-          volume:        parseInt(cells[5]?.replace(/\s/g, '') || '0') || 0,
-          source: 'live', timestamp: Date.now(),
-        });
-      }
-    }
+    if (cells.length < 5) continue;
+    const symbol = cells[0].toUpperCase().replace(/[\s\u00a0]/g, '');
+    if (!/^[A-Z]{2,8}$/.test(symbol) || !KNOWN_STOCKS[symbol]) continue;
+    // BRVM.org confirmed column structure (scraper.py):
+    // 0:Symbol 1:Name 2:Volume 3:RefPrice(veille) 4:OpenPrice 5:ClosePrice 6:Variation%
+    const vol   = parseFloat(cells[2]?.replace(/[\s\u00a0]/g, '').replace(',', '.')) || 0;
+    const ref   = parseFloat(cells[3]?.replace(/[\s\u00a0]/g, '').replace(',', '.'));
+    const open  = parseFloat(cells[4]?.replace(/[\s\u00a0]/g, '').replace(',', '.'));
+    const close = parseFloat(cells[5]?.replace(/[\s\u00a0]/g, '').replace(',', '.'));
+    const chg   = parseFloat(cells[6]?.replace('%', '').replace(/[\s\u00a0]/g, '').replace(',', '.')) || 0;
+    const price = close || open || ref;
+    if (!price || price <= 0) continue;
+    const prev = ref || price;
+    stocks.push({
+      symbol, name: KNOWN_STOCKS[symbol]?.name || cells[1] || symbol,
+      price: Math.round(price), previousPrice: Math.round(prev),
+      change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
+      volume: Math.round(vol), source: 'live', timestamp: Date.now(),
+    });
   }
   return stocks.length >= 5 ? stocks : null;
 }
+
 
 function parseSikaHtml(rawHtml) {
   const html   = decodeHtml(rawHtml);
