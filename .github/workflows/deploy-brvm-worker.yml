@@ -5,6 +5,12 @@ on:
     branches: [main]
     paths:
       - 'brvm-prices/**'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branche à déployer (laisser vide = branche courante)'
+        required: false
+        default: ''
 
 jobs:
   deploy:
