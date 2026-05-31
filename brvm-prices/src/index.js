@@ -112,6 +112,15 @@ function getMetaForStock(stock) {
   return { name: stock.name || stock.symbol, avgVol, refPrice: stock.previousPrice || stock.price };
 }
 
+// Décode les entités HTML (&nbsp; → espace) avant parseFloat — évite les prix tronqués
+function decodeHtml(s) {
+  return s
+    .replace(/&nbsp;/gi, ' ').replace(/&#160;/g, ' ')
+    .replace(/&thinsp;/gi, ' ').replace(/&#8201;/g, ' ')
+    .replace(/ /g, ' ')
+    .replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>');
+}
+
 // ─── Seuils et paramètres ─────────────────────────────────────────────────────
 const MPR_THRESHOLD     = 2.5;
 const OBI_THRESHOLD     = 0.85;
@@ -157,6 +166,13 @@ export default {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 async function runPreOpenScan(env) {
+  // Vérification jour ouvrable — BRVM fermée le weekend
+  const dayOfWeek = new Date().getUTCDay(); // 0=Dimanche, 6=Samedi
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    console.log('Weekend — BRVM fermée, aucun scan.');
+    return;
+  }
+
   const { stocks, source } = await fetchLiveStocks();
 
   if (source === 'unavailable') {
@@ -405,7 +421,8 @@ async function sendTelegramUnavailable(env) {
 
 // ─── Parsers HTML ─────────────────────────────────────────────────────────────
 
-function parseBRVMHtml(html) {
+function parseBRVMHtml(rawHtml) {
+  const html   = decodeHtml(rawHtml);
   const stocks = [];
   const rowRe  = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
@@ -418,8 +435,8 @@ function parseBRVMHtml(html) {
     while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
     if (cells.length >= 5) {
       const symbol    = cells[0].toUpperCase();
-      const price     = parseFloat(cells[2].replace(/\s/g, '').replace(',', '.'));
-      const changePct = parseFloat(cells[4].replace('%', '').replace(/\s/g, '').replace(',', '.'));
+      const price     = parseFloat(cells[2].replace(/[\s ]/g, '').replace(',', '.'));
+      const changePct = parseFloat(cells[4].replace('%', '').replace(/[\s ]/g, '').replace(',', '.'));
       if (symbol.length >= 2 && symbol.length <= 6 && price > 0) {
         const prev = price / (1 + changePct / 100);
         stocks.push({
@@ -438,7 +455,8 @@ function parseBRVMHtml(html) {
   return stocks.length >= 5 ? stocks : null;
 }
 
-function parseSikaHtml(html) {
+function parseSikaHtml(rawHtml) {
+  const html   = decodeHtml(rawHtml);
   const stocks = [];
   const rowRe  = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
@@ -450,7 +468,7 @@ function parseSikaHtml(html) {
     const cm = new RegExp(cellRe.source, 'gi');
     while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
     if (cells.length >= 4) {
-      const symbol = cells[0].replace(/\s/g, '').toUpperCase();
+      const symbol = cells[0].replace(/[\s ]/g, '').toUpperCase();
       const price  = parseFloat(cells[1].replace(/[\s ]/g, '').replace(',', '.'));
       const chg    = parseFloat(cells[2].replace('%', '').replace(',', '.')) || 0;
       if (symbol.length >= 2 && symbol.length <= 6 && price > 0) {

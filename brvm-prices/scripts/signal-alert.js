@@ -898,7 +898,17 @@ async function main() {
     console.error('Erreur: TELEGRAM_BOT_TOKEN et TELEGRAM_CHAT_ID doivent etre definis.');
     process.exit(1);
   }
-  console.log(`BRVM Pre-Open Scanner - ${new Date().toISOString()}`);
+
+  // Vérification jour ouvrable — BRVM fermée le weekend
+  const now = new Date();
+  const dayOfWeek = now.getUTCDay(); // 0=Dimanche, 6=Samedi
+  const dayNames = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    console.log(`${dayNames[dayOfWeek]} — BRVM fermee. Aucun signal envoye.`);
+    return;
+  }
+
+  console.log(`BRVM Pre-Open Scanner - ${now.toISOString()} (${dayNames[dayOfWeek]})`);
   console.log(`Budget: ${BUDGET_FCFA.toLocaleString('fr-FR')} FCFA`);
   if (BRVM_WORKER_URL) console.log(`Worker URL: ${BRVM_WORKER_URL}`);
 
