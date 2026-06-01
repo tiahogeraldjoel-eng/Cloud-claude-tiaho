@@ -170,7 +170,7 @@ async function fetchCloudflareWorker() {
 }
 
 async function fetchLiveStocks() {
-  // 0. Cloudflare Worker — edge Cloudflare, pas de geo-blocage, fallback integre
+  // Source #0 : Cloudflare Worker (lui-même utilise AFX)
   if (BRVM_WORKER_URL) {
     try {
       const stocks = await fetchCloudflareWorker();
@@ -178,76 +178,11 @@ async function fetchLiveStocks() {
     } catch (e) { console.warn('Cloudflare Worker:', e.message); }
   }
 
-  // 1. AFX (afx.kwayisi.org) — confirmed working, real BRVM data, no geo-blocking
+  // Source #1 : AFX direct — afx.kwayisi.org, pas de geo-blocage, données BRVM fiables
   try {
     const stocks = await fetchAFX();
     if (stocks?.length >= 5) { console.log(`Source: afx (${stocks.length} titres)`); return { stocks, source: 'afx' }; }
   } catch (e) { console.warn('AFX:', e.message); }
-
-  // 2. TradingView Scanner - API JSON publique, pas d'auth, couverture BRVM
-  try {
-    const stocks = await fetchTradingView();
-    if (stocks) { console.log(`Source: tradingview (${stocks.length} titres)`); return { stocks, source: 'tradingview' }; }
-  } catch (e) { console.warn('TradingView:', e.message); }
-
-  // 3. Stooq.com - CSV gratuit, pas d'auth, couverture globale
-  try {
-    const stocks = await fetchStooq();
-    if (stocks) { console.log(`Source: stooq (${stocks.length} titres)`); return { stocks, source: 'stooq' }; }
-  } catch (e) { console.warn('Stooq:', e.message); }
-
-  // 4. FluxBourse (source demandee par l'utilisateur)
-  try {
-    const stocks = await fetchFluxBourse();
-    if (stocks) { console.log(`Source: fluxbourse (${stocks.length} titres)`); return { stocks, source: 'fluxbourse' }; }
-  } catch (e) { console.warn('FluxBourse:', e.message); }
-
-  // 5. BRVM.org via proxies CORS × toutes les URLs (direct bloque depuis GitHub Actions US)
-  for (const proxy of BRVM_PROXIES) {
-    const proxyHost = proxy.split('/')[2];
-    for (const brvmUrl of BRVM_URLS) {
-      try {
-        const resp = await fetchWithTimeout(proxy + encodeURIComponent(brvmUrl), {
-          headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] },
-        });
-        console.log(`brvm-proxy ${proxyHost} [${brvmUrl.split('/').slice(-2).join('/')}]: HTTP ${resp.status}`);
-        if (resp.ok) {
-          const html = await resp.text();
-          console.log(`brvm-proxy ${proxyHost}: ${html.length} bytes, ETIT: ${html.includes('ETIT')}`);
-          const stocks = parseBRVMHtml(html) || parseBRVMHtmlFlexible(html);
-          if (stocks) { console.log(`Source: brvm-proxy (${proxyHost}, ${stocks.length} titres)`); return { stocks, source: 'brvm-proxy' }; }
-          console.warn(`brvm-proxy ${proxyHost}: HTML recu mais table non parsee`);
-        }
-      } catch (e) { console.warn(`brvm-proxy ${proxyHost}:`, e.message); }
-    }
-  }
-
-  // 6. Yahoo Finance avec crumb (obligatoire depuis 2024)
-  try {
-    const stocks = await fetchYahooFinance();
-    if (stocks) { console.log(`Source: yahoo-finance (${stocks.length} titres)`); return { stocks, source: 'yahoo-finance' }; }
-  } catch (e) { console.warn('Yahoo Finance:', e.message); }
-
-  // 7. Africabourse.net
-  try {
-    const stocks = await fetchAfricabourse();
-    if (stocks) { console.log(`Source: africabourse (${stocks.length} titres)`); return { stocks, source: 'africabourse' }; }
-  } catch (e) { console.warn('Africabourse:', e.message); }
-
-  // 8. Sika Finance
-  try {
-    const resp = await fetchWithTimeout('https://sika.finance/bourse/brvm/cours', {
-      headers: { ...CHROME_HEADERS, 'Accept-Language': 'fr-FR,fr;q=0.9' },
-    });
-    console.log(`sika-finance: HTTP ${resp.status}`);
-    if (resp.ok) {
-      const html = await resp.text();
-      console.log(`sika-finance: ${html.length} bytes`);
-      const stocks = parseSikaHtml(html);
-      if (stocks) { console.log(`Source: sika-finance (${stocks.length} titres)`); return { stocks, source: 'sika-finance' }; }
-      console.warn('sika-finance: HTML recu mais table non parsee');
-    }
-  } catch (e) { console.warn('Sika Finance:', e.message); }
 
   return { stocks: [], source: 'unavailable' };
 }

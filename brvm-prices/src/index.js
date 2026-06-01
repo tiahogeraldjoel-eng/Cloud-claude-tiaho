@@ -203,25 +203,7 @@ async function runPreOpenScan(env) {
 // ─── Cascade de sources ───────────────────────────────────────────────────────
 
 async function fetchLiveStocks() {
-  // 1. BRVM.org direct — plusieurs URL
-  for (const url of BRVM_URLS) {
-    try {
-      const resp = await fetch(url, {
-        headers: {
-          'User-Agent': USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)],
-          'Accept': 'text/html,application/xhtml+xml,*/*;q=0.9',
-          'Accept-Language': 'fr-FR,fr;q=0.9',
-          'Referer': 'https://www.google.com/',
-        },
-      });
-      if (resp.ok) {
-        const stocks = parseBRVMHtml(await resp.text());
-        if (stocks) return { stocks, source: 'brvm-direct' };
-      }
-    } catch {}
-  }
-
-  // 2. AFX (afx.kwayisi.org) — pas de geo-blocage, données BRVM fiables
+  // AFX (afx.kwayisi.org) — source unique, pas de geo-blocage, données BRVM fiables
   try {
     const resp = await fetch('https://afx.kwayisi.org/brvm/', {
       headers: {
@@ -234,40 +216,9 @@ async function fetchLiveStocks() {
       const stocks = parseAFXHtml(decodeHtml(await resp.text()));
       if (stocks) return { stocks: stocks.map(s => ({ ...s, source: 'live' })), source: 'afx' };
     }
-  } catch {}
-
-  // 3. Proxies CORS indépendants × toutes les URLs BRVM
-  for (const proxy of CORS_PROXIES) {
-    for (const brvmUrl of BRVM_URLS) {
-      try {
-        const resp = await fetch(proxy + encodeURIComponent(brvmUrl), {
-          headers: { 'Accept': 'text/html' },
-        });
-        if (resp.ok) {
-          const stocks = parseBRVMHtml(await resp.text());
-          if (stocks) return { stocks, source: 'brvm-via-proxy' };
-        }
-      } catch {}
-    }
+  } catch (e) {
+    console.error('AFX fetch error:', e.message);
   }
-
-  // 3. Yahoo Finance — couvre ~35 valeurs BRVM en JSON temps réel
-  try {
-    const stocks = await fetchYahooFinance();
-    if (stocks) return { stocks, source: 'yahoo-finance' };
-  } catch {}
-
-  // 4. Sika Finance
-  try {
-    const resp = await fetch('https://sika.finance/bourse/brvm/cours', {
-      headers: { 'User-Agent': USER_AGENTS[0], 'Accept': 'text/html' },
-    });
-    if (resp.ok) {
-      const stocks = parseSikaHtml(await resp.text());
-      if (stocks) return { stocks, source: 'sika-finance' };
-    }
-  } catch {}
-
   return { stocks: [], source: 'unavailable' };
 }
 
