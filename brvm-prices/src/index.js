@@ -221,7 +221,22 @@ async function fetchLiveStocks() {
     } catch {}
   }
 
-  // 2. Proxies CORS indépendants × toutes les URLs BRVM
+  // 2. AFX (afx.kwayisi.org) — pas de geo-blocage, données BRVM fiables
+  try {
+    const resp = await fetch('https://afx.kwayisi.org/brvm/', {
+      headers: {
+        'User-Agent': USER_AGENTS[0],
+        'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+        'Accept-Language': 'fr-FR,fr;q=0.9',
+      },
+    });
+    if (resp.ok) {
+      const stocks = parseAFXHtml(decodeHtml(await resp.text()));
+      if (stocks) return { stocks: stocks.map(s => ({ ...s, source: 'live' })), source: 'afx' };
+    }
+  } catch {}
+
+  // 3. Proxies CORS indépendants × toutes les URLs BRVM
   for (const proxy of CORS_PROXIES) {
     for (const brvmUrl of BRVM_URLS) {
       try {
@@ -470,6 +485,40 @@ function parseBRVMHtml(rawHtml) {
   return stocks.length >= 5 ? stocks : null;
 }
 
+
+function parseAFXHtml(html) {
+  // Tables[0]=Indices, [1-2]=Gainers/Losers, [3]=Cours principaux
+  // Colonnes: Ticker | Nom | Volume | Prix | Variation pts
+  const tableRe = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+  const tables = [];
+  let tm;
+  while ((tm = tableRe.exec(html)) !== null) tables.push(tm[1]);
+  const targetTable = tables[3] || tables[tables.length - 1];
+  if (!targetTable) return null;
+  const stocks = [];
+  const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const strip = /<[^>]+>/g;
+  let row, skipHeader = true;
+  while ((row = rowRe.exec(targetTable)) !== null) {
+    if (skipHeader) { skipHeader = false; continue; }
+    const cells = [];
+    const cm = /<td[^>]*>([\s\S]*?)<\/td>/gi; let cell;
+    while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
+    if (cells.length < 4) continue;
+    const symbol = cells[0].toUpperCase().replace(/[\s ]/g, '');
+    if (!/^[A-Z]{2,8}$/.test(symbol) || !KNOWN_STOCKS[symbol]) continue;
+    const vol      = parseFloat(cells[2]?.replace(/[\s ]/g, '').replace(',', '.')) || 0;
+    const price    = parseFloat(cells[3]?.replace(/[\s ]/g, '').replace(',', '.'));
+    const changePt = parseFloat(cells[4]?.replace(/[\s ]/g, '').replace(',', '.')) || 0;
+    if (!price || price <= 0) continue;
+    const prev = price - changePt;
+    const chg  = prev > 0 ? Math.round((changePt / prev) * 10000) / 100 : 0;
+    stocks.push({ symbol, name: KNOWN_STOCKS[symbol]?.name || cells[1] || symbol,
+      price: Math.round(price), previousPrice: Math.round(prev > 0 ? prev : price),
+      change: Math.round(changePt), changePercent: chg, volume: Math.round(vol) });
+  }
+  return stocks.length >= 5 ? stocks : null;
+}
 
 function parseSikaHtml(rawHtml) {
   const html   = decodeHtml(rawHtml);
