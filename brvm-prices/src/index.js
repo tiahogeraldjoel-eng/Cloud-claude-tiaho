@@ -74,10 +74,10 @@ const KNOWN_STOCKS = {
   LACI:  { name: 'Air Liquide CI',                       avgVol: 240,   refPrice: 6500   },
   NEIC:  { name: 'NEI-CEDA CI',                          avgVol: 800,   refPrice: 620    },
   NSBC:  { name: 'NSIA Banque CI',                       avgVol: 950,   refPrice: 7200   },
-  NTLC:  { name: 'Filtisac CI',                          avgVol: 720,   refPrice: 1850   },
+  NTLC:  { name: 'Nestlé CI',                              avgVol: 660,   refPrice: 13000  },
   ONAT:  { name: 'Onatel — Télécoms Burkina Faso',       avgVol: 310,   refPrice: 4950   },
   ORAC:  { name: 'Orange Côte d\'Ivoire',                avgVol: 5400,  refPrice: 14750  },
-  ORGT:  { name: 'Orange CI',                            avgVol: 5200,  refPrice: 11500  },
+  ORGT:  { name: 'Oragroup',                               avgVol: 980,   refPrice: 2650   },
   PALC:  { name: 'PALM-CI — Palmier à Huile',            avgVol: 2200,  refPrice: 7800   },
   PRSC:  { name: 'Prestige Assurances CI',               avgVol: 450,   refPrice: 3200   },
   SAFC:  { name: 'SAPH CI — Plantations d\'Hévéas',     avgVol: 850,   refPrice: 5100   },
@@ -427,7 +427,7 @@ function parseBRVMHtml(rawHtml) {
     if (!price || price <= 0) continue;
     const prev = ref || price;
     stocks.push({
-      symbol, name: KNOWN_STOCKS[symbol]?.name || cells[1] || symbol,
+      symbol, name: cells[1] || KNOWN_STOCKS[symbol]?.name || symbol,
       price: Math.round(price), previousPrice: Math.round(prev),
       change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
       volume: Math.round(vol), source: 'live', timestamp: Date.now(),
@@ -464,7 +464,7 @@ function parseAFXHtml(html) {
     if (!price || price <= 0) continue;
     const prev = price - changePt;
     const chg  = prev > 0 ? Math.round((changePt / prev) * 10000) / 100 : 0;
-    stocks.push({ symbol, name: KNOWN_STOCKS[symbol]?.name || cells[1] || symbol,
+    stocks.push({ symbol, name: cells[1] || KNOWN_STOCKS[symbol]?.name || symbol,
       price: Math.round(price), previousPrice: Math.round(prev > 0 ? prev : price),
       change: Math.round(changePt), changePercent: chg, volume: Math.round(vol) });
   }
