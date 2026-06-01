@@ -42,7 +42,7 @@ const YAHOO_REVERSE      = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b,
 const YAHOO_REVERSE_BASE = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b,y]) => [y.split('.')[0],b]));
 
 const KNOWN_STOCKS = {
-  ABJC: { name:'Bernabe CI',                           avgVol:380,   refPrice:2100   },
+  ABJC: { name:'Servair CI',                            avgVol:551,   refPrice:3250   },
   BICC: { name:'BICICI CI (BNP Paribas)',              avgVol:180,   refPrice:5500   },
   BNBC: { name:'Bernabé CI',                           avgVol:4650,  refPrice:1700   },
   BOAB: { name:'Bank of Africa Benin',                 avgVol:980,   refPrice:5250   },

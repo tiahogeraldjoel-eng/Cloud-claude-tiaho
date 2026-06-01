@@ -57,7 +57,7 @@ const YAHOO_REVERSE = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b, y]) 
 // ─── Référentiel des valeurs BRVM ─────────────────────────────────────────────
 // Synchronisé avec le site BRVM Analytics (http://localhost:8000/)
 const KNOWN_STOCKS = {
-  ABJC:  { name: 'Bernabé CI',                           avgVol: 380,   refPrice: 2100   },
+  ABJC:  { name: 'Servair CI',                             avgVol: 551,   refPrice: 3250   },
   BICC:  { name: 'BICICI CI (BNP Paribas)',              avgVol: 180,   refPrice: 5500   },
   BNBC:  { name: 'Bernabé CI',                             avgVol: 4650,  refPrice: 1700   },
   BOAB:  { name: 'Bank of Africa Bénin',                 avgVol: 980,   refPrice: 5250   },
