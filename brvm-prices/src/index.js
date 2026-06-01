@@ -203,7 +203,31 @@ async function runPreOpenScan(env) {
 // ─── Cascade de sources ───────────────────────────────────────────────────────
 
 async function fetchLiveStocks() {
-  // AFX (afx.kwayisi.org) — source unique, pas de geo-blocage, données BRVM fiables
+  // 1. BRVM.org direct — edge Cloudflare présent en Afrique de l'Ouest, pas geo-bloqué
+  for (const url of BRVM_URLS) {
+    try {
+      const resp = await fetch(url, {
+        headers: {
+          'User-Agent': USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)],
+          'Accept': 'text/html,application/xhtml+xml,*/*;q=0.9',
+          'Accept-Language': 'fr-FR,fr;q=0.9',
+          'Referer': 'https://www.google.com/',
+        },
+      });
+      if (resp.ok) {
+        const stocks = parseBRVMHtml(await resp.text());
+        if (stocks) { console.log(`BRVM.org direct OK: ${stocks.length} titres`); return { stocks, source: 'brvm-direct' }; }
+      }
+    } catch (e) { console.warn(`BRVM.org ${url}: ${e.message}`); }
+  }
+
+  // 2. Yahoo Finance — API globale, pas de geo-blocage
+  try {
+    const stocks = await fetchYahooFinance();
+    if (stocks) { console.log(`Yahoo Finance OK: ${stocks.length} titres`); return { stocks, source: 'yahoo-finance' }; }
+  } catch (e) { console.warn('Yahoo Finance:', e.message); }
+
+  // 3. AFX (afx.kwayisi.org)
   try {
     const resp = await fetch('https://afx.kwayisi.org/brvm/', {
       headers: {
@@ -214,11 +238,10 @@ async function fetchLiveStocks() {
     });
     if (resp.ok) {
       const stocks = parseAFXHtml(decodeHtml(await resp.text()));
-      if (stocks) return { stocks: stocks.map(s => ({ ...s, source: 'live' })), source: 'afx' };
+      if (stocks) { console.log(`AFX OK: ${stocks.length} titres`); return { stocks: stocks.map(s => ({ ...s, source: 'live' })), source: 'afx' }; }
     }
-  } catch (e) {
-    console.error('AFX fetch error:', e.message);
-  }
+  } catch (e) { console.warn('AFX:', e.message); }
+
   return { stocks: [], source: 'unavailable' };
 }
 
