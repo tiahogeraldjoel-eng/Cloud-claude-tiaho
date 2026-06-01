@@ -902,7 +902,7 @@ async function sendTelegram(signal, source) {
 }
 
 async function sendTelegramUnavailable() {
-  const text = `⚠️ *BRVM Pre-Ouverture - Sources Indisponibles*\n━━━━━━━━━━━━━━━━━━━━━\nTradingView, Stooq, FluxBourse et BRVM.org sont inaccessibles ce matin.\n\n_Aucun signal genere - donnees live introuvables._\n_Reessai automatique demain a 9h35 GMT._`;
+  const text = `⚠️ *BRVM Pre-Ouverture - Sources Indisponibles*\n━━━━━━━━━━━━━━━━━━━━━\nAFX (afx.kwayisi.org) est inaccessible ce matin.\n\n_Aucun signal genere - donnees live introuvables._\n_Reessai automatique demain a 9h35 GMT._`;
   await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
