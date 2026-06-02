@@ -20,8 +20,15 @@ import database as db
 import scraper
 import indicators as ind
 import recommender as rec
-import pdf_report as pdf_gen
 import portfolio as ptf
+
+try:
+    import pdf_report as pdf_gen
+    _PDF_AVAILABLE = True
+except BaseException:
+    pdf_gen = None
+    _PDF_AVAILABLE = False
+    logging.getLogger(__name__).warning("pdf_report indisponible (dépendance manquante) — export PDF désactivé")
 
 # ─── Fiscalité dividendes BRVM ────────────────────────────────────────────────
 # Taux effectifs de retenue sur dividendes par pays UEMOA
@@ -805,6 +812,8 @@ async def api_load_all_history(bg: BackgroundTasks):
 @app.get("/api/stocks/{symbol}/export/pdf")
 def export_stock_pdf(symbol: str):
     """Génère et télécharge le rapport PDF d'analyse du titre."""
+    if not _PDF_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Export PDF indisponible (dépendance fpdf2/cryptography manquante)")
     symbol = symbol.upper()
 
     # Récupérer toutes les données
