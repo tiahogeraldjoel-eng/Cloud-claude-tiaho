@@ -901,6 +901,16 @@ async function sendTelegram(signal, source) {
   else console.error(`[${signal.symbol}] Telegram erreur: ${data.description}`);
 }
 
+async function sendTelegramCalme(count, source) {
+  const now = new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan', hour: '2-digit', minute: '2-digit' });
+  const text = `✅ *BRVM Pre-Ouverture — Scan Effectue*\n━━━━━━━━━━━━━━━━━━━━━\n📊 ${count} valeurs analysees · Source : ${source}\n🕐 ${now} GMT\n\n_Aucun signal MPR/OBI/Iceberg detecte ce matin._\n_Marche calme — pas d'ordre a passer._`;
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text, parse_mode: 'Markdown' }),
+  });
+}
+
 async function sendTelegramUnavailable() {
   const text = `⚠️ *BRVM Pre-Ouverture - Sources Indisponibles*\n━━━━━━━━━━━━━━━━━━━━━\nAFX (afx.kwayisi.org) est inaccessible ce matin.\n\n_Aucun signal genere - donnees live introuvables._\n_Reessai automatique demain a 9h35 GMT._`;
   await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -938,7 +948,11 @@ async function main() {
   console.log(`${stocks.length} valeurs chargees depuis "${source}".`);
 
   const alerts = stocks.map(analyzeSignal).filter(s => s.alert);
-  if (!alerts.length) { console.log('Marche calme - aucune alerte envoyee.'); return; }
+  if (!alerts.length) {
+    console.log('Marche calme - aucune alerte envoyee.');
+    await sendTelegramCalme(stocks.length, source);
+    return;
+  }
 
   console.log(`${alerts.length} alerte(s) - envoi Telegram...`);
   for (const alert of alerts) await sendTelegram(alert, source);
