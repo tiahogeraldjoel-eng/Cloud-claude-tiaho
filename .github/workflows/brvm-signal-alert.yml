@@ -23,4 +23,5 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           BUDGET_FCFA: '75000'
+          BRVM_WORKER_URL: ${{ vars.BRVM_WORKER_URL }}
         run: node brvm-prices/scripts/signal-alert.js

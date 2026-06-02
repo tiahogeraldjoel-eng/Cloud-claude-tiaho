@@ -4,12 +4,18 @@
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID   = process.env.TELEGRAM_CHAT_ID;
 const BUDGET_FCFA        = parseInt(process.env.BUDGET_FCFA || '75000', 10);
+// URL du Cloudflare Worker déjà déployé (source #0 — Cloudflare edge, pas de geo-blocage)
+const BRVM_WORKER_URL    = (process.env.BRVM_WORKER_URL || '').replace(/\/$/, '');
 
 const BRVM_URLS = [
   'https://www.brvm.org/fr/cours-actions/0',
   'https://www.brvm.org/fr/cours-actions/0/all',
   'https://brvm.org/fr/cours-actions/0',
   'https://www.brvm.org/fr/cours-des-actions/0/all',
+  'https://www.brvm.org/fr/cours-des-actions/0',
+  'https://brvm.org/fr/cours-des-actions/0',
+  'https://www.brvm.org/en/cours-actions/0',
+  'https://www.brvm.org/en/cours-des-actions/0/all',
 ];
 
 const USER_AGENTS = [
@@ -36,9 +42,9 @@ const YAHOO_REVERSE      = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b,
 const YAHOO_REVERSE_BASE = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b,y]) => [y.split('.')[0],b]));
 
 const KNOWN_STOCKS = {
-  ABJC: { name:'Bernabe CI',                           avgVol:380,   refPrice:2100   },
+  ABJC: { name:'Servair CI',                            avgVol:551,   refPrice:3250   },
   BICC: { name:'BICICI CI (BNP Paribas)',              avgVol:180,   refPrice:5500   },
-  BNBC: { name:'Brasseries du Benin',                  avgVol:95,    refPrice:3800   },
+  BNBC: { name:'Bernabé CI',                           avgVol:4650,  refPrice:1700   },
   BOAB: { name:'Bank of Africa Benin',                 avgVol:980,   refPrice:5250   },
   BOABF:{ name:'Bank of Africa Burkina Faso',          avgVol:180,   refPrice:5200   },
   BOACI:{ name:'Bank of Africa Cote Ivoire',           avgVol:2800,  refPrice:6450   },
@@ -53,19 +59,19 @@ const KNOWN_STOCKS = {
   LACI: { name:'Air Liquide CI',                       avgVol:240,   refPrice:6500   },
   NEIC: { name:'NEI-CEDA CI',                          avgVol:800,   refPrice:620    },
   NSBC: { name:'NSIA Banque CI',                       avgVol:950,   refPrice:7200   },
-  NTLC: { name:'Filtisac CI',                          avgVol:720,   refPrice:1850   },
+  NTLC: { name:'Nestlé CI',                            avgVol:660,   refPrice:13000  },
   ONAT: { name:'Onatel Telecoms Burkina Faso',         avgVol:310,   refPrice:4950   },
   ORAC: { name:'Orange Cote Ivoire',                   avgVol:5400,  refPrice:14750  },
-  ORGT: { name:'Orange CI',                            avgVol:5200,  refPrice:11500  },
+  ORGT: { name:'Oragroup',                             avgVol:980,   refPrice:2650   },
   PALC: { name:'PALM-CI Palmier Huile',                avgVol:2200,  refPrice:7800   },
-  PRSC: { name:'Prestige Assurances CI',               avgVol:450,   refPrice:3200   },
-  SAFC: { name:'SAPH CI Plantations Heveas',           avgVol:850,   refPrice:5100   },
+  PRSC: { name:'Tractafric Motor CI',                  avgVol:104,   refPrice:4100   },
+  SAFC: { name:'SAFCA',                                avgVol:516,   refPrice:3750   },
   SAPH: { name:'SAPH CI Heveas',                       avgVol:850,   refPrice:5100   },
   SCRC: { name:'Sucrivoire CI',                        avgVol:560,   refPrice:680    },
   SDCC: { name:'SODE CI',                              avgVol:95,    refPrice:2900   },
   SEMC: { name:'Crown Siem CI Emballages',             avgVol:3800,  refPrice:680    },
   SGBC: { name:'Societe Generale CI',                  avgVol:720,   refPrice:12500  },
-  SHEC: { name:'Societe Hevea CI',                     avgVol:75,    refPrice:4100   },
+  SHEC: { name:'Vivo Energie CI',                      avgVol:1612,  refPrice:1915   },
   SIAC: { name:'SIFCA CI Agro-industrie',              avgVol:1500,  refPrice:4200   },
   SIBC: { name:'SIB CI Societe Ivoirienne Banque',     avgVol:1400,  refPrice:5800   },
   SICC: { name:'SICOR CI Industrie Coton',             avgVol:220,   refPrice:3800   },
@@ -75,8 +81,8 @@ const KNOWN_STOCKS = {
   SNTS: { name:'Sonatel Orange Senegal',               avgVol:3800,  refPrice:15800  },
   SOGB: { name:'SOGB CI Caoutchoucs',                  avgVol:520,   refPrice:3650   },
   SPHC: { name:'SAPH CI Actions Prioritaires',         avgVol:85,    refPrice:4200   },
-  STAC: { name:'SITAB CI British American Tobacco',    avgVol:340,   refPrice:21000  },
-  STBC: { name:'SGB-BF Societe Generale Burkina',      avgVol:340,   refPrice:5300   },
+  STAC: { name:'SETAO CI',                             avgVol:1670,  refPrice:3100   },
+  STBC: { name:'SITAB CI',                             avgVol:497,   refPrice:21000  },
   SVOC: { name:'SVO CI Savonnerie',                    avgVol:680,   refPrice:2200   },
   TPCI: { name:'Tropical Partners CI',                 avgVol:60,    refPrice:1100   },
   TTLC: { name:'TotalEnergies Marketing CI',           avgVol:2800,  refPrice:2150   },
@@ -132,69 +138,51 @@ const CHROME_HEADERS = {
   'upgrade-insecure-requests': '1',
 };
 
+// ─── Source #0: Cloudflare Worker déployé ────────────────────────────────────
+// Le Worker tourne sur l'edge Cloudflare → pas de géo-blocage → atteint brvm.org directement.
+// Les données "simulated" du Worker sont rejetées ici — on veut uniquement des cours réels.
+
+async function fetchCloudflareWorker() {
+  const resp = await fetchWithTimeout(`${BRVM_WORKER_URL}/stocks`, {
+    headers: { 'Accept': 'application/json', 'User-Agent': USER_AGENTS[0] },
+  });
+  if (!resp.ok) throw new Error(`Worker HTTP ${resp.status}`);
+  const data = await resp.json();
+  const arr = data.stocks || data;
+  if (!Array.isArray(arr) || arr.length < 5) return null;
+
+  // Rejeter les données simulées — uniquement les cours live
+  const live = arr.filter(s => s.source !== 'simulated');
+  if (live.length < 5) {
+    console.warn(`Worker: donnees simulees (${arr.length - live.length}/${arr.length}) — rejet, sources live introuvables.`);
+    return null;
+  }
+  console.log(`Worker: ${live.length} titres live (${[...new Set(live.map(s => s.source))].join(',')})`);
+  return live.map(s => ({
+    symbol:        String(s.symbol || '').toUpperCase(),
+    name:          s.name || KNOWN_STOCKS[s.symbol]?.name || s.symbol,
+    price:         Math.round(parseFloat(s.price) || 0),
+    previousPrice: Math.round(parseFloat(s.previousPrice || s.price) || 0),
+    change:        Math.round(parseFloat(s.change) || 0),
+    changePercent: Math.round((parseFloat(s.changePercent) || 0) * 100) / 100,
+    volume:        parseInt(s.volume) || 0,
+  })).filter(s => s.symbol && s.price > 0);
+}
+
 async function fetchLiveStocks() {
-  // 1. TradingView Scanner - API JSON publique, pas d'auth, couverture BRVM
-  try {
-    const stocks = await fetchTradingView();
-    if (stocks) { console.log(`Source: tradingview (${stocks.length} titres)`); return { stocks, source: 'tradingview' }; }
-  } catch (e) { console.warn('TradingView:', e.message); }
-
-  // 2. Stooq.com - CSV gratuit, pas d'auth, couverture globale
-  try {
-    const stocks = await fetchStooq();
-    if (stocks) { console.log(`Source: stooq (${stocks.length} titres)`); return { stocks, source: 'stooq' }; }
-  } catch (e) { console.warn('Stooq:', e.message); }
-
-  // 3. FluxBourse (source demandee par l'utilisateur)
-  try {
-    const stocks = await fetchFluxBourse();
-    if (stocks) { console.log(`Source: fluxbourse (${stocks.length} titres)`); return { stocks, source: 'fluxbourse' }; }
-  } catch (e) { console.warn('FluxBourse:', e.message); }
-
-  // 4. BRVM.org via proxies CORS (direct bloque depuis GitHub Actions US)
-  for (const proxy of BRVM_PROXIES) {
-    const proxyHost = proxy.split('/')[2];
+  // Source #0 : Cloudflare Worker (lui-même utilise AFX)
+  if (BRVM_WORKER_URL) {
     try {
-      const resp = await fetchWithTimeout(proxy + encodeURIComponent(BRVM_URLS[0]), {
-        headers: { 'Accept': 'text/html', 'User-Agent': USER_AGENTS[0] },
-      });
-      console.log(`brvm-proxy ${proxyHost}: HTTP ${resp.status}`);
-      if (resp.ok) {
-        const html = await resp.text();
-        console.log(`brvm-proxy ${proxyHost}: ${html.length} bytes, ETIT: ${html.includes('ETIT')}`);
-        const stocks = parseBRVMHtml(html) || parseBRVMHtmlFlexible(html);
-        if (stocks) { console.log(`Source: brvm-proxy (${proxyHost}, ${stocks.length} titres)`); return { stocks, source: 'brvm-proxy' }; }
-        console.warn(`brvm-proxy ${proxyHost}: HTML recu mais table non parsee`);
-      }
-    } catch (e) { console.warn(`brvm-proxy ${proxyHost}:`, e.message); }
+      const stocks = await fetchCloudflareWorker();
+      if (stocks?.length >= 5) { console.log(`Source: cloudflare-worker (${stocks.length} titres)`); return { stocks, source: 'cloudflare-worker' }; }
+    } catch (e) { console.warn('Cloudflare Worker:', e.message); }
   }
 
-  // 4. Yahoo Finance avec crumb (obligatoire depuis 2024)
+  // Source #1 : AFX direct — afx.kwayisi.org, pas de geo-blocage, données BRVM fiables
   try {
-    const stocks = await fetchYahooFinance();
-    if (stocks) { console.log(`Source: yahoo-finance (${stocks.length} titres)`); return { stocks, source: 'yahoo-finance' }; }
-  } catch (e) { console.warn('Yahoo Finance:', e.message); }
-
-  // 5. Africabourse.net
-  try {
-    const stocks = await fetchAfricabourse();
-    if (stocks) { console.log(`Source: africabourse (${stocks.length} titres)`); return { stocks, source: 'africabourse' }; }
-  } catch (e) { console.warn('Africabourse:', e.message); }
-
-  // 6. Sika Finance
-  try {
-    const resp = await fetchWithTimeout('https://sika.finance/bourse/brvm/cours', {
-      headers: { ...CHROME_HEADERS, 'Accept-Language': 'fr-FR,fr;q=0.9' },
-    });
-    console.log(`sika-finance: HTTP ${resp.status}`);
-    if (resp.ok) {
-      const html = await resp.text();
-      console.log(`sika-finance: ${html.length} bytes`);
-      const stocks = parseSikaHtml(html);
-      if (stocks) { console.log(`Source: sika-finance (${stocks.length} titres)`); return { stocks, source: 'sika-finance' }; }
-      console.warn('sika-finance: HTML recu mais table non parsee');
-    }
-  } catch (e) { console.warn('Sika Finance:', e.message); }
+    const stocks = await fetchAFX();
+    if (stocks?.length >= 5) { console.log(`Source: afx (${stocks.length} titres)`); return { stocks, source: 'afx' }; }
+  } catch (e) { console.warn('AFX:', e.message); }
 
   return { stocks: [], source: 'unavailable' };
 }
@@ -727,30 +715,106 @@ async function fetchAfricabourse() {
   return null;
 }
 
-function parseBRVMHtml(html) {
+function parseBRVMHtml(rawHtml) {
+  const html = decodeHtml(rawHtml);
   const stocks = [];
+  // Identify the main price table: header contains "cloture"/"variation" or "symbole"
+  const tableRe = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+  let tableMatch, targetHtml = '';
+  while ((tableMatch = tableRe.exec(html)) !== null) {
+    const firstRow = /<tr[^>]*>([\s\S]*?)<\/tr>/i.exec(tableMatch[1]);
+    if (!firstRow) continue;
+    const hdr = firstRow[1].replace(/<[^>]+>/g, ' ').toLowerCase();
+    if ((hdr.includes('cl') && hdr.includes('ture')) ||
+        (hdr.includes('symbole') && hdr.includes('variation'))) {
+      targetHtml = tableMatch[1]; break;
+    }
+  }
+  const searchHtml = targetHtml || html;
   const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   const strip = /<[^>]+>/g;
-  let row;
-  while ((row = rowRe.exec(html)) !== null) {
+  let row, skipHeader = !!targetHtml;
+  while ((row = rowRe.exec(searchHtml)) !== null) {
+    if (skipHeader) { skipHeader = false; continue; }
     const cells = [];
-    const cm = /<td[^>]*>([\s\S]*?)<\/td>/gi;
-    let cell;
+    const cm = /<td[^>]*>([\s\S]*?)<\/td>/gi; let cell;
     while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
     if (cells.length < 5) continue;
-    const symbol = cells[0].toUpperCase().replace(/\s/g, '');
-    const price  = parseFloat(cells[2].replace(/[\s ]/g, '').replace(',', '.'));
-    const chg    = parseFloat(cells[4].replace('%','').replace(/[\s ]/g,'').replace(',','.')) || 0;
-    if (symbol.length >= 2 && symbol.length <= 6 && price > 0 && KNOWN_STOCKS[symbol]) {
-      const prev = price / (1 + chg / 100);
-      stocks.push({ symbol, name: KNOWN_STOCKS[symbol]?.name || symbol,
-        price: Math.round(price), previousPrice: Math.round(prev),
-        change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
-        volume: parseInt(cells[5]?.replace(/[\s ]/g,'') || '0') || 0 });
-    }
+    const symbol = cells[0].toUpperCase().replace(/[\s\u00a0]/g, '');
+    if (!/^[A-Z]{2,8}$/.test(symbol) || !KNOWN_STOCKS[symbol]) continue;
+    // BRVM.org confirmed column structure (scraper.py):
+    // 0:Symbol 1:Name 2:Volume 3:RefPrice(veille) 4:OpenPrice 5:ClosePrice 6:Variation%
+    const vol   = parseFloat(cells[2]?.replace(/[\s\u00a0]/g, '').replace(',', '.')) || 0;
+    const ref   = parseFloat(cells[3]?.replace(/[\s\u00a0]/g, '').replace(',', '.'));
+    const open  = parseFloat(cells[4]?.replace(/[\s\u00a0]/g, '').replace(',', '.'));
+    const close = parseFloat(cells[5]?.replace(/[\s\u00a0]/g, '').replace(',', '.'));
+    const chg   = parseFloat(cells[6]?.replace('%', '').replace(/[\s\u00a0]/g, '').replace(',', '.')) || 0;
+    const price = close || open || ref;
+    if (!price || price <= 0) continue;
+    const prev = ref || price;
+    stocks.push({ symbol, name: cells[1] || KNOWN_STOCKS[symbol]?.name || symbol,
+      price: Math.round(price), previousPrice: Math.round(prev),
+      change: Math.round(price - prev), changePercent: Math.round(chg * 100) / 100,
+      volume: Math.round(vol) });
   }
   return stocks.length >= 5 ? stocks : null;
 }
+
+async function fetchAFX() {
+  // afx.kwayisi.org/brvm/ — confirmed working by scraper.py (no geo-blocking)
+  const resp = await fetchWithTimeout('https://afx.kwayisi.org/brvm/', {
+    headers: {
+      'User-Agent': USER_AGENTS[0],
+      'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+      'Accept-Language': 'fr-FR,fr;q=0.9',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache',
+    },
+  });
+  if (!resp.ok) throw new Error(`AFX HTTP ${resp.status}`);
+  const html = decodeHtml(await resp.text());
+  const stocks = parseAFXHtml(html);
+  console.log(`AFX: ${stocks?.length ?? 0} titres`);
+  return stocks;
+}
+
+function parseAFXHtml(html) {
+  // Table structure (confirmed by scraper.py):
+  // Tables[0]=Indices, [1-2]=Gainers/Losers (%), [3]=Main prices
+  // Table[3] columns: Ticker | Name | Volume | Price | ChangePts
+  const tableRe = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+  const tables = [];
+  let tm;
+  while ((tm = tableRe.exec(html)) !== null) tables.push(tm[1]);
+
+  const targetTable = tables[3] || tables[tables.length - 1];
+  if (!targetTable) return null;
+
+  const stocks = [];
+  const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const strip = /<[^>]+>/g;
+  let row, skipHeader = true;
+  while ((row = rowRe.exec(targetTable)) !== null) {
+    if (skipHeader) { skipHeader = false; continue; }
+    const cells = [];
+    const cm = /<td[^>]*>([\s\S]*?)<\/td>/gi; let cell;
+    while ((cell = cm.exec(row[1])) !== null) cells.push(cell[1].replace(strip, '').trim());
+    if (cells.length < 4) continue;
+    const symbol = cells[0].toUpperCase().replace(/[\s\u00a0]/g, '');
+    if (!/^[A-Z]{2,8}$/.test(symbol) || !KNOWN_STOCKS[symbol]) continue;
+    const vol      = parseFloat(cells[2]?.replace(/[\s\u00a0]/g, '').replace(',', '.')) || 0;
+    const price    = parseFloat(cells[3]?.replace(/[\s\u00a0]/g, '').replace(',', '.'));
+    const changePt = parseFloat(cells[4]?.replace(/[\s\u00a0]/g, '').replace(',', '.')) || 0;
+    if (!price || price <= 0) continue;
+    const prev = price - changePt;
+    const chg  = prev > 0 ? Math.round((changePt / prev) * 10000) / 100 : 0;
+    stocks.push({ symbol, name: cells[1] || KNOWN_STOCKS[symbol]?.name || symbol,
+      price: Math.round(price), previousPrice: Math.round(prev > 0 ? prev : price),
+      change: Math.round(changePt), changePercent: chg, volume: Math.round(vol) });
+  }
+  return stocks.length >= 5 ? stocks : null;
+}
+
 
 function parseSikaHtml(html) {
   const stocks = [];
@@ -838,7 +902,7 @@ async function sendTelegram(signal, source) {
 }
 
 async function sendTelegramUnavailable() {
-  const text = `⚠️ *BRVM Pre-Ouverture - Sources Indisponibles*\n━━━━━━━━━━━━━━━━━━━━━\nTradingView, Stooq, FluxBourse et BRVM.org sont inaccessibles ce matin.\n\n_Aucun signal genere - donnees live introuvables._\n_Reessai automatique demain a 9h35 GMT._`;
+  const text = `⚠️ *BRVM Pre-Ouverture - Sources Indisponibles*\n━━━━━━━━━━━━━━━━━━━━━\nAFX (afx.kwayisi.org) est inaccessible ce matin.\n\n_Aucun signal genere - donnees live introuvables._\n_Reessai automatique demain a 9h35 GMT._`;
   await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -851,8 +915,20 @@ async function main() {
     console.error('Erreur: TELEGRAM_BOT_TOKEN et TELEGRAM_CHAT_ID doivent etre definis.');
     process.exit(1);
   }
-  console.log(`BRVM Pre-Open Scanner - ${new Date().toISOString()}`);
+
+  // Vérification jour ouvrable — BRVM fermée le weekend
+  const now = new Date();
+  const dayOfWeek = now.getUTCDay(); // 0=Dimanche, 6=Samedi
+  const dayNames = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    console.log(`${dayNames[dayOfWeek]} — BRVM fermee. Aucun signal envoye.`);
+    return;
+  }
+
+  console.log(`BRVM Pre-Open Scanner - ${now.toISOString()} (${dayNames[dayOfWeek]})`);
   console.log(`Budget: ${BUDGET_FCFA.toLocaleString('fr-FR')} FCFA`);
+  if (BRVM_WORKER_URL) console.log(`Worker URL: ${BRVM_WORKER_URL}`);
+
   const { stocks, source } = await fetchLiveStocks();
   if (!stocks.length) {
     console.warn('Toutes les sources inaccessibles.');
@@ -860,8 +936,10 @@ async function main() {
     return;
   }
   console.log(`${stocks.length} valeurs chargees depuis "${source}".`);
+
   const alerts = stocks.map(analyzeSignal).filter(s => s.alert);
   if (!alerts.length) { console.log('Marche calme - aucune alerte envoyee.'); return; }
+
   console.log(`${alerts.length} alerte(s) - envoi Telegram...`);
   for (const alert of alerts) await sendTelegram(alert, source);
   console.log('Termine.');
