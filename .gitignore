@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.exe
+ngrok.exe
+cloudflared.exe
+sika_debug.html
+test_output.pdf
+.env
+.claude/
