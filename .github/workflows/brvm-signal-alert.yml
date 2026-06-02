@@ -1,8 +1,6 @@
 name: BRVM Pre-Open Signal Alert
 
 on:
-  schedule:
-    - cron: '35 9 * * 1-5'
   workflow_dispatch:
 
 jobs:
