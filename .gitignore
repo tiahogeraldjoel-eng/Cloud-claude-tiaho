@@ -10,6 +10,7 @@ sika_debug.html
 test_output.pdf
 .env
 .claude/
+!.claude/commands/
 
 # Fichiers Windows / lancement local
 *.bat
