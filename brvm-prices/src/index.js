@@ -192,6 +192,7 @@ async function runPreOpenScan(env) {
 
   if (alerts.length === 0) {
     console.log('Marché calme — aucune alerte envoyée.');
+    await sendTelegramCalme(stocks.length, source, env);
     return;
   }
 
@@ -384,6 +385,29 @@ async function sendTelegram(signal, env, source) {
   } catch (e) {
     console.error(`[${signal.symbol}] Telegram exception :`, e.message);
   }
+}
+
+async function sendTelegramCalme(count, source, env) {
+  const token  = env.TELEGRAM_BOT_TOKEN;
+  const chatId = env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return;
+  const now = new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan', hour: '2-digit', minute: '2-digit' });
+  const text = [
+    '✅ *BRVM Pré-Ouverture — Scan Effectué*',
+    '━━━━━━━━━━━━━━━━━━━━━',
+    `📊 ${count} valeurs analysées · Source : ${source}`,
+    `🕐 ${now} GMT`,
+    '',
+    '_Aucun signal MPR/OBI/Iceberg détecté ce matin._',
+    '_Marché calme — pas d\'ordre à passer._',
+  ].join('\n');
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }),
+    });
+  } catch {}
 }
 
 async function sendTelegramUnavailable(env) {
