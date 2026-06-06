@@ -1115,6 +1115,66 @@ function scoreColor(s) {
   return '#ef4444';
 }
 
+// ─── DIVIDENDE MANUEL ────────────────────────────────────────────────────────
+async function saveManualDiv(symbol) {
+  const netDps  = parseFloat(document.getElementById('manual-div-net')?.value || '0');
+  const year    = parseInt(document.getElementById('manual-div-year')?.value || '0');
+  const resEl   = document.getElementById('manual-div-result');
+
+  if (!netDps || netDps <= 0) {
+    if (resEl) resEl.innerHTML = '<span class="text-red-400">Saisissez un dividende net valide (> 0)</span>';
+    return;
+  }
+  if (resEl) resEl.textContent = 'Enregistrement...';
+
+  try {
+    const r = await fetch(`/api/stocks/${symbol}/dividend-manual`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ net_dps: netDps, exercice_year: year })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erreur serveur');
+
+    if (resEl) resEl.innerHTML = `
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+        <div class="bg-slate-800 rounded-lg p-2 text-center">
+          <div class="text-slate-400 text-xs">Net</div>
+          <div class="font-bold text-green-300">${fmt(d.net_dps,0)} FCFA</div>
+        </div>
+        <div class="bg-slate-800 rounded-lg p-2 text-center">
+          <div class="text-slate-400 text-xs">Brut (avant IRVM ${d.irvm_pct}%)</div>
+          <div class="font-bold text-slate-200">${fmt(d.gross_dps,0)} FCFA</div>
+        </div>
+        <div class="bg-slate-800 rounded-lg p-2 text-center">
+          <div class="text-slate-400 text-xs">Rendement net</div>
+          <div class="font-bold text-indigo-300">${d.net_yield_pct!=null?fmt(d.net_yield_pct,2)+'%':'—'}</div>
+        </div>
+        <div class="bg-slate-800 rounded-lg p-2 text-center">
+          <div class="text-slate-400 text-xs">P/E Ratio</div>
+          <div class="font-bold text-slate-200">${d.per!=null?fmt(d.per,1)+'x':'—'}</div>
+        </div>
+      </div>
+      <div class="text-green-400 mt-2">✓ Dividende enregistré — rechargez l'analyse pour rafraîchir.</div>`;
+
+    toast(`Dividende ${symbol} enregistré — Net: ${fmt(netDps,0)} FCFA`, 4000);
+    setTimeout(() => loadFundamental(symbol), 1500);
+  } catch(e) {
+    if (resEl) resEl.innerHTML = `<span class="text-red-400">Erreur : ${e.message}</span>`;
+  }
+}
+
+async function deleteManualDiv(symbol) {
+  if (!confirm(`Supprimer le dividende manuel de ${symbol} ?`)) return;
+  try {
+    await fetch(`/api/stocks/${symbol}/dividend-manual`, { method: 'DELETE' });
+    toast(`Dividende manuel ${symbol} supprimé`, 3000);
+    loadFundamental(symbol);
+  } catch(e) {
+    toast('Erreur suppression', 2000);
+  }
+}
+
 // ─── ANALYSE FONDAMENTALE ─────────────────────────────────────────────────────
 async function loadFundamental(symbol) {
   if(!symbol) return;
@@ -1208,6 +1268,41 @@ function renderFundamental(d, reco) {
       </div>
     </div>` : '';
 
+  // ── Formulaire saisie manuelle dividende ───────────────────────────────────
+  const curYear = new Date().getFullYear();
+  const manualDivForm = `
+    <div class="rounded-xl border border-indigo-700/40 bg-indigo-900/10 p-4 mb-5" id="manual-div-block">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-base">✏️</span>
+        <span class="text-sm font-semibold text-indigo-300">Saisie manuelle du dividende</span>
+        ${fDivStatus==='manuel' ? `<span class="ml-2 px-1.5 py-0.5 rounded text-xs font-bold bg-indigo-900/60 text-indigo-300 border border-indigo-700/50">✓ MANUEL ENREGISTRÉ</span>` : ''}
+      </div>
+      <div class="flex flex-wrap gap-3 items-end">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Dividende net (FCFA/action)</label>
+          <input id="manual-div-net" type="number" min="0" step="0.01"
+            value="${dpsNet ?? ''}"
+            placeholder="ex: 250"
+            class="w-36 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Exercice</label>
+          <input id="manual-div-year" type="number" min="2010" max="${curYear}"
+            value="${f?.div_exercice_year ?? curYear - 1}"
+            class="w-24 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+        </div>
+        <button onclick="saveManualDiv('${stock.symbol}')"
+          class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-colors">
+          Calculer & Enregistrer
+        </button>
+        ${fDivStatus==='manuel' ? `<button onclick="deleteManualDiv('${stock.symbol}')"
+          class="px-3 py-2 bg-slate-700 hover:bg-red-900 text-slate-300 hover:text-red-300 text-sm rounded-lg transition-colors">
+          Supprimer
+        </button>` : ''}
+      </div>
+      <div id="manual-div-result" class="mt-3 text-xs text-slate-400"></div>
+    </div>`;
+
   setHTML('fundamental-content',`
     <!-- En-tête -->
     <div class="bg-card rounded-xl border border-border p-5 mb-5">
@@ -1230,6 +1325,9 @@ function renderFundamental(d, reco) {
 
     <!-- Recommandation -->
     <div id="fund-reco-box"></div>
+
+    <!-- Saisie manuelle dividende -->
+    ${manualDivForm}
 
     <!-- Métriques clés dont dividende en vedette -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 mb-5">

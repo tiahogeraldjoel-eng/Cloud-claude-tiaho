@@ -700,6 +700,82 @@ def api_dividends():
 
 # ─── ACTUALITÉS ───────────────────────────────────────────────────────────────
 
+@app.post("/api/stocks/{symbol}/dividend-manual")
+def api_dividend_manual(symbol: str, body: dict):
+    """
+    Saisie manuelle d'un dividende net pour un titre.
+    Calcule automatiquement : brut, rendement, PER si BNPA disponible.
+    Source = 'MANUEL' — prioritaire sur AFX.
+    """
+    symbol = symbol.upper()
+    stock  = db.get_stock(symbol)
+    if not stock:
+        return JSONResponse({"error": f"Titre {symbol} introuvable"}, 404)
+
+    net_dps       = float(body.get("net_dps", 0) or 0)
+    exercice_year = int(body.get("exercice_year", datetime.now().year - 1))
+
+    if net_dps <= 0:
+        return JSONResponse({"error": "Dividende net doit être > 0"}, 400)
+
+    country = stock.get("country") or ""
+    factor  = _net_div_factor(country)
+    gross_dps = round(net_dps / factor, 2)
+
+    # Rendement calculé sur le cours actuel
+    latest = db.get_latest_price(symbol)
+    price  = latest.get("close") if latest else None
+    gross_yield = round(gross_dps / price * 100, 4) if price and price > 0 else None
+    net_yield   = round(gross_yield * factor, 4)    if gross_yield else None
+
+    # PER : si BNPA déjà en DB on le conserve, sinon on essaie de le déduire
+    fund = db.get_fundamental(symbol) or {}
+    per  = fund.get("per")
+    bnpa = fund.get("earnings_per_share")
+    if price and bnpa and bnpa > 0:
+        per = round(price / bnpa, 2)
+
+    db.force_upsert_dividend({
+        "symbol":             symbol,
+        "dividend_per_share": gross_dps,
+        "dividend_yield":     gross_yield,
+        "div_status":         "manuel",
+        "div_exercice_year":  exercice_year,
+        "div_payment_date":   None,
+    })
+
+    return {
+        "symbol":          symbol,
+        "net_dps":         net_dps,
+        "gross_dps":       gross_dps,
+        "net_yield_pct":   net_yield,
+        "gross_yield_pct": gross_yield,
+        "irvm_factor":     factor,
+        "irvm_pct":        round((1 - factor) * 100, 1),
+        "per":             per,
+        "bnpa":            bnpa,
+        "price":           price,
+        "exercice_year":   exercice_year,
+        "country":         country,
+        "source":          "MANUEL",
+    }
+
+
+@app.delete("/api/stocks/{symbol}/dividend-manual")
+def api_dividend_manual_delete(symbol: str):
+    """Supprime le dividende saisi manuellement (remet à zéro les champs dividende)."""
+    symbol = symbol.upper()
+    db.force_upsert_dividend({
+        "symbol":             symbol,
+        "dividend_per_share": None,
+        "dividend_yield":     None,
+        "div_status":         "aucun",
+        "div_exercice_year":  None,
+        "div_payment_date":   None,
+    })
+    return {"ok": True, "symbol": symbol}
+
+
 @app.get("/api/news")
 def api_news(limit: int = 20, source: Optional[str] = None):
     """
