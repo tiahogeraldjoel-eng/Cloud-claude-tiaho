@@ -1131,7 +1131,7 @@ def _parse_portfolio_excel(content: bytes, filename: str) -> Dict:
 # ─── PORTEFEUILLE — Import Universel (PDF / CSV / Excel / Image) ──────────────
 
 @app.post("/api/portfolio/analyze")
-async def analyze_portfolio_file(file: UploadFile = File(...)):
+async def analyze_portfolio_file(file: UploadFile = File(...), profil: str = "mixte"):
     """
     Accepte un relevé de portefeuille BRVM dans n'importe quel format :
       • PDF  (pdfplumber — SGBCI, BRM, Coris Bourse, NSIA Finance…)
@@ -1179,7 +1179,7 @@ async def analyze_portfolio_file(file: UploadFile = File(...)):
         })
 
     # ── Analyser les positions ─────────────────────────────────────────────
-    result = ptf.analyze_portfolio(parsed["holdings"], db, ind, rec)
+    result = ptf.analyze_portfolio(parsed["holdings"], db, ind, rec, profil=profil)
     result["metadata"]       = parsed.get("metadata", {})
     result["parsing_errors"] = parse_errors
     result["filename"]       = filename
@@ -1218,7 +1218,8 @@ def analyze_portfolio_manual(body: dict):
     if not clean:
         raise HTTPException(400, "Aucun symbole valide fourni")
 
-    result = ptf.analyze_portfolio(clean, db, ind, rec)
+    profil = body.get("profil", "mixte")
+    result = ptf.analyze_portfolio(clean, db, ind, rec, profil=profil)
     result.setdefault("metadata", {})          # cohérence avec la route PDF
     result.setdefault("parsing_errors", [])
     return result

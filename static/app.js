@@ -2133,6 +2133,8 @@ async function uploadPortfolioFile(file) {
   try {
     const form = new FormData();
     form.append('file', file);
+    const globalProfil = localStorage.getItem('profil_global') || 'mixte';
+    form.append('profil', globalProfil);
     const r = await fetch('/api/portfolio/analyze', { method: 'POST', body: form });
     const d = await r.json();
 
@@ -2218,10 +2220,11 @@ async function analyzeManual() {
   spinEl.classList.remove('hidden');
 
   try {
+    const globalProfil = localStorage.getItem('profil_global') || 'mixte';
     const r = await fetch('/api/portfolio/analyze-manual', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({holdings})
+      body: JSON.stringify({holdings, profil: globalProfil})
     });
     const d = await r.json();
     statusEl.classList.add('hidden');

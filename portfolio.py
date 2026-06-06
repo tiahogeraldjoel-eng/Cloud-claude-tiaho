@@ -673,7 +673,7 @@ def _extract_metadata(text: str) -> Dict:
 
 # ─── Analyse de portefeuille ─────────────────────────────────────────────────
 
-def analyze_portfolio(holdings: List[Dict], db, ind, rec) -> Dict:
+def analyze_portfolio(holdings: List[Dict], db, ind, rec, profil: str = "mixte") -> Dict:
     """
     Analyse complète d'un portefeuille BRVM.
     Pour chaque position : prix actuel, P&L, signal technique, recommandation.
@@ -737,8 +737,13 @@ def analyze_portfolio(holdings: List[Dict], db, ind, rec) -> Dict:
         reco = None
         try:
             latest_p  = db.get_latest_price(sym)
-            hw = db.get_52w_highlow(sym)   # via le module db injecté
-            sentiment = {"score": 50}      # neutre si non dispo
+            hw = db.get_52w_highlow(sym)
+            # Récupérer le vrai sentiment depuis la DB si disponible
+            try:
+                mkt = db.get_market_data()
+                sentiment = {"score": mkt.get("fear_greed_score") or 50} if mkt else {"score": 50}
+            except Exception:
+                sentiment = {"score": 50}
             reco = compute_recommendation(
                 prices       = prices,
                 fundamentals = fund,
@@ -746,11 +751,12 @@ def analyze_portfolio(holdings: List[Dict], db, ind, rec) -> Dict:
                 hw           = hw,
                 sentiment    = sentiment,
                 latest       = latest_p,
+                profil       = profil,
             )
         except Exception:
             pass
 
-        reco_signal = reco.get("signal", "NEUTRE") if reco else "NEUTRE"
+        reco_signal = reco.get("recommendation", "NEUTRE") if reco else "NEUTRE"
         reco_score  = reco.get("score", 50) if reco else 50
 
         # ── Conseil positionnel ───────────────────────────────────────────
