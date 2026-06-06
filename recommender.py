@@ -1002,7 +1002,25 @@ def compute_recommendation(
     sekide_delta = round((pts_s - pts_a) / 6.0 * 8.0, 1)
     composite    = max(0.0, min(100.0, composite + sekide_delta))
 
-    composite = round(composite, 1)
+    # ── Ajustement Valorisation (Marge de Sécurité) ───────────────────────────
+    # Le cours juste doit cohérencer la recommandation finale.
+    # Surcote significative → pénalité sur le composite pour éviter de recommander
+    # ACHAT/ACCUMULER sur un titre manifestement surévalué.
+    fv_data    = compute_fair_value(fundamentals, latest_price)
+    fv_delta   = 0.0
+    fv_mos     = fv_data.get("margin_of_safety")  # None si non calculable
+    if fv_mos is not None:
+        if fv_mos >= 30:
+            fv_delta = +5.0    # forte décote Graham → bonus
+        elif fv_mos >= 15:
+            fv_delta = +2.0    # décote modérée → léger bonus
+        elif fv_mos >= 0:
+            fv_delta = 0.0     # légère décote → neutre
+        elif fv_mos >= -15:
+            fv_delta = -5.0    # surcote légère → pénalité modérée
+        else:
+            fv_delta = -10.0   # surcote significative → pénalité forte
+    composite = round(max(0.0, min(100.0, composite + fv_delta)), 1)
     label     = _score_to_label(composite)
     cfg       = RECO_CONFIG[label]
 
@@ -1066,6 +1084,34 @@ def compute_recommendation(
             "text": f"📊 SEKIDE : {sk_signal} — {pts_a}/6 pts surachat (PCD/PER/PM/Technique)",
             "positive": False,
         })
+
+    # Facteur Valorisation — affiché si la marge de sécurité est significative
+    if fv_mos is not None:
+        fv_val = fv_data.get("fair_value", 0)
+        if fv_mos >= 30:
+            key_factors.append({
+                "type": "valorisation",
+                "text": f"🎯 Cours juste {fv_val:,.0f} FCFA — forte décote {fv_mos:+.0f}% (opportunité Graham)",
+                "positive": True,
+            })
+        elif fv_mos >= 15:
+            key_factors.append({
+                "type": "valorisation",
+                "text": f"🎯 Cours juste {fv_val:,.0f} FCFA — décote modérée {fv_mos:+.0f}%",
+                "positive": True,
+            })
+        elif fv_mos <= -15:
+            key_factors.append({
+                "type": "valorisation",
+                "text": f"🎯 Cours juste {fv_val:,.0f} FCFA — surcote {fv_mos:.0f}% · risque de correction",
+                "positive": False,
+            })
+        elif fv_mos < 0:
+            key_factors.append({
+                "type": "valorisation",
+                "text": f"🎯 Cours juste {fv_val:,.0f} FCFA — légère surcote {fv_mos:.0f}%",
+                "positive": False,
+            })
 
     # ── Horizon & risque ──────────────────────────────────────────────────────
     horizon = "Court terme (1-3 mois)"
@@ -1158,5 +1204,5 @@ def compute_recommendation(
         },
         "sekide":      sekide_result,
         "data_points": tech_result["data_points"],
-        "fair_value":  compute_fair_value(fundamentals, latest.get("close") if latest else None),
+        "fair_value":  fv_data,
     }
