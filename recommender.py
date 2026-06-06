@@ -853,6 +853,25 @@ def score_psychologie(
 
 # ─── RECOMMANDATION GLOBALE ────────────────────────────────────────────────────
 
+# ─── Profils d'investisseur ───────────────────────────────────────────────────
+# Poids des axes selon le profil déclaré par l'utilisateur
+PROFILS_POIDS = {
+    "rentier":    {"tech": 0.20, "fund": 0.55, "psych": 0.25,
+                   "div_weight": 0.50, "per_weight": 0.20, "perf_weight": 0.15, "hw_weight": 0.15},
+    "croissance": {"tech": 0.40, "fund": 0.40, "psych": 0.20,
+                   "div_weight": 0.15, "per_weight": 0.30, "perf_weight": 0.35, "hw_weight": 0.20},
+    "trader":     {"tech": 0.65, "fund": 0.15, "psych": 0.20,
+                   "div_weight": 0.05, "per_weight": 0.20, "perf_weight": 0.45, "hw_weight": 0.30},
+    "mixte":      {"tech": 0.40, "fund": 0.35, "psych": 0.25,
+                   "div_weight": 0.30, "per_weight": 0.25, "perf_weight": 0.25, "hw_weight": 0.20},
+}
+PROFIL_LABELS = {
+    "rentier":    "Rentier — revenus réguliers",
+    "croissance": "Croissance — plus-value LT",
+    "trader":     "Trader — plus-value CT",
+    "mixte":      "Mixte — équilibré",
+}
+
 def compute_recommendation(
     prices:        List[Dict],
     fundamentals:  Optional[Dict],
@@ -861,6 +880,7 @@ def compute_recommendation(
     sentiment:     Optional[Dict],
     latest:        Optional[Dict],
     symbol:        str = "",
+    profil:        str = "mixte",
 ) -> Dict:
     """
     Calcule la recommandation finale en combinant 4 axes :
@@ -892,13 +912,20 @@ def compute_recommendation(
     fund_score  = fund_result["score"]
     psych_score = psych_result["score"]
 
-    # ── Score composite pondéré ───────────────────────────────────────────────
-    # Technique 40% | Fondamentale 35% | Psychologie 25%
-    # Si peu de données techniques → augmenter le poids fondamental
+    # ── Score composite pondéré selon le profil investisseur ─────────────────
+    cfg_profil = PROFILS_POIDS.get(profil, PROFILS_POIDS["mixte"])
+    w_tech  = cfg_profil["tech"]
+    w_fund  = cfg_profil["fund"]
+    w_psych = cfg_profil["psych"]
+
+    # Si peu de données techniques → réduire le poids technique quelle que soit le profil
     if tech_result["data_points"] < 30:
-        composite = tech_score * 0.20 + fund_score * 0.55 + psych_score * 0.25
-    else:
-        composite = tech_score * 0.40 + fund_score * 0.35 + psych_score * 0.25
+        shortage = w_tech * 0.5          # on retire la moitié du poids technique
+        w_fund  += shortage * 0.7
+        w_psych += shortage * 0.3
+        w_tech  -= shortage
+
+    composite = tech_score * w_tech + fund_score * w_fund + psych_score * w_psych
 
     # ── Ajustement SEKIDE ─────────────────────────────────────────────────────
     # L'écart (survente - surachat) est normalisé sur 6 pts → ±8 pts sur le composite
@@ -1014,27 +1041,29 @@ def compute_recommendation(
         "horizon":        horizon,
         "risk_level":     risk_level,
         "key_factors":    key_factors,
+        "profil":         profil,
+        "profil_label":   PROFIL_LABELS.get(profil, "Mixte"),
         "axes": {
             "technique": {
                 "score":   tech_score,
                 "label":   _score_to_label(tech_score),
                 "summary": tech_result["summary"],
                 "details": tech_result["details"],
-                "weight":  "40%",
+                "weight":  f"{round(w_tech*100)}%",
             },
             "fondamentale": {
                 "score":   fund_score,
                 "label":   _score_to_label(fund_score),
                 "summary": fund_result["summary"],
                 "details": fund_result["details"],
-                "weight":  "35%",
+                "weight":  f"{round(w_fund*100)}%",
             },
             "psychologie": {
                 "score":   psych_score,
                 "label":   _score_to_label(psych_score),
                 "summary": psych_result["summary"],
                 "details": psych_result["details"],
-                "weight":  "25%",
+                "weight":  f"{round(w_psych*100)}%",
             },
             "sekide": {
                 "score":         sekide_display_score,

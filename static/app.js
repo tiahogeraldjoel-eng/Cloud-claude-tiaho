@@ -373,7 +373,7 @@ async function loadTechnical(symbol) {
     const [pricesD, techD, recoD, fundD] = await Promise.all([
       api(`/api/stocks/${symbol}/prices?days=${STATE.techDays}`),
       api(`/api/stocks/${symbol}/technical?days=${STATE.techDays}`),
-      api(`/api/stocks/${symbol}/recommendation`).catch(()=>null),
+      api(`/api/stocks/${symbol}/recommendation?profil=${getProfilFor(symbol)}`).catch(()=>null),
       api(`/api/stocks/${symbol}/fundamental`).catch(()=>null),
     ]);
 
@@ -407,7 +407,7 @@ async function loadTechnical(symbol) {
     }).catch(()=>{});
 
     // Recommandation
-    if(recoD) renderRecommendationBox('tech-reco-box', recoD);
+    if(recoD) renderRecommendationBox('tech-reco-box', {...recoD, symbol});
 
     // Afficher le bouton d'export PDF
     document.getElementById('pdf-export-section')?.classList.remove('hidden');
@@ -1063,6 +1063,21 @@ function renderRecommendationBox(containerId, reco) {
         </div>
       </div>
 
+      <!-- Sélecteur de profil investisseur -->
+      <div class="mb-4 p-3 rounded-lg bg-slate-900/40 border border-slate-700/40">
+        <div class="text-xs text-slate-500 mb-2">Profil investisseur</div>
+        <div class="flex flex-wrap gap-2">
+          ${[['rentier','Rentier','💰'],['croissance','Croissance','📈'],['trader','Trader','⚡'],['mixte','Mixte','⚖️']].map(([p,label,icon])=>{
+            const active = (reco.profil||'mixte') === p;
+            return `<button onclick="setProfilFor('${reco.symbol||''}','${p}');loadFundamental('${reco.symbol||''}')"
+              class="text-xs px-3 py-1.5 rounded-full font-semibold transition-all ${active
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
+                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'}">${icon} ${label}</button>`;
+          }).join('')}
+        </div>
+        <div class="text-xs text-indigo-400 mt-2 font-medium">${reco.profil_label||'Mixte — équilibré'}</div>
+      </div>
+
       <!-- Résumé -->
       <p class="text-sm text-slate-200 mb-4 leading-relaxed">${reco.summary||''}</p>
 
@@ -1185,6 +1200,14 @@ async function deleteManualDiv(symbol) {
   }
 }
 
+// ─── PROFIL INVESTISSEUR ──────────────────────────────────────────────────────
+function getProfilFor(symbol) {
+  return localStorage.getItem(`profil_${symbol}`) || 'mixte';
+}
+function setProfilFor(symbol, profil) {
+  localStorage.setItem(`profil_${symbol}`, profil);
+}
+
 // ─── ANALYSE FONDAMENTALE ─────────────────────────────────────────────────────
 async function loadFundamental(symbol) {
   if(!symbol) return;
@@ -1192,7 +1215,6 @@ async function loadFundamental(symbol) {
   setHTML('fundamental-content','<div class="text-center py-16 text-slate-400">Chargement...</div>');
 
   try {
-    // Déclencher le chargement fondamentaux si nécessaire
     const status = await api(`/api/stocks/${symbol}`);
     if(!(status.fundamentals?.dividend_yield) && !(status.fundamentals?.per)) {
       toast(`Chargement des fondamentaux de ${symbol}...`, 5000);
@@ -1200,9 +1222,10 @@ async function loadFundamental(symbol) {
       await new Promise(r=>setTimeout(r,4000));
     }
 
+    const profil = getProfilFor(symbol);
     const [fundD, recoD, divD] = await Promise.all([
       api(`/api/stocks/${symbol}/fundamental`),
-      api(`/api/stocks/${symbol}/recommendation`).catch(()=>null),
+      api(`/api/stocks/${symbol}/recommendation?profil=${profil}`).catch(()=>null),
       api('/api/market/dividends').catch(()=>({dividends:[]})),
     ]);
 
@@ -1404,7 +1427,7 @@ function renderFundamental(d, reco) {
   `);
 
   // Injecter la recommandation
-  if(reco) renderRecommendationBox('fund-reco-box', reco);
+  if(reco) renderRecommendationBox('fund-reco-box', {...reco, symbol: d?.symbol || reco.symbol || ''});
 
   // Afficher le bouton d'export PDF
   document.getElementById('pdf-export-section-fund')?.classList.remove('hidden');

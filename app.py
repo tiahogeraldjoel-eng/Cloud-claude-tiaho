@@ -537,14 +537,17 @@ def api_fundamental(symbol: str):
 # ─── RECOMMANDATION ───────────────────────────────────────────────────────────
 
 @app.get("/api/stocks/{symbol}/recommendation")
-def api_recommendation(symbol: str):
+def api_recommendation(symbol: str, profil: str = "mixte"):
     """
     Calcule et retourne la recommandation ACHAT/VENTE/NEUTRE complète.
     Combine analyse technique + fondamentale + psychologie du marché.
+    Paramètre optionnel : profil = rentier | croissance | trader | mixte
     """
     sym = symbol.upper()
     if not db.get_stock(sym):
         raise HTTPException(404, f"Titre '{sym}' introuvable")
+
+    profil = profil.lower() if profil in ("rentier","croissance","trader","mixte") else "mixte"
 
     prices  = db.get_prices(sym, 730)
     fund    = db.get_fundamental(sym)
@@ -552,14 +555,10 @@ def api_recommendation(symbol: str):
     hw      = db.get_52w_highlow(sym)
     latest  = db.get_latest_price(sym)
 
-    # Enrichir les fondamentaux avec les dividendes NET (IRVM appliqué)
-    # Nécessaire pour le calcul du PCD SEKIDE qui utilise le dividende NET
     stock_info = db.get_stock(sym)
     country    = stock_info.get("country") if stock_info else None
     fund_net   = _apply_net_dividend(fund, country)
-
-    # Sentiment global du marché
-    sentiment = _get_sentiment_data()
+    sentiment  = _get_sentiment_data()
 
     result = rec.compute_recommendation(
         prices=prices or [],
@@ -569,6 +568,7 @@ def api_recommendation(symbol: str):
         sentiment=sentiment,
         latest=latest,
         symbol=sym,
+        profil=profil,
     )
     result["symbol"]   = sym
     result["computed"] = datetime.now(timezone.utc).isoformat()
