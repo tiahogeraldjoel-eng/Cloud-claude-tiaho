@@ -76,21 +76,22 @@ d'investissement" (contrepartie de la recette d'investissement).
 
 | N° | Débit | Crédit | Objet |
 |---|---|---|---|
-| Phase 1 | 131 | **122** | Constatation affectation résultat fonctionnement |
-| Phase 2 | **122** | 111 | Virement résultat affecté → investissement |
+| Phase 1 | **121** | **122** | Solde du résultat ordinaire reporté vers résultat affecté (D/121 → C/122) |
+| Phase 2 | **122** | 111 | Virement résultat affecté → ressources investissement |
 
 ---
 
 ## Schéma des écritures comptables du compte 122
 
 ```
-PHASE 1 – Constatation de l'affectation
-════════════════════════════════════════
-  Débit  131  "Résultat de fonctionnement"           XXXXX F CFA
+PHASE 1 – Affectation du résultat ordinaire reporté (Circulaire 2026000631)
+════════════════════════════════════════════════════════════════════════════
+  Débit  121  "Résultat ordinaire reporté"           XXXXX F CFA
   Crédit 122  "Résultat de fonctionnement affecté"   XXXXX F CFA
   Journal : JOD
   Type : Affectation résultat de fonctionnement (Id=18)
   Opération : Affectation résultat compte 122 (N°=20)
+  → Le 121 est soldé (débité) ; le 122 reçoit l'affectation (crédité)
 
 PHASE 2 – Virement vers section d'investissement
 ═════════════════════════════════════════════════
@@ -106,7 +107,7 @@ PHASE 2 – Virement vers section d'investissement
 | Document | Enregistrement |
 |---|---|
 | **Compte administratif** (Ordonnateur) | Recette section Investissement au compte 122 |
-| **Compte de gestion** (Receveur) | Phase 1 : D/131 → C/122 puis Phase 2 : D/122 → C/111 |
+| **Compte de gestion** (Receveur) | Phase 1 : **D/121 → C/122** puis Phase 2 : D/122 → C/111 |
 
 Cette concordance est requise par la circulaire n° 2026000631 pour assurer
 l'équilibre entre les états produits par l'ordonnateur et ceux du receveur.

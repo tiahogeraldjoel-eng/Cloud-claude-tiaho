@@ -98,6 +98,32 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM [Gest_CpteTiers] WHERE [CpteTiers] = '122');
 
 -- =============================================================================
+-- SECTION 5b : CONFIGURATION COMPTE 121 - Gest_CpteTiers
+-- =============================================================================
+-- Le compte 121 "Résultat ordinaire reporté" est débité lors de l'affectation
+-- vers le 122. Il faut activer AutreDecDebit=True pour permettre l'écriture
+-- D/121 prescrite par la circulaire 2026000631.
+
+INSERT INTO [Gest_CpteTiers]
+    ([N°],[CpteTiers],
+     [AutreEncDebit],[AutreEncCredit],
+     [AutreDecDebit],[AutreDecCredit],
+     [RAR_Develop],[RAP_Develop],[RAP_Tresorerie],
+     [CIP_Develop],[GAR_Develop],[PEN_Develop],[AVA_Develop],
+     [EncTitreAnteCredit],[PaiePrecAnte],[CpteFinPaiePrec],[CpteFinEncPrec])
+SELECT
+    (SELECT COALESCE(MAX([N°]),0) FROM [Gest_CpteTiers]) + 1,
+    '121',
+    False,  -- AutreEncDebit    : pas d'encaissement débit direct
+    False,  -- AutreEncCredit   : le 121 n'est pas crédité dans cette opération
+    True,   -- AutreDecDebit    : DÉBIT 121 = solde du résultat ordinaire reporté (D/121 → C/122)
+    False,  -- AutreDecCredit   : pas de décaissement crédit direct
+    False, False, False,
+    False, False, False, False,
+    False, False, False, False
+WHERE NOT EXISTS (SELECT 1 FROM [Gest_CpteTiers] WHERE [CpteTiers] = '121');
+
+-- =============================================================================
 -- SECTION 6 : MATRICES PEC RECETTES - Compte 122 en recette investissement
 -- =============================================================================
 -- Conformément à la circulaire, le compte 122 est une RECETTE de la section
@@ -153,16 +179,17 @@ WHERE NOT EXISTS (SELECT 1 FROM [Pec_Recettes2] WHERE [Cpte_Pec] = '122');
 -- =============================================================================
 -- Modèles de saisie pour les deux phases de l'opération compte 122.
 
--- PHASE 1 : Constatation de l'affectation du résultat
---   DÉBIT  : 131 (Résultat de fonctionnement)
+-- PHASE 1 : Affectation du résultat ordinaire reporté
+--   DÉBIT  : 121 (Résultat ordinaire reporté)   ← solde du résultat de fonctionnement N-1
 --   CRÉDIT : 122 (Résultat de fonctionnement affecté)
+--   Source : Circulaire 2026000631 — concordance D/121 contre C/122
 INSERT INTO [Tble_Saisie] ([Num_Titre],[Debit],[Credit],[Montant],[Objet],[Benef])
-SELECT 0, '131', '122', 0,
-    'Affectation résultat fonctionnement - Phase 1 : Constatation (D/131 - C/122)',
+SELECT 0, '121', '122', 0,
+    'Affectation résultat fonctionnement - Phase 1 : D/121 contre C/122 (Circ. 2026000631)',
     'Opération ordre budgétaire - Circulaire 2026000631'
 WHERE NOT EXISTS (
     SELECT 1 FROM [Tble_Saisie]
-    WHERE [Debit] = '131' AND [Credit] = '122'
+    WHERE [Debit] = '121' AND [Credit] = '122'
 );
 
 -- PHASE 2 : Virement vers ressources d'investissement
@@ -248,12 +275,13 @@ WHERE NOT EXISTS (
   │ CG_Fonctionnmt   │ Chap 042 / Par 122 │  --   │  ajt  │ Dépense d'ordre     │
   └─────────────────────────────────────────────────────────────────────────────┘
 
-  ÉCRITURES COMPTABLES DU COMPTE 122 (opérations d'ordre budgétaires) :
+  ÉCRITURES COMPTABLES DES COMPTES 121 ET 122 (opérations d'ordre budgétaires) :
 
-  Phase 1 – Constatation de l'affectation du résultat de fonctionnement :
-    DÉBIT  131  "Résultat de fonctionnement"      XXXXX F CFA
-    CRÉDIT 122  "Résultat de fonctionnement affecté"    XXXXX F CFA
+  Phase 1 – Affectation du résultat ordinaire reporté (Circulaire 2026000631) :
+    DÉBIT  121  "Résultat ordinaire reporté"           XXXXX F CFA
+    CRÉDIT 122  "Résultat de fonctionnement affecté"   XXXXX F CFA
     Journal : JOD | Type : Opération d'ordre budgétaire
+    → Le compte 121 est soldé (débité) ; le 122 reçoit l'affectation (crédité)
 
   Phase 2 – Virement du résultat affecté vers la section d'investissement :
     DÉBIT  122  "Résultat de fonctionnement affecté"    XXXXX F CFA

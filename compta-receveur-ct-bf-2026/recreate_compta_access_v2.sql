@@ -973,10 +973,11 @@ CREATE TABLE [Tble_Saisie] (
     [Benef]         Text (50)
 );
 
--- AJOUT CIRCULAIRE 2026000631 : modèles d'écritures opération d'ordre compte 122
--- Phase 1 : Constatation affectation résultat fonctionnement (Débit 131 / Crédit 122)
+-- AJOUT CIRCULAIRE 2026000631 : modèles d'écritures opération d'ordre comptes 121/122
+-- Phase 1 : Affectation résultat ordinaire reporté → résultat affecté (D/121 → C/122)
+--           Conforme circulaire 2026000631 : Débit 121 contre Crédit 122
 INSERT INTO [Tble_Saisie] ([Num_Titre],[Debit],[Credit],[Montant],[Objet],[Benef])
-VALUES (0,'131','122',0,'Affectation résultat fonctionnement Phase 1 (D/131-C/122)','Opération ordre budgétaire');
+VALUES (0,'121','122',0,'Affectation résultat fonctionnement Phase 1 (D/121-C/122)','Opération ordre budgétaire');
 -- Phase 2 : Virement résultat affecté vers investissement (Débit 122 / Crédit 111)
 INSERT INTO [Tble_Saisie] ([Num_Titre],[Debit],[Credit],[Montant],[Objet],[Benef])
 VALUES (0,'122','111',0,'Affectation résultat fonctionnement Phase 2 (D/122-C/111)','Opération ordre budgétaire');
