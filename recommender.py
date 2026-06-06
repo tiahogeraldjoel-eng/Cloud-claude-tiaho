@@ -853,6 +853,73 @@ def score_psychologie(
 
 # ─── RECOMMANDATION GLOBALE ────────────────────────────────────────────────────
 
+# ─── Valorisation — Cours Juste & Marge de Sécurité ─────────────────────────
+
+def compute_fair_value(fundamentals: dict, latest_price: float) -> dict:
+    """
+    Calcule le cours juste selon 2 méthodes complémentaires :
+      1. Gordon-Shapiro  : P = D₁ / (k - g)
+         k = 14% (taux sans risque UEMOA 6% + prime de risque BRVM 8%)
+         g = 3%  (croissance durable conservatrice UEMOA)
+      2. PER normalisé BRVM : P = BPA × PER_médian_BRVM (10,5×)
+
+    Marge de sécurité (Graham) = (cours_juste - cours_actuel) / cours_juste × 100
+    Positif = décote (opportunité) · Négatif = surcote (risque)
+    """
+    if not fundamentals or not latest_price or latest_price <= 0:
+        return {}
+
+    results = []
+
+    # ── Méthode 1 : Gordon-Shapiro ────────────────────────────────────────────
+    div_net = (fundamentals.get("dividend_per_share_net")
+               or fundamentals.get("dividend_per_share"))
+    no_div  = fundamentals.get("div_status") == "sans_dividende"
+    if div_net and div_net > 0 and not no_div:
+        k, g = 0.14, 0.03
+        d1 = div_net * (1 + g)
+        gordon_val = d1 / (k - g)
+        results.append(("Gordon-Shapiro", gordon_val, 0.60))
+
+    # ── Méthode 2 : PER normalisé BRVM ───────────────────────────────────────
+    eps = fundamentals.get("eps")
+    if eps and eps > 0:
+        per_norm = 10.5  # médiane BRVM historique 9–12×
+        per_val  = eps * per_norm
+        w = 0.40 if results else 1.0  # 40% si Gordon dispo, sinon 100%
+        results.append(("PER normalisé (10,5×)", per_val, w))
+
+    if not results:
+        return {}
+
+    total_w    = sum(w for _, _, w in results)
+    fair_value = sum(v * w for _, v, w in results) / total_w
+
+    mos        = (fair_value - latest_price) / fair_value * 100  # marge de sécurité
+    upside     = (fair_value - latest_price) / latest_price * 100
+
+    if mos >= 30:
+        interp = "Forte décote — opportunité selon Graham ✅"
+    elif mos >= 15:
+        interp = "Décote modérée — prix attractif"
+    elif mos >= 0:
+        interp = "Légère décote — prix raisonnable"
+    elif mos >= -15:
+        interp = "Légère surcote — surveiller"
+    else:
+        interp = "Surcote significative — risque de correction ⚠️"
+
+    return {
+        "fair_value":        round(fair_value),
+        "margin_of_safety":  round(mos, 1),
+        "upside_pct":        round(upside, 1),
+        "target_low":        round(fair_value * 0.93),   # zone d'achat (−7%)
+        "target_high":       round(fair_value * 1.07),   # objectif (prix juste +7%)
+        "interpretation":    interp,
+        "methods":           [{"name": n, "value": round(v)} for n, v, _ in results],
+    }
+
+
 # ─── Profils d'investisseur ───────────────────────────────────────────────────
 # Poids des axes selon le profil déclaré par l'utilisateur
 PROFILS_POIDS = {
@@ -1091,4 +1158,5 @@ def compute_recommendation(
         },
         "sekide":      sekide_result,
         "data_points": tech_result["data_points"],
+        "fair_value":  compute_fair_value(fundamentals, latest.get("close") if latest else None),
     }

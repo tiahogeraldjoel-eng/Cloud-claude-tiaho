@@ -66,7 +66,9 @@ function switchTab(name) {
     // Réinitialiser le message d'erreur d'upload si l'onglet est revisité
     const statusEl = document.getElementById('ptf-upload-status');
     if(statusEl) statusEl.classList.add('hidden');
+    loadPositions();
   }
+  if(name==='calendar') loadCalendarTab();
 }
 
 // ─── HORLOGE MARCHÉ (BRVM = UTC+0 / GMT, séance 09h00-15h30) ─────────────────
@@ -1128,6 +1130,43 @@ function renderRecommendationBox(containerId, reco) {
           </div>`;
         }).join('')}
       </div>
+      <!-- Cours juste & Marge de sécurité -->
+      ${reco.fair_value && Object.keys(reco.fair_value).length ? (()=>{
+        const fv = reco.fair_value;
+        const mos = fv.margin_of_safety;
+        const mosColor = mos>=30?'#22c55e':mos>=15?'#84cc16':mos>=0?'#facc15':mos>=-15?'#f97316':'#ef4444';
+        const upColor  = (fv.upside_pct||0)>=0?'text-green-400':'text-red-400';
+        return `<div class="mt-4 rounded-lg border border-slate-700/60 bg-slate-900/40 p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-sm">🎯</span>
+            <span class="text-xs font-semibold text-slate-300">Valorisation — Cours Juste</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div class="bg-slate-800/60 rounded-lg p-2.5 text-center">
+              <div class="text-slate-400 mb-1">Cours juste estimé</div>
+              <div class="text-lg font-black text-slate-100">${fmt(fv.fair_value,0)} <span class="text-xs font-normal">FCFA</span></div>
+              <div class="text-slate-500 text-xs mt-0.5">${(fv.methods||[]).map(m=>`${m.name}: ${fmt(m.value,0)}`).join(' · ')}</div>
+            </div>
+            <div class="bg-slate-800/60 rounded-lg p-2.5 text-center">
+              <div class="text-slate-400 mb-1">Marge de sécurité</div>
+              <div class="text-lg font-black" style="color:${mosColor}">${mos>=0?'+':''}${fv.margin_of_safety}%</div>
+              <div class="text-slate-500 text-xs mt-0.5">${mos>=0?'Décote':'Surcote'}</div>
+            </div>
+            <div class="bg-slate-800/60 rounded-lg p-2.5 text-center">
+              <div class="text-slate-400 mb-1">Potentiel</div>
+              <div class="text-lg font-black ${upColor}">${(fv.upside_pct||0)>=0?'+':''}${fv.upside_pct}%</div>
+              <div class="text-slate-500 text-xs mt-0.5">vs cours actuel</div>
+            </div>
+            <div class="bg-slate-800/60 rounded-lg p-2.5 text-center">
+              <div class="text-slate-400 mb-1">Zone d'achat</div>
+              <div class="font-bold text-green-300">${fmt(fv.target_low,0)}</div>
+              <div class="text-slate-400">↕</div>
+              <div class="font-bold text-indigo-300">${fmt(fv.target_high,0)} FCFA</div>
+            </div>
+          </div>
+          <div class="mt-2 text-xs text-slate-500 italic">${fv.interpretation||''}</div>
+        </div>`;
+      })() : ''}
       <div class="mt-3 text-xs text-slate-600 text-right">Calculé le ${new Date(reco.computed||Date.now()).toLocaleString('fr-FR')}</div>
     </div>`;
 }
@@ -2560,4 +2599,304 @@ async function previewDividendSources() {
     toast('Erreur prévisualisation : '+e.message);
     if(statusEl) statusEl.innerHTML = '❌ Erreur : '+e.message;
   }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ─── AGENDA & ALERTES — TAB INIT ────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function loadCalendarTab() {
+  await Promise.all([loadPositions(), loadAlerts(), loadEvents()]);
+}
+
+function closeModal(id) {
+  document.getElementById(id)?.classList.add('hidden');
+}
+
+// ─── Positions (Prix de revient) ──────────────────────────────────────────────
+
+async function loadPositions() {
+  try {
+    const d = await api('/api/portfolio/positions');
+    renderPositionsSummary(d.summary);
+    renderPositionsTable(d.positions);
+  } catch(e) { console.error('positions', e); }
+}
+
+function renderPositionsSummary(s) {
+  const el = document.getElementById('positions-summary');
+  if (!el || !s) return;
+  const pnlColor = (s.total_pnl||0) >= 0 ? 'text-green-400' : 'text-red-400';
+  el.innerHTML = `
+    <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+      <div class="text-xs text-slate-400 mb-1">Investi</div>
+      <div class="font-bold text-slate-200">${fmt(s.total_cost,0)} FCFA</div>
+    </div>
+    <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+      <div class="text-xs text-slate-400 mb-1">Valorisation</div>
+      <div class="font-bold text-slate-200">${fmt(s.total_value,0)} FCFA</div>
+    </div>
+    <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+      <div class="text-xs text-slate-400 mb-1">P&L Total</div>
+      <div class="font-bold ${pnlColor}">${s.total_pnl>=0?'+':''}${fmt(s.total_pnl,0)} FCFA</div>
+      <div class="text-xs ${pnlColor}">${s.total_pnl_pct>=0?'+':''}${fmt(s.total_pnl_pct,2)}%</div>
+    </div>
+    <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+      <div class="text-xs text-slate-400 mb-1">Dividendes / an</div>
+      <div class="font-bold text-green-300">${fmt(s.annual_div_net,0)} FCFA</div>
+      <div class="text-xs text-slate-400">Rdt portefeuille : ${fmt(s.portfolio_yield,2)}%</div>
+    </div>`;
+  el.classList.remove('hidden');
+}
+
+function renderPositionsTable(positions) {
+  const el = document.getElementById('positions-table');
+  if (!el) return;
+  if (!positions || !positions.length) {
+    el.innerHTML = '<div class="text-center py-8 text-slate-500 text-xs">Aucune position enregistrée — cliquez sur "+ Ajouter une position"</div>';
+    return;
+  }
+  el.innerHTML = `<div class="overflow-x-auto">
+    <table class="w-full text-xs">
+      <thead>
+        <tr class="text-slate-400 border-b border-slate-700">
+          <th class="text-left py-2 pr-3">Titre</th>
+          <th class="text-right pr-3">Qté</th>
+          <th class="text-right pr-3">Prix entrée</th>
+          <th class="text-right pr-3">Cours actuel</th>
+          <th class="text-right pr-3">Coût total</th>
+          <th class="text-right pr-3">Valorisation</th>
+          <th class="text-right pr-3">P&L</th>
+          <th class="text-right pr-3">Rdt/coût</th>
+          <th class="text-right pr-3">Div. /an</th>
+          <th class="text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${positions.map(p => {
+          const pnlColor = (p.pnl||0) >= 0 ? 'text-green-400' : 'text-red-400';
+          const priceOk  = p.current_price != null;
+          return `<tr class="border-b border-slate-800 hover:bg-slate-800/30">
+            <td class="py-2 pr-3">
+              <div class="font-bold text-slate-200">${p.symbol}</div>
+              <div class="text-slate-500 truncate max-w-[100px]">${p.name||''}</div>
+            </td>
+            <td class="text-right pr-3 text-slate-300">${fmt(p.quantity,0)}</td>
+            <td class="text-right pr-3 text-slate-300">${fmt(p.entry_price,0)}</td>
+            <td class="text-right pr-3 ${priceOk?'text-slate-200':'text-slate-500'}">${priceOk?fmt(p.current_price,0):'—'}</td>
+            <td class="text-right pr-3 text-slate-400">${fmt(p.cost_basis,0)}</td>
+            <td class="text-right pr-3 ${priceOk?'text-slate-200':'text-slate-500'}">${priceOk?fmt(p.market_value,0):'—'}</td>
+            <td class="text-right pr-3 font-bold ${pnlColor}">${p.pnl!=null?(p.pnl>=0?'+':'')+fmt(p.pnl,0)+'<br>'+(p.pnl_pct>=0?'+':'')+fmt(p.pnl_pct,2)+'%':'—'}</td>
+            <td class="text-right pr-3 text-indigo-300">${p.yield_on_cost!=null?fmt(p.yield_on_cost,2)+'%':'—'}</td>
+            <td class="text-right pr-3 text-green-300">${p.annual_div_net?fmt(p.annual_div_net,0):'-'}</td>
+            <td class="text-right">
+              <button onclick="deletePosition(${p.id})" class="text-red-400 hover:text-red-300 px-2 py-1 rounded text-xs">✕</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function openAddPositionModal() {
+  ['pos-symbol','pos-qty','pos-price','pos-date','pos-broker','pos-notes'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('pos-modal-error')?.classList.add('hidden');
+  document.getElementById('modal-position')?.classList.remove('hidden');
+}
+
+async function savePosition() {
+  const sym   = document.getElementById('pos-symbol')?.value.trim().toUpperCase();
+  const qty   = parseFloat(document.getElementById('pos-qty')?.value);
+  const price = parseFloat(document.getElementById('pos-price')?.value);
+  const errEl = document.getElementById('pos-modal-error');
+  if (!sym || !qty || !price) {
+    if(errEl){errEl.textContent='Symbole, quantité et prix requis.';errEl.classList.remove('hidden');}
+    return;
+  }
+  try {
+    const r = await fetch('/api/portfolio/positions', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        symbol:sym, quantity:qty, entry_price:price,
+        entry_date: document.getElementById('pos-date')?.value||null,
+        broker: document.getElementById('pos-broker')?.value||null,
+        notes: document.getElementById('pos-notes')?.value||null,
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error||'Erreur');
+    closeModal('modal-position');
+    toast(`Position ${sym} ajoutée`);
+    loadPositions();
+  } catch(e) {
+    if(errEl){errEl.textContent=e.message;errEl.classList.remove('hidden');}
+  }
+}
+
+async function deletePosition(id) {
+  if (!confirm('Supprimer cette position ?')) return;
+  await fetch(`/api/portfolio/positions/${id}`, {method:'DELETE'});
+  toast('Position supprimée');
+  loadPositions();
+}
+
+// ─── Alertes de prix ──────────────────────────────────────────────────────────
+
+async function loadAlerts() {
+  try {
+    const d = await api('/api/alerts');
+    renderAlertsList(d.alerts||[]);
+  } catch(e) { console.error('alerts', e); }
+}
+
+function renderAlertsList(alerts) {
+  const el = document.getElementById('alerts-list');
+  if (!el) return;
+  if (!alerts.length) {
+    el.innerHTML = '<div class="text-center py-6 text-slate-500 text-xs">Aucune alerte configurée</div>';
+    document.getElementById('alert-badge')?.classList.add('hidden');
+    return;
+  }
+  const active    = alerts.filter(a=>a.is_active);
+  const triggered = alerts.filter(a=>!a.is_active);
+  if(active.length) {
+    document.getElementById('alert-badge')?.classList.remove('hidden');
+  }
+  const row = a => {
+    const dir  = a.direction==='above' ? '⬆ ≥' : '⬇ ≤';
+    const cls  = a.is_active ? 'border-indigo-700/40 bg-indigo-900/10' : 'border-green-700/40 bg-green-900/10 opacity-70';
+    const badge= a.is_active
+      ? '<span class="px-1.5 py-0.5 bg-indigo-900 text-indigo-300 text-xs rounded border border-indigo-700">Actif</span>'
+      : `<span class="px-1.5 py-0.5 bg-green-900 text-green-300 text-xs rounded border border-green-700">✓ Déclenché ${(a.triggered_at||'').substring(0,10)}</span>`;
+    return `<div class="flex items-center gap-3 p-3 rounded-lg border ${cls} mb-2">
+      <div class="flex-1">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-bold text-slate-200">${a.symbol}</span>
+          <span class="text-slate-400">${dir} <strong>${fmt(a.target_price,0)} FCFA</strong></span>
+          ${a.label?`<span class="text-slate-500 text-xs">${a.label}</span>`:''}
+          ${badge}
+        </div>
+      </div>
+      <button onclick="deleteAlert(${a.id})" class="text-red-400 hover:text-red-300 px-2 py-1 text-xs shrink-0">✕</button>
+    </div>`;
+  };
+  el.innerHTML = (active.length?`<div class="mb-3 text-xs text-slate-400 font-semibold uppercase tracking-wider">Actives (${active.length})</div>`+active.map(row).join(''):'')
+    + (triggered.length?`<div class="mb-2 mt-4 text-xs text-slate-500 font-semibold uppercase tracking-wider">Déclenchées</div>`+triggered.map(row).join(''):'');
+}
+
+function openAddAlertModal() {
+  ['alert-symbol','alert-price','alert-label'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('alert-modal-error')?.classList.add('hidden');
+  document.getElementById('modal-alert')?.classList.remove('hidden');
+}
+
+async function saveAlert() {
+  const sym   = document.getElementById('alert-symbol')?.value.trim().toUpperCase();
+  const price = parseFloat(document.getElementById('alert-price')?.value);
+  const dir   = document.getElementById('alert-direction')?.value;
+  const errEl = document.getElementById('alert-modal-error');
+  if (!sym || !price) {
+    if(errEl){errEl.textContent='Symbole et prix cible requis.';errEl.classList.remove('hidden');}
+    return;
+  }
+  try {
+    const r = await fetch('/api/alerts', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        symbol:sym, target_price:price, direction:dir,
+        label: document.getElementById('alert-label')?.value||null,
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error||'Erreur');
+    closeModal('modal-alert');
+    toast(`Alerte ${sym} créée`);
+    loadAlerts();
+  } catch(e) {
+    if(errEl){errEl.textContent=e.message;errEl.classList.remove('hidden');}
+  }
+}
+
+async function deleteAlert(id) {
+  await fetch(`/api/alerts/${id}`, {method:'DELETE'});
+  toast('Alerte supprimée');
+  loadAlerts();
+}
+
+// ─── Calendrier AGO & Événements ──────────────────────────────────────────────
+
+async function loadEvents() {
+  try {
+    const d = await api('/api/calendar/events?upcoming=false');
+    renderEventsList(d.events||[]);
+  } catch(e) { console.error('events', e); }
+}
+
+function renderEventsList(events) {
+  const el = document.getElementById('calendar-list');
+  if (!el) return;
+  if (!events.length) {
+    el.innerHTML = '<div class="text-center py-6 text-slate-500 text-xs">Aucun événement — ajoutez les AGO, résultats et dates de détachement de vos titres</div>';
+    return;
+  }
+  const today = new Date().toISOString().substring(0,10);
+  const TYPE_ICON = {AGO:'🏛️', AGE:'⚡', résultats:'📊', dividende:'💰', autre:'📌'};
+  el.innerHTML = `<div class="space-y-2">
+    ${events.map(e=>{
+      const past = e.event_date < today;
+      const soon = !past && e.event_date <= new Date(Date.now()+7*86400000).toISOString().substring(0,10);
+      const bg   = past?'bg-slate-800/30 opacity-60':soon?'bg-yellow-900/20 border-yellow-700/40':'bg-slate-800/40 border-slate-700/40';
+      const icon = TYPE_ICON[e.event_type]||'📌';
+      const badge= soon?'<span class="px-1.5 py-0.5 bg-yellow-900 text-yellow-300 text-xs rounded border border-yellow-700 ml-1">Cette semaine</span>':'';
+      return `<div class="flex items-start gap-3 p-3 rounded-lg border ${bg}">
+        <span class="text-lg shrink-0 mt-0.5">${icon}</span>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            ${e.symbol?`<span class="font-bold text-slate-200">${e.symbol}</span>`:''}
+            <span class="text-slate-300 font-medium">${e.event_type}</span>
+            <span class="text-slate-400 text-xs">${e.event_date}</span>
+            ${badge}
+          </div>
+          ${e.description?`<div class="text-slate-400 text-xs mt-0.5">${e.description}</div>`:''}
+        </div>
+        <button onclick="deleteEvent(${e.id})" class="text-red-400 hover:text-red-300 px-2 py-1 text-xs shrink-0">✕</button>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function openAddEventModal() {
+  ['event-symbol','event-date','event-desc'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('modal-event')?.classList.remove('hidden');
+}
+
+async function saveEvent() {
+  const r = await fetch('/api/calendar/events', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      symbol: document.getElementById('event-symbol')?.value.trim().toUpperCase()||null,
+      event_type: document.getElementById('event-type')?.value,
+      event_date: document.getElementById('event-date')?.value,
+      description: document.getElementById('event-desc')?.value||null,
+    })
+  });
+  const d = await r.json();
+  if (!r.ok) { toast('Erreur : '+(d.error||'?')); return; }
+  closeModal('modal-event');
+  toast('Événement ajouté');
+  loadEvents();
+}
+
+async function deleteEvent(id) {
+  await fetch(`/api/calendar/events/${id}`, {method:'DELETE'});
+  toast('Événement supprimé');
+  loadEvents();
 }

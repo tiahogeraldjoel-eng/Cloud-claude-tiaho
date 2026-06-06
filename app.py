@@ -335,6 +335,8 @@ def _refresh_data():
         # Invalider le cache sentiment après chaque refresh
         _sentiment_cache["data"] = None
         logger.info(f"Données rafraîchies (#{_state['refresh_count']}) — {saved_count} cours reçus")
+        if saved_count > 0:
+            _check_price_alerts()
 
         # Si le scraper n'a rien renvoyé (week-end, marché fermé, source indispo)
         # et que les données en DB sont périmées (> 7 jours), lancer un rattrapage historique
@@ -1441,3 +1443,167 @@ def preview_dividends_sources(year: Optional[int] = None):
         "boc":    result["boc"][:20],
         "agm":    result["agm"][:20],
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ─── PORTFOLIO POSITIONS (prix de revient) ────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/portfolio/positions")
+def api_get_positions():
+    positions = db.get_portfolio_positions()
+    enriched  = []
+    for pos in positions:
+        sym     = pos["symbol"]
+        latest  = db.get_latest_price(sym)
+        current = latest.get("close") if latest else None
+        cost    = pos["entry_price"] * pos["quantity"]
+        value   = current * pos["quantity"] if current else None
+        pnl     = value - cost if value is not None else None
+        pnl_pct = pnl / cost * 100 if cost and pnl is not None else None
+        # Dividende annuel estimé
+        fund    = db.get_fundamental(sym) or {}
+        country = pos.get("country") or (db.get_stock(sym) or {}).get("country")
+        f_net   = _apply_net_dividend(fund, country) or {}
+        dps_net = f_net.get("dividend_per_share_net") or f_net.get("dividend_per_share") or 0
+        annual_div = dps_net * pos["quantity"] if dps_net else 0
+        yield_on_cost = (dps_net / pos["entry_price"] * 100) if dps_net and pos["entry_price"] else None
+        enriched.append({**pos,
+            "current_price": current,
+            "market_value": round(value) if value else None,
+            "cost_basis": round(cost),
+            "pnl": round(pnl) if pnl is not None else None,
+            "pnl_pct": round(pnl_pct, 2) if pnl_pct is not None else None,
+            "annual_div_net": round(annual_div) if annual_div else 0,
+            "yield_on_cost": round(yield_on_cost, 2) if yield_on_cost else None,
+        })
+    total_cost  = sum(p["cost_basis"] for p in enriched)
+    total_value = sum(p["market_value"] or p["cost_basis"] for p in enriched)
+    total_pnl   = total_value - total_cost
+    total_div   = sum(p["annual_div_net"] for p in enriched)
+    return {
+        "positions": enriched,
+        "summary": {
+            "total_cost": round(total_cost),
+            "total_value": round(total_value),
+            "total_pnl": round(total_pnl),
+            "total_pnl_pct": round(total_pnl / total_cost * 100, 2) if total_cost else 0,
+            "annual_div_net": round(total_div),
+            "portfolio_yield": round(total_div / total_value * 100, 2) if total_value else 0,
+        }
+    }
+
+@app.post("/api/portfolio/positions")
+def api_add_position(body: dict):
+    sym = (body.get("symbol") or "").upper()
+    if not sym or not db.get_stock(sym):
+        return JSONResponse({"error": f"Titre '{sym}' introuvable"}, 400)
+    qty   = float(body.get("quantity") or 0)
+    price = float(body.get("entry_price") or 0)
+    if qty <= 0 or price <= 0:
+        return JSONResponse({"error": "Quantité et prix d'entrée requis (> 0)"}, 400)
+    pid = db.add_portfolio_position({
+        "symbol": sym, "quantity": qty, "entry_price": price,
+        "entry_date": body.get("entry_date"), "broker": body.get("broker"),
+        "notes": body.get("notes"),
+    })
+    return {"id": pid, "message": "Position ajoutée"}
+
+@app.put("/api/portfolio/positions/{pid}")
+def api_update_position(pid: int, body: dict):
+    qty   = float(body.get("quantity") or 0)
+    price = float(body.get("entry_price") or 0)
+    if qty <= 0 or price <= 0:
+        return JSONResponse({"error": "Quantité et prix requis"}, 400)
+    db.update_portfolio_position(pid, {
+        "quantity": qty, "entry_price": price,
+        "entry_date": body.get("entry_date"), "broker": body.get("broker"),
+        "notes": body.get("notes"),
+    })
+    return {"message": "Position mise à jour"}
+
+@app.delete("/api/portfolio/positions/{pid}")
+def api_delete_position(pid: int):
+    db.delete_portfolio_position(pid)
+    return {"message": "Position supprimée"}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ─── ALERTES DE PRIX ──────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/alerts")
+def api_get_alerts():
+    return {"alerts": db.get_price_alerts()}
+
+@app.post("/api/alerts")
+def api_add_alert(body: dict):
+    sym = (body.get("symbol") or "").upper()
+    if not sym or not db.get_stock(sym):
+        return JSONResponse({"error": f"Titre '{sym}' introuvable"}, 400)
+    price = float(body.get("target_price") or 0)
+    if price <= 0:
+        return JSONResponse({"error": "Prix cible requis (> 0)"}, 400)
+    direction = body.get("direction", "below")
+    if direction not in ("above", "below"):
+        return JSONResponse({"error": "direction: 'above' ou 'below'"}, 400)
+    aid = db.add_price_alert({
+        "symbol": sym, "target_price": price,
+        "direction": direction, "label": body.get("label"),
+        "email": body.get("email"),
+    })
+    return {"id": aid, "message": "Alerte créée"}
+
+@app.delete("/api/alerts/{alert_id}")
+def api_delete_alert(alert_id: int):
+    db.delete_price_alert(alert_id)
+    return {"message": "Alerte supprimée"}
+
+
+def _check_price_alerts():
+    """Vérifie les alertes actives après chaque refresh de cours."""
+    try:
+        alerts = db.get_price_alerts(active_only=True)
+        if not alerts:
+            return
+        triggered = []
+        for alert in alerts:
+            latest = db.get_latest_price(alert["symbol"])
+            if not latest or not latest.get("close"):
+                continue
+            price = latest["close"]
+            hit = (alert["direction"] == "above" and price >= alert["target_price"]) or \
+                  (alert["direction"] == "below" and price <= alert["target_price"])
+            if hit:
+                db.trigger_price_alert(alert["id"])
+                triggered.append(alert)
+                logger.info(
+                    f"ALERTE {alert['symbol']} : cours {price} FCFA "
+                    f"{'≥' if alert['direction']=='above' else '≤'} "
+                    f"cible {alert['target_price']} FCFA"
+                )
+        if triggered:
+            _sentiment_cache["data"] = None
+    except Exception as e:
+        logger.warning(f"Erreur vérification alertes: {e}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ─── CALENDRIER AGO / ÉVÉNEMENTS ─────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/calendar/events")
+def api_get_events(upcoming: bool = False):
+    return {"events": db.get_ago_events(upcoming_only=upcoming)}
+
+@app.post("/api/calendar/events")
+def api_add_event(body: dict):
+    if not body.get("event_type") or not body.get("event_date"):
+        return JSONResponse({"error": "event_type et event_date requis"}, 400)
+    eid = db.add_ago_event(body)
+    return {"id": eid, "message": "Événement ajouté"}
+
+@app.delete("/api/calendar/events/{event_id}")
+def api_delete_event(event_id: int):
+    db.delete_ago_event(event_id)
+    return {"message": "Événement supprimé"}

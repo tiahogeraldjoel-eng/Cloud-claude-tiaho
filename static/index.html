@@ -146,6 +146,14 @@
         </svg>
         <span class="tab-label">Mon Portefeuille</span>
       </button>
+      <button class="tab-btn" data-tab="calendar" onclick="switchTab('calendar')">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <span class="tab-label">Agenda & Alertes</span>
+        <span id="alert-badge" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">!</span>
+      </button>
     </div>
   </div>
 </nav>
@@ -823,9 +831,203 @@
       <div id="div-refresh-status" class="hidden mt-3 text-xs text-slate-400"></div>
     </div>
 
+    <!-- ─── Mes Positions (Prix de Revient) ─── -->
+    <div class="bg-card rounded-xl border border-border p-6 mt-6">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">💼</span>
+          <div>
+            <h3 class="text-base font-semibold text-slate-200">Mes Positions — Prix de Revient</h3>
+            <p class="text-xs text-slate-400">Suivi P&L en temps réel · rendement sur investissement · dividendes reçus</p>
+          </div>
+        </div>
+        <button onclick="openAddPositionModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition-colors">
+          + Ajouter une position
+        </button>
+      </div>
+      <!-- Résumé portefeuille -->
+      <div id="positions-summary" class="hidden grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+      <!-- Table des positions -->
+      <div id="positions-table" class="text-xs text-slate-400 text-center py-8">Aucune position enregistrée</div>
+    </div>
+
   </div><!-- /tab-portfolio -->
 
+  <!-- ────────────────── AGENDA & ALERTES ────────────────── -->
+  <div id="tab-calendar" class="tab-content hidden">
+
+    <!-- Alertes de prix -->
+    <div class="bg-card rounded-xl border border-border p-6 mb-6">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🔔</span>
+          <div>
+            <h3 class="text-base font-semibold text-slate-200">Alertes de Prix</h3>
+            <p class="text-xs text-slate-400">Définir un seuil de cours — déclenchement automatique à chaque refresh</p>
+          </div>
+        </div>
+        <button onclick="openAddAlertModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition-colors">
+          + Créer une alerte
+        </button>
+      </div>
+      <div id="alerts-list" class="text-xs text-slate-400 text-center py-6">Aucune alerte configurée</div>
+    </div>
+
+    <!-- Calendrier AGO & Événements -->
+    <div class="bg-card rounded-xl border border-border p-6">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">📅</span>
+          <div>
+            <h3 class="text-base font-semibold text-slate-200">Calendrier AGO & Résultats</h3>
+            <p class="text-xs text-slate-400">Assemblées Générales · Publication des résultats · Date de détachement dividende</p>
+          </div>
+        </div>
+        <button onclick="openAddEventModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors">
+          + Ajouter un événement
+        </button>
+      </div>
+      <div id="calendar-list" class="text-xs text-slate-400 text-center py-6">Aucun événement enregistré</div>
+    </div>
+
+  </div><!-- /tab-calendar -->
+
 </main>
+
+<!-- ─── MODAL: Ajouter Position ─── -->
+<div id="modal-position" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div class="bg-slate-900 border border-border rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-semibold text-slate-200">💼 Nouvelle Position</h3>
+      <button onclick="closeModal('modal-position')" class="text-slate-400 hover:text-slate-200 text-xl">×</button>
+    </div>
+    <div class="space-y-3">
+      <div>
+        <label class="text-xs text-slate-400 block mb-1">Titre (symbole BRVM)</label>
+        <input id="pos-symbol" type="text" placeholder="ex: SGBC" maxlength="8"
+          class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 uppercase focus:border-indigo-500 focus:outline-none">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Quantité</label>
+          <input id="pos-qty" type="number" min="1" step="1" placeholder="ex: 100"
+            class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Prix d'entrée (FCFA)</label>
+          <input id="pos-price" type="number" min="1" step="1" placeholder="ex: 14500"
+            class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Date d'achat</label>
+          <input id="pos-date" type="date"
+            class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Broker</label>
+          <input id="pos-broker" type="text" placeholder="ex: SGBCI"
+            class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+        </div>
+      </div>
+      <div>
+        <label class="text-xs text-slate-400 block mb-1">Notes</label>
+        <input id="pos-notes" type="text" placeholder="optionnel"
+          class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+      </div>
+    </div>
+    <div id="pos-modal-error" class="hidden mt-2 text-xs text-red-400"></div>
+    <div class="flex gap-3 mt-5">
+      <button onclick="savePosition()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition-colors">Enregistrer</button>
+      <button onclick="closeModal('modal-position')" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL: Créer Alerte ─── -->
+<div id="modal-alert" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div class="bg-slate-900 border border-border rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-semibold text-slate-200">🔔 Nouvelle Alerte de Prix</h3>
+      <button onclick="closeModal('modal-alert')" class="text-slate-400 hover:text-slate-200 text-xl">×</button>
+    </div>
+    <div class="space-y-3">
+      <div>
+        <label class="text-xs text-slate-400 block mb-1">Titre (symbole BRVM)</label>
+        <input id="alert-symbol" type="text" placeholder="ex: ONTBF" maxlength="8"
+          class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 uppercase focus:border-indigo-500 focus:outline-none">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Prix cible (FCFA)</label>
+          <input id="alert-price" type="number" min="1" step="1" placeholder="ex: 5200"
+            class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Déclenchement</label>
+          <select id="alert-direction" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+            <option value="below">≤ Prix descend à</option>
+            <option value="above">≥ Prix monte à</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs text-slate-400 block mb-1">Libellé (optionnel)</label>
+        <input id="alert-label" type="text" placeholder="ex: Stop-loss SGBC"
+          class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+      </div>
+    </div>
+    <div id="alert-modal-error" class="hidden mt-2 text-xs text-red-400"></div>
+    <div class="flex gap-3 mt-5">
+      <button onclick="saveAlert()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition-colors">Créer l'alerte</button>
+      <button onclick="closeModal('modal-alert')" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL: Ajouter Événement AGO ─── -->
+<div id="modal-event" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div class="bg-slate-900 border border-border rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-semibold text-slate-200">📅 Nouvel Événement</h3>
+      <button onclick="closeModal('modal-event')" class="text-slate-400 hover:text-slate-200 text-xl">×</button>
+    </div>
+    <div class="space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Titre (optionnel)</label>
+          <input id="event-symbol" type="text" placeholder="ex: SGBC"
+            class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 uppercase focus:border-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Type</label>
+          <select id="event-type" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+            <option value="AGO">AGO</option>
+            <option value="AGE">AGE</option>
+            <option value="résultats">Publication résultats</option>
+            <option value="dividende">Détachement dividende</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs text-slate-400 block mb-1">Date</label>
+        <input id="event-date" type="date"
+          class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+      </div>
+      <div>
+        <label class="text-xs text-slate-400 block mb-1">Description</label>
+        <input id="event-desc" type="text" placeholder="ex: AGO SGBC — vote dividende 2025"
+          class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none">
+      </div>
+    </div>
+    <div class="flex gap-3 mt-5">
+      <button onclick="saveEvent()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition-colors">Enregistrer</button>
+      <button onclick="closeModal('modal-event')" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors">Annuler</button>
+    </div>
+  </div>
+</div>
 
 <!-- Toast notification -->
 <div id="toast" class="fixed bottom-6 right-6 z-50 hidden">

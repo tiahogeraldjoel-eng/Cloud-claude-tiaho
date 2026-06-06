@@ -163,6 +163,44 @@ def init_db() -> None:
 
         CREATE INDEX IF NOT EXISTS idx_prices_sym_date  ON prices(symbol, date);
         CREATE INDEX IF NOT EXISTS idx_market_date      ON market_data(date);
+
+        CREATE TABLE IF NOT EXISTS portfolio_positions (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol      TEXT NOT NULL,
+            quantity    REAL NOT NULL,
+            entry_price REAL NOT NULL,
+            entry_date  TEXT,
+            broker      TEXT,
+            notes       TEXT,
+            created_at  TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (symbol) REFERENCES stocks(symbol)
+        );
+
+        CREATE TABLE IF NOT EXISTS price_alerts (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol       TEXT NOT NULL,
+            target_price REAL NOT NULL,
+            direction    TEXT NOT NULL,
+            label        TEXT,
+            email        TEXT,
+            triggered_at TEXT,
+            is_active    INTEGER DEFAULT 1,
+            created_at   TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (symbol) REFERENCES stocks(symbol)
+        );
+
+        CREATE TABLE IF NOT EXISTS ago_events (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol      TEXT,
+            event_type  TEXT NOT NULL,
+            event_date  TEXT NOT NULL,
+            description TEXT,
+            source      TEXT DEFAULT 'manuel',
+            created_at  TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_alerts_symbol ON price_alerts(symbol, is_active);
+        CREATE INDEX IF NOT EXISTS idx_ago_date      ON ago_events(event_date);
     """)
     # ── Migration 1 : ajouter colonne dividend_per_share si absente ──────────
     try:
@@ -585,3 +623,122 @@ def get_52w_highlow(symbol: str) -> Dict:
     """, (symbol.upper(),)).fetchone()
     conn.close()
     return {"high_52w": row["high_52w"], "low_52w": row["low_52w"]} if row else {}
+
+
+# ─── Portfolio Positions ──────────────────────────────────────────────────────
+
+def get_portfolio_positions() -> List[Dict]:
+    conn = get_connection()
+    rows = conn.execute("""
+        SELECT p.*, s.name, s.sector, s.country
+        FROM portfolio_positions p
+        LEFT JOIN stocks s ON s.symbol = p.symbol
+        ORDER BY p.symbol, p.created_at
+    """).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def add_portfolio_position(data: Dict) -> int:
+    conn = get_connection()
+    cur = conn.execute("""
+        INSERT INTO portfolio_positions (symbol, quantity, entry_price, entry_date, broker, notes)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (data["symbol"].upper(), data["quantity"], data["entry_price"],
+          data.get("entry_date"), data.get("broker"), data.get("notes")))
+    conn.commit()
+    rid = cur.lastrowid
+    conn.close()
+    return rid
+
+def update_portfolio_position(pid: int, data: Dict) -> None:
+    conn = get_connection()
+    conn.execute("""
+        UPDATE portfolio_positions
+        SET quantity=?, entry_price=?, entry_date=?, broker=?, notes=?
+        WHERE id=?
+    """, (data["quantity"], data["entry_price"], data.get("entry_date"),
+          data.get("broker"), data.get("notes"), pid))
+    conn.commit()
+    conn.close()
+
+def delete_portfolio_position(pid: int) -> None:
+    conn = get_connection()
+    conn.execute("DELETE FROM portfolio_positions WHERE id=?", (pid,))
+    conn.commit()
+    conn.close()
+
+
+# ─── Price Alerts ─────────────────────────────────────────────────────────────
+
+def get_price_alerts(active_only: bool = False) -> List[Dict]:
+    conn = get_connection()
+    q = "SELECT * FROM price_alerts"
+    if active_only:
+        q += " WHERE is_active=1"
+    q += " ORDER BY symbol, target_price"
+    rows = conn.execute(q).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def add_price_alert(data: Dict) -> int:
+    conn = get_connection()
+    cur = conn.execute("""
+        INSERT INTO price_alerts (symbol, target_price, direction, label, email)
+        VALUES (?, ?, ?, ?, ?)
+    """, (data["symbol"].upper(), data["target_price"], data["direction"],
+          data.get("label"), data.get("email")))
+    conn.commit()
+    rid = cur.lastrowid
+    conn.close()
+    return rid
+
+def delete_price_alert(alert_id: int) -> None:
+    conn = get_connection()
+    conn.execute("DELETE FROM price_alerts WHERE id=?", (alert_id,))
+    conn.commit()
+    conn.close()
+
+def trigger_price_alert(alert_id: int) -> None:
+    from datetime import datetime, timezone
+    conn = get_connection()
+    conn.execute("""
+        UPDATE price_alerts SET is_active=0, triggered_at=?
+        WHERE id=?
+    """, (datetime.now(timezone.utc).isoformat(), alert_id))
+    conn.commit()
+    conn.close()
+
+
+# ─── AGO / Events Calendar ────────────────────────────────────────────────────
+
+def get_ago_events(upcoming_only: bool = False) -> List[Dict]:
+    from datetime import date
+    conn = get_connection()
+    if upcoming_only:
+        rows = conn.execute("""
+            SELECT * FROM ago_events
+            WHERE event_date >= ?
+            ORDER BY event_date
+        """, (date.today().isoformat(),)).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM ago_events ORDER BY event_date DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def add_ago_event(data: Dict) -> int:
+    conn = get_connection()
+    cur = conn.execute("""
+        INSERT INTO ago_events (symbol, event_type, event_date, description, source)
+        VALUES (?, ?, ?, ?, ?)
+    """, (data.get("symbol", "").upper() or None, data["event_type"],
+          data["event_date"], data.get("description"), data.get("source", "manuel")))
+    conn.commit()
+    rid = cur.lastrowid
+    conn.close()
+    return rid
+
+def delete_ago_event(event_id: int) -> None:
+    conn = get_connection()
+    conn.execute("DELETE FROM ago_events WHERE id=?", (event_id,))
+    conn.commit()
+    conn.close()
