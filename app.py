@@ -79,8 +79,8 @@ def _apply_net_dividend(fund: Optional[Dict], country: Optional[str]) -> Optiona
     gross_dps   = f.get("dividend_per_share")
     f["net_dividend_factor"]    = round(factor, 4)
     f["dividend_yield_gross"]   = gross_yield
-    f["dividend_yield_net"]     = round(gross_yield * factor, 2) if gross_yield else None
-    f["dividend_per_share_net"] = round(gross_dps  * factor, 2) if gross_dps   else None
+    f["dividend_yield_net"]     = round(gross_yield * factor, 2) if gross_yield is not None else None
+    f["dividend_per_share_net"] = round(gross_dps  * factor, 2) if gross_dps  is not None else None
     f["irvm_rate_pct"]          = round((1 - factor) * 100, 1)
 
     # ── Pipeline dividende : exercice fiscal et statut ────────────────────────
