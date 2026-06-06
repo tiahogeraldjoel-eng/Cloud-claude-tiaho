@@ -826,10 +826,10 @@ def analyze_portfolio(holdings: List[Dict], db, ind, rec, profil: str = "mixte")
     n_sectors   = len(sector_alloc)
     diversif    = _diversification_score(n_stocks, n_sectors, analyzed, total_current)
 
-    # Signaux de recommandation
-    buy_count    = sum(1 for a in analyzed if a.get("reco_signal") == "ACHAT")
-    sell_count   = sum(1 for a in analyzed if a.get("reco_signal") == "VENTE")
-    neutral_count= sum(1 for a in analyzed if a.get("reco_signal") == "NEUTRE")
+    # Signaux de recommandation (ACCUMULER = achat progressif, ALLÉGER = vente progressive)
+    buy_count     = sum(1 for a in analyzed if a.get("reco_signal") in ("ACHAT", "ACCUMULER"))
+    sell_count    = sum(1 for a in analyzed if a.get("reco_signal") in ("VENTE", "ALLÉGER"))
+    neutral_count = sum(1 for a in analyzed if a.get("reco_signal") == "NEUTRE")
 
     # Dividendes annuels estimés
     annual_div = sum(
@@ -865,21 +865,42 @@ def _position_advice(pnl_pct, reco_sig, trend, rsi, qty) -> Dict:
     actions = []
     priority = "info"
 
-    # Basé sur la recommandation globale
     if reco_sig == "ACHAT":
         if pnl_pct is not None and pnl_pct < -10:
-            actions.append("Position en perte — signal ACHAT favorable : renforcement possible")
+            actions.append("Position en perte — signal ACHAT fort : renforcement recommandé")
             priority = "buy"
         elif pnl_pct is not None and pnl_pct > 30:
             actions.append("Forte plus-value + signal ACHAT : conserver, surveiller résistances")
             priority = "hold"
         else:
             actions.append("Signal ACHAT : conserver la position, envisager renforcement")
+            priority = "buy"
+
+    elif reco_sig == "ACCUMULER":
+        if pnl_pct is not None and pnl_pct < -5:
+            actions.append("Position en légère perte — signal ACCUMULER : renforcement progressif possible")
+            priority = "buy"
+        elif pnl_pct is not None and pnl_pct > 20:
+            actions.append("Bonne plus-value + signal ACCUMULER : conserver, renforcer par petites doses")
             priority = "hold"
+        else:
+            actions.append("Signal ACCUMULER : accumulation progressive recommandée")
+            priority = "buy"
+
+    elif reco_sig == "ALLÉGER":
+        if pnl_pct is not None and pnl_pct > 15:
+            actions.append("Plus-value + signal ALLÉGER : réduire partiellement la position, sécuriser gains")
+            priority = "sell"
+        elif pnl_pct is not None and pnl_pct < 0:
+            actions.append("Signal ALLÉGER en perte : attendre un rebond technique avant de réduire")
+            priority = "watch"
+        else:
+            actions.append("Signal ALLÉGER : réduire progressivement la position")
+            priority = "sell"
 
     elif reco_sig == "VENTE":
         if pnl_pct is not None and pnl_pct > 15:
-            actions.append("Position en profit + signal VENTE : sécuriser les gains, alléger")
+            actions.append("Position en profit + signal VENTE : sécuriser les gains, sortir")
             priority = "sell"
         elif pnl_pct is not None and pnl_pct < -5:
             actions.append("Signal VENTE en perte : stopper la baisse, couper la position")

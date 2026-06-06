@@ -2376,8 +2376,8 @@ function renderPortfolioResults(d, filename) {
 
     <div class="flex flex-wrap items-center gap-3 pt-3 border-t border-border">
       <div class="flex gap-2 text-xs flex-wrap">
-        <span class="px-2 py-1 bg-green-900/30 border border-green-700/40 rounded text-green-400 font-semibold">↑ ACHAT : ${s.buy_signals||0}</span>
-        <span class="px-2 py-1 bg-red-900/30 border border-red-700/40 rounded text-red-400 font-semibold">↓ VENTE : ${s.sell_signals||0}</span>
+        <span class="px-2 py-1 bg-green-900/30 border border-green-700/40 rounded text-green-400 font-semibold">↑↑ ACHAT+ACCUMULER : ${s.buy_signals||0}</span>
+        <span class="px-2 py-1 bg-red-900/30 border border-red-700/40 rounded text-red-400 font-semibold">↓↓ VENTE+ALLÉGER : ${s.sell_signals||0}</span>
         <span class="px-2 py-1 bg-slate-700/50 border border-slate-600 rounded text-slate-400 font-semibold">◉ NEUTRE : ${s.neutral_signals||0}</span>
       </div>
       <div class="ml-auto flex items-center gap-2">
@@ -2456,10 +2456,15 @@ function renderHoldingCard(h) {
   const pnlPos   = hasPnl && h.pnl_pct >= 0;
   const pnlColor = pnlPos ? 'text-green-400' : 'text-red-400';
   const pnlSign  = pnlPos ? '+' : '';
-  const sigColor = h.reco_signal==='ACHAT' ? 'text-green-400 bg-green-900/30 border-green-700/40' :
-                   h.reco_signal==='VENTE' ? 'text-red-400 bg-red-900/30 border-red-700/40' :
+  const sigColor = h.reco_signal==='ACHAT'     ? 'text-green-400 bg-green-900/30 border-green-700/40' :
+                   h.reco_signal==='ACCUMULER'? 'text-lime-400 bg-lime-900/25 border-lime-700/40' :
+                   h.reco_signal==='ALLÉGER'  ? 'text-orange-400 bg-orange-900/25 border-orange-700/40' :
+                   h.reco_signal==='VENTE'    ? 'text-red-400 bg-red-900/30 border-red-700/40' :
                    'text-slate-400 bg-slate-700/50 border-slate-600';
-  const sigIcon  = h.reco_signal==='ACHAT' ? '↑' : h.reco_signal==='VENTE' ? '↓' : '◉';
+  const sigIcon  = h.reco_signal==='ACHAT'     ? '↑↑' :
+                   h.reco_signal==='ACCUMULER' ? '↑'  :
+                   h.reco_signal==='ALLÉGER'   ? '↓'  :
+                   h.reco_signal==='VENTE'     ? '↓↓' : '◉';
 
   const advPrioColor = {
     'buy':         'text-green-400',
