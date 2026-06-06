@@ -4,7 +4,7 @@ Routes: /api/stocks, /api/market, /api/recommendation, /api/sentiment
 Planificateur APScheduler : mise à jour toutes les heures en semaine.
 """
 import logging, statistics, threading, time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta, date as _date
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -320,6 +320,7 @@ def _refresh_data():
     _state["is_refreshing"] = True
     try:
         result = scraper.fetch_all()
+        saved_count = len(result.get("stocks") or [])
         _save_stocks(result["stocks"])
         if result["market"]:
             m = result["market"]
@@ -333,7 +334,21 @@ def _refresh_data():
         _state["refresh_count"] += 1
         # Invalider le cache sentiment après chaque refresh
         _sentiment_cache["data"] = None
-        logger.info(f"Données rafraîchies (#{_state['refresh_count']})")
+        logger.info(f"Données rafraîchies (#{_state['refresh_count']}) — {saved_count} cours reçus")
+
+        # Si le scraper n'a rien renvoyé (week-end, marché fermé, source indispo)
+        # et que les données en DB sont périmées (> 7 jours), lancer un rattrapage historique
+        if saved_count == 0 and not _state["history_loading"]:
+            cutoff = (_date.today() - timedelta(days=7)).isoformat()
+            rows = db.get_latest_prices_all()
+            stale_symbols = [
+                r["symbol"] for r in rows
+                if not r.get("date") or r["date"] < cutoff
+            ]
+            if stale_symbols:
+                logger.warning(f"{len(stale_symbols)} titres périmés détectés — rattrapage historique lancé")
+                t = threading.Thread(target=_load_all_history, daemon=True)
+                t.start()
     except Exception as e:
         logger.error(f"Erreur refresh: {e}")
     finally:
@@ -375,30 +390,45 @@ def _save_stocks(stocks_raw: list):
 
 
 def _load_all_history():
-    """Charge l'historique de tous les titres depuis l'API chart kwayisi."""
+    """Charge l'historique de tous les titres depuis l'API chart kwayisi.
+
+    Recharge aussi les titres dont les données sont périmées (> 7 jours),
+    ce qui couvre les redémarrages après mise en veille prolongée du service.
+    """
     if _state["history_loading"]:
         return
     _state["history_loading"] = True
     try:
         stocks = db.get_all_stocks()
-        logger.info(f"Chargement historique pour {len(stocks)} titres...")
+        # Seuil de péremption : données de plus de 7 jours = à recharger
+        freshness_cutoff = (_date.today() - timedelta(days=7)).isoformat()
+        stale, fresh, new = 0, 0, 0
+        logger.info(f"Chargement historique pour {len(stocks)} titres (seuil fraîcheur : {freshness_cutoff})...")
         for i, stock in enumerate(stocks):
             sym = stock["symbol"]
-            # Ne charger que si peu de données
-            if db.count_prices(sym) >= 100:
-                continue
+            count = db.count_prices(sym)
+            if count >= 100:
+                latest = db.get_latest_price(sym)
+                latest_date = latest.get("date") if latest else None
+                if latest_date and latest_date >= freshness_cutoff:
+                    fresh += 1
+                    continue  # données récentes, pas besoin de recharger
+                stale += 1
+                logger.info(f"  {sym}: données périmées ({latest_date}) — rechargement")
+            else:
+                new += 1
             try:
                 history = scraper.fetch_history_for_symbol(sym)
                 if history:
                     clean = [h for h in history if h.get("close")]
                     db.upsert_prices_bulk(clean)
-                    logger.info(f"  [{i+1}/{len(stocks)}] {sym}: {len(clean)} points")
+                    logger.info(f"  [{i+1}/{len(stocks)}] {sym}: {len(clean)} points chargés")
                 time.sleep(0.5)  # politesse envers le serveur
             except Exception as e:
                 logger.warning(f"  Historique {sym}: {e}")
 
         _state["history_loaded"] = True
-        logger.info("Historique chargé pour tous les titres ✓")
+        logger.info(f"Historique OK — {fresh} titres frais, {stale} périmés rechargés, {new} nouveaux")
     except Exception as e:
         logger.error(f"Erreur chargement historique: {e}")
     finally:

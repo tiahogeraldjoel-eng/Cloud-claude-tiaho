@@ -2009,7 +2009,16 @@ function updateLastRefresh(ts) {
   if(!el) return;
   if(!ts){el.textContent='—';return;}
   const d=new Date(ts);
-  el.textContent=d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const now=new Date();
+  const sameDay=d.toDateString()===now.toDateString();
+  if(sameDay) {
+    el.textContent=d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    el.className='text-slate-300';
+  } else {
+    const diffDays=Math.floor((now-d)/86400000);
+    el.textContent=d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    el.className=diffDays>3?'text-orange-400 font-semibold':'text-yellow-400';
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
