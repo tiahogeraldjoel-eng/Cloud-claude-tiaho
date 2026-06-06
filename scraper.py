@@ -648,6 +648,76 @@ def _scrape_richbourse_news() -> List[Dict]:
     return deduped[:20]
 
 
+def _scrape_lejecos_news() -> List[Dict]:
+    """
+    Actualités économiques BRVM/UEMOA depuis lejecos.com.
+    Cible les sections finance/bourse plutôt que la homepage,
+    avec des mots-clés élargis à l'économie régionale.
+    """
+    base   = "https://www.lejecos.com"
+    source = "lejecos.com"
+    today  = _today()
+    result : List[Dict] = []
+    seen   : set = set()
+
+    # Sections ciblées par ordre de priorité
+    urls = [
+        f"{base}/tag/brvm",
+        f"{base}/bourse",
+        f"{base}/finances",
+        f"{base}/",
+    ]
+    # Mots-clés élargis : économie régionale + finance + entreprises BRVM
+    kw = [
+        "brvm","bourse","action","marché","titre","cotation","cours",
+        "invest","uemoa","dividende","ago","résultat","bnpa","bpa","exercice",
+        "cfa","fcfa","cedeao","uemoa","sonatel","sgbc","oragroup","bank",
+        "économie","croissance","pib","financement","trésor","obligation",
+        "coris","baci","ecobank","palmci","nestle","société générale",
+    ]
+
+    for url in urls:
+        soup = _get(url, referer=base+"/", timeout=20)
+        if not soup:
+            continue
+
+        # Chercher les articles dans les conteneurs structurés
+        anchors = []
+        for sel in ["article", "h2", "h3", "h4"]:
+            for tag in soup.find_all(sel):
+                a = tag.find("a", href=True)
+                if a:
+                    anchors.append(a)
+        if not anchors:
+            # Repli : tous les liens qui ressemblent à des articles
+            anchors = [a for a in soup.find_all("a", href=True)
+                       if any(seg in (a.get("href") or "") for seg in
+                              ["/article", "/news", "/actu", "/2025", "/2026", "/2024"])]
+
+        for a in anchors:
+            title = " ".join(a.get_text(" ", strip=True).split())
+            href  = a.get("href", "").strip()
+            if not (25 <= len(title) <= 250):
+                continue
+            if title in seen:
+                continue
+            if not any(k in title.lower() for k in kw):
+                continue
+            seen.add(title)
+            full_url = _norm_url(href, base)
+            if not full_url or "javascript:" in full_url:
+                continue
+            result.append({"title": title, "url": full_url, "source": source, "published": today})
+            if len(result) >= 10:
+                break
+
+        if result:
+            break  # Arrêter dès qu'une section donne des résultats
+
+    logger.info(f"lejecos news: {len(result)} articles")
+    return result
+
+
 def scrape_news() -> List[Dict]:
     """
     Agrège les actualités BRVM/UEMOA depuis 4 sources :
@@ -675,27 +745,26 @@ def scrape_news() -> List[Dict]:
             seen_titles.add(item["title"])
             all_news.append(item)
 
-    # ── Sources 3 & 4 : lejecos + sika.finance (avec filtre mots-clés) ─────────
-    fallback_sources = [
-        ("https://www.lejecos.com/",               "lejecos.com"),
-        ("https://www.sika.finance/fr/marche/brvm", "sika.finance"),
-    ]
+    # ── Source 3 : lejecos (scraper dédié sections finance/bourse) ───────────────
+    lejecos_items = _scrape_lejecos_news()
+    for item in lejecos_items:
+        if item["title"] not in seen_titles:
+            seen_titles.add(item["title"])
+            all_news.append(item)
+
+    # ── Source 4 : sika.finance (avec filtre mots-clés) ──────────────────────
     kw = ["brvm","bourse","action","marché","titre","cotation","cours","invest","uemoa",
           "dividende","ago","résultat","bnpa","bpa","exercice"]
-    for url, source in fallback_sources:
-        soup = _get(url)
-        if not soup:
-            continue
-        items = _news_from_soup(soup, source, "/".join(url.split("/")[:3]),
+    soup = _get("https://www.sika.finance/fr/marche/brvm")
+    if soup:
+        items = _news_from_soup(soup, "sika.finance", "https://www.sika.finance",
                                 max_items=8, keywords=kw)
         for item in items:
             if item["title"] not in seen_titles:
                 seen_titles.add(item["title"])
                 all_news.append(item)
-        if len(all_news) >= 30:
-            break
 
-    logger.info(f"news total : {len(all_news)} articles ({len(sika_items)} sika + {len(rich_items)} richbourse)")
+    logger.info(f"news total : {len(all_news)} articles ({len(sika_items)} sika + {len(rich_items)} richbourse + {len(lejecos_items)} lejecos)")
     return all_news[:30]
 
 
