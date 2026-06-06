@@ -241,6 +241,23 @@ _sentiment_cache: Dict = {"data": None, "ts": 0.0}
 _SENTIMENT_TTL = 5 * 60  # secondes — re-calcul toutes les 5 min max
 
 
+def _last_brvm_trading_day() -> str:
+    """Retourne la date du dernier jour de bourse BRVM (lun-ven).
+    Si la séance en cours n'est pas terminée (avant 15h00 UTC = clôture Abidjan),
+    renvoie le jour précédent ouvré — évite de marquer comme périmé des données
+    qui seraient correctes pour la dernière clôture.
+    """
+    now = datetime.now(timezone.utc)
+    d   = now.date()
+    # Séance non terminée : revenir au jour précédent
+    if now.hour < 15:
+        d -= timedelta(days=1)
+    # Remonter jusqu'au dernier jour ouvré (lundi=0 … vendredi=4)
+    while d.weekday() > 4:
+        d -= timedelta(days=1)
+    return d.isoformat()
+
+
 # ─── STARTUP ──────────────────────────────────────────────────────────────────
 
 @app.on_event("startup")
@@ -340,7 +357,7 @@ def _refresh_data():
         # Si le scraper n'a rien renvoyé (week-end, marché fermé, source indispo)
         # et que les données en DB sont périmées (> 7 jours), lancer un rattrapage historique
         if saved_count == 0 and not _state["history_loading"]:
-            cutoff = (_date.today() - timedelta(days=7)).isoformat()
+            cutoff = _last_brvm_trading_day()
             rows = db.get_latest_prices_all()
             stale_symbols = [
                 r["symbol"] for r in rows
@@ -401,8 +418,8 @@ def _load_all_history():
     _state["history_loading"] = True
     try:
         stocks = db.get_all_stocks()
-        # Seuil de péremption : données de plus de 7 jours = à recharger
-        freshness_cutoff = (_date.today() - timedelta(days=7)).isoformat()
+        # Périmé = pas de données couvrant le dernier jour ouvré BRVM
+        freshness_cutoff = _last_brvm_trading_day()
         stale, fresh, new = 0, 0, 0
         logger.info(f"Chargement historique pour {len(stocks)} titres (seuil fraîcheur : {freshness_cutoff})...")
         for i, stock in enumerate(stocks):
