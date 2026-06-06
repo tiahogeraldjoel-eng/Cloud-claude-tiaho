@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.exe
+ngrok.exe
+cloudflared.exe
+sika_debug.html
+test_output.pdf
+.env
+.claude/
+!.claude/commands/
+
+# Fichiers Windows / lancement local
+*.bat
+*.pyw
+ngrok-config.yml
+diag.py
+logo_generator.py
