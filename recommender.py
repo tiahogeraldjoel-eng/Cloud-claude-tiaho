@@ -1050,6 +1050,36 @@ def compute_recommendation(
         elif rsi_v > 65:
             key_factors.append({"type": "technique", "text": f"📈 RSI suracheté : {rsi_v} (signal de vente)", "positive": False})
 
+    # ── Détection détachement dividende ───────────────────────────────────────
+    # Si une chute de cours en 1 séance ≈ montant du dividende est détectée
+    # dans les 10 dernières séances → flag contextuel pour l'investisseur.
+    # Les indicateurs techniques (MACD, MA) interprèteront ce repli comme
+    # baissier alors qu'il s'agit d'un ajustement mécanique, pas d'une vente.
+    if fundamentals and prices and len(prices) >= 2:
+        dps_check = (fundamentals.get("dividend_per_share_net")
+                     or fundamentals.get("dividend_per_share"))
+        if dps_check and dps_check > 0:
+            recent = prices[-min(10, len(prices)):]
+            for i in range(1, len(recent)):
+                p0 = recent[i - 1].get("close")
+                p1 = recent[i].get("close")
+                if p0 and p1 and p0 > 0:
+                    drop     = p0 - p1
+                    drop_pct = drop / p0 * 100
+                    # Critères : chute ≥ 2 % en 1 séance ET drop ≈ dividende (±50 %)
+                    if drop_pct >= 2.0 and drop > 0 and abs(drop - dps_check) / dps_check <= 0.50:
+                        key_factors.insert(0, {
+                            "type":     "detachement",
+                            "text":     (
+                                f"ℹ️ Détachement dividende détecté ({dps_check:,.0f} FCFA/action) — "
+                                f"la baisse de cours est un ajustement mécanique, pas un signal de vente. "
+                                f"Les indicateurs techniques (MA, MACD) seront temporairement biaisés "
+                                f"(2–6 semaines). SEKIDE et le cours juste restent les références fiables."
+                            ),
+                            "positive": True,
+                        })
+                        break
+
     if sentiment:
         s_label = sentiment.get("label","Neutre")
         s_score = sentiment.get("score", 50)

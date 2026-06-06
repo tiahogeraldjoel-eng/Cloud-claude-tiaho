@@ -1097,7 +1097,13 @@ function renderRecommendationBox(containerId, reco) {
       ${(reco.key_factors||[]).length ? `
       <div class="mb-4 space-y-1.5">
         ${(reco.key_factors||[]).map(f=>`
-          <div class="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg ${f.positive?'bg-green-900/30 text-green-300':'bg-red-900/20 text-red-300'}">
+          <div class="flex items-start gap-2 text-xs px-3 py-1.5 rounded-lg ${
+            f.type==='detachement'
+              ? 'bg-amber-900/30 text-amber-200 border border-amber-700/40'
+              : f.positive
+                ? 'bg-green-900/30 text-green-300'
+                : 'bg-red-900/20 text-red-300'
+          }">
             ${f.text}
           </div>`).join('')}
       </div>` : ''}
