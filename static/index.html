@@ -296,7 +296,10 @@
       </div>
       <div>
         <label class="block text-xs text-slate-400 mb-1">Indicateurs</label>
-        <div class="flex gap-2 text-xs">
+        <div class="flex flex-wrap gap-2 text-xs">
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="show-candle" checked onchange="toggleIndicators()" class="accent-indigo-500"> Bougies
+          </label>
           <label class="flex items-center gap-1 cursor-pointer">
             <input type="checkbox" id="show-ma" checked onchange="toggleIndicators()" class="accent-indigo-500"> MA
           </label>

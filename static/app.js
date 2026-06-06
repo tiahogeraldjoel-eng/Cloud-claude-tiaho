@@ -448,8 +448,10 @@ function renderCandleChart(prices, patterns=[]) {
   STATE.chartMain = chart;
 
   const hasOHLC = prices.some(p=>p.open!=null&&p.high!=null&&p.low!=null);
+  const showCandle = document.getElementById('show-candle')?.checked !== false;
+
   let main;
-  if(hasOHLC) {
+  if(showCandle && hasOHLC) {
     main = chart.addCandlestickSeries({
       upColor:'#22c55e',downColor:'#ef4444',
       borderUpColor:'#22c55e',borderDownColor:'#ef4444',
@@ -459,16 +461,24 @@ function renderCandleChart(prices, patterns=[]) {
       time:p.date, open:p.open||p.close, high:p.high||p.close,
       low:p.low||p.close, close:p.close,
     })));
-  } else {
+  } else if(showCandle) {
     main = chart.addAreaSeries({
       lineColor:'#818cf8', topColor:'rgba(129,140,248,0.3)',
       bottomColor:'rgba(129,140,248,0.02)', lineWidth:2,
     });
     main.setData(prices.filter(p=>p.close).map(p=>({time:p.date,value:p.close})));
+  } else {
+    // Mode épuré : ligne fine fermée uniquement, sans corps ni mèches
+    main = chart.addLineSeries({
+      color:'rgba(148,163,184,0.4)', lineWidth:1,
+      priceLineVisible:false, lastValueVisible:true,
+      crosshairMarkerVisible:true,
+    });
+    main.setData(prices.filter(p=>p.close).map(p=>({time:p.date,value:p.close})));
   }
 
-  // ─── Marqueurs de figures ──────────────────────────────────────────────────
-  if(patterns && patterns.length && hasOHLC) {
+  // ─── Marqueurs de figures (uniquement quand les bougies sont visibles) ──────
+  if(showCandle && patterns && patterns.length && hasOHLC) {
     const SIG_COLOR = { ACHAT:'#22c55e', VENTE:'#ef4444', NEUTRE:'#eab308' };
     const markers = patterns
       .filter(pat => prices.some(p=>p.date===pat.date))
