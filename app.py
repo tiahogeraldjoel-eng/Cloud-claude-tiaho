@@ -94,7 +94,7 @@ def _apply_net_dividend(fund: Optional[Dict], country: Optional[str]) -> Optiona
     if exercice_year is not None and exercice_year < recent_exercice and raw_status != "manuel":
         # Dividende d'un exercice antérieur (ex. 2024 ou avant) — déjà distribué
         effective_status = "historique"
-    elif raw_status in ("annoncé", "officiel", "manuel"):
+    elif raw_status in ("annoncé", "officiel", "manuel", "sans_dividende"):
         # Exercice récent ou saisi manuellement → conserver
         effective_status = raw_status
     else:
@@ -719,21 +719,25 @@ def api_dividend_manual(symbol: str, body: dict):
     if not stock:
         return JSONResponse({"error": f"Titre {symbol} introuvable"}, 404)
 
-    net_dps       = float(body.get("net_dps", 0) or 0)
+    net_dps_raw   = body.get("net_dps")
+    net_dps       = float(net_dps_raw) if net_dps_raw is not None else None
     exercice_year = int(body.get("exercice_year", datetime.now().year - 1))
 
-    if net_dps <= 0:
-        return JSONResponse({"error": "Dividende net doit être > 0"}, 400)
+    if net_dps is None or net_dps < 0:
+        return JSONResponse({"error": "Dividende net doit être >= 0 (0 = pas de dividende)"}, 400)
 
+    no_dividend = (net_dps == 0)
     country = stock.get("country") or ""
     factor  = _net_div_factor(country)
-    gross_dps = round(net_dps / factor, 2)
+    gross_dps   = 0.0 if no_dividend else round(net_dps / factor, 2)
+    gross_yield = 0.0 if no_dividend else None
 
     # Rendement calculé sur le cours actuel
     latest = db.get_latest_price(symbol)
     price  = latest.get("close") if latest else None
-    gross_yield = round(gross_dps / price * 100, 4) if price and price > 0 else None
-    net_yield   = round(gross_yield * factor, 4)    if gross_yield else None
+    if not no_dividend and price and price > 0:
+        gross_yield = round(gross_dps / price * 100, 4)
+    net_yield = round(gross_yield * factor, 4) if gross_yield else (0.0 if no_dividend else None)
 
     # PER : si BNPA déjà en DB on le conserve, sinon on essaie de le déduire
     fund = db.get_fundamental(symbol) or {}
@@ -746,7 +750,7 @@ def api_dividend_manual(symbol: str, body: dict):
         "symbol":             symbol,
         "dividend_per_share": gross_dps,
         "dividend_yield":     gross_yield,
-        "div_status":         "manuel",
+        "div_status":         "sans_dividende" if no_dividend else "manuel",
         "div_exercice_year":  exercice_year,
         "div_payment_date":   None,
     })
@@ -757,6 +761,7 @@ def api_dividend_manual(symbol: str, body: dict):
         "gross_dps":       gross_dps,
         "net_yield_pct":   net_yield,
         "gross_yield_pct": gross_yield,
+        "no_dividend":     no_dividend,
         "irvm_factor":     factor,
         "irvm_pct":        round((1 - factor) * 100, 1),
         "per":             per,

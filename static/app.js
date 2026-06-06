@@ -1117,12 +1117,13 @@ function scoreColor(s) {
 
 // ─── DIVIDENDE MANUEL ────────────────────────────────────────────────────────
 async function saveManualDiv(symbol) {
-  const netDps  = parseFloat(document.getElementById('manual-div-net')?.value || '0');
+  const rawVal  = document.getElementById('manual-div-net')?.value ?? '';
+  const netDps  = rawVal === '' ? null : parseFloat(rawVal);
   const year    = parseInt(document.getElementById('manual-div-year')?.value || '0');
   const resEl   = document.getElementById('manual-div-result');
 
-  if (!netDps || netDps <= 0) {
-    if (resEl) resEl.innerHTML = '<span class="text-red-400">Saisissez un dividende net valide (> 0)</span>';
+  if (netDps === null || isNaN(netDps) || netDps < 0) {
+    if (resEl) resEl.innerHTML = '<span class="text-red-400">Saisissez un montant valide (0 = pas de dividende)</span>';
     return;
   }
   if (resEl) resEl.textContent = 'Enregistrement...';
@@ -1136,28 +1137,37 @@ async function saveManualDiv(symbol) {
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'Erreur serveur');
 
-    if (resEl) resEl.innerHTML = `
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
-        <div class="bg-slate-800 rounded-lg p-2 text-center">
-          <div class="text-slate-400 text-xs">Net</div>
-          <div class="font-bold text-green-300">${fmt(d.net_dps,0)} FCFA</div>
+    if (d.no_dividend) {
+      if (resEl) resEl.innerHTML = `
+        <div class="bg-slate-800 rounded-lg p-3 mt-2 text-center">
+          <span class="text-slate-300 font-semibold">⚠️ Pas de dividende enregistré pour l'exercice ${year}</span>
+          <div class="text-slate-500 text-xs mt-1">Rendement : 0% — PER basé sur BNPA uniquement</div>
         </div>
-        <div class="bg-slate-800 rounded-lg p-2 text-center">
-          <div class="text-slate-400 text-xs">Brut (avant IRVM ${d.irvm_pct}%)</div>
-          <div class="font-bold text-slate-200">${fmt(d.gross_dps,0)} FCFA</div>
+        <div class="text-green-400 mt-2">✓ Enregistré.</div>`;
+      toast(`${symbol} — Pas de dividende exercice ${year}`, 3000);
+    } else {
+      if (resEl) resEl.innerHTML = `
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+          <div class="bg-slate-800 rounded-lg p-2 text-center">
+            <div class="text-slate-400 text-xs">Net</div>
+            <div class="font-bold text-green-300">${fmt(d.net_dps,0)} FCFA</div>
+          </div>
+          <div class="bg-slate-800 rounded-lg p-2 text-center">
+            <div class="text-slate-400 text-xs">Brut (avant IRVM ${d.irvm_pct}%)</div>
+            <div class="font-bold text-slate-200">${fmt(d.gross_dps,0)} FCFA</div>
+          </div>
+          <div class="bg-slate-800 rounded-lg p-2 text-center">
+            <div class="text-slate-400 text-xs">Rendement net</div>
+            <div class="font-bold text-indigo-300">${d.net_yield_pct!=null?fmt(d.net_yield_pct,2)+'%':'—'}</div>
+          </div>
+          <div class="bg-slate-800 rounded-lg p-2 text-center">
+            <div class="text-slate-400 text-xs">P/E Ratio</div>
+            <div class="font-bold text-slate-200">${d.per!=null?fmt(d.per,1)+'x':'—'}</div>
+          </div>
         </div>
-        <div class="bg-slate-800 rounded-lg p-2 text-center">
-          <div class="text-slate-400 text-xs">Rendement net</div>
-          <div class="font-bold text-indigo-300">${d.net_yield_pct!=null?fmt(d.net_yield_pct,2)+'%':'—'}</div>
-        </div>
-        <div class="bg-slate-800 rounded-lg p-2 text-center">
-          <div class="text-slate-400 text-xs">P/E Ratio</div>
-          <div class="font-bold text-slate-200">${d.per!=null?fmt(d.per,1)+'x':'—'}</div>
-        </div>
-      </div>
-      <div class="text-green-400 mt-2">✓ Dividende enregistré — rechargez l'analyse pour rafraîchir.</div>`;
-
-    toast(`Dividende ${symbol} enregistré — Net: ${fmt(netDps,0)} FCFA`, 4000);
+        <div class="text-green-400 mt-2">✓ Dividende enregistré.</div>`;
+      toast(`Dividende ${symbol} enregistré — Net: ${fmt(netDps,0)} FCFA`, 4000);
+    }
     setTimeout(() => loadFundamental(symbol), 1500);
   } catch(e) {
     if (resEl) resEl.innerHTML = `<span class="text-red-400">Erreur : ${e.message}</span>`;
@@ -1275,7 +1285,7 @@ function renderFundamental(d, reco) {
       <div class="flex items-center gap-2 mb-3">
         <span class="text-base">✏️</span>
         <span class="text-sm font-semibold text-indigo-300">Saisie manuelle du dividende</span>
-        ${fDivStatus==='manuel' ? `<span class="ml-2 px-1.5 py-0.5 rounded text-xs font-bold bg-indigo-900/60 text-indigo-300 border border-indigo-700/50">✓ MANUEL ENREGISTRÉ</span>` : ''}
+        ${fDivStatus==='manuel' ? `<span class="ml-2 px-1.5 py-0.5 rounded text-xs font-bold bg-indigo-900/60 text-indigo-300 border border-indigo-700/50">✓ MANUEL ENREGISTRÉ</span>` : fDivStatus==='sans_dividende' ? `<span class="ml-2 px-1.5 py-0.5 rounded text-xs font-bold bg-slate-700 text-slate-400 border border-slate-600">⚠️ SANS DIVIDENDE</span>` : ''}
       </div>
       <div class="flex flex-wrap gap-3 items-end">
         <div>
