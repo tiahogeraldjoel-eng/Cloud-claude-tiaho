@@ -111,10 +111,12 @@ def _compute_prix_median(prices: List[Dict], days: int = 252) -> Optional[float]
 
 
 def _per_zone_sekide(per_val: float) -> str:
-    """Retourne la zone SEKIDE pour un PER donné."""
+    """Retourne la zone SEKIDE pour un PER donné.
+    Norme BRVM historique : 9–12× → neutre. <9 sous-évalué, >12 sur-évalué.
+    """
     if per_val <= 0:        return "neutre"   # négatif ou nul → pas de signal clair
     if per_val < 9:         return "survente"  # sous-évalué → acheter
-    if per_val <= 11:       return "neutre"
+    if per_val <= 12:       return "neutre"    # zone normale BRVM (était 11 → trop étroit)
     return "surachat"                          # sur-évalué → vendre
 
 
@@ -923,14 +925,10 @@ def compute_fair_value(fundamentals: dict, latest_price: float) -> dict:
 # ─── Profils d'investisseur ───────────────────────────────────────────────────
 # Poids des axes selon le profil déclaré par l'utilisateur
 PROFILS_POIDS = {
-    "rentier":    {"tech": 0.20, "fund": 0.55, "psych": 0.25,
-                   "div_weight": 0.50, "per_weight": 0.20, "perf_weight": 0.15, "hw_weight": 0.15},
-    "croissance": {"tech": 0.40, "fund": 0.40, "psych": 0.20,
-                   "div_weight": 0.15, "per_weight": 0.30, "perf_weight": 0.35, "hw_weight": 0.20},
-    "trader":     {"tech": 0.65, "fund": 0.15, "psych": 0.20,
-                   "div_weight": 0.05, "per_weight": 0.20, "perf_weight": 0.45, "hw_weight": 0.30},
-    "mixte":      {"tech": 0.40, "fund": 0.35, "psych": 0.25,
-                   "div_weight": 0.30, "per_weight": 0.25, "perf_weight": 0.25, "hw_weight": 0.20},
+    "rentier":    {"tech": 0.20, "fund": 0.55, "psych": 0.25},
+    "croissance": {"tech": 0.40, "fund": 0.40, "psych": 0.20},
+    "trader":     {"tech": 0.65, "fund": 0.15, "psych": 0.20},
+    "mixte":      {"tech": 0.40, "fund": 0.35, "psych": 0.25},
 }
 PROFIL_LABELS = {
     "rentier":    "Rentier — revenus réguliers",
@@ -994,33 +992,24 @@ def compute_recommendation(
 
     composite = tech_score * w_tech + fund_score * w_fund + psych_score * w_psych
 
-    # ── Ajustement SEKIDE ─────────────────────────────────────────────────────
-    # L'écart (survente - surachat) est normalisé sur 6 pts → ±8 pts sur le composite
-    # ACHAT pur (6-0)  → +8 | VENTE pure (0-6) → -8 | équilibre → 0
-    pts_s  = sekide_result["points_survente"]
-    pts_a  = sekide_result["points_surachat"]
+    # ── Ajustements SEKIDE + Valorisation (un seul clamp final) ──────────────
+    # SEKIDE : l'écart (survente - surachat) normalisé sur 6 pts → ±8 pts
+    pts_s        = sekide_result["points_survente"]
+    pts_a        = sekide_result["points_surachat"]
     sekide_delta = round((pts_s - pts_a) / 6.0 * 8.0, 1)
-    composite    = max(0.0, min(100.0, composite + sekide_delta))
 
-    # ── Ajustement Valorisation (Marge de Sécurité) ───────────────────────────
-    # Le cours juste doit cohérencer la recommandation finale.
-    # Surcote significative → pénalité sur le composite pour éviter de recommander
-    # ACHAT/ACCUMULER sur un titre manifestement surévalué.
-    fv_data    = compute_fair_value(fundamentals, latest_price)
-    fv_delta   = 0.0
-    fv_mos     = fv_data.get("margin_of_safety")  # None si non calculable
+    # Valorisation : marge de sécurité Graham → ±5/±10 pts
+    fv_data  = compute_fair_value(fundamentals, latest_price)
+    fv_delta = 0.0
+    fv_mos   = fv_data.get("margin_of_safety")  # None si non calculable
     if fv_mos is not None:
-        if fv_mos >= 30:
-            fv_delta = +5.0    # forte décote Graham → bonus
-        elif fv_mos >= 15:
-            fv_delta = +2.0    # décote modérée → léger bonus
-        elif fv_mos >= 0:
-            fv_delta = 0.0     # légère décote → neutre
-        elif fv_mos >= -15:
-            fv_delta = -5.0    # surcote légère → pénalité modérée
-        else:
-            fv_delta = -10.0   # surcote significative → pénalité forte
-    composite = round(max(0.0, min(100.0, composite + fv_delta)), 1)
+        if fv_mos >= 30:    fv_delta = +5.0   # forte décote → bonus
+        elif fv_mos >= 15:  fv_delta = +2.0   # décote modérée → léger bonus
+        elif fv_mos >= 0:   fv_delta = 0.0    # légère décote → neutre
+        elif fv_mos >= -15: fv_delta = -5.0   # surcote légère → pénalité
+        else:               fv_delta = -10.0  # surcote forte → pénalité forte
+
+    composite = round(max(0.0, min(100.0, composite + sekide_delta + fv_delta)), 1)
     label     = _score_to_label(composite)
     cfg       = RECO_CONFIG[label]
 

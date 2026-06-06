@@ -335,8 +335,7 @@ def _refresh_data():
         # Invalider le cache sentiment après chaque refresh
         _sentiment_cache["data"] = None
         logger.info(f"Données rafraîchies (#{_state['refresh_count']}) — {saved_count} cours reçus")
-        if saved_count > 0:
-            _check_price_alerts()
+        _check_price_alerts()
 
         # Si le scraper n'a rien renvoyé (week-end, marché fermé, source indispo)
         # et que les données en DB sont périmées (> 7 jours), lancer un rattrapage historique
@@ -1452,18 +1451,20 @@ def preview_dividends_sources(year: Optional[int] = None):
 @app.get("/api/portfolio/positions")
 def api_get_positions():
     positions = db.get_portfolio_positions()
-    enriched  = []
+    # Pre-load prices and stock meta in one query each to avoid O(N) DB calls
+    prices_map = {r["symbol"]: r for r in db.get_latest_prices_all()}
+    enriched   = []
     for pos in positions:
         sym     = pos["symbol"]
-        latest  = db.get_latest_price(sym)
-        current = latest.get("close") if latest else None
+        pr      = prices_map.get(sym) or {}
+        current = pr.get("close")
         cost    = pos["entry_price"] * pos["quantity"]
         value   = current * pos["quantity"] if current else None
         pnl     = value - cost if value is not None else None
         pnl_pct = pnl / cost * 100 if cost and pnl is not None else None
         # Dividende annuel estimé
         fund    = db.get_fundamental(sym) or {}
-        country = pos.get("country") or (db.get_stock(sym) or {}).get("country")
+        country = pos.get("country") or pr.get("country")
         f_net   = _apply_net_dividend(fund, country) or {}
         dps_net = f_net.get("dividend_per_share_net") or f_net.get("dividend_per_share") or 0
         annual_div = dps_net * pos["quantity"] if dps_net else 0
