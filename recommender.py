@@ -716,6 +716,7 @@ def score_psychologie(
     sentiment:     Optional[Dict],
     variation_pct: Optional[float],
     fundamentals:  Optional[Dict] = None,
+    prices:        Optional[List[Dict]] = None,
 ) -> Dict:
     """
     Intègre 3 axes comportementaux BRVM :
@@ -742,21 +743,49 @@ def score_psychologie(
     add("Sentiment global", sent_score, 45,
         f"Indice Peur & Avidité BRVM : {sent_score:.0f}/100 — {sent_label}")
 
-    # ── 2. DIVIDENDE ANNONCÉ BRVM (35%) ───────────────────────────────────────
-    # Comportement BRVM : les investisseurs réagissent aux dividendes ANNONCÉS
-    # (à venir), pas aux dividendes déjà perçus. Utilise le rendement NET.
+    # ── 2. DIVIDENDE & POTENTIEL DE PLUS-VALUE (35%) ─────────────────────────
+    # Comportement BRVM :
+    #  • Investisseurs revenus → sensibles au dividende annoncé (NET)
+    #  • Traders / croissance → sensibles à la dynamique de cours (plus-value)
+    # Les deux profils coexistent ; un titre sans dividende mais en forte hausse
+    # attire les traders même si les investisseurs revenus s'en détournent.
     f0  = fundamentals or {}
     dy  = f0.get("dividend_yield_net") or ((f0.get("dividend_yield") or 0) * 0.85 if f0.get("dividend_yield") else None)
     dy_g= f0.get("dividend_yield_gross") or f0.get("dividend_yield")
     dps = f0.get("dividend_per_share_net") or f0.get("dividend_per_share")
 
-    # Seuils basés sur rendement NET — ce que l'investisseur perçoit vraiment
+    # Déterminer la dynamique de cours sur 1 mois (si disponible via derived)
+    perf_1m = None
+    if prices and len(prices) >= 20:
+        try:
+            p_now  = prices[-1]["close"]
+            p_1m   = prices[-20]["close"]
+            if p_now and p_1m and p_1m > 0:
+                perf_1m = (p_now - p_1m) / p_1m * 100
+        except (KeyError, IndexError, TypeError, ZeroDivisionError):
+            perf_1m = None
+
+    # Seuils basés sur rendement NET
     if dy is None:
         div_psych_score = 48
         div_psych_txt   = "Dividende annoncé : données non disponibles — attentisme prudent"
-    elif dy_g == 0:
-        div_psych_score = 12
-        div_psych_txt   = "⚠️ Aucun dividende annoncé — désinvestissement BRVM (même avec bons fondamentaux)"
+    elif dy_g == 0 or dy == 0:
+        # Pas de dividende — distinguer selon le potentiel de plus-value
+        if perf_1m is not None and perf_1m >= 5:
+            div_psych_score = 45
+            div_psych_txt   = (f"Pas de dividende — mais hausse de +{perf_1m:.1f}% sur 1 mois. "
+                               f"Profil trader : plus-value potentielle. Investisseurs revenus absents.")
+        elif perf_1m is not None and perf_1m >= 2:
+            div_psych_score = 35
+            div_psych_txt   = (f"Pas de dividende — légère dynamique haussière (+{perf_1m:.1f}%/mois). "
+                               f"Intérêt limité aux traders court-terme.")
+        elif perf_1m is not None and perf_1m <= -5:
+            div_psych_score = 8
+            div_psych_txt   = (f"⚠️ Pas de dividende + baisse de {perf_1m:.1f}% sur 1 mois — "
+                               f"désinvestissement massif BRVM.")
+        else:
+            div_psych_score = 12
+            div_psych_txt   = "⚠️ Pas de dividende annoncé — désinvestissement BRVM (profil revenus absent)"
     elif dy < 0.8:
         div_psych_score = 25
         div_psych_txt   = f"Dividende annoncé symbolique (net {dy:.1f}%) — très peu attractif"
@@ -783,7 +812,7 @@ def score_psychologie(
     if dps and dy and dy > 0:
         div_psych_txt += f"{gross_note} · {dps:,.0f} FCFA net/action"
 
-    add("Dividende Annoncé BRVM", div_psych_score, 35, div_psych_txt)
+    add("Dividende & Plus-value", div_psych_score, 35, div_psych_txt)
 
     # ── 3. Dynamique récente du titre (20%) ───────────────────────────────────
     if variation_pct is not None:
@@ -800,8 +829,12 @@ def score_psychologie(
     # ── Résumé contextuel ─────────────────────────────────────────────────────
     label = (sentiment.get("label", "Neutre") if sentiment else "Neutre")
 
-    if dy_g == 0:
-        psych_note = " Titre sans dividende annoncé : les investisseurs BRVM préfèrent les valeurs de rendement."
+    if dy_g == 0 or dy == 0:
+        if perf_1m is not None and perf_1m >= 5:
+            psych_note = (f" Pas de dividende mais hausse de +{perf_1m:.1f}% sur 1 mois —"
+                          f" profil croissance/trader, pas investisseur revenus.")
+        else:
+            psych_note = " Titre sans dividende : investisseurs revenus BRVM absents. Intérêt limité aux traders."
     elif dy and dy >= 5.0:
         psych_note = f" Dividende annoncé net {dy:.1f}% (brut {dy_g:.1f}%) — euphorie et forte demande attendue."
     elif dy and dy >= 3.5:
@@ -844,7 +877,7 @@ def compute_recommendation(
     fund_result  = score_fondamentale(latest_price, fundamentals, derived, hw)
     # Passer les fondamentaux du titre à la psychologie :
     # le dividende est un signal comportemental direct sur la BRVM
-    psych_result = score_psychologie(sentiment, var_pct, fundamentals)
+    psych_result = score_psychologie(sentiment, var_pct, fundamentals, prices)
 
     # ── Couche SEKIDE (ajustement ±8 pts) ────────────────────────────────────
     sekide_result = score_sekide_brvm(
