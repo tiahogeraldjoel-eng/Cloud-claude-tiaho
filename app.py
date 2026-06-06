@@ -91,11 +91,11 @@ def _apply_net_dividend(fund: Optional[Dict], country: Optional[str]) -> Optiona
 
     # Règle d'ancienneté : un dividende déjà payé (exercice < N-1) ne doit pas
     # apparaître comme "annoncé" dans le pipeline courant
-    if exercice_year is not None and exercice_year < recent_exercice:
+    if exercice_year is not None and exercice_year < recent_exercice and raw_status != "manuel":
         # Dividende d'un exercice antérieur (ex. 2024 ou avant) — déjà distribué
         effective_status = "historique"
-    elif raw_status in ("annoncé", "officiel"):
-        # Exercice récent ou inconnu mais marqué manuellement → conserver
+    elif raw_status in ("annoncé", "officiel", "manuel"):
+        # Exercice récent ou saisi manuellement → conserver
         effective_status = raw_status
     else:
         effective_status = "aucun"
