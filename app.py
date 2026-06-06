@@ -95,8 +95,15 @@ def _apply_net_dividend(fund: Optional[Dict], country: Optional[str]) -> Optiona
         # Dividende d'un exercice antérieur (ex. 2024 ou avant) — déjà distribué
         effective_status = "historique"
     elif raw_status in ("annoncé", "officiel", "manuel", "sans_dividende"):
-        # Exercice récent ou saisi manuellement → conserver
-        effective_status = raw_status
+        # Si la date de mise en paiement est passée → basculer en 'payé'
+        # Le montant reste utilisable comme estimateur du prochain dividende (Gordon-Shapiro, PCD)
+        # mais l'affichage doit informer que ce dividende ne sera pas encaissable par un acheteur aujourd'hui
+        payment_date = f.get("div_payment_date")
+        if (raw_status == "officiel" and payment_date
+                and payment_date <= _date.today().isoformat()):
+            effective_status = "payé"
+        else:
+            effective_status = raw_status
     else:
         effective_status = "aucun"
 

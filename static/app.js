@@ -702,33 +702,38 @@ function renderTechDividendBlock(fundData) {
   // Badge de statut dividende
   const divStatus   = f.div_status || 'aucun';
   const exerciceLabel = f.div_exercice_label || null;
-  // Ne montrer le badge que pour le pipeline courant (annoncé/officiel = exercice récent)
+  // Pipeline courant = dividende encaissable ou à venir ; payé = déjà versé cette année
   const isPipeline = divStatus === 'officiel' || divStatus === 'annoncé';
+  const isPaye     = divStatus === 'payé';
   const statusBadge = divStatus === 'officiel'
     ? `<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-900/60 text-green-300 border border-green-700/50 ml-2">✓ OFFICIEL BOC</span>`
     : divStatus === 'annoncé'
     ? `<span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-900/60 text-yellow-300 border border-yellow-700/50 ml-2">⏳ ANNONCÉ AGO</span>`
+    : isPaye
+    ? `<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-900/60 text-blue-300 border border-blue-700/50 ml-2">✓ VERSÉ</span>`
     : '';
 
   const exerciceBadge = exerciceLabel
     ? `<span class="text-slate-500 text-xs ml-2">${exerciceLabel}</span>` : '';
   const payDate = f.div_payment_date
-    ? `<span class="text-slate-500 text-xs ml-1">· Mise en paiement : ${f.div_payment_date}</span>` : '';
+    ? `<span class="text-slate-500 text-xs ml-1">· ${isPaye?'Versé le':'Mise en paiement :'} ${f.div_payment_date}</span>` : '';
 
   el.innerHTML = `
     <div class="bg-card rounded-xl border border-border p-4">
       <div class="flex items-center gap-2 mb-3 flex-wrap">
         <span class="text-sm font-semibold text-slate-300">💰 Dividende</span>
         ${statusBadge}${exerciceBadge}${payDate}
-        ${!isPipeline && hasDiv ? '<span class="text-xs text-slate-600 ml-1">(données historiques)</span>' : ''}
+        ${!isPipeline && !isPaye && hasDiv ? '<span class="text-xs text-slate-600 ml-1">(données historiques)</span>' : ''}
       </div>
-      <div class="rounded-xl p-4 ${hasDiv&&isPipeline?'bg-green-900/20 border border-green-700/40':hasDiv?'bg-slate-800/50 border border-slate-700':'bg-red-900/10 border border-red-700/20'}">
+      <div class="rounded-xl p-4 ${hasDiv&&isPipeline?'bg-green-900/20 border border-green-700/40':hasDiv&&isPaye?'bg-blue-900/10 border border-blue-700/20':hasDiv?'bg-slate-800/50 border border-slate-700':'bg-red-900/10 border border-red-700/20'}">
         <div class="flex items-center gap-3 flex-wrap">
-          <div class="text-2xl">${hasDiv&&isPipeline?'💰':hasDiv?'📜':'⚠️'}</div>
+          <div class="text-2xl">${hasDiv&&isPipeline?'💰':hasDiv&&isPaye?'✅':hasDiv?'📜':'⚠️'}</div>
           <div class="flex-1">
-            <div class="font-bold text-sm ${hasDiv&&isPipeline?'text-green-300':hasDiv?'text-slate-400':'text-red-400'}">
+            <div class="font-bold text-sm ${hasDiv&&isPipeline?'text-green-300':hasDiv&&isPaye?'text-blue-300':hasDiv?'text-slate-400':'text-red-400'}">
               ${isPipeline&&hasDiv
                 ? `Dividende ${divStatus==='officiel'?'Officiel':'Annoncé'} — Net : <span class="text-xl">${fmt(dyNet??dyGross,2)}%</span>`
+                : isPaye&&hasDiv
+                ? `Dividende versé — Rendement estimé prochain exercice : <span class="text-xl">${fmt(dyNet??dyGross,2)}%</span> <span class="text-xs font-normal text-blue-400">(un acheteur aujourd'hui doit attendre l'AGO ${new Date().getFullYear()+1})</span>`
                 : hasDiv
                 ? `Rendement historique — Net : <span class="text-lg">${fmt(dyNet??dyGross,2)}%</span> <span class="text-xs font-normal text-slate-500">(exercice antérieur)</span>`
                 : 'Aucun dividende annoncé pour cet exercice'}
@@ -774,7 +779,7 @@ function renderTechDiv2025Context(symbol, fundD, divArr) {
   // Filtrer uniquement le pipeline courant
   const pipeline = (divArr||[]).filter(d => {
     const ds = d.div_status||'aucun';
-    if(ds !== 'annoncé' && ds !== 'officiel') return false;
+    if(ds !== 'annoncé' && ds !== 'officiel' && ds !== 'payé') return false;
     const ey = d.div_exercice_year;
     return ey && ey >= recentExerc;
   }).sort((a,b)=>(b.dividend_yield||0)-(a.dividend_yield||0));
@@ -851,7 +856,7 @@ function renderFundDiv2025Context(symbol, divArr) {
 
   const pipeline = (divArr||[]).filter(d => {
     const ds = d.div_status||'aucun';
-    if(ds !== 'annoncé' && ds !== 'officiel') return false;
+    if(ds !== 'annoncé' && ds !== 'officiel' && ds !== 'payé') return false;
     const ey = d.div_exercice_year;
     return ey && ey >= recentExerc;
   }).sort((a,b)=>(b.dividend_yield||0)-(a.dividend_yield||0));
@@ -940,7 +945,7 @@ function renderDividend2025Table(divArr) {
 
   const pipeline = (divArr||[]).filter(d => {
     const ds = d.div_status||'aucun';
-    if(ds !== 'annoncé' && ds !== 'officiel') return false;
+    if(ds !== 'annoncé' && ds !== 'officiel' && ds !== 'payé') return false;
     const ey = d.div_exercice_year;
     return ey && ey >= recentExerc;
   });
@@ -994,9 +999,11 @@ function renderDividend2025Table(divArr) {
     const yldColor= yld>=5?'text-green-400':yld>=3.5?'text-lime-400':'text-yellow-400';
     const dsBadge = ds==='officiel'
       ? `<span class="text-xs font-bold px-1.5 py-0.5 rounded bg-green-900/50 text-green-300 border border-green-700/40">✓ BOC</span>`
+      : ds==='payé'
+      ? `<span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-900/50 text-blue-300 border border-blue-700/40">✓ VERSÉ</span>`
       : `<span class="text-xs font-bold px-1.5 py-0.5 rounded bg-yellow-900/50 text-yellow-300 border border-yellow-700/40">⏳ AGO</span>`;
     const payDate = d.div_payment_date
-      ? `<div class="text-xs text-slate-600 mt-0.5">Paiement : ${d.div_payment_date}</div>` : '';
+      ? `<div class="text-xs text-slate-600 mt-0.5">${ds==='payé'?'Versé le':'Paiement :'} ${d.div_payment_date}</div>` : '';
     const psycho  = yld>=6.5?'Euphorie 🤑':yld>=5?'Engouement 😊':yld>=3.5?'Attractif ↑':yld>=2?'Correct':'Neutre';
     return `<tr class="border-b border-slate-700/40 last:border-0 hover:bg-slate-800/50 cursor-pointer transition-colors" onclick="openFund('${d.symbol}')">
       <td class="py-2.5 pl-3 text-xs text-slate-500">#${i+1}</td>
@@ -1328,23 +1335,28 @@ function renderFundamental(d, reco) {
   const fDivStatus     = f?.div_status || 'aucun';
   const fExerciceLabel = f?.div_exercice_label || null;
   const fIsPipeline    = fDivStatus === 'officiel' || fDivStatus === 'annoncé';
+  const fIsPaye        = fDivStatus === 'payé';
   const fStatusBadge = fDivStatus==='officiel'
     ? `<span class="ml-2 px-1.5 py-0.5 rounded text-xs font-bold bg-green-900/60 text-green-300 border border-green-700/50">✓ OFFICIEL BOC</span>`
     : fDivStatus==='annoncé'
     ? `<span class="ml-2 px-1.5 py-0.5 rounded text-xs font-bold bg-yellow-900/60 text-yellow-300 border border-yellow-700/50">⏳ ANNONCÉ AGO</span>`
+    : fIsPaye
+    ? `<span class="ml-2 px-1.5 py-0.5 rounded text-xs font-bold bg-blue-900/60 text-blue-300 border border-blue-700/50">✓ VERSÉ</span>`
     : '';
   const fExerciceBadge = fExerciceLabel
     ? `<span class="ml-1 text-xs text-slate-500">${fExerciceLabel}</span>` : '';
   const fPayDate = f?.div_payment_date
-    ? `<span class="text-slate-500 text-xs ml-1">· Paiement : ${f.div_payment_date}</span>` : '';
+    ? `<span class="text-slate-500 text-xs ml-1">· ${fIsPaye?'Versé le':'Paiement :'} ${f.div_payment_date}</span>` : '';
   const divBlock = f ? `
-    <div class="col-span-2 md:col-span-4 rounded-xl p-4 ${fIsPipeline&&hasDiv?'bg-green-900/20 border border-green-700/40':hasDiv?'bg-slate-800/50 border border-slate-700':'bg-red-900/10 border border-red-700/20'}">
+    <div class="col-span-2 md:col-span-4 rounded-xl p-4 ${fIsPipeline&&hasDiv?'bg-green-900/20 border border-green-700/40':fIsPaye&&hasDiv?'bg-blue-900/10 border border-blue-700/20':hasDiv?'bg-slate-800/50 border border-slate-700':'bg-red-900/10 border border-red-700/20'}">
       <div class="flex items-center gap-3 flex-wrap">
-        <div class="text-2xl">${fIsPipeline&&hasDiv?'💰':hasDiv?'📜':'⚠️'}</div>
+        <div class="text-2xl">${fIsPipeline&&hasDiv?'💰':fIsPaye&&hasDiv?'✅':hasDiv?'📜':'⚠️'}</div>
         <div class="flex-1">
-          <div class="font-bold text-sm ${fIsPipeline&&hasDiv?'text-green-300':hasDiv?'text-slate-400':'text-red-400'} flex items-center flex-wrap gap-1">
+          <div class="font-bold text-sm ${fIsPipeline&&hasDiv?'text-green-300':fIsPaye&&hasDiv?'text-blue-300':hasDiv?'text-slate-400':'text-red-400'} flex items-center flex-wrap gap-1">
             ${fIsPipeline&&hasDiv
               ? `Dividende ${fDivStatus==='officiel'?'Officiel':'Annoncé'} — Net : <span class="text-xl">${fmt(dyNet??dyGross,2)}%</span>${fStatusBadge}${fExerciceBadge}${fPayDate}`
+              : fIsPaye&&hasDiv
+              ? `Dividende versé${fPayDate} — Rendement estimé prochain exercice : <span class="text-xl">${fmt(dyNet??dyGross,2)}%</span>${fStatusBadge}${fExerciceBadge}`
               : hasDiv
               ? `Rendement — Net : <span class="text-lg">${fmt(dyNet??dyGross,2)}%</span> <span class="text-xs font-normal text-slate-500">(exercice antérieur — déjà distribué)</span>`
               : 'Aucun dividende annoncé pour cet exercice'}
@@ -1744,12 +1756,14 @@ async function renderDividendLeaders(preloaded) {
 
       // Badge statut pipeline : seulement exercice récent (N-1 annoncé à l'AGO N)
       const ds         = s.div_status || 'aucun';
-      const isPipeline = ds === 'officiel' || ds === 'annoncé';
+      const isPipeline = ds === 'officiel' || ds === 'annoncé' || ds === 'payé';
       const exLabel    = s.div_exercice_label || (isPipeline ? `Exercice ${new Date().getFullYear()-1}` : null);
       const statusBadge = ds==='officiel'
         ? `<span class="text-xs font-bold px-1.5 py-0.5 rounded bg-green-900/60 text-green-300 border border-green-700/50">✓ OFFICIEL</span>`
         : ds==='annoncé'
         ? `<span class="text-xs font-bold px-1.5 py-0.5 rounded bg-yellow-900/60 text-yellow-300 border border-yellow-700/50">⏳ ANNONCÉ</span>`
+        : ds==='payé'
+        ? `<span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-900/60 text-blue-300 border border-blue-700/50">✓ VERSÉ</span>`
         : '';
 
       // Fond plus terne si données historiques (pas dans le pipeline courant)
@@ -1795,12 +1809,13 @@ function renderEuphoriaNarrative(score, components, divArr) {
   // = dividendes de l'exercice 2025 annoncés aux AGO 2026 ou officialisés au BOC
   const pipelineItems = (divArr||[]).filter(d => {
     const ds = d.div_status || 'aucun';
-    if(ds !== 'annoncé' && ds !== 'officiel') return false;
+    if(ds !== 'annoncé' && ds !== 'officiel' && ds !== 'payé') return false;
     const ey = d.div_exercice_year;
     return ey && ey >= recentExerc;
   });
   const nbOfficiel  = pipelineItems.filter(d => d.div_status === 'officiel').length;
   const nbAnnonce   = pipelineItems.filter(d => d.div_status === 'annoncé').length;
+  const nbPaye      = pipelineItems.filter(d => d.div_status === 'payé').length;
   const hasBonsDivs = pipelineItems.filter(d => (d.dividend_yield||0) >= 4).length;
 
   // Badge état de marché
@@ -1816,11 +1831,13 @@ function renderEuphoriaNarrative(score, components, divArr) {
   // Construire le narrative
   // Contexte dividende pour le narrative (exercice récent uniquement)
   let divContext = '';
-  if(nbOfficiel>0 || nbAnnonce>0) {
+  if(nbOfficiel>0 || nbAnnonce>0 || nbPaye>0) {
     divContext = `exercice <strong class="text-slate-200">${recentExerc}</strong> : `+
                  (nbOfficiel>0 ? `<strong class="text-green-400">${nbOfficiel} dividende${nbOfficiel>1?'s':''} officialisé${nbOfficiel>1?'s':''} au BOC</strong>` : '')+
                  (nbOfficiel>0 && nbAnnonce>0 ? ' · ' : '')+
                  (nbAnnonce>0 ? `${nbAnnonce} annoncé${nbAnnonce>1?'s':''} en AGO ${currentYear}` : '')+
+                 ((nbOfficiel>0||nbAnnonce>0) && nbPaye>0 ? ' · ' : '')+
+                 (nbPaye>0 ? `<strong class="text-blue-400">${nbPaye} déjà versé${nbPaye>1?'s':''}</strong>` : '')+
                  (hasBonsDivs>0 ? ` — <strong class="text-emerald-400">${hasBonsDivs} titre${hasBonsDivs>1?'s':''} ≥ 4% net</strong>` : '');
   } else {
     divContext = `exercice <strong class="text-slate-200">${recentExerc}</strong> : aucun dividende encore annoncé — AGO ${currentYear} attendues (avr–juin)`;
@@ -1848,10 +1865,10 @@ function renderDividendCalendar(divArr) {
   const currentYear   = new Date().getFullYear();    // 2026
   const recentExerc   = currentYear - 1;             // 2025
 
-  // Filtrer : uniquement annoncé/officiel + exercice récent (ou sans exercice précisé)
+  // Filtrer : annoncé/officiel/payé + exercice récent (ou sans exercice précisé)
   const items = (divArr||[]).filter(d => {
     const ds = d.div_status || 'aucun';
-    if(ds !== 'annoncé' && ds !== 'officiel') return false;
+    if(ds !== 'annoncé' && ds !== 'officiel' && ds !== 'payé') return false;
     const ey = d.div_exercice_year;
     if(ey && ey < recentExerc) return false;  // dividende d'un exercice antérieur — exclus
     return true;
@@ -1866,10 +1883,11 @@ function renderDividendCalendar(divArr) {
     return;
   }
 
-  // Trier : officiel en premier, puis annoncé ; par rendement décroissant
+  // Trier : officiel en premier, payé ensuite, annoncé en dernier ; par rendement décroissant
+  const statusOrder = {'officiel':0,'annoncé':1,'payé':2};
   items.sort((a,b) => {
-    if(a.div_status !== b.div_status)
-      return a.div_status === 'officiel' ? -1 : 1;
+    const oa = statusOrder[a.div_status]??3, ob = statusOrder[b.div_status]??3;
+    if(oa !== ob) return oa - ob;
     return (b.dividend_yield||0) - (a.dividend_yield||0);
   });
 
@@ -1879,8 +1897,10 @@ function renderDividendCalendar(divArr) {
     const exLabel = d.div_exercice_label || `Exercice ${recentExerc}`;
     const statusCls = ds==='officiel'
       ? 'bg-green-900/30 border-green-700/40 text-green-300'
+      : ds==='payé'
+      ? 'bg-blue-900/25 border-blue-700/40 text-blue-300'
       : 'bg-yellow-900/25 border-yellow-700/40 text-yellow-300';
-    const statusIcon = ds==='officiel' ? '✓ BOC' : '⏳ AGO';
+    const statusIcon = ds==='officiel' ? '✓ BOC' : ds==='payé' ? '✓ VERSÉ' : '⏳ AGO';
     return `<div class="py-2 border-b border-slate-700/50 last:border-0">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 min-w-0">
@@ -1894,7 +1914,7 @@ function renderDividendCalendar(divArr) {
       </div>
       <div class="flex items-center gap-2 mt-0.5">
         <span class="text-xs text-slate-600 italic">${exLabel}</span>
-        ${d.div_payment_date?`<span class="text-xs text-slate-600">· Paiement : ${d.div_payment_date}</span>`:''}
+        ${d.div_payment_date?`<span class="text-xs text-slate-600">· ${ds==='payé'?'Versé le':'Paiement :'} ${d.div_payment_date}</span>`:''}
       </div>
     </div>`;
   }).join('');
