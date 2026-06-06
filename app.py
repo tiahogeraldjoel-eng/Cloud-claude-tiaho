@@ -911,12 +911,14 @@ def export_stock_pdf(symbol: str):
     latest       = prices[-1] if prices else {}
     fundamentals = db.get_fundamental(symbol)
     hw           = db.get_52w_highlow(symbol)
+    country      = stock_info.get("country")
+    fund_net     = _apply_net_dividend(fundamentals, country)
 
     # Données dérivées complètes (performances, volatilité, 52-sem…)
     derived = ind.compute_derived_fundamental(prices) if len(prices) >= 2 else {}
 
     sentiment = _get_sentiment_data()
-    reco = rec.compute_recommendation(prices, fundamentals, derived, hw or {}, sentiment, latest, symbol=symbol)
+    reco = rec.compute_recommendation(prices, fund_net, derived, hw or {}, sentiment, latest, symbol=symbol)
 
     # Générer le PDF
     pdf_bytes = pdf_gen.generate_stock_report(

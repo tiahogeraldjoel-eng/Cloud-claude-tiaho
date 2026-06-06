@@ -1141,6 +1141,18 @@ function scoreColor(s) {
 }
 
 // ─── DIVIDENDE MANUEL ────────────────────────────────────────────────────────
+function _syncTechIfActive(symbol) {
+  if (STATE.techSymbol !== symbol) return;
+  const profil = getProfilFor(symbol);
+  Promise.all([
+    api(`/api/stocks/${symbol}/fundamental`).catch(()=>null),
+    api(`/api/stocks/${symbol}/recommendation?profil=${profil}`).catch(()=>null),
+  ]).then(([fundD, recoD]) => {
+    if (fundD) renderTechDividendBlock(fundD);
+    if (recoD) renderRecommendationBox('tech-reco-box', {...recoD, symbol});
+  });
+}
+
 async function saveManualDiv(symbol) {
   const rawVal  = document.getElementById('manual-div-net')?.value ?? '';
   const netDps  = rawVal === '' ? null : parseFloat(rawVal);
@@ -1193,7 +1205,10 @@ async function saveManualDiv(symbol) {
         <div class="text-green-400 mt-2">✓ Dividende enregistré.</div>`;
       toast(`Dividende ${symbol} enregistré — Net: ${fmt(netDps,0)} FCFA`, 4000);
     }
-    setTimeout(() => loadFundamental(symbol), 1500);
+    setTimeout(() => {
+      loadFundamental(symbol);
+      _syncTechIfActive(symbol);
+    }, 1500);
   } catch(e) {
     if (resEl) resEl.innerHTML = `<span class="text-red-400">Erreur : ${e.message}</span>`;
   }
@@ -1205,6 +1220,7 @@ async function deleteManualDiv(symbol) {
     await fetch(`/api/stocks/${symbol}/dividend-manual`, { method: 'DELETE' });
     toast(`Dividende manuel ${symbol} supprimé`, 3000);
     loadFundamental(symbol);
+    _syncTechIfActive(symbol);
   } catch(e) {
     toast('Erreur suppression', 2000);
   }
