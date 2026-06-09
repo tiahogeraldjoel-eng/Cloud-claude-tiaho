@@ -47,7 +47,7 @@ const USER_PORTFOLIO = [
   { symbol: 'TTLC',  qty:  117, avgCost:  2_834 },
   { symbol: 'BOAN',  qty:   30, avgCost:  2_677 },
   { symbol: 'ETIT',  qty: 4000, avgCost:     16 },
-  { symbol: 'SDCC',  qty:  250, avgCost:  1_575 },
+  { symbol: 'SDSC',  qty:  250, avgCost:  1_575 },
   { symbol: 'BOACI', qty:  115, avgCost:  7_488 },
   { symbol: 'BOABF', qty:   67, avgCost:  4_737 },
   { symbol: 'BOAS',  qty:   20, avgCost:  7_447 },
@@ -90,7 +90,7 @@ const SECTORS = {
   TELE: ['ORAC','SNTS'],
   ENER: ['TTLC','TTLS','SHEC'],
   INDU: ['NTLC','UNXC','CFAC','CABC','SEMC','STBC','STAC','BNBC'],
-  TRAN: ['SDCC','ETIT'],
+  TRAN: ['SDSC','ETIT'],
 };
 
 // ─── URLs BRVM.org ────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ const YAHOO_MAP = {
   ECOC:'ECOC.CI',  ETIT:'ETIT.TG',  NEIC:'NEIC.CI',
   NSBC:'NSBC.CI',  NTLC:'NTLC.CI',  ONAT:'ONAT.BF',   ORAC:'ORAC.CI',
   ORGT:'ORGT.CI',  PALC:'PALC.CI',  PRSC:'PRSC.CI',   SAFC:'SAFC.CI',
-  SAPH:'SAPH.CI',  SCRC:'SCRC.CI',  SDCC:'SDCC.CI',   SEMC:'SEMC.CI',
+  SAPH:'SAPH.CI',  SCRC:'SCRC.CI',  SDSC:'SDSC.CI',   SEMC:'SEMC.CI',
   SGBC:'SGBC.CI',  SHEC:'SHEC.CI',  SIAC:'SIAC.CI',   SIBC:'SIBC.CI',
   SICC:'SICC.CI',  SIPH:'SIPH.CI',  SIVC:'SIVC.CI',   SLBC:'SLBC.CI',   SMBC:'SMBC.CI',
   SNTS:'SNTS.SN',  SOGB:'SOGB.CI',  SPHC:'SPHC.CI',   STAC:'STAC.CI',
@@ -153,7 +153,7 @@ const KNOWN_STOCKS = {
   SAFC:  { name: 'SAFCA',                         avgVol:   516, refPrice:  3_700,  liq:'M' },
   SAPH:  { name: 'SAPH CI',                       avgVol:   850, refPrice:  5100,  liq:'M' },
   SCRC:  { name: 'Sucrivoire CI',                 avgVol:   560, refPrice:   680,  liq:'M' },
-  SDCC:  { name: 'Bolloré Transport CI',          avgVol:  1200, refPrice:  2_000,  liq:'M' },
+  SDSC:  { name: 'AGL CI — Africa Global Logistics (ex-Bolloré)', avgVol: 1200, refPrice:  2_000,  liq:'M' },
   SEMC:  { name: 'Crown Siem CI',                 avgVol:  3800, refPrice:   680,  liq:'M' },
   SGBC:  { name: 'Société Générale CI',           avgVol:   720, refPrice: 12500,  liq:'M' },
   SHEC:  { name: 'Vivo Energie CI',               avgVol:  1612, refPrice:  1915,  liq:'M' },

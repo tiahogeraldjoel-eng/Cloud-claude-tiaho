@@ -24,7 +24,7 @@ PORTFOLIO = [
     ("TTLC",  "TotalEnergies CI",       117,    2_834,  2_805,  "L"),
     ("BOAN",  "BOA Niger",               30,    2_677,  3_740,  "M"),
     ("ETIT",  "Ecobank TI (ETI)",      4000,       16,     33,  "H"),
-    ("SDCC",  "Bolloré Transport CI",   250,    1_575,  2_000,  "M"),
+    ("SDSC",  "AGL CI (ex-Bolloré)",     250,    1_575,  2_000,  "M"),
     ("BOACI", "BOA Côte d'Ivoire",      115,    7_488,  8_890,  "M"),
     ("BOABF", "BOA Burkina Faso",        67,    4_737,  5_595,  "M"),
     ("BOAS",  "BOA Sénégal",             20,    7_447,  7_400,  "L"),
