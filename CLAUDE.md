@@ -53,7 +53,12 @@ Au démarrage, `_start_scheduler()` lance :
 - Actualités toutes les 2h
 
 ### Cloudflare Worker (`brvm-prices/`)
-Worker séparé déployé sur Cloudflare Workers — CORS proxy JSON pour les cours BRVM. Point d'entrée : `brvm-prices/src/index.js`, config : `wrangler.toml` (racine).
+Worker séparé déployé sur Cloudflare Workers — CORS proxy JSON pour les cours BRVM, bot Telegram, et suivi de portefeuille. Point d'entrée : `brvm-prices/src/index.js`, config : `wrangler.toml` (racine).
+
+**Portefeuille** :
+- `getPortfolio(env)` lit le KV `PORTFOLIO_KV` (namespace `04205b81a57842eda821b6bb9ec52b16`) ; si vide, fallback sur `USER_PORTFOLIO` codé en dur.
+- `computePortfolioRows(portfolio, stocks)` est la **source unique** de calcul (P&L, valeur, recommandation), utilisée par Telegram `/portfolio`, `/export`, et les routes HTTP `/portfolio` (HTML stylé, imprimable en PDF) et `/portfolio.csv`.
+- `getRecommendation(pnlPct, price, avgCost, liq)` : génère une reco (VENDRE/SURVEILLER/CONSERVER/ALLÉGER) avec horizon de placement et prix cibles (sortie/stop/renforcement). Le seuil de stop-loss dépend de la liquidité (`liq` dans `KNOWN_STOCKS`) : -3% (`H`), -5% (`M`), -8% (`L`) — une variation de quelques % sur une valeur peu échangée (ex. BOAM, avgVol ~95) est souvent du bruit, pas un signal de vente.
 
 ## Déploiement Render
 
@@ -71,3 +76,10 @@ Worker séparé déployé sur Cloudflare Workers — CORS proxy JSON pour les co
 **pdf_report** : import wrappé en `try/except BaseException` car `fpdf2` dépend de `cryptography` (Rust/pyo3) qui peut paniquer dans certains environnements. Sur Render ça fonctionne normalement.
 
 **SEKIDE** : méthode d'analyse propriétaire BRVM à 6 points (PM1an/PM2ans, PER actualisé, PCD) documentée dans les commentaires de `recommender.py` — ne pas modifier sans comprendre la logique.
+
+**Tickers BRVM à ne pas confondre** (vérifier `database.py`, source de vérité) :
+- `SIVC` = Erium Côte d'Ivoire (ex-Air Liquide CI) — **pas** `LACI`
+- `SDSC` = AGL CI / Africa Global Logistics (ex-Bolloré, secteur Transport) — **différent** de `SDCC` = SODECI (eau, Services Publics)
+- `UNXC` = Uniwax Côte d'Ivoire (Industrie/textile) — **pas** Unacoopec-CI
+
+**KV portefeuille (`brvm-prices`)** : modifier `USER_PORTFOLIO` dans `index.js` n'a **aucun effet** si le KV `PORTFOLIO_KV` contient déjà des données — le KV a priorité. Pour corriger une position en prod, utiliser les commandes Telegram `/sell` puis `/buy` (recalcule le coût moyen pondéré), pas une édition de code seule.
