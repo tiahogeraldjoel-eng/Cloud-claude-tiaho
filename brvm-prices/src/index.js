@@ -1,10 +1,14 @@
 /**
- * BRVM Pre-Open Signal Alert — Cloudflare Worker
- * Cron : 35 9 * * 1-5  (9h35 GMT, lun-ven)
+ * BRVM Signal Alert — Cloudflare Worker
+ * Cron : 15 10 * * 1-5  (10h15 GMT, lun-ven)
+ *
+ * Timing choisi : après le fixing BRVM (~10h00-10h05).
+ * À 9h35, volume=0 car aucun trade exécuté encore (pré-fixing).
+ * À 10h15, les vrais volumes du fixing sont publiés sur BRVM.org.
  *
  * GARANTIE : envoie TOUJOURS un message Telegram au cron
  *   🟡/🟠/🔴  Signal détecté     → alerte + position sizing
- *   ✅          Marché calme       → confirmation scan OK
+ *   ✅          Marché calme       → top 3 valeurs par pression (diagnostic)
  *   ⚠️          Sources down       → données indisponibles
  *   🔴          Erreur inattendue  → stack trace Telegram
  *
@@ -151,10 +155,10 @@ async function runPreOpenScan(env) {
       await tg(env, [
         '⚠️ *BRVM Pré-Ouverture — Sources Indisponibles*',
         '━━━━━━━━━━━━━━━━━━━━━',
-        '🌐 BRVM.org et Yahoo Finance inaccessibles ce matin.',
+        '🌐 BRVM.org et Yahoo Finance inaccessibles.',
         '',
         '_Aucun signal — données live introuvables._',
-        '_Réessai automatique demain à 9h35 GMT._',
+        '_Réessai automatique demain à 10h15 GMT._',
       ].join('\n'));
       return;
     }
@@ -163,17 +167,32 @@ async function runPreOpenScan(env) {
     const signals = stocks.map(s => analyzeSignal(s)).filter(s => s.alert);
     console.log(`${stocks.length} valeurs depuis "${source}" — ${signals.length} signal(s).`);
 
-    // ── Cas 3 : marché calme ───────────────────────────────────────────────
+    // ── Cas 3 : marché calme — top 3 diagnostic ───────────────────────────
     if (!signals.length) {
       const heure = new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan', hour: '2-digit', minute: '2-digit' });
+
+      // Top 3 valeurs par MPR (même si sous le seuil), pour diagnostic
+      const allAnalyzed = stocks.map(s => analyzeSignal(s))
+        .filter(s => s.mpr > 0 || s.volume > 0)
+        .sort((a, b) => b.mpr - a.mpr)
+        .slice(0, 3);
+
+      const top3Lines = allAnalyzed.length
+        ? allAnalyzed.map(s =>
+            `  • *${s.symbol}* — ${s.name}\n` +
+            `    MPR ${s.mpr.toFixed(2)} · OBI ${s.obi.toFixed(3)} · Vol ${s.volume.toLocaleString()} (${(s.volume/(KNOWN_STOCKS[s.symbol]?.avgVol||300)).toFixed(1)}×moy) · ${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%`
+          ).join('\n')
+        : '  _Données insuffisantes_';
+
       await tg(env, [
-        '✅ *BRVM Pré-Ouverture — Scan Effectué*',
+        '✅ *BRVM — Scan Post-Fixing*',
         '━━━━━━━━━━━━━━━━━━━━━',
-        `📊 *${stocks.length}* valeurs analysées · Source : ${source}`,
-        `🕐 ${heure} GMT`,
+        `📊 *${stocks.length}* valeurs · Source : ${source} · ${heure} GMT`,
         '',
-        '_Aucun signal MPR/OBI/Iceberg détecté._',
-        "_Marché calme — pas d'ordre à passer._",
+        '_Aucun signal MPR/OBI/Iceberg au-dessus des seuils._',
+        '',
+        `📉 *Top 3 pressions du jour* _(seuil MPR > ${MPR_THRESHOLD})_ :`,
+        top3Lines,
       ].join('\n'));
       return;
     }
@@ -346,11 +365,11 @@ async function sendSignalTelegram(env, sig, source) {
     : `⚠️ _Titre trop cher pour le budget (${sig.price.toLocaleString()} FCFA/titre)_`;
 
   const text = [
-    `${emoji} *FLASH BRVM — Pré-Ouverture*`,
+    `${emoji} *FLASH BRVM — Signal Post-Fixing*`,
     '━━━━━━━━━━━━━━━━━━━━━',
     `📌 *${sig.symbol}* — ${sig.name}`,
-    `⏰ Fixing dans ~10 min`,
-    `💰 Cours : *${sig.price.toLocaleString()} FCFA*`,
+    `⏰ Session continue ouverte`,
+    `💰 Cours fixing : *${sig.price.toLocaleString()} FCFA*`,
     `📊 Variation : ${sig.changePercent >= 0 ? '+' : ''}${sig.changePercent.toFixed(2)}%`,
     `🛒 Volume : ${sig.volume.toLocaleString()} titres${sig.iceberg ? '  🐋 *Iceberg*' : ''}`,
     '──────────────────────',
@@ -359,7 +378,7 @@ async function sendSignalTelegram(env, sig, source) {
     `*Signaux :*\n${sig.reasons.map(r => `  • ${r}`).join('\n')}`,
     posBlock,
     '──────────────────────',
-    '⚡ *Passe l\'ordre avant 9h45 GMT*',
+    '⚡ *Passe l\'ordre maintenant (session continue jusqu\'à 15h GMT)*',
     `_Confiance : ${sig.confidence}${source !== 'brvm.org' ? ' · Source : ' + source : ''}_`,
   ].join('\n');
 

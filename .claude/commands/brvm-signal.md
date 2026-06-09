@@ -1,20 +1,24 @@
-# Compétence : Système d'alertes pré-ouverture BRVM
+# Compétence : Système d'alertes BRVM post-fixing
 
 Système complet de détection de signaux de trading (MPR/OBI/Iceberg) sur la BRVM,
-avec envoi automatique d'alertes Telegram à 9h35 GMT via Cloudflare Worker.
+avec envoi automatique d'alertes Telegram à 10h15 GMT via Cloudflare Worker.
+
+Pourquoi 10h15 et non 9h35 ?
+À 9h35, le marché BRVM est en pré-fixing (ordres placés mais NON exécutés).
+BRVM.org retourne volume=0, changePercent=0% → aucun signal possible.
+Le fixing se termine ~10h00-10h05 → vrais volumes visibles à partir de 10h10.
 
 ---
 
 ## Architecture
 
 ```
-Cloudflare Worker (cron 9h35 GMT lun-ven)
+Cloudflare Worker (cron 10h15 GMT lun-ven)
   └── fetchLiveStocks()
-        ├── 1. BRVM.org direct (8 variantes d'URL)
-        ├── 2. Proxy allorigins → BRVM.org
-        └── 3. Yahoo Finance (.CI/.SN/.BF/.TG/.BJ)
+        ├── 1. BRVM.org direct (5 variantes d'URL)
+        └── 2. Yahoo Finance (.CI/.SN/.BF/.TG/.BJ)
   └── analyzeSignal() → MPR / OBI / Iceberg
-  └── sendTelegram() si signal, sinon sendTelegramCalme()
+  └── sendTelegram() si signal, sinon top3Diagnostic()
 ```
 
 GitHub Actions (`workflow_dispatch` uniquement — pas de cron) :
@@ -109,7 +113,8 @@ BRVM_WORKER_URL  ← URL du Worker déployé (optionnel, pour tests manuels)
 | wrangler@3 erreur auth 9106 | Bug connu avec nouveaux tokens | Utiliser wrangler@4 |
 | Worker retourne `source: "simulated"` | Toutes sources échouent → fallback statique | Vérifier les secrets Cloudflare + logs Worker |
 | MPR déclenche sur vente-panique | Formule sans filtre directionnel | Ajouter `&& changePercent >= 0` |
-| Silence total le matin | Marché calme → aucun message envoyé | Ajouter sendTelegramCalme() pour heartbeat |
+| Toujours "marché calme" malgré marché chaud | Cron à 9h35 → volume=0 car pré-fixing non terminé | Cron à 10h15 (post-fixing) |
+| Silence total le matin | Marché calme → aucun message envoyé | sendTelegramCalme() + top 3 MPR diagnostic |
 | 37/47 titres analysés | Certains titres inactifs ce jour-là | Normal si marchés peu liquides |
 
 ---
