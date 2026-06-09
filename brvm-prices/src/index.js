@@ -192,6 +192,17 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     const { pathname } = new URL(request.url);
     if (pathname === '/health') return json({ status: 'ok', timestamp: Date.now() });
+    if (pathname === '/ping') {
+      const token  = env.TELEGRAM_BOT_TOKEN;
+      const chatId = env.TELEGRAM_CHAT_ID;
+      if (!token) return json({ error: 'TELEGRAM_BOT_TOKEN absent de Cloudflare' }, 500);
+      if (!chatId) return json({ error: 'TELEGRAM_CHAT_ID absent de Cloudflare', token_ok: true }, 500);
+      const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: '🏓 *Bot opérationnel* — les commandes sont actives !', parse_mode: 'Markdown' }),
+      }).then(r => r.json());
+      return json({ telegram: r, chatId: String(chatId).slice(0, -3) + '***' });
+    }
     if (pathname === '/webhook' && request.method === 'POST') {
       ctx.waitUntil(handleTelegramCommand(request, env));
       return new Response('ok');
