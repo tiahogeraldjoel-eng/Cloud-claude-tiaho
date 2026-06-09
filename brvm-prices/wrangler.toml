@@ -6,10 +6,13 @@ compatibility_date = "2024-01-01"
 CACHE_TTL = "3600"
 BUDGET_FCFA = "75000"
 
-# Cron post-fixing BRVM : 10h15 GMT, lundi-vendredi
-# (le fixing BRVM se termine ~10h00-10h05, les vrais volumes sont publiés ensuite)
+# Crons BRVM v2 :
+#   10h15 GMT lun-ven → Post-Fixing  : signaux MPR/OBI/Iceberg
+#   13h30 GMT lun-ven → Mid-Session  : surveillance stops portefeuille
+#   15h30 GMT lun-ven → Clôture      : bilan du jour + performances
+#   15h45 GMT vendredi → Digest      : recap hebdomadaire
 [triggers]
-crons = ["15 10 * * 1-5"]
+crons = ["15 10 * * 1-5", "30 13 * * 1-5", "30 15 * * 1-5", "45 15 * * 5"]
 
 # Secrets à configurer dans le dashboard Cloudflare (jamais en clair ici) :
 #   wrangler secret put TELEGRAM_BOT_TOKEN
