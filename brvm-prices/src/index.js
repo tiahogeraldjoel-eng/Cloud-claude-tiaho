@@ -293,17 +293,57 @@ async function savePortfolio(env, positions) {
 // ─── Recommandation par position ──────────────────────────────────────────────
 // Basée sur le P&L : stop-loss à -3% (cf. mid-session), multibagger >+80%,
 // position solide entre +15% et +80% (cf. digest hebdo).
+// Chaque recommandation inclut un horizon de placement indicatif et des
+// niveaux de prix (sortie/stop, renforcement) pour guider la décision.
 
-function getRecommendation(pnlPct, price) {
-  if (pnlPct <= -3)
-    return { emoji: '🔴', label: 'VENDRE', className: 'vendre', detail: 'Stop-loss franchi (-3%)' };
-  if (pnlPct < 0)
-    return { emoji: '⚠️', label: 'SURVEILLER', className: 'surveiller', detail: 'Proche du stop-loss' };
-  if (pnlPct > 80)
-    return { emoji: '💎', label: 'ALLÉGER', className: 'alleger', detail: `Sécuriser — stop suggéré ${Math.round(price * 0.95).toLocaleString()} F` };
-  if (pnlPct >= 15)
-    return { emoji: '🚀', label: 'CONSERVER', className: 'conserver', detail: `Renforcer le stop à ${Math.round(price * 0.95).toLocaleString()} F` };
-  return { emoji: '➡️', label: 'CONSERVER', className: 'conserver', detail: '' };
+function getRecommendation(pnlPct, price, avgCost) {
+  const f = n => Math.round(n).toLocaleString();
+  if (pnlPct <= -3) {
+    const entree = Math.round(price * 0.97);
+    return {
+      emoji: '🔴', label: 'VENDRE', className: 'vendre',
+      horizon: 'Immédiat',
+      sortie: price, entree,
+      detail: `Sortir ≈ ${f(price)} F · Stop-loss franchi (-3%) · Ré-achat possible sous ${f(entree)} F`,
+    };
+  }
+  if (pnlPct < 0) {
+    const stop   = Math.round(avgCost * 0.97);
+    const entree = Math.round(price * 0.97);
+    return {
+      emoji: '⚠️', label: 'SURVEILLER', className: 'surveiller',
+      horizon: 'Court terme (1-2 sem.)',
+      sortie: stop, entree,
+      detail: `Stop à ${f(stop)} F · Renforcer sous ${f(entree)} F`,
+    };
+  }
+  if (pnlPct > 80) {
+    const stop = Math.round(price * 0.95);
+    return {
+      emoji: '💎', label: 'ALLÉGER', className: 'alleger',
+      horizon: 'Maintenant',
+      sortie: price, stop,
+      detail: `Alléger ≈ ${f(price)} F · Stop suiveur à ${f(stop)} F sur le solde`,
+    };
+  }
+  if (pnlPct >= 15) {
+    const sortie = Math.round(price * 1.075);
+    const stop   = Math.round(price * 0.95);
+    return {
+      emoji: '🚀', label: 'CONSERVER', className: 'conserver',
+      horizon: 'Moyen-long terme (3-6 mois)',
+      sortie, stop,
+      detail: `Objectif ${f(sortie)} F · Stop suiveur à ${f(stop)} F`,
+    };
+  }
+  const sortie = Math.round(price * 1.04);
+  const stop   = Math.round(avgCost * 0.97);
+  return {
+    emoji: '➡️', label: 'CONSERVER', className: 'conserver',
+    horizon: 'Moyen terme (1-3 mois)',
+    sortie, stop,
+    detail: `Objectif ${f(sortie)} F · Stop à ${f(stop)} F`,
+  };
 }
 
 // ─── Calcul partagé des positions (Telegram /portfolio, /export, page HTML) ──
@@ -320,7 +360,7 @@ function computePortfolioRows(portfolio, stocks) {
       symbol: pos.symbol,
       name: KNOWN_STOCKS[pos.symbol]?.name || pos.symbol,
       qty: pos.qty, avgCost: pos.avgCost, price, pnlPct, pnlF, valeur, cout,
-      reco: getRecommendation(pnlPct, price),
+      reco: getRecommendation(pnlPct, price, pos.avgCost),
     };
   });
   rows.sort((a, b) => b.pnlPct - a.pnlPct);
@@ -332,11 +372,11 @@ function computePortfolioRows(portfolio, stocks) {
 }
 
 function buildPortfolioCSV({ rows, totalVal, totalCout, totalPnl, totalPct }) {
-  const header = 'Symbole,Nom,Quantite,Cout Moyen (F),Cours Actuel (F),Valeur (F),P&L (F),P&L (%),Cout Total (F),Recommandation,Detail';
+  const header = 'Symbole,Nom,Quantite,Cout Moyen (F),Cours Actuel (F),Valeur (F),P&L (F),P&L (%),Cout Total (F),Recommandation,Horizon,Prix Sortie/Stop (F),Prix Renforcement (F),Detail';
   const lines  = rows.map(r =>
-    `${r.symbol},${r.name.replace(/,/g,' ')},${r.qty},${r.avgCost},${r.price},${r.valeur},${r.pnlF},${r.pnlPct.toFixed(1)},${r.cout},${r.reco.label},${r.reco.detail.replace(/,/g,' ')}`
+    `${r.symbol},${r.name.replace(/,/g,' ')},${r.qty},${r.avgCost},${r.price},${r.valeur},${r.pnlF},${r.pnlPct.toFixed(1)},${r.cout},${r.reco.label},${r.reco.horizon},${r.reco.sortie ?? r.reco.stop ?? ''},${r.reco.entree ?? ''},${r.reco.detail.replace(/,/g,' ')}`
   );
-  lines.push(`TOTAL,,,,,${totalVal},${totalPnl},${totalPct.toFixed(1)},${totalCout},,`);
+  lines.push(`TOTAL,,,,,${totalVal},${totalPnl},${totalPct.toFixed(1)},${totalCout},,,,`);
   return [header, ...lines].join('\n');
 }
 
@@ -354,7 +394,7 @@ function renderPortfolioHTML({ rows, totalVal, totalCout, totalPnl, totalPct }) 
       <td class="num">${fmt(r.valeur)}</td>
       <td class="num ${r.pnlF >= 0 ? 'pos' : 'neg'}">${sign(r.pnlF)}${fmt(r.pnlF)}</td>
       <td class="num ${r.pnlPct >= 0 ? 'pos' : 'neg'}">${sign(r.pnlPct)}${r.pnlPct.toFixed(1)}%</td>
-      <td class="reco"><span class="badge badge-${r.reco.className}">${r.reco.emoji} ${r.reco.label}</span>${r.reco.detail ? `<br><span class="name">${r.reco.detail}</span>` : ''}</td>
+      <td class="reco"><span class="badge badge-${r.reco.className}">${r.reco.emoji} ${r.reco.label}</span><br><span class="horizon">⏱ ${r.reco.horizon}</span>${r.reco.detail ? `<br><span class="name">${r.reco.detail}</span>` : ''}</td>
     </tr>`).join('');
 
   return `<!DOCTYPE html>
@@ -383,6 +423,7 @@ function renderPortfolioHTML({ rows, totalVal, totalCout, totalPnl, totalPct }) 
   td.num, th.num { text-align:right; }
   td.name { color:#888; font-size:.78rem; }
   .name { color:#888; font-size:.75rem; }
+  .horizon { color:#888; font-size:.72rem; font-style:italic; }
   .pos { color:var(--green); font-weight:600; }
   .neg { color:var(--red); font-weight:600; }
   tbody tr:nth-child(even) { background:#fafafa; }
@@ -519,6 +560,7 @@ async function handleTelegramCommand(update, env) {
       for (const r of rows) {
         const sign = r.pnlPct >= 0 ? '+' : '';
         lines.push(`${r.reco.emoji} *${r.symbol}* ${r.qty}× · ${sign}${r.pnlPct.toFixed(1)}% _(${sign}${r.pnlF.toLocaleString()} F)_ — *${r.reco.label}*`);
+        lines.push(`   ⏱ ${r.reco.horizon} · ${r.reco.detail}`);
       }
       lines.push('');
       lines.push(`💰 *Total : ${Math.round(totalVal).toLocaleString()} F*`);
