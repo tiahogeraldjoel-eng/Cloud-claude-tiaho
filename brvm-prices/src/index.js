@@ -248,8 +248,34 @@ async function handleTelegramCommand(request, env) {
     const msg    = update.message || update.edited_message;
     if (!msg?.text) return;
 
+    const incomingChatId = String(msg.chat.id);
+
+    // Si TELEGRAM_CHAT_ID n'est pas configuré dans Cloudflare, guider l'utilisateur
+    if (!env.TELEGRAM_CHAT_ID) {
+      await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: incomingChatId,
+          text: [
+            '⚙️ *Configuration requise*',
+            '━━━━━━━━━━━━━━━━━━━━━',
+            `Ton Chat ID : \`${incomingChatId}\``,
+            '',
+            'Lance cette commande dans ton terminal :',
+            `\`wrangler secret put TELEGRAM_CHAT_ID\``,
+            `Valeur à entrer : \`${incomingChatId}\``,
+            '',
+            '_Puis redéploie le Worker. Le bot sera opérationnel._',
+          ].join('\n'),
+          parse_mode: 'Markdown',
+        }),
+      });
+      return;
+    }
+
     // Sécurité : ignorer les messages qui ne viennent pas du chat autorisé
-    if (String(msg.chat.id) !== String(env.TELEGRAM_CHAT_ID)) return;
+    if (incomingChatId !== String(env.TELEGRAM_CHAT_ID)) return;
 
     const parts  = msg.text.trim().split(/\s+/);
     const cmd    = parts[0].toLowerCase().replace(/\//g, '').split('@')[0];
