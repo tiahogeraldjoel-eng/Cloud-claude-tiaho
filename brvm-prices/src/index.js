@@ -191,6 +191,10 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     const { pathname } = new URL(request.url);
     if (pathname === '/health') return json({ status: 'ok', timestamp: Date.now() });
+    if (pathname === '/webhook' && request.method === 'POST') {
+      ctx.waitUntil(handleTelegramCommand(request, env));
+      return new Response('ok');
+    }
     if (pathname === '/' || pathname === '/stocks') {
       const { stocks, source } = await fetchLiveStocks();
       return json({ stocks, count: stocks.length, source, timestamp: Date.now() });
@@ -216,6 +220,144 @@ function json(data, status = 200) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+//  CLOUDFLARE KV — Portefeuille dynamique
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function getPortfolio(env) {
+  try {
+    const data = await env.PORTFOLIO_KV.get('portfolio', { type: 'json' });
+    if (data?.positions?.length) return data.positions;
+  } catch (e) { console.warn('KV lecture échouée — fallback hardcodé:', e.message); }
+  return USER_PORTFOLIO;   // fallback si KV vide ou non configuré
+}
+
+async function savePortfolio(env, positions) {
+  await env.PORTFOLIO_KV.put('portfolio', JSON.stringify({
+    positions,
+    lastUpdated: new Date().toISOString(),
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  COMMANDES TELEGRAM — /buy /sell /portfolio /help
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function handleTelegramCommand(request, env) {
+  try {
+    const update = await request.json();
+    const msg    = update.message || update.edited_message;
+    if (!msg?.text) return;
+
+    // Sécurité : ignorer les messages qui ne viennent pas du chat autorisé
+    if (String(msg.chat.id) !== String(env.TELEGRAM_CHAT_ID)) return;
+
+    const parts  = msg.text.trim().split(/\s+/);
+    const cmd    = parts[0].toLowerCase().replace(/\//g, '').split('@')[0];
+
+    if (cmd === 'buy') {
+      // /buy SYMBOLE QUANTITE PRIX_ENTREE
+      const symbol = parts[1]?.toUpperCase();
+      const qty    = parseInt(parts[2]);
+      const price  = parseInt(parts[3]);
+      if (!symbol || !qty || !price || isNaN(qty) || isNaN(price)) {
+        await tg(env, '❌ Usage : `/buy SYMBOLE QUANTITE PRIX`\nExemple : `/buy SGBC 5 12750`');
+        return;
+      }
+      if (!KNOWN_STOCKS[symbol]) {
+        await tg(env, `❌ Symbole *${symbol}* inconnu. Vérifie le ticker BRVM.`);
+        return;
+      }
+      const portfolio = await getPortfolio(env);
+      const existing  = portfolio.find(p => p.symbol === symbol);
+      if (existing) {
+        const totalQty  = existing.qty + qty;
+        const newAvgCost = Math.round((existing.qty * existing.avgCost + qty * price) / totalQty);
+        existing.qty     = totalQty;
+        existing.avgCost = newAvgCost;
+        await savePortfolio(env, portfolio);
+        await tg(env, [
+          `✅ *Renforcement enregistré — ${symbol}*`,
+          `📊 Nouvelle position : *${totalQty} titres* · Coût moyen pondéré : *${newAvgCost.toLocaleString()} F*`,
+          `🛑 Nouveau stop-loss : ${Math.round(newAvgCost * 0.97).toLocaleString()} F`,
+          `🎯 Objectif : ${Math.round(newAvgCost * 1.04).toLocaleString()} F`,
+        ].join('\n'));
+      } else {
+        portfolio.push({ symbol, qty, avgCost: price });
+        await savePortfolio(env, portfolio);
+        await tg(env, [
+          `✅ *Nouvelle position enregistrée — ${symbol}*`,
+          `📌 *${qty} titre${qty > 1 ? 's' : ''}* @ ${price.toLocaleString()} F · Total : ${(qty * price).toLocaleString()} F`,
+          `🛑 Stop-loss : ${Math.round(price * 0.97).toLocaleString()} F`,
+          `🎯 Objectif : ${Math.round(price * 1.04).toLocaleString()} F`,
+          `🚀 Max BRVM : ${Math.round(price * 1.075).toLocaleString()} F`,
+        ].join('\n'));
+      }
+
+    } else if (cmd === 'sell') {
+      // /sell SYMBOLE QUANTITE
+      const symbol = parts[1]?.toUpperCase();
+      const qty    = parseInt(parts[2]);
+      if (!symbol || !qty || isNaN(qty)) {
+        await tg(env, '❌ Usage : `/sell SYMBOLE QUANTITE`\nExemple : `/sell BOAM 30`');
+        return;
+      }
+      const portfolio = await getPortfolio(env);
+      const idx       = portfolio.findIndex(p => p.symbol === symbol);
+      if (idx === -1) {
+        await tg(env, `❌ *${symbol}* introuvable dans ton portefeuille.`);
+        return;
+      }
+      const pos    = portfolio[idx];
+      const pnlPct = 0;  // pas de prix de vente fourni ici
+      if (qty >= pos.qty) {
+        portfolio.splice(idx, 1);
+        await savePortfolio(env, portfolio);
+        await tg(env, `✅ *Position ${symbol} clôturée* — ${pos.qty} titre${pos.qty > 1 ? 's' : ''} retirés du suivi.`);
+      } else {
+        pos.qty -= qty;
+        await savePortfolio(env, portfolio);
+        await tg(env, `✅ *${symbol} réduit* — il reste *${pos.qty} titres* @ coût moy. ${pos.avgCost.toLocaleString()} F.`);
+      }
+
+    } else if (cmd === 'portfolio' || cmd === 'p') {
+      const portfolio = await getPortfolio(env);
+      const { stocks } = await fetchLiveStocks();
+      const lines = ['💼 *Ton Portefeuille BRVM*', '━━━━━━━━━━━━━━━━━━━━━'];
+      let totalVal = 0, totalCost = 0;
+      for (const pos of portfolio) {
+        const stock = stocks.find(s => s.symbol === pos.symbol);
+        const price = stock?.price || pos.avgCost;
+        const pnl   = (price - pos.avgCost) / pos.avgCost * 100;
+        const pnlF  = (price - pos.avgCost) * pos.qty;
+        totalVal  += price * pos.qty;
+        totalCost += pos.avgCost * pos.qty;
+        const e = pnl > 5 ? '📈' : pnl < -3 ? '🛑' : pnl < 0 ? '📉' : '➡️';
+        lines.push(`${e} *${pos.symbol}* ${pos.qty}× @ ${pos.avgCost.toLocaleString()} F · cours ${price.toLocaleString()} F · *${pnl >= 0 ? '+' : ''}${pnl.toFixed(1)}%* (${pnlF >= 0 ? '+' : ''}${Math.round(pnlF).toLocaleString()} F)`);
+      }
+      const totalPnl = totalVal - totalCost;
+      lines.push('━━━━━━━━━━━━━━━━━━━━━');
+      lines.push(`💰 Total : *${Math.round(totalVal).toLocaleString()} F* · P&L *${totalPnl >= 0 ? '+' : ''}${Math.round(totalPnl).toLocaleString()} F* _(${((totalPnl/totalCost)*100).toFixed(1)}%)_`);
+      await tg(env, lines.join('\n'));
+
+    } else if (cmd === 'help' || cmd === 'aide') {
+      await tg(env, [
+        '📖 *Commandes disponibles :*',
+        '━━━━━━━━━━━━━━━━━━━━━',
+        '`/buy SGBC 5 12750` — enregistrer un achat',
+        '`/buy SIBC 10 8600` — renforcer (recalcule le coût moyen)',
+        '`/sell BOAM 30` — vendre (tout ou partie)',
+        '`/portfolio` — voir toutes tes positions avec P&L live',
+        '',
+        '_Les alertes 13h30 et 15h30 utilisent automatiquement_',
+        '_ces positions pour surveiller tes stops._',
+      ].join('\n'));
+    }
+  } catch (e) {
+    console.error('handleTelegramCommand erreur:', e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 //  1. POST-FIXING 10h15 — Signaux MPR/OBI/Iceberg
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -236,6 +378,7 @@ async function runPostFixing(env) {
       return;
     }
 
+    const portfolio   = await getPortfolio(env);
     const allAnalyzed = stocks.map(s => analyzeSignal(s));
     const signals     = allAnalyzed.filter(s => s.alert);
     console.log(`${stocks.length} valeurs depuis "${source}" — ${signals.length} signal(s).`);
@@ -272,7 +415,7 @@ async function runPostFixing(env) {
 
     // Envoyer les signaux
     if (sectorAlert) await tg(env, sectorAlert);
-    for (const sig of signals) await sendSignalTelegram(env, sig, source);
+    for (const sig of signals) await sendSignalTelegram(env, sig, source, portfolio);
 
   } catch (err) {
     console.error('runPostFixing erreur:', err);
@@ -299,7 +442,8 @@ async function runMidSession(env) {
     const stopsWarn = [];   // proche du stop (dans 1%)
     const newSignals = [];  // nouveau signal sur un titre déjà en portefeuille
 
-    for (const pos of USER_PORTFOLIO) {
+    const portfolio = await getPortfolio(env);
+    for (const pos of portfolio) {
       const stock = stocks.find(s => s.symbol === pos.symbol);
       if (!stock) continue;
 
@@ -396,7 +540,8 @@ async function runClosingBell(env) {
     const bot5  = dated.slice(-5).reverse();
 
     // Performances portefeuille
-    const positions = USER_PORTFOLIO.map(pos => {
+    const portfolio = await getPortfolio(env);
+    const positions = portfolio.map(pos => {
       const stock = stocks.find(s => s.symbol === pos.symbol);
       if (!stock) return null;
       return {
@@ -480,7 +625,8 @@ async function runWeeklyDigest(env) {
       return;
     }
 
-    const positions = USER_PORTFOLIO.map(pos => {
+    const weekPortfolio = await getPortfolio(env);
+    const positions = weekPortfolio.map(pos => {
       const stock = stocks.find(s => s.symbol === pos.symbol);
       if (!stock) return null;
       return {
@@ -695,8 +841,8 @@ function getThresholds(avgVol) {
 
 // ─── Contexte portefeuille ────────────────────────────────────────────────────
 
-function getPortfolioContext(symbol) {
-  return USER_PORTFOLIO.find(p => p.symbol === symbol) || null;
+function getPortfolioContext(portfolio, symbol) {
+  return portfolio.find(p => p.symbol === symbol) || null;
 }
 
 // ─── Alerte dividende imminent ────────────────────────────────────────────────
@@ -765,10 +911,10 @@ function nowAbidjan() {
 //  MESSAGES TELEGRAM
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async function sendSignalTelegram(env, sig, source) {
+async function sendSignalTelegram(env, sig, source, portfolio = []) {
   const emoji = sig.confidence === 'HIGH' ? '🔴' : sig.confidence === 'MEDIUM' ? '🟠' : '🟡';
   const pos   = calcPosition(sig.price, sig.confidence);
-  const held  = getPortfolioContext(sig.symbol);
+  const held  = getPortfolioContext(portfolio, sig.symbol);
   const divW  = getDividendWarning(sig.symbol);
 
   const posBlock = pos ? [
