@@ -28,7 +28,7 @@ PORTFOLIO = [
     ("BOACI", "BOA Côte d'Ivoire",      115,    7_488,  8_890,  "M"),
     ("BOABF", "BOA Burkina Faso",        67,    4_737,  5_595,  "M"),
     ("BOAS",  "BOA Sénégal",             20,    7_447,  7_400,  "L"),
-    ("BOAM",  "BOA Mali",                30,    4_890,  4_630,  "L"),
+    ("BOAM",  "BOA Mali",                30,    4_834,  4_630,  "L"),
     ("SIBC",  "SIB CI",                  78,    6_337,  8_510,  "H"),
     ("CBBF",  "Coris Bank BF",           30,   10_211, 21_500,  "H"),
     ("NSBC",  "NSIA Banque CI",          77,    8_301, 19_250,  "H"),

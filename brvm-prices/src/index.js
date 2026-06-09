@@ -51,7 +51,7 @@ const USER_PORTFOLIO = [
   { symbol: 'BOACI', qty:  115, avgCost:  7_488 },
   { symbol: 'BOABF', qty:   67, avgCost:  4_737 },
   { symbol: 'BOAS',  qty:   20, avgCost:  7_447 },
-  { symbol: 'BOAM',  qty:   30, avgCost:  4_890 },
+  { symbol: 'BOAM',  qty:   30, avgCost:  4_834 },
   { symbol: 'SIBC',  qty:   78, avgCost:  6_337 },
   { symbol: 'CBBF',  qty:   30, avgCost: 10_211 },
   { symbol: 'NSBC',  qty:   77, avgCost:  8_301 },
