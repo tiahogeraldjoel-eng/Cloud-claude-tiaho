@@ -204,7 +204,8 @@ export default {
       return json({ telegram: r, chatId: String(chatId).slice(0, -3) + '***' });
     }
     if (pathname === '/webhook' && request.method === 'POST') {
-      ctx.waitUntil(handleTelegramCommand(request, env));
+      const body = await request.json().catch(() => null);
+      if (body) ctx.waitUntil(handleTelegramCommand(body, env));
       return new Response('ok');
     }
     // /setup : re-enregistre le webhook Telegram (à visiter dans le navigateur)
@@ -273,10 +274,9 @@ async function savePortfolio(env, positions) {
 //  COMMANDES TELEGRAM — /buy /sell /portfolio /help
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async function handleTelegramCommand(request, env) {
+async function handleTelegramCommand(update, env) {
   try {
-    const update = await request.json();
-    const msg    = update.message || update.edited_message;
+    const msg = update.message || update.edited_message;
     if (!msg?.text) return;
 
     // Répondre directement à l'expéditeur — pas de dépendance à TELEGRAM_CHAT_ID
