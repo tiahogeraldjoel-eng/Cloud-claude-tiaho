@@ -378,6 +378,33 @@ async function handleTelegramCommand(update, env) {
       lines.push(`📊 P&L : *${totalPnl >= 0 ? '+' : ''}${Math.round(totalPnl).toLocaleString()} F* (${totalPnl >= 0 ? '+' : ''}${totalPct}%)`);
       await reply(lines.join('\n'));
 
+    } else if (cmd === 'export') {
+      const portfolio  = await getPortfolio(env);
+      const { stocks } = await fetchLiveStocks();
+      const rows = portfolio.map(pos => {
+        const stock  = stocks.find(s => s.symbol === pos.symbol);
+        const price  = stock?.price || KNOWN_STOCKS[pos.symbol]?.refPrice || pos.avgCost;
+        const pnlPct = (price - pos.avgCost) / pos.avgCost * 100;
+        const pnlF   = Math.round((price - pos.avgCost) * pos.qty);
+        const valeur = Math.round(price * pos.qty);
+        const cout   = Math.round(pos.avgCost * pos.qty);
+        return { symbol: pos.symbol, qty: pos.qty, avgCost: pos.avgCost, price, pnlPct, pnlF, valeur, cout };
+      });
+      rows.sort((a, b) => b.pnlPct - a.pnlPct);
+      const totalVal  = rows.reduce((s, r) => s + r.valeur, 0);
+      const totalCout = rows.reduce((s, r) => s + r.cout, 0);
+      const totalPnl  = totalVal - totalCout;
+      const totalPct  = (totalPnl / totalCout * 100).toFixed(1);
+      const header = 'Symbole,Nom,Quantite,Cout Moyen (F),Cours Actuel (F),Valeur (F),P&L (F),P&L (%),Cout Total (F)';
+      const lines  = rows.map(r =>
+        `${r.symbol},${(KNOWN_STOCKS[r.symbol]?.name || r.symbol).replace(/,/g,' ')},${r.qty},${r.avgCost},${r.price},${r.valeur},${r.pnlF},${r.pnlPct.toFixed(1)},${r.cout}`
+      );
+      lines.push(`TOTAL,,,,,${totalVal},${totalPnl},${totalPct},${totalCout}`);
+      const csv    = [header, ...lines].join('\n');
+      const today  = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const cap    = `💼 ${rows.length} positions · P&L ${totalPnl >= 0 ? '+' : ''}${Math.round(totalPnl).toLocaleString()} F (${totalPnl >= 0 ? '+' : ''}${totalPct}%)`;
+      await sendDocument(env, csv, `BRVM_Portfolio_${today}.csv`, replyTo, cap);
+
     } else if (cmd === 'help' || cmd === 'aide' || cmd === 'start') {
       await reply([
         '📖 *Commandes disponibles :*',
@@ -386,6 +413,7 @@ async function handleTelegramCommand(update, env) {
         '`/buy SIBC 10 8600` — renforcer (recalcule le coût moyen)',
         '`/sell BOAM 30` — vendre (tout ou partie)',
         '`/portfolio` — voir toutes tes positions avec P&L live',
+        '`/export` — recevoir le portefeuille en fichier CSV',
         '',
         '_Les alertes 13h30 et 15h30 surveillent automatiquement_',
         '_tes stops et t\'alertent si un seuil est franchi._',
@@ -1011,6 +1039,20 @@ async function ensureWebhook(env) {
       console.log('Webhook enregistré :', res.ok, expectedUrl);
     }
   } catch (e) { console.error('ensureWebhook erreur:', e.message); }
+}
+
+async function sendDocument(env, content, filename, chatId, caption = '') {
+  const token = env.TELEGRAM_BOT_TOKEN;
+  if (!token || !chatId) { console.error('sendDocument: secrets manquants.'); return; }
+  try {
+    const form = new FormData();
+    form.append('chat_id', chatId);
+    form.append('document', new Blob([content], { type: 'text/csv' }), filename);
+    if (caption) form.append('caption', caption);
+    const r = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, { method: 'POST', body: form });
+    const d = await r.json();
+    if (!d.ok) console.error('sendDocument erreur:', d.description);
+  } catch (e) { console.error('sendDocument exception:', e.message); }
 }
 
 async function tg(env, text, chatId = null) {
