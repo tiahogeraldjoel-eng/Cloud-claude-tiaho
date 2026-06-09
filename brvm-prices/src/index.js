@@ -349,23 +349,31 @@ async function handleTelegramCommand(update, env) {
       }
 
     } else if (cmd === 'portfolio' || cmd === 'p') {
-      const portfolio   = await getPortfolio(env);
-      const { stocks }  = await fetchLiveStocks();
-      const lines = ['💼 *Ton Portefeuille BRVM*', '━━━━━━━━━━━━━━━━━━━━━'];
+      const portfolio  = await getPortfolio(env);
+      const { stocks } = await fetchLiveStocks();
       let totalVal = 0, totalCost = 0;
-      for (const pos of portfolio) {
-        const stock = stocks.find(s => s.symbol === pos.symbol);
-        const price = stock?.price || pos.avgCost;
-        const pnl   = (price - pos.avgCost) / pos.avgCost * 100;
-        const pnlF  = (price - pos.avgCost) * pos.qty;
+      const rows = portfolio.map(pos => {
+        const stock  = stocks.find(s => s.symbol === pos.symbol);
+        const price  = stock?.price || pos.avgCost;
+        const pnlPct = (price - pos.avgCost) / pos.avgCost * 100;
+        const pnlF   = Math.round((price - pos.avgCost) * pos.qty);
         totalVal  += price * pos.qty;
         totalCost += pos.avgCost * pos.qty;
-        const e = pnl > 5 ? '📈' : pnl < -3 ? '🛑' : pnl < 0 ? '📉' : '➡️';
-        lines.push(`${e} *${pos.symbol}* ${pos.qty}× @ ${pos.avgCost.toLocaleString()} F · ${price.toLocaleString()} F · *${pnl >= 0 ? '+' : ''}${pnl.toFixed(1)}%*`);
+        return { symbol: pos.symbol, qty: pos.qty, avgCost: pos.avgCost, price, pnlPct, pnlF };
+      });
+      // Tri : meilleurs gains en premier
+      rows.sort((a, b) => b.pnlPct - a.pnlPct);
+      const lines = [`💼 *Portefeuille BRVM* — ${rows.length} positions`, ''];
+      for (const r of rows) {
+        const e    = r.pnlPct > 5 ? '📈' : r.pnlPct < -3 ? '🛑' : r.pnlPct < 0 ? '📉' : '➡️';
+        const sign = r.pnlPct >= 0 ? '+' : '';
+        lines.push(`${e} *${r.symbol}* ${r.qty}× · ${sign}${r.pnlPct.toFixed(1)}% _(${sign}${r.pnlF.toLocaleString()} F)_`);
       }
       const totalPnl = totalVal - totalCost;
-      lines.push('━━━━━━━━━━━━━━━━━━━━━');
-      lines.push(`💰 *${Math.round(totalVal).toLocaleString()} F* · P&L *${totalPnl >= 0 ? '+' : ''}${Math.round(totalPnl).toLocaleString()} F* _(${((totalPnl/totalCost)*100).toFixed(1)}%)_`);
+      const totalPct = (totalPnl / totalCost * 100).toFixed(1);
+      lines.push('');
+      lines.push(`💰 *Total : ${Math.round(totalVal).toLocaleString()} F*`);
+      lines.push(`📊 P&L : *${totalPnl >= 0 ? '+' : ''}${Math.round(totalPnl).toLocaleString()} F* (${totalPnl >= 0 ? '+' : ''}${totalPct}%)`);
       await reply(lines.join('\n'));
 
     } else if (cmd === 'help' || cmd === 'aide' || cmd === 'start') {
