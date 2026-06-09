@@ -265,60 +265,34 @@ async function handleTelegramCommand(request, env) {
     const msg    = update.message || update.edited_message;
     if (!msg?.text) return;
 
-    const incomingChatId = String(msg.chat.id);
+    // Répondre directement à l'expéditeur — pas de dépendance à TELEGRAM_CHAT_ID
+    const replyTo = String(msg.chat.id);
+    const reply   = (text) => tg(env, text, replyTo);
 
-    // Si TELEGRAM_CHAT_ID n'est pas configuré dans Cloudflare, guider l'utilisateur
-    if (!env.TELEGRAM_CHAT_ID) {
-      await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: incomingChatId,
-          text: [
-            '⚙️ *Configuration requise*',
-            '━━━━━━━━━━━━━━━━━━━━━',
-            `Ton Chat ID : \`${incomingChatId}\``,
-            '',
-            'Lance cette commande dans ton terminal :',
-            `\`wrangler secret put TELEGRAM_CHAT_ID\``,
-            `Valeur à entrer : \`${incomingChatId}\``,
-            '',
-            '_Puis redéploie le Worker. Le bot sera opérationnel._',
-          ].join('\n'),
-          parse_mode: 'Markdown',
-        }),
-      });
-      return;
-    }
-
-    // Sécurité : ignorer les messages qui ne viennent pas du chat autorisé
-    if (incomingChatId !== String(env.TELEGRAM_CHAT_ID)) return;
-
-    const parts  = msg.text.trim().split(/\s+/);
-    const cmd    = parts[0].toLowerCase().replace(/\//g, '').split('@')[0];
+    const parts = msg.text.trim().split(/\s+/);
+    const cmd   = parts[0].toLowerCase().replace(/\//g, '').split('@')[0];
 
     if (cmd === 'buy') {
-      // /buy SYMBOLE QUANTITE PRIX_ENTREE
       const symbol = parts[1]?.toUpperCase();
       const qty    = parseInt(parts[2]);
       const price  = parseInt(parts[3]);
       if (!symbol || !qty || !price || isNaN(qty) || isNaN(price)) {
-        await tg(env, '❌ Usage : `/buy SYMBOLE QUANTITE PRIX`\nExemple : `/buy SGBC 5 12750`');
+        await reply('❌ Usage : `/buy SYMBOLE QUANTITE PRIX`\nExemple : `/buy SGBC 5 12750`');
         return;
       }
       if (!KNOWN_STOCKS[symbol]) {
-        await tg(env, `❌ Symbole *${symbol}* inconnu. Vérifie le ticker BRVM.`);
+        await reply(`❌ Symbole *${symbol}* inconnu. Vérifie le ticker BRVM.`);
         return;
       }
       const portfolio = await getPortfolio(env);
       const existing  = portfolio.find(p => p.symbol === symbol);
       if (existing) {
-        const totalQty  = existing.qty + qty;
+        const totalQty   = existing.qty + qty;
         const newAvgCost = Math.round((existing.qty * existing.avgCost + qty * price) / totalQty);
         existing.qty     = totalQty;
         existing.avgCost = newAvgCost;
         await savePortfolio(env, portfolio);
-        await tg(env, [
+        await reply([
           `✅ *Renforcement enregistré — ${symbol}*`,
           `📊 Nouvelle position : *${totalQty} titres* · Coût moyen pondéré : *${newAvgCost.toLocaleString()} F*`,
           `🛑 Nouveau stop-loss : ${Math.round(newAvgCost * 0.97).toLocaleString()} F`,
@@ -327,7 +301,7 @@ async function handleTelegramCommand(request, env) {
       } else {
         portfolio.push({ symbol, qty, avgCost: price });
         await savePortfolio(env, portfolio);
-        await tg(env, [
+        await reply([
           `✅ *Nouvelle position enregistrée — ${symbol}*`,
           `📌 *${qty} titre${qty > 1 ? 's' : ''}* @ ${price.toLocaleString()} F · Total : ${(qty * price).toLocaleString()} F`,
           `🛑 Stop-loss : ${Math.round(price * 0.97).toLocaleString()} F`,
@@ -337,34 +311,32 @@ async function handleTelegramCommand(request, env) {
       }
 
     } else if (cmd === 'sell') {
-      // /sell SYMBOLE QUANTITE
       const symbol = parts[1]?.toUpperCase();
       const qty    = parseInt(parts[2]);
       if (!symbol || !qty || isNaN(qty)) {
-        await tg(env, '❌ Usage : `/sell SYMBOLE QUANTITE`\nExemple : `/sell BOAM 30`');
+        await reply('❌ Usage : `/sell SYMBOLE QUANTITE`\nExemple : `/sell BOAM 30`');
         return;
       }
       const portfolio = await getPortfolio(env);
       const idx       = portfolio.findIndex(p => p.symbol === symbol);
       if (idx === -1) {
-        await tg(env, `❌ *${symbol}* introuvable dans ton portefeuille.`);
+        await reply(`❌ *${symbol}* introuvable dans ton portefeuille.`);
         return;
       }
-      const pos    = portfolio[idx];
-      const pnlPct = 0;  // pas de prix de vente fourni ici
+      const pos = portfolio[idx];
       if (qty >= pos.qty) {
         portfolio.splice(idx, 1);
         await savePortfolio(env, portfolio);
-        await tg(env, `✅ *Position ${symbol} clôturée* — ${pos.qty} titre${pos.qty > 1 ? 's' : ''} retirés du suivi.`);
+        await reply(`✅ *Position ${symbol} clôturée* — ${pos.qty} titre${pos.qty > 1 ? 's' : ''} retirés du suivi.`);
       } else {
         pos.qty -= qty;
         await savePortfolio(env, portfolio);
-        await tg(env, `✅ *${symbol} réduit* — il reste *${pos.qty} titres* @ coût moy. ${pos.avgCost.toLocaleString()} F.`);
+        await reply(`✅ *${symbol} réduit* — il reste *${pos.qty} titres* @ coût moy. ${pos.avgCost.toLocaleString()} F.`);
       }
 
     } else if (cmd === 'portfolio' || cmd === 'p') {
-      const portfolio = await getPortfolio(env);
-      const { stocks } = await fetchLiveStocks();
+      const portfolio   = await getPortfolio(env);
+      const { stocks }  = await fetchLiveStocks();
       const lines = ['💼 *Ton Portefeuille BRVM*', '━━━━━━━━━━━━━━━━━━━━━'];
       let totalVal = 0, totalCost = 0;
       for (const pos of portfolio) {
@@ -375,15 +347,15 @@ async function handleTelegramCommand(request, env) {
         totalVal  += price * pos.qty;
         totalCost += pos.avgCost * pos.qty;
         const e = pnl > 5 ? '📈' : pnl < -3 ? '🛑' : pnl < 0 ? '📉' : '➡️';
-        lines.push(`${e} *${pos.symbol}* ${pos.qty}× @ ${pos.avgCost.toLocaleString()} F · cours ${price.toLocaleString()} F · *${pnl >= 0 ? '+' : ''}${pnl.toFixed(1)}%* (${pnlF >= 0 ? '+' : ''}${Math.round(pnlF).toLocaleString()} F)`);
+        lines.push(`${e} *${pos.symbol}* ${pos.qty}× @ ${pos.avgCost.toLocaleString()} F · ${price.toLocaleString()} F · *${pnl >= 0 ? '+' : ''}${pnl.toFixed(1)}%*`);
       }
       const totalPnl = totalVal - totalCost;
       lines.push('━━━━━━━━━━━━━━━━━━━━━');
-      lines.push(`💰 Total : *${Math.round(totalVal).toLocaleString()} F* · P&L *${totalPnl >= 0 ? '+' : ''}${Math.round(totalPnl).toLocaleString()} F* _(${((totalPnl/totalCost)*100).toFixed(1)}%)_`);
-      await tg(env, lines.join('\n'));
+      lines.push(`💰 *${Math.round(totalVal).toLocaleString()} F* · P&L *${totalPnl >= 0 ? '+' : ''}${Math.round(totalPnl).toLocaleString()} F* _(${((totalPnl/totalCost)*100).toFixed(1)}%)_`);
+      await reply(lines.join('\n'));
 
-    } else if (cmd === 'help' || cmd === 'aide') {
-      await tg(env, [
+    } else if (cmd === 'help' || cmd === 'aide' || cmd === 'start') {
+      await reply([
         '📖 *Commandes disponibles :*',
         '━━━━━━━━━━━━━━━━━━━━━',
         '`/buy SGBC 5 12750` — enregistrer un achat',
@@ -391,8 +363,8 @@ async function handleTelegramCommand(request, env) {
         '`/sell BOAM 30` — vendre (tout ou partie)',
         '`/portfolio` — voir toutes tes positions avec P&L live',
         '',
-        '_Les alertes 13h30 et 15h30 utilisent automatiquement_',
-        '_ces positions pour surveiller tes stops._',
+        '_Les alertes 13h30 et 15h30 surveillent automatiquement_',
+        '_tes stops et t\'alertent si un seuil est franchi._',
       ].join('\n'));
     }
   } catch (e) {
@@ -1004,18 +976,18 @@ async function sendSignalTelegram(env, sig, source, portfolio = []) {
   await tg(env, text);
 }
 
-async function tg(env, text) {
+async function tg(env, text, chatId = null) {
   const token  = env.TELEGRAM_BOT_TOKEN;
-  const chatId = env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) { console.error('Secrets Telegram manquants.'); return; }
+  const target = chatId || env.TELEGRAM_CHAT_ID;
+  if (!token || !target) { console.error('Secrets Telegram manquants.'); return; }
   try {
     const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }),
+      body:    JSON.stringify({ chat_id: target, text, parse_mode: 'Markdown' }),
     });
     const d = await r.json();
-    if (d.ok) console.log('Telegram OK');
+    if (d.ok) console.log('Telegram OK →', target);
     else      console.error('Telegram erreur:', d.description, '| text:', text.slice(0, 120));
   } catch (e) {
     console.error('Telegram exception:', e.message);
