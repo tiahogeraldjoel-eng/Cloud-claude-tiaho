@@ -20,6 +20,7 @@
 
 // ─── Paramètres globaux ───────────────────────────────────────────────────────
 
+const WORKER_URL       = 'https://brvm-prices.tiahogeraldjoel.workers.dev';
 const BUDGET_FCFA      = 75_000;
 const VOL_SPIKE_FACTOR = 3.0;       // seuil Iceberg (×volume moyen)
 const WARN_STOP_PCT    = 0.01;      // alerter si prix ≤ stopLoss + 1%
@@ -221,6 +222,8 @@ export default {
 
   async scheduled(event, env, ctx) {
     console.log('CRON déclenché :', event.cron, new Date().toISOString());
+    // S'assurer que le webhook Telegram est enregistré à chaque cron
+    ctx.waitUntil(ensureWebhook(env));
     // Plan gratuit Cloudflare = 3 crons max → digest vendredi fusionné dans le cron 15h30
     if (event.cron === '15 10 * * 1-5') ctx.waitUntil(runPostFixing(env));
     else if (event.cron === '30 13 * * 1-5') ctx.waitUntil(runMidSession(env));
@@ -974,6 +977,19 @@ async function sendSignalTelegram(env, sig, source, portfolio = []) {
   ].filter(l => l !== '').join('\n');
 
   await tg(env, text);
+}
+
+async function ensureWebhook(env) {
+  const token = env.TELEGRAM_BOT_TOKEN;
+  if (!token) return;
+  try {
+    const info = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`).then(r => r.json());
+    const expectedUrl = `${WORKER_URL}/webhook`;
+    if (info.result?.url !== expectedUrl) {
+      const res = await fetch(`https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(expectedUrl)}&allowed_updates=%5B%22message%22%5D`).then(r => r.json());
+      console.log('Webhook enregistré :', res.ok, expectedUrl);
+    }
+  } catch (e) { console.error('ensureWebhook erreur:', e.message); }
 }
 
 async function tg(env, text, chatId = null) {

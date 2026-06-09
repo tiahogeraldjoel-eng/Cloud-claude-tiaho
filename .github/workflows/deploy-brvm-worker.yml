@@ -34,3 +34,8 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Enregistrer webhook Telegram
+        run: |
+          sleep 5
+          curl -s "https://brvm-prices.tiahogeraldjoel.workers.dev/setup" | python3 -m json.tool
