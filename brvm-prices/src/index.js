@@ -200,15 +200,14 @@ export default {
 
   async scheduled(event, env, ctx) {
     console.log('CRON déclenché :', event.cron, new Date().toISOString());
-    const routes = {
-      '15 10 * * 1-5': runPostFixing,
-      '30 13 * * 1-5': runMidSession,
-      '30 15 * * 1-5': runClosingBell,
-      '45 15 * * 5':   runWeeklyDigest,
-    };
-    const fn = routes[event.cron];
-    if (fn) ctx.waitUntil(fn(env));
-    else    console.warn('Cron non reconnu :', event.cron);
+    // Plan gratuit Cloudflare = 3 crons max → digest vendredi fusionné dans le cron 15h30
+    if (event.cron === '15 10 * * 1-5') ctx.waitUntil(runPostFixing(env));
+    else if (event.cron === '30 13 * * 1-5') ctx.waitUntil(runMidSession(env));
+    else if (event.cron === '30 15 * * 1-5') {
+      ctx.waitUntil(runClosingBell(env));
+      if (new Date().getUTCDay() === 5) ctx.waitUntil(runWeeklyDigest(env));
+    }
+    else console.warn('Cron non reconnu :', event.cron);
   },
 };
 
