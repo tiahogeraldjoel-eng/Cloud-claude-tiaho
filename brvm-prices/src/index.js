@@ -174,7 +174,7 @@ const KNOWN_STOCKS = {
   TTLC:  { name: 'TotalEnergies CI',              avgVol:  2800, refPrice:  2_805,  liq:'M' },
   TTLS:  { name: 'TotalEnergies Sénégal',         avgVol:  1200, refPrice:  2100,  liq:'M' },
   UNLC:  { name: 'Unilever CI',                   avgVol:  1100, refPrice:  5600,  liq:'M' },
-  UNXC:  { name: 'Unacoopec-CI',                  avgVol:   260, refPrice:  1_905,  liq:'L' },
+  UNXC:  { name: "Uniwax Côte d'Ivoire",          avgVol:   260, refPrice:  1_905,  liq:'L' },
 };
 
 // ─── CORS (endpoint HTTP) ─────────────────────────────────────────────────────
@@ -290,6 +290,22 @@ async function savePortfolio(env, positions) {
   }));
 }
 
+// ─── Recommandation par position ──────────────────────────────────────────────
+// Basée sur le P&L : stop-loss à -3% (cf. mid-session), multibagger >+80%,
+// position solide entre +15% et +80% (cf. digest hebdo).
+
+function getRecommendation(pnlPct, price) {
+  if (pnlPct <= -3)
+    return { emoji: '🔴', label: 'VENDRE', className: 'vendre', detail: 'Stop-loss franchi (-3%)' };
+  if (pnlPct < 0)
+    return { emoji: '⚠️', label: 'SURVEILLER', className: 'surveiller', detail: 'Proche du stop-loss' };
+  if (pnlPct > 80)
+    return { emoji: '💎', label: 'ALLÉGER', className: 'alleger', detail: `Sécuriser — stop suggéré ${Math.round(price * 0.95).toLocaleString()} F` };
+  if (pnlPct >= 15)
+    return { emoji: '🚀', label: 'CONSERVER', className: 'conserver', detail: `Renforcer le stop à ${Math.round(price * 0.95).toLocaleString()} F` };
+  return { emoji: '➡️', label: 'CONSERVER', className: 'conserver', detail: '' };
+}
+
 // ─── Calcul partagé des positions (Telegram /portfolio, /export, page HTML) ──
 
 function computePortfolioRows(portfolio, stocks) {
@@ -304,6 +320,7 @@ function computePortfolioRows(portfolio, stocks) {
       symbol: pos.symbol,
       name: KNOWN_STOCKS[pos.symbol]?.name || pos.symbol,
       qty: pos.qty, avgCost: pos.avgCost, price, pnlPct, pnlF, valeur, cout,
+      reco: getRecommendation(pnlPct, price),
     };
   });
   rows.sort((a, b) => b.pnlPct - a.pnlPct);
@@ -315,11 +332,11 @@ function computePortfolioRows(portfolio, stocks) {
 }
 
 function buildPortfolioCSV({ rows, totalVal, totalCout, totalPnl, totalPct }) {
-  const header = 'Symbole,Nom,Quantite,Cout Moyen (F),Cours Actuel (F),Valeur (F),P&L (F),P&L (%),Cout Total (F)';
+  const header = 'Symbole,Nom,Quantite,Cout Moyen (F),Cours Actuel (F),Valeur (F),P&L (F),P&L (%),Cout Total (F),Recommandation,Detail';
   const lines  = rows.map(r =>
-    `${r.symbol},${r.name.replace(/,/g,' ')},${r.qty},${r.avgCost},${r.price},${r.valeur},${r.pnlF},${r.pnlPct.toFixed(1)},${r.cout}`
+    `${r.symbol},${r.name.replace(/,/g,' ')},${r.qty},${r.avgCost},${r.price},${r.valeur},${r.pnlF},${r.pnlPct.toFixed(1)},${r.cout},${r.reco.label},${r.reco.detail.replace(/,/g,' ')}`
   );
-  lines.push(`TOTAL,,,,,${totalVal},${totalPnl},${totalPct.toFixed(1)},${totalCout}`);
+  lines.push(`TOTAL,,,,,${totalVal},${totalPnl},${totalPct.toFixed(1)},${totalCout},,`);
   return [header, ...lines].join('\n');
 }
 
@@ -337,6 +354,7 @@ function renderPortfolioHTML({ rows, totalVal, totalCout, totalPnl, totalPct }) 
       <td class="num">${fmt(r.valeur)}</td>
       <td class="num ${r.pnlF >= 0 ? 'pos' : 'neg'}">${sign(r.pnlF)}${fmt(r.pnlF)}</td>
       <td class="num ${r.pnlPct >= 0 ? 'pos' : 'neg'}">${sign(r.pnlPct)}${r.pnlPct.toFixed(1)}%</td>
+      <td class="reco"><span class="badge badge-${r.reco.className}">${r.reco.emoji} ${r.reco.label}</span>${r.reco.detail ? `<br><span class="name">${r.reco.detail}</span>` : ''}</td>
     </tr>`).join('');
 
   return `<!DOCTYPE html>
@@ -368,6 +386,11 @@ function renderPortfolioHTML({ rows, totalVal, totalCout, totalPnl, totalPct }) 
   .pos { color:var(--green); font-weight:600; }
   .neg { color:var(--red); font-weight:600; }
   tbody tr:nth-child(even) { background:#fafafa; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:.78rem; font-weight:700; white-space:nowrap; }
+  .badge-vendre     { background:#FCE8E6; color:var(--red); }
+  .badge-surveiller { background:#FEF7E0; color:#B25C00; }
+  .badge-conserver  { background:#E6F4EA; color:var(--green); }
+  .badge-alleger    { background:#E8EAF6; color:#3949AB; }
   .actions { background:#fff; padding:16px; border-radius:0 0 12px 12px; display:flex; gap:10px; flex-wrap:wrap; }
   .btn { display:inline-block; padding:10px 18px; border-radius:8px; text-decoration:none; font-weight:600; font-size:.9rem; cursor:pointer; border:none; }
   .btn-fill { background:var(--orange); color:#fff; }
@@ -397,7 +420,7 @@ function renderPortfolioHTML({ rows, totalVal, totalCout, totalPnl, totalPct }) 
   <table>
     <thead><tr>
       <th>Titre</th><th class="num">Qté</th><th class="num">Coût moy.</th><th class="num">Cours</th>
-      <th class="num">Valeur</th><th class="num">P&amp;L (F)</th><th class="num">P&amp;L (%)</th>
+      <th class="num">Valeur</th><th class="num">P&amp;L (F)</th><th class="num">P&amp;L (%)</th><th>Recommandation</th>
     </tr></thead>
     <tbody>${tr}</tbody>
   </table>
@@ -494,9 +517,8 @@ async function handleTelegramCommand(update, env) {
       const { rows, totalVal, totalPnl, totalPct } = computePortfolioRows(portfolio, stocks);
       const lines = [`💼 *Portefeuille BRVM* — ${rows.length} positions`, ''];
       for (const r of rows) {
-        const e    = r.pnlPct > 5 ? '📈' : r.pnlPct < -3 ? '🛑' : r.pnlPct < 0 ? '📉' : '➡️';
         const sign = r.pnlPct >= 0 ? '+' : '';
-        lines.push(`${e} *${r.symbol}* ${r.qty}× · ${sign}${r.pnlPct.toFixed(1)}% _(${sign}${r.pnlF.toLocaleString()} F)_`);
+        lines.push(`${r.reco.emoji} *${r.symbol}* ${r.qty}× · ${sign}${r.pnlPct.toFixed(1)}% _(${sign}${r.pnlF.toLocaleString()} F)_ — *${r.reco.label}*`);
       }
       lines.push('');
       lines.push(`💰 *Total : ${Math.round(totalVal).toLocaleString()} F*`);
