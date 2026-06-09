@@ -291,30 +291,35 @@ async function savePortfolio(env, positions) {
 }
 
 // ─── Recommandation par position ──────────────────────────────────────────────
-// Basée sur le P&L : stop-loss à -3% (cf. mid-session), multibagger >+80%,
-// position solide entre +15% et +80% (cf. digest hebdo).
+// Basée sur le P&L : stop-loss adapté à la liquidité du titre — un -3/-4% sur
+// une valeur peu échangée ('L', cf. BOAM avgVol ~95) est souvent du bruit, pas
+// un signal. Seuils : -3% (liquidité 'H'), -5% ('M'), -8% ('L').
+// Multibagger >+80%, position solide entre +15% et +80% (cf. digest hebdo).
 // Chaque recommandation inclut un horizon de placement indicatif et des
 // niveaux de prix (sortie/stop, renforcement) pour guider la décision.
 
-function getRecommendation(pnlPct, price, avgCost) {
+const STOP_LOSS_BY_LIQ = { H: -3, M: -5, L: -8 };
+
+function getRecommendation(pnlPct, price, avgCost, liq) {
   const f = n => Math.round(n).toLocaleString();
-  if (pnlPct <= -3) {
+  const stopLoss = STOP_LOSS_BY_LIQ[liq] ?? -3;
+  if (pnlPct <= stopLoss) {
     const entree = Math.round(price * 0.97);
     return {
       emoji: '🔴', label: 'VENDRE', className: 'vendre',
       horizon: 'Immédiat',
       sortie: price, entree,
-      detail: `Sortir ≈ ${f(price)} F · Stop-loss franchi (-3%) · Ré-achat possible sous ${f(entree)} F`,
+      detail: `Sortir ≈ ${f(price)} F · Stop-loss franchi (${stopLoss}%) · Ré-achat possible sous ${f(entree)} F`,
     };
   }
   if (pnlPct < 0) {
-    const stop   = Math.round(avgCost * 0.97);
+    const stop   = Math.round(avgCost * (1 + stopLoss / 100));
     const entree = Math.round(price * 0.97);
     return {
       emoji: '⚠️', label: 'SURVEILLER', className: 'surveiller',
       horizon: 'Court terme (1-2 sem.)',
       sortie: stop, entree,
-      detail: `Stop à ${f(stop)} F · Renforcer sous ${f(entree)} F`,
+      detail: `Stop à ${f(stop)} F (${stopLoss}%) · Renforcer sous ${f(entree)} F`,
     };
   }
   if (pnlPct > 80) {
@@ -360,7 +365,7 @@ function computePortfolioRows(portfolio, stocks) {
       symbol: pos.symbol,
       name: KNOWN_STOCKS[pos.symbol]?.name || pos.symbol,
       qty: pos.qty, avgCost: pos.avgCost, price, pnlPct, pnlF, valeur, cout,
-      reco: getRecommendation(pnlPct, price, pos.avgCost),
+      reco: getRecommendation(pnlPct, price, pos.avgCost, KNOWN_STOCKS[pos.symbol]?.liq),
     };
   });
   rows.sort((a, b) => b.pnlPct - a.pnlPct);
