@@ -227,6 +227,24 @@ export default {
         hasChatId: !!env.TELEGRAM_CHAT_ID,
       });
     }
+    if (pathname === '/portfolio') {
+      const portfolio    = await getPortfolio(env);
+      const { stocks }   = await fetchLiveStocks();
+      const computed     = computePortfolioRows(portfolio, stocks);
+      return new Response(renderPortfolioHTML(computed), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    }
+    if (pathname === '/portfolio.csv') {
+      const portfolio    = await getPortfolio(env);
+      const { stocks }   = await fetchLiveStocks();
+      const computed     = computePortfolioRows(portfolio, stocks);
+      const today        = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      return new Response(buildPortfolioCSV(computed), {
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="BRVM_Portfolio_${today}.csv"`,
+        },
+      });
+    }
     if (pathname === '/' || pathname === '/stocks') {
       const { stocks, source } = await fetchLiveStocks();
       return json({ stocks, count: stocks.length, source, timestamp: Date.now() });
@@ -270,6 +288,126 @@ async function savePortfolio(env, positions) {
     positions,
     lastUpdated: new Date().toISOString(),
   }));
+}
+
+// ─── Calcul partagé des positions (Telegram /portfolio, /export, page HTML) ──
+
+function computePortfolioRows(portfolio, stocks) {
+  const rows = portfolio.map(pos => {
+    const stock  = stocks.find(s => s.symbol === pos.symbol);
+    const price  = stock?.price || KNOWN_STOCKS[pos.symbol]?.refPrice || pos.avgCost;
+    const pnlPct = (price - pos.avgCost) / pos.avgCost * 100;
+    const pnlF   = Math.round((price - pos.avgCost) * pos.qty);
+    const valeur = Math.round(price * pos.qty);
+    const cout   = Math.round(pos.avgCost * pos.qty);
+    return {
+      symbol: pos.symbol,
+      name: KNOWN_STOCKS[pos.symbol]?.name || pos.symbol,
+      qty: pos.qty, avgCost: pos.avgCost, price, pnlPct, pnlF, valeur, cout,
+    };
+  });
+  rows.sort((a, b) => b.pnlPct - a.pnlPct);
+  const totalVal  = rows.reduce((s, r) => s + r.valeur, 0);
+  const totalCout = rows.reduce((s, r) => s + r.cout, 0);
+  const totalPnl  = totalVal - totalCout;
+  const totalPct  = totalCout > 0 ? totalPnl / totalCout * 100 : 0;
+  return { rows, totalVal, totalCout, totalPnl, totalPct };
+}
+
+function buildPortfolioCSV({ rows, totalVal, totalCout, totalPnl, totalPct }) {
+  const header = 'Symbole,Nom,Quantite,Cout Moyen (F),Cours Actuel (F),Valeur (F),P&L (F),P&L (%),Cout Total (F)';
+  const lines  = rows.map(r =>
+    `${r.symbol},${r.name.replace(/,/g,' ')},${r.qty},${r.avgCost},${r.price},${r.valeur},${r.pnlF},${r.pnlPct.toFixed(1)},${r.cout}`
+  );
+  lines.push(`TOTAL,,,,,${totalVal},${totalPnl},${totalPct.toFixed(1)},${totalCout}`);
+  return [header, ...lines].join('\n');
+}
+
+function renderPortfolioHTML({ rows, totalVal, totalCout, totalPnl, totalPct }) {
+  const fmt  = n => Math.round(n).toLocaleString('fr-FR');
+  const sign = n => n >= 0 ? '+' : '';
+  const updated = new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan', dateStyle: 'long', timeStyle: 'short' });
+
+  const tr = rows.map(r => `
+    <tr>
+      <td class="sym"><strong>${r.symbol}</strong><br><span class="name">${r.name}</span></td>
+      <td class="num">${r.qty}</td>
+      <td class="num">${fmt(r.avgCost)}</td>
+      <td class="num">${fmt(r.price)}</td>
+      <td class="num">${fmt(r.valeur)}</td>
+      <td class="num ${r.pnlF >= 0 ? 'pos' : 'neg'}">${sign(r.pnlF)}${fmt(r.pnlF)}</td>
+      <td class="num ${r.pnlPct >= 0 ? 'pos' : 'neg'}">${sign(r.pnlPct)}${r.pnlPct.toFixed(1)}%</td>
+    </tr>`).join('');
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portefeuille BRVM</title>
+<style>
+  :root { --orange:#E8762C; --navy:#1B2A4A; --green:#1E8E3E; --red:#D93025; --bg:#F5F6F8; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:#222; padding:20px; }
+  .container { max-width:900px; margin:0 auto; }
+  header { background:var(--navy); color:#fff; padding:24px; border-radius:12px 12px 0 0; }
+  header h1 { margin:0; font-size:1.6rem; }
+  header p { margin:6px 0 0; opacity:.8; font-size:.9rem; }
+  .summary { display:flex; flex-wrap:wrap; gap:12px; background:#fff; padding:16px; }
+  .card { flex:1; min-width:140px; background:var(--bg); border-radius:10px; padding:14px 16px; text-align:center; }
+  .card .label { display:block; font-size:.78rem; color:#666; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+  .card .value { font-size:1.3rem; font-weight:700; }
+  .card.pos .value { color:var(--green); }
+  .card.neg .value { color:var(--red); }
+  table { width:100%; border-collapse:collapse; background:#fff; }
+  th, td { padding:10px 12px; text-align:left; border-bottom:1px solid #eee; font-size:.88rem; }
+  th { background:var(--orange); color:#fff; font-weight:600; position:sticky; top:0; }
+  td.num, th.num { text-align:right; }
+  td.name { color:#888; font-size:.78rem; }
+  .name { color:#888; font-size:.75rem; }
+  .pos { color:var(--green); font-weight:600; }
+  .neg { color:var(--red); font-weight:600; }
+  tbody tr:nth-child(even) { background:#fafafa; }
+  .actions { background:#fff; padding:16px; border-radius:0 0 12px 12px; display:flex; gap:10px; flex-wrap:wrap; }
+  .btn { display:inline-block; padding:10px 18px; border-radius:8px; text-decoration:none; font-weight:600; font-size:.9rem; cursor:pointer; border:none; }
+  .btn-fill { background:var(--orange); color:#fff; }
+  .btn-outline { background:#fff; color:var(--navy); border:1.5px solid var(--navy); }
+  @media print {
+    body { background:#fff; padding:0; }
+    .actions { display:none; }
+    header { border-radius:0; }
+  }
+  @media (max-width:600px) {
+    th, td { padding:8px 6px; font-size:.78rem; }
+    header h1 { font-size:1.3rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>💼 Portefeuille BRVM</h1>
+    <p>Mis à jour le ${updated} (heure d'Abidjan) · ${rows.length} positions</p>
+  </header>
+  <div class="summary">
+    <div class="card"><span class="label">Valeur marchande</span><span class="value">${fmt(totalVal)} F</span></div>
+    <div class="card"><span class="label">Coût total</span><span class="value">${fmt(totalCout)} F</span></div>
+    <div class="card ${totalPnl >= 0 ? 'pos' : 'neg'}"><span class="label">P&amp;L global</span><span class="value">${sign(totalPnl)}${fmt(totalPnl)} F (${sign(totalPct)}${totalPct.toFixed(1)}%)</span></div>
+  </div>
+  <table>
+    <thead><tr>
+      <th>Titre</th><th class="num">Qté</th><th class="num">Coût moy.</th><th class="num">Cours</th>
+      <th class="num">Valeur</th><th class="num">P&amp;L (F)</th><th class="num">P&amp;L (%)</th>
+    </tr></thead>
+    <tbody>${tr}</tbody>
+  </table>
+  <div class="actions">
+    <a class="btn btn-fill" href="/portfolio.csv" download>⬇️ Télécharger en CSV</a>
+    <button class="btn btn-outline" onclick="window.print()">🖨️ Imprimer / Enregistrer en PDF</button>
+  </div>
+</div>
+</body>
+</html>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -353,56 +491,28 @@ async function handleTelegramCommand(update, env) {
     } else if (cmd === 'portfolio' || cmd === 'p') {
       const portfolio  = await getPortfolio(env);
       const { stocks } = await fetchLiveStocks();
-      let totalVal = 0, totalCost = 0;
-      const rows = portfolio.map(pos => {
-        const stock  = stocks.find(s => s.symbol === pos.symbol);
-        const price  = stock?.price || KNOWN_STOCKS[pos.symbol]?.refPrice || pos.avgCost;
-        const pnlPct = (price - pos.avgCost) / pos.avgCost * 100;
-        const pnlF   = Math.round((price - pos.avgCost) * pos.qty);
-        totalVal  += price * pos.qty;
-        totalCost += pos.avgCost * pos.qty;
-        return { symbol: pos.symbol, qty: pos.qty, avgCost: pos.avgCost, price, pnlPct, pnlF };
-      });
-      // Tri : meilleurs gains en premier
-      rows.sort((a, b) => b.pnlPct - a.pnlPct);
+      const { rows, totalVal, totalPnl, totalPct } = computePortfolioRows(portfolio, stocks);
       const lines = [`💼 *Portefeuille BRVM* — ${rows.length} positions`, ''];
       for (const r of rows) {
         const e    = r.pnlPct > 5 ? '📈' : r.pnlPct < -3 ? '🛑' : r.pnlPct < 0 ? '📉' : '➡️';
         const sign = r.pnlPct >= 0 ? '+' : '';
         lines.push(`${e} *${r.symbol}* ${r.qty}× · ${sign}${r.pnlPct.toFixed(1)}% _(${sign}${r.pnlF.toLocaleString()} F)_`);
       }
-      const totalPnl = totalVal - totalCost;
-      const totalPct = (totalPnl / totalCost * 100).toFixed(1);
       lines.push('');
       lines.push(`💰 *Total : ${Math.round(totalVal).toLocaleString()} F*`);
-      lines.push(`📊 P&L : *${totalPnl >= 0 ? '+' : ''}${Math.round(totalPnl).toLocaleString()} F* (${totalPnl >= 0 ? '+' : ''}${totalPct}%)`);
+      lines.push(`📊 P&L : *${totalPnl >= 0 ? '+' : ''}${Math.round(totalPnl).toLocaleString()} F* (${totalPnl >= 0 ? '+' : ''}${totalPct.toFixed(1)}%)`);
+      lines.push('');
+      lines.push(`🔗 Vue détaillée : ${WORKER_URL}/portfolio`);
       await reply(lines.join('\n'));
 
     } else if (cmd === 'export') {
       const portfolio  = await getPortfolio(env);
       const { stocks } = await fetchLiveStocks();
-      const rows = portfolio.map(pos => {
-        const stock  = stocks.find(s => s.symbol === pos.symbol);
-        const price  = stock?.price || KNOWN_STOCKS[pos.symbol]?.refPrice || pos.avgCost;
-        const pnlPct = (price - pos.avgCost) / pos.avgCost * 100;
-        const pnlF   = Math.round((price - pos.avgCost) * pos.qty);
-        const valeur = Math.round(price * pos.qty);
-        const cout   = Math.round(pos.avgCost * pos.qty);
-        return { symbol: pos.symbol, qty: pos.qty, avgCost: pos.avgCost, price, pnlPct, pnlF, valeur, cout };
-      });
-      rows.sort((a, b) => b.pnlPct - a.pnlPct);
-      const totalVal  = rows.reduce((s, r) => s + r.valeur, 0);
-      const totalCout = rows.reduce((s, r) => s + r.cout, 0);
-      const totalPnl  = totalVal - totalCout;
-      const totalPct  = (totalPnl / totalCout * 100).toFixed(1);
-      const header = 'Symbole,Nom,Quantite,Cout Moyen (F),Cours Actuel (F),Valeur (F),P&L (F),P&L (%),Cout Total (F)';
-      const lines  = rows.map(r =>
-        `${r.symbol},${(KNOWN_STOCKS[r.symbol]?.name || r.symbol).replace(/,/g,' ')},${r.qty},${r.avgCost},${r.price},${r.valeur},${r.pnlF},${r.pnlPct.toFixed(1)},${r.cout}`
-      );
-      lines.push(`TOTAL,,,,,${totalVal},${totalPnl},${totalPct},${totalCout}`);
-      const csv    = [header, ...lines].join('\n');
+      const computed   = computePortfolioRows(portfolio, stocks);
+      const { totalPnl, totalPct, rows } = computed;
+      const csv    = buildPortfolioCSV(computed);
       const today  = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      const cap    = `💼 ${rows.length} positions · P&L ${totalPnl >= 0 ? '+' : ''}${Math.round(totalPnl).toLocaleString()} F (${totalPnl >= 0 ? '+' : ''}${totalPct}%)`;
+      const cap    = `💼 ${rows.length} positions · P&L ${totalPnl >= 0 ? '+' : ''}${Math.round(totalPnl).toLocaleString()} F (${totalPnl >= 0 ? '+' : ''}${totalPct.toFixed(1)}%)`;
       await sendDocument(env, csv, `BRVM_Portfolio_${today}.csv`, replyTo, cap);
 
     } else if (cmd === 'help' || cmd === 'aide' || cmd === 'start') {
@@ -414,6 +524,9 @@ async function handleTelegramCommand(update, env) {
         '`/sell BOAM 30` — vendre (tout ou partie)',
         '`/portfolio` — voir toutes tes positions avec P&L live',
         '`/export` — recevoir le portefeuille en fichier CSV',
+        '',
+        `🔗 *Page complète :* ${WORKER_URL}/portfolio`,
+        '_(téléchargeable en CSV ou imprimable en PDF)_',
         '',
         '_Les alertes 13h30 et 15h30 surveillent automatiquement_',
         '_tes stops et t\'alertent si un seuil est franchi._',
