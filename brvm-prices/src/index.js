@@ -195,6 +195,23 @@ export default {
       ctx.waitUntil(handleTelegramCommand(request, env));
       return new Response('ok');
     }
+    // /setup : re-enregistre le webhook Telegram (à visiter dans le navigateur)
+    if (pathname === '/setup') {
+      const token = env.TELEGRAM_BOT_TOKEN;
+      if (!token) return json({ error: 'TELEGRAM_BOT_TOKEN non configuré dans Cloudflare' }, 500);
+      const origin     = new URL(request.url).origin;
+      const webhookUrl = `${origin}/webhook`;
+      const [setRes, infoRes] = await Promise.all([
+        fetch(`https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}&allowed_updates=%5B%22message%22%5D`).then(r => r.json()),
+        fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`).then(r => r.json()),
+      ]);
+      return json({
+        setWebhook:  setRes,
+        webhookInfo: infoRes,
+        webhookUrl,
+        hasChatId: !!env.TELEGRAM_CHAT_ID,
+      });
+    }
     if (pathname === '/' || pathname === '/stocks') {
       const { stocks, source } = await fetchLiveStocks();
       return json({ stocks, count: stocks.length, source, timestamp: Date.now() });
