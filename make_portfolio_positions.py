@@ -19,7 +19,7 @@ PORTFOLIO = [
     ("SMBC",  "SMB CI",                  50,   11_817, 15_380,  "M"),
     ("NTLC",  "Nestlé CI",               20,   11_048, 14_225,  "M"),
     ("UNXC",  "Uniwax CI",              100,    1_957,  1_905,  "L"),
-    ("LACI",  "Air Liquide CI",          61,    2_757,  2_845,  "L"),
+    ("SIVC",  "Erium CI (ex-Air Liquide)", 61,    2_757,  2_845,  "L"),
     ("BOAB",  "BOA Bénin",               40,    5_648,  8_745,  "H"),
     ("TTLC",  "TotalEnergies CI",       117,    2_834,  2_805,  "L"),
     ("BOAN",  "BOA Niger",               30,    2_677,  3_740,  "M"),
