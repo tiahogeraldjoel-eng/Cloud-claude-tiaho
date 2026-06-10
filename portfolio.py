@@ -673,7 +673,8 @@ def _extract_metadata(text: str) -> Dict:
 
 # ─── Analyse de portefeuille ─────────────────────────────────────────────────
 
-def analyze_portfolio(holdings: List[Dict], db, ind, rec, profil: str = "mixte") -> Dict:
+def analyze_portfolio(holdings: List[Dict], db, ind, rec, profil: str = "mixte",
+                       sentiment: Optional[Dict] = None) -> Dict:
     """
     Analyse complète d'un portefeuille BRVM.
     Pour chaque position : prix actuel, P&L, signal technique, recommandation.
@@ -738,18 +739,12 @@ def analyze_portfolio(holdings: List[Dict], db, ind, rec, profil: str = "mixte")
         try:
             latest_p  = db.get_latest_price(sym)
             hw = db.get_52w_highlow(sym)
-            # Récupérer le vrai sentiment depuis la DB si disponible
-            try:
-                mkt = db.get_market_data()
-                sentiment = {"score": mkt.get("fear_greed_score") or 50} if mkt else {"score": 50}
-            except Exception:
-                sentiment = {"score": 50}
             reco = compute_recommendation(
                 prices       = prices,
                 fundamentals = fund,
                 derived      = None,
                 hw           = hw,
-                sentiment    = sentiment,
+                sentiment    = sentiment or {"score": 50},
                 latest       = latest_p,
                 profil       = profil,
             )
@@ -994,8 +989,8 @@ def _global_advice(holdings: List[Dict], pnl_pct: float, diversif: Dict,
     advice = []
 
     found  = [a for a in holdings if a.get("found")]
-    buy_syms   = [a["symbol"] for a in found if a.get("reco_signal") == "ACHAT"]
-    sell_syms  = [a["symbol"] for a in found if a.get("reco_signal") == "VENTE"]
+    buy_syms   = [a["symbol"] for a in found if a.get("reco_signal") in ("ACHAT", "ACCUMULER")]
+    sell_syms  = [a["symbol"] for a in found if a.get("reco_signal") in ("VENTE", "ALLÉGER")]
     losers     = sorted([a for a in found if a.get("pnl_pct") is not None and a["pnl_pct"] < -10],
                          key=lambda x: x["pnl_pct"])
     winners    = sorted([a for a in found if a.get("pnl_pct") is not None and a["pnl_pct"] > 20],
@@ -1018,10 +1013,10 @@ def _global_advice(holdings: List[Dict], pnl_pct: float, diversif: Dict,
     # ── Signaux techniques individuels
     if buy_syms:
         detail = ", ".join(f"{s}" for s in buy_syms[:5])
-        advice.append(f"Signal ACHAT sur {len(buy_syms)} position(s) — renforcement suggéré : {detail}.")
+        advice.append(f"Signal ACHAT/ACCUMULER sur {len(buy_syms)} position(s) — renforcement suggéré : {detail}.")
     if sell_syms:
         detail = ", ".join(sell_syms[:5])
-        advice.append(f"Signal VENTE sur {len(sell_syms)} position(s) — alléger ou couper : {detail}.")
+        advice.append(f"Signal VENTE/ALLÉGER sur {len(sell_syms)} position(s) — alléger ou couper : {detail}.")
 
     # ── Gestion des pertes/gains
     if losers:

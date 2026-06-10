@@ -66,6 +66,7 @@ function switchTab(name) {
     // Réinitialiser le message d'erreur d'upload si l'onglet est revisité
     const statusEl = document.getElementById('ptf-upload-status');
     if(statusEl) statusEl.classList.add('hidden');
+    renderPtfProfilSelector();
     loadPositions();
   }
   if(name==='calendar') loadCalendarTab();
@@ -1284,6 +1285,24 @@ function getProfilFor(symbol) {
 }
 function setProfilFor(symbol, profil) {
   localStorage.setItem(`profil_${symbol}`, profil);
+}
+
+function setProfilGlobal(profil) {
+  localStorage.setItem('profil_global', profil);
+  renderPtfProfilSelector();
+}
+
+function renderPtfProfilSelector() {
+  const el = document.getElementById('ptf-profil-selector');
+  if(!el) return;
+  const current = localStorage.getItem('profil_global') || 'mixte';
+  el.innerHTML = [['rentier','Rentier','💰'],['croissance','Croissance','📈'],['trader','Trader','⚡'],['mixte','Mixte','⚖️']].map(([p,label,icon])=>{
+    const active = current === p;
+    return `<button onclick="setProfilGlobal('${p}')"
+      class="text-xs px-3 py-1.5 rounded-full font-semibold transition-all ${active
+        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
+        : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'}">${icon} ${label}</button>`;
+  }).join('');
 }
 
 // ─── ANALYSE FONDAMENTALE ─────────────────────────────────────────────────────

@@ -242,6 +242,8 @@ _state = {
     "refresh_count": 0,
     "history_loaded": False,
     "history_loading": False,
+    "last_news_refresh": None,
+    "last_news_count": None,
 }
 
 _sentiment_cache: Dict = {"data": None, "ts": 0.0}
@@ -352,8 +354,11 @@ def _refresh_data():
                        "unchanged", "total_volume"]:
                 m.setdefault(k, None)
             db.upsert_market_data(m)
-        if result["news"]:
-            db.save_news(result["news"])
+        news = result.get("news") or []
+        if news:
+            db.save_news(news)
+        _state["last_news_refresh"] = datetime.now(timezone.utc).isoformat()
+        _state["last_news_count"]   = len(news)
         _state["last_refresh"]  = datetime.now(timezone.utc).isoformat()
         _state["refresh_count"] += 1
         # Invalider le cache sentiment après chaque refresh
@@ -470,6 +475,8 @@ def _refresh_news():
         if news:
             db.save_news(news)
             logger.info(f"Actualités sauvegardées : {len(news)} articles")
+        _state["last_news_refresh"] = datetime.now(timezone.utc).isoformat()
+        _state["last_news_count"]   = len(news)
     except Exception as e:
         logger.error(f"Erreur news: {e}")
 
@@ -500,14 +507,18 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 @app.get("/api/status")
 def api_status():
+    latest_news = db.get_news(1)
     return {
-        "status":          "ok",
-        "last_refresh":    _state["last_refresh"],
-        "is_refreshing":   _state["is_refreshing"],
-        "refresh_count":   _state["refresh_count"],
-        "history_loaded":  _state["history_loaded"],
-        "history_loading": _state["history_loading"],
-        "server_time":     datetime.now(timezone.utc).isoformat(),
+        "status":           "ok",
+        "last_refresh":     _state["last_refresh"],
+        "is_refreshing":    _state["is_refreshing"],
+        "refresh_count":    _state["refresh_count"],
+        "history_loaded":   _state["history_loaded"],
+        "history_loading":  _state["history_loading"],
+        "last_news_refresh": _state["last_news_refresh"],
+        "last_news_count":   _state["last_news_count"],
+        "latest_news_date":  latest_news[0]["published"] if latest_news else None,
+        "server_time":      datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -1179,7 +1190,7 @@ async def analyze_portfolio_file(file: UploadFile = File(...), profil: str = "mi
         })
 
     # ── Analyser les positions ─────────────────────────────────────────────
-    result = ptf.analyze_portfolio(parsed["holdings"], db, ind, rec, profil=profil)
+    result = ptf.analyze_portfolio(parsed["holdings"], db, ind, rec, profil=profil, sentiment=_get_sentiment_data())
     result["metadata"]       = parsed.get("metadata", {})
     result["parsing_errors"] = parse_errors
     result["filename"]       = filename
@@ -1219,7 +1230,7 @@ def analyze_portfolio_manual(body: dict):
         raise HTTPException(400, "Aucun symbole valide fourni")
 
     profil = body.get("profil", "mixte")
-    result = ptf.analyze_portfolio(clean, db, ind, rec, profil=profil)
+    result = ptf.analyze_portfolio(clean, db, ind, rec, profil=profil, sentiment=_get_sentiment_data())
     result.setdefault("metadata", {})          # cohérence avec la route PDF
     result.setdefault("parsing_errors", [])
     return result
