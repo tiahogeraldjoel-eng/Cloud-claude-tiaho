@@ -227,6 +227,21 @@ export default {
         hasChatId: !!env.TELEGRAM_CHAT_ID,
       });
     }
+    // /run/<job> : déclenche manuellement un cron (diagnostic — pas besoin d'attendre l'horaire)
+    if (pathname.startsWith('/run/')) {
+      const job = pathname.slice('/run/'.length);
+      const jobs = {
+        'post-fixing': runPostFixing,
+        'mid-session': runMidSession,
+        'closing':     runClosingBell,
+        'weekly-digest': runWeeklyDigest,
+      };
+      const fn = jobs[job];
+      if (!fn) return json({ error: 'Job inconnu', jobs: Object.keys(jobs) }, 404);
+      const started = Date.now();
+      await fn(env);
+      return json({ ok: true, job, durationMs: Date.now() - started });
+    }
     if (pathname === '/portfolio') {
       const portfolio    = await getPortfolio(env);
       const { stocks }   = await fetchLiveStocks();
