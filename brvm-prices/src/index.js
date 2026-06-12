@@ -192,7 +192,8 @@ const CORS = {
 export default {
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
-    const { pathname } = new URL(request.url);
+    const url = new URL(request.url);
+    const { pathname } = url;
     if (pathname === '/health') return json({ status: 'ok', timestamp: Date.now() });
     if (pathname === '/ping') {
       const token  = env.TELEGRAM_BOT_TOKEN;
@@ -227,7 +228,8 @@ export default {
         hasChatId: !!env.TELEGRAM_CHAT_ID,
       });
     }
-    // /run/<job> : déclenche manuellement un cron (diagnostic — pas besoin d'attendre l'horaire)
+    // /run/<job> : déclenche manuellement un cron (diagnostic, ou filet de secours GitHub Actions)
+    // ?backup=1 : n'exécute que si le cron Cloudflare ne s'est pas déjà déclenché aujourd'hui
     if (pathname.startsWith('/run/')) {
       const job = pathname.slice('/run/'.length);
       const jobs = {
@@ -238,8 +240,12 @@ export default {
       };
       const fn = jobs[job];
       if (!fn) return json({ error: 'Job inconnu', jobs: Object.keys(jobs) }, 404);
+      if (url.searchParams.get('backup') === '1' && await cronAlreadyRan(env, job)) {
+        return json({ ok: true, job, skipped: true, reason: 'Cron Cloudflare déjà exécuté aujourd\'hui' });
+      }
       const started = Date.now();
       await fn(env);
+      await markCronRan(env, job);
       return json({ ok: true, job, durationMs: Date.now() - started });
     }
     if (pathname === '/portfolio') {
@@ -272,11 +278,13 @@ export default {
     // S'assurer que le webhook Telegram est enregistré à chaque cron
     ctx.waitUntil(ensureWebhook(env));
     // Plan gratuit Cloudflare = 3 crons max → digest vendredi fusionné dans le cron 15h30
-    if (event.cron === '15 10 * * 1-5') ctx.waitUntil(runPostFixing(env));
-    else if (event.cron === '30 13 * * 1-5') ctx.waitUntil(runMidSession(env));
+    // runAndMark pose un flag KV (cf. cronAlreadyRan) UNIQUEMENT si le job va au bout —
+    // le filet de secours GitHub Actions (/run/<job>?backup=1) s'appuie sur ce flag.
+    if (event.cron === '15 10 * * 1-5') ctx.waitUntil(runAndMark(env, 'post-fixing', runPostFixing));
+    else if (event.cron === '30 13 * * 1-5') ctx.waitUntil(runAndMark(env, 'mid-session', runMidSession));
     else if (event.cron === '30 15 * * 1-5') {
-      ctx.waitUntil(runClosingBell(env));
-      if (new Date().getUTCDay() === 5) ctx.waitUntil(runWeeklyDigest(env));
+      ctx.waitUntil(runAndMark(env, 'closing', runClosingBell));
+      if (new Date().getUTCDay() === 5) ctx.waitUntil(runAndMark(env, 'weekly-digest', runWeeklyDigest));
     }
     else console.warn('Cron non reconnu :', event.cron);
   },
@@ -303,6 +311,32 @@ async function savePortfolio(env, positions) {
     positions,
     lastUpdated: new Date().toISOString(),
   }));
+}
+
+// ─── Filet de secours cron (KV) ────────────────────────────────────────────────
+// Marque dans le KV qu'un job cron a été exécuté aujourd'hui. Le filet de secours
+// GitHub Actions (/run/<job>?backup=1) vérifie ce flag : si le cron Cloudflare a
+// déjà tourné jusqu'au bout, le backup ne fait rien (pas de doublon d'alerte).
+function todayKey(job) {
+  const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD UTC
+  return `cron:${job}:${date}`;
+}
+
+async function cronAlreadyRan(env, job) {
+  try {
+    return !!(await env.PORTFOLIO_KV.get(todayKey(job)));
+  } catch (e) { return false; }
+}
+
+async function markCronRan(env, job) {
+  try {
+    await env.PORTFOLIO_KV.put(todayKey(job), '1', { expirationTtl: 86400 * 2 });
+  } catch (e) { console.warn('KV markCronRan échoué:', e.message); }
+}
+
+async function runAndMark(env, job, fn) {
+  await fn(env);
+  await markCronRan(env, job);
 }
 
 // ─── Recommandation par position ──────────────────────────────────────────────
