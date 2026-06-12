@@ -823,7 +823,10 @@ async function runClosingBell(env) {
     const totalPnl    = totalValeur - totalCout;
     const totalPct    = totalCout > 0 ? totalPnl / totalCout * 100 : 0;
 
-    const stopsHit    = positions.filter(p => p.currentPrice <= p.avgCost * 0.97);
+    const stopsHit    = positions.filter(p => {
+      const stopPct = STOP_LOSS_BY_LIQ[KNOWN_STOCKS[p.symbol]?.liq] ?? -3;
+      return p.currentPrice <= p.avgCost * (1 + stopPct / 100);
+    });
     const dayWinners  = positions.filter(p => p.chgDay > 0).sort((a, b) => b.chgDay - a.chgDay).slice(0, 3);
     const dayLosers   = positions.filter(p => p.chgDay < 0).sort((a, b) => a.chgDay - b.chgDay).slice(0, 3);
 
@@ -909,7 +912,7 @@ async function runWeeklyDigest(env) {
 
     const multibaggers = positions.filter(p => p.pnlTotal > 80)
       .sort((a, b) => b.pnlTotal - a.pnlTotal);
-    const risked       = positions.filter(p => p.pnlTotal < -3);
+    const risked       = positions.filter(p => p.pnlTotal < (STOP_LOSS_BY_LIQ[KNOWN_STOCKS[p.symbol]?.liq] ?? -3));
     const solidGains   = positions.filter(p => p.pnlTotal >= 15 && p.pnlTotal <= 80)
       .sort((a, b) => b.pnlTotal - a.pnlTotal).slice(0, 4);
 
