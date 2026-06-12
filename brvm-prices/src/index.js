@@ -711,11 +711,12 @@ async function runMidSession(env) {
       const stock = stocks.find(s => s.symbol === pos.symbol);
       if (!stock) continue;
 
-      const stopLevel  = pos.avgCost * 0.97;
+      const meta       = KNOWN_STOCKS[pos.symbol];
+      const stopPct    = STOP_LOSS_BY_LIQ[meta?.liq] ?? -3;
+      const stopLevel  = pos.avgCost * (1 + stopPct / 100);
       const warnLevel  = stopLevel   * (1 + WARN_STOP_PCT);
       const pnlPct     = (stock.price - pos.avgCost) / pos.avgCost * 100;
       const pnlFcfa    = (stock.price - pos.avgCost) * pos.qty;
-      const meta       = KNOWN_STOCKS[pos.symbol];
 
       if (stock.price <= stopLevel) {
         stopsHit.push({ ...pos, currentPrice: stock.price, pnlPct, pnlFcfa, stopLevel });
