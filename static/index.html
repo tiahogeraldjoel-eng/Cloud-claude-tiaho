@@ -154,6 +154,13 @@
         <span class="tab-label">Agenda & Alertes</span>
         <span id="alert-badge" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">!</span>
       </button>
+      <button class="tab-btn" data-tab="trends" onclick="switchTab('trends')">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+        </svg>
+        <span class="tab-label">Tendances du Marché</span>
+      </button>
     </div>
   </div>
 </nav>
@@ -897,6 +904,23 @@
     </div>
 
   </div><!-- /tab-calendar -->
+
+  <!-- ────────────────── TENDANCES DU MARCHÉ (synthèse des cycles) ────────────────── -->
+  <div id="tab-trends" class="tab-content hidden">
+    <div class="bg-card rounded-xl border border-border p-6 mb-6">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="text-2xl">🧭</span>
+        <div>
+          <h3 class="text-base font-semibold text-slate-200">Où en est chaque titre dans son cycle ?</h3>
+          <p class="text-xs text-slate-400">Classement automatique des 47 valeurs BRVM selon leur tendance actuelle — pour repérer d'un coup d'œil les occasions et les titres à surveiller.</p>
+        </div>
+      </div>
+      <div id="trends-updated" class="text-xs text-slate-500"></div>
+    </div>
+    <div id="trends-content" class="space-y-6">
+      <div class="text-center py-10 text-slate-500 text-sm">Chargement…</div>
+    </div>
+  </div><!-- /tab-trends -->
 
 </main>
 

@@ -70,6 +70,7 @@ function switchTab(name) {
     loadPositions();
   }
   if(name==='calendar') loadCalendarTab();
+  if(name==='trends') loadScreener();
 }
 
 // ─── HORLOGE MARCHÉ (BRVM = UTC+0 / GMT, séance 09h00-15h30) ─────────────────
@@ -2698,6 +2699,64 @@ async function previewDividendSources() {
 
 async function loadCalendarTab() {
   await Promise.all([loadPositions(), loadAlerts(), loadEvents()]);
+}
+
+// ─── TENDANCES DU MARCHÉ (synthèse des cycles) ────────────────────────────────
+
+const TRENDS_PHASES = [
+  { key: 'demarrage', title: '🌱 Possible redémarrage — à surveiller',
+    hint: 'Ces titres semblent sortir d\'une période de baisse et reprennent un peu de hauteur. Le potentiel n\'a pas encore été exploité.' },
+  { key: 'hausse', title: '📈 Tendance haussière confirmée',
+    hint: 'Ces titres montent de façon régulière et restent au-dessus de leurs moyennes de référence. La tendance est installée.' },
+  { key: 'sommet', title: '⚠️ Forte hausse déjà jouée — prudence',
+    hint: 'Ces titres ont beaucoup monté et montrent des signes d\'essoufflement. Une pause ou un repli est possible : mieux vaut ne pas se précipiter à l\'achat.' },
+  { key: 'baisse', title: '📉 Tendance baissière confirmée',
+    hint: 'Ces titres sont en baisse régulière, sous leurs moyennes de référence. À éviter à l\'achat pour le moment, ou à surveiller pour un éventuel allègement.' },
+  { key: 'indecis', title: '↔️ Sans tendance nette',
+    hint: 'Ces titres évoluent sans direction claire pour le moment — ni occasion ni signal d\'alerte évident.' },
+];
+
+async function loadScreener() {
+  const content = document.getElementById('trends-content');
+  try {
+    const d = await api('/api/market/screener');
+    renderTrends(d);
+  } catch(e) {
+    console.error('Screener error:', e);
+    if(content) content.innerHTML = `<div class="text-center py-10 text-slate-500 text-sm">Impossible de charger les tendances pour le moment.</div>`;
+  }
+}
+
+function renderTrends(d) {
+  const content = document.getElementById('trends-updated');
+  if(content && d.updated_at) {
+    const dt = new Date(d.updated_at);
+    setText('trends-updated', `Mise à jour : ${dt.toLocaleString('fr-FR')}`);
+  }
+  const phases = d.phases || {};
+  const html = TRENDS_PHASES.map(p => {
+    const items = phases[p.key] || [];
+    if(!items.length) return '';
+    const cards = items.map(s => `
+      <button onclick="openTech('${s.symbol}')" class="text-left bg-slate-900/50 hover:bg-slate-800 rounded-lg p-3 border border-slate-700/40 transition-colors">
+        <div class="flex items-center justify-between mb-1">
+          <span class="font-semibold text-slate-200">${s.symbol}</span>
+          <span class="text-xs ${vClass(s.variation_pct)}">${fmtP(s.variation_pct)}</span>
+        </div>
+        <div class="text-xs text-slate-500 truncate mb-2">${s.name||''}</div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-bold text-slate-200">${s.close!=null?fmt(s.close,0)+' FCFA':'—'}</span>
+          <span class="text-xs text-slate-400">Confiance : <span class="font-bold text-slate-300">${s.confidence}%</span></span>
+        </div>
+      </button>`).join('');
+    return `<div class="bg-card rounded-xl border border-border p-6">
+      <h3 class="text-base font-semibold text-slate-200 mb-1">${p.title}</h3>
+      <p class="text-xs text-slate-400 mb-4">${p.hint}</p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">${cards}</div>
+    </div>`;
+  }).join('');
+  const contentEl = document.getElementById('trends-content');
+  if(contentEl) contentEl.innerHTML = html || `<div class="text-center py-10 text-slate-500 text-sm">Aucune donnée disponible.</div>`;
 }
 
 function closeModal(id) {

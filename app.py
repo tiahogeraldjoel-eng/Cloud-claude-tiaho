@@ -249,6 +249,9 @@ _state = {
 _sentiment_cache: Dict = {"data": None, "ts": 0.0}
 _SENTIMENT_TTL = 5 * 60  # secondes — re-calcul toutes les 5 min max
 
+_screener_cache: Dict = {"data": None, "ts": 0.0}
+_SCREENER_TTL = 15 * 60  # secondes — re-calcul toutes les 15 min max
+
 
 def _last_brvm_trading_day() -> str:
     """Retourne la date du dernier jour de bourse BRVM (lun-ven).
@@ -729,6 +732,42 @@ def api_movers():
         "losers":  sorted(with_var, key=lambda x: x["variation_pct"])[:10],
         "volume":  sorted(with_vol, key=lambda x: x["volume"], reverse=True)[:10],
     }
+
+
+# ─── SYNTHÈSE DES TENDANCES (cycle de marché par titre) ──────────────────────
+
+@app.get("/api/market/screener")
+def api_screener():
+    """Classe chaque titre dans une phase de cycle (démarrage/hausse/sommet/baisse),
+    avec un vocabulaire accessible aux investisseurs non-experts."""
+    now = time.time()
+    if _screener_cache["data"] is not None and (now - _screener_cache["ts"]) < _SCREENER_TTL:
+        return _screener_cache["data"]
+
+    by_phase: Dict[str, List[Dict]] = {"demarrage": [], "hausse": [], "sommet": [], "baisse": [], "indecis": []}
+    for s in db.get_all_stocks():
+        sym = s["symbol"]
+        prices = db.get_prices(sym, 300)
+        phase_info = ind.compute_cycle_phase(prices)
+        latest = db.get_latest_price(sym)
+        by_phase[phase_info["phase"]].append({
+            "symbol":        sym,
+            "name":          s.get("name", ""),
+            "sector":        s.get("sector", ""),
+            "close":         latest.get("close") if latest else None,
+            "variation_pct": latest.get("variation_pct") if latest else None,
+            "confidence":    phase_info["confidence"],
+            "label":         phase_info["label"],
+            "description":   phase_info["description"],
+        })
+
+    for phase in by_phase:
+        by_phase[phase].sort(key=lambda x: x["confidence"], reverse=True)
+
+    result = {"phases": by_phase, "updated_at": datetime.now(timezone.utc).isoformat()}
+    _screener_cache["data"] = result
+    _screener_cache["ts"]   = now
+    return result
 
 
 # ─── DIVIDENDES (endpoint dédié) ─────────────────────────────────────────────

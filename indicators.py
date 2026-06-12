@@ -1096,3 +1096,125 @@ def compute_seasonality(prices: List[Dict]) -> Dict:
         })
 
     return {"months": months}
+
+
+# ─── Phase de cycle (screener marché) ─────────────────────────────────────────
+
+def _last_value(series: List[Optional[float]]) -> Optional[float]:
+    for v in reversed(series):
+        if v is not None:
+            return v
+    return None
+
+
+def compute_cycle_phase(prices: List[Dict]) -> Dict:
+    """
+    Classe un titre dans l'une des 4 phases typiques d'un cycle de marché,
+    à partir de ses moyennes mobiles (MM50/MM200), MACD et RSI — calculé
+    localement à partir de l'historique déjà en base (façon "Synthèse des
+    tendances" Sikafinance).
+
+    Phases (vocabulaire grand public) :
+      "demarrage" : repli qui se termine, possible redémarrage — à surveiller
+      "hausse"    : tendance haussière confirmée
+      "sommet"    : forte hausse déjà jouée — risque de repli
+      "baisse"    : tendance baissière confirmée
+      "indecis"   : pas de tendance nette
+
+    Retourne {"phase", "confidence" (0-100), "label", "description"}.
+    """
+    closes = _closes(prices)
+    n = len(closes)
+    if n < 60:
+        return {
+            "phase": "indecis", "confidence": 0.0,
+            "label": "↔️ Données insuffisantes",
+            "description": "Historique trop court pour évaluer la tendance.",
+        }
+
+    sma50_last  = _last_value(sma(closes, min(50, n // 2)))
+    sma200_last = _last_value(sma(closes, min(200, n - 1)))
+    macd_data   = macd(closes)
+    macd_last   = _last_value(macd_data["macd"])
+    sig_last    = _last_value(macd_data["signal"])
+    hist_last   = _last_value(macd_data["histogram"])
+    rsi_last    = _last_value(rsi(closes, 14))
+
+    hist_vals = [h for h in macd_data["histogram"] if h is not None]
+    hist_prev = hist_vals[-6] if len(hist_vals) >= 6 else None
+
+    price = closes[-1]
+
+    if None in (sma50_last, sma200_last, macd_last, sig_last, hist_last, rsi_last):
+        return {
+            "phase": "indecis", "confidence": 0.0,
+            "label": "↔️ Données insuffisantes",
+            "description": "Historique trop court pour évaluer la tendance.",
+        }
+
+    scores: Dict[str, float] = {}
+
+    # Hausse confirmée : prix et structure des moyennes orientés haut
+    s = 0.0
+    if price > sma50_last:           s += 25
+    if sma50_last > sma200_last:     s += 25
+    if macd_last > sig_last:         s += 20
+    if hist_last > 0:                s += 15
+    if 45 <= rsi_last <= 70:         s += 15
+    scores["hausse"] = s
+
+    # Baisse confirmée : symétrique
+    s = 0.0
+    if price < sma50_last:           s += 25
+    if sma50_last < sma200_last:     s += 25
+    if macd_last < sig_last:         s += 20
+    if hist_last < 0:                s += 15
+    if 30 <= rsi_last <= 55:         s += 15
+    scores["baisse"] = s
+
+    # Démarrage : sortie de creux, momentum qui repart juste
+    s = 0.0
+    if price > sma50_last and sma50_last <= sma200_last: s += 25
+    if macd_last > sig_last and hist_last > 0:           s += 30
+    if 35 <= rsi_last <= 55:                             s += 25
+    if n >= 21 and price > closes[-21]:                  s += 20
+    scores["demarrage"] = s
+
+    # Sommet : forte hausse déjà jouée, momentum qui s'essouffle
+    s = 0.0
+    if price > sma50_last > sma200_last:                                    s += 20
+    if rsi_last > 65:                                                       s += 30
+    if hist_prev is not None and 0 < hist_last < hist_prev:                 s += 30
+    if sma200_last and price > sma200_last * 1.10:                          s += 20
+    scores["sommet"] = s
+
+    best_phase = max(scores, key=scores.get)
+    best_score = scores[best_phase]
+    if best_score < 35:
+        best_phase = "indecis"
+
+    info = {
+        "demarrage": ("🌱 Possible redémarrage",
+                       "Le titre semble sortir d'une période de baisse et reprend un peu "
+                       "de hauteur — à surveiller de près, le potentiel n'a pas encore "
+                       "été exploité."),
+        "hausse":    ("📈 Tendance haussière confirmée",
+                       "Le titre est en hausse régulière, au-dessus de ses moyennes de "
+                       "référence — la tendance est installée."),
+        "sommet":    ("⚠️ Forte hausse déjà jouée",
+                       "Le titre a beaucoup monté et montre des signes d'essoufflement — "
+                       "une pause ou un repli est possible, la prudence est de mise."),
+        "baisse":    ("📉 Tendance baissière confirmée",
+                       "Le titre est en baisse régulière, sous ses moyennes de référence."),
+        "indecis":   ("↔️ Sans tendance nette",
+                       "Le titre évolue sans direction claire pour le moment — ni "
+                       "occasion ni signal d'alerte évident."),
+    }
+    label, description = info[best_phase]
+
+    return {
+        "phase":       best_phase,
+        "confidence":  round(best_score, 1),
+        "label":       label,
+        "description": description,
+    }
