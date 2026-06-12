@@ -983,17 +983,35 @@ async function runWeeklyDigest(env) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 async function fetchLiveStocks() {
-  for (const url of BRVM_URLS) {
+  // Toutes les variantes BRVM.org sont tentées EN PARALLÈLE avec un timeout
+  // réel (AbortController — `cf: { timeout }` n'a aucun effet sur fetch()).
+  // Avant : 5 tentatives séquentielles pouvant dépasser le budget d'exécution
+  // du Cron Trigger Cloudflare et empêcher l'envoi du message Telegram (le
+  // cron remontait "Réussite" car scheduled() retournait avant la fin réelle
+  // du traitement async).
+  const FETCH_TIMEOUT_MS = 5000;
+  const fetchAndParse = async (url) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     try {
       const r = await fetch(url, {
         headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*', 'Accept-Language': 'fr-FR,fr;q=0.9', 'Referer': 'https://www.google.com/' },
-        cf: { timeout: 15000 },
+        signal: controller.signal,
       });
-      if (r.ok) {
-        const stocks = parseBRVM(await r.text());
-        if (stocks) { console.log(`BRVM.org OK (${url}): ${stocks.length} titres`); return { stocks, source: 'brvm.org' }; }
-      }
-    } catch (e) { console.warn(`BRVM.org ${url}:`, e.message); }
+      return r.ok ? parseBRVM(await r.text()) : null;
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  const results = await Promise.allSettled(BRVM_URLS.map(fetchAndParse));
+  for (let i = 0; i < results.length; i++) {
+    const res = results[i];
+    if (res.status === 'fulfilled' && res.value) {
+      console.log(`BRVM.org OK (${BRVM_URLS[i]}): ${res.value.length} titres`);
+      return { stocks: res.value, source: 'brvm.org' };
+    }
+    if (res.status === 'rejected') console.warn(`BRVM.org ${BRVM_URLS[i]}:`, res.reason?.message);
   }
 
   try {
