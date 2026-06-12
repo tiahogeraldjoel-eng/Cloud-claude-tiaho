@@ -1018,3 +1018,81 @@ def compute_derived_fundamental(prices: List[Dict]) -> Dict:
         "low_52w":    round(min(closes_list[-252:]) if n >= 252 else min(closes_list), 2),
         "count_days": n,
     }
+
+
+# ─── Saisonnalité mensuelle ───────────────────────────────────────────────────
+
+_MONTH_LABELS = ["Janv.", "Févr.", "Mars", "Avril", "Mai", "Juin",
+                 "Juill.", "Août", "Sept.", "Oct.", "Nov.", "Déc."]
+
+
+def compute_seasonality(prices: List[Dict]) -> Dict:
+    """
+    Calcule la saisonnalité mensuelle d'un titre à partir de son historique de cours.
+
+    Pour chaque mois calendaire (1-12), sur les années disponibles dans
+    l'historique :
+      - performance moyenne du mois (variation du dernier cours du mois
+        précédent au dernier cours du mois en cours)
+      - % d'années où cette performance est positive
+      - meilleure / pire performance observée
+      - n = nombre d'années avec données consécutives pour ce mois
+
+    Un mois est marqué "reliable" si n >= 7 et que le % d'années positives
+    est ≤ 30% ou ≥ 70% (équivalent approximatif à un test binomial p < 0.2
+    contre une probabilité de base de 50%).
+    """
+    if not prices:
+        return {"months": []}
+
+    # Dernier cours connu de chaque (année, mois) — les prix sont triés par
+    # date croissante, donc la dernière entrée d'un mois écrase les précédentes.
+    monthly_close: Dict[Tuple[int, int], float] = {}
+    for p in prices:
+        d = p.get("date")
+        c = p.get("close")
+        if not d or c is None:
+            continue
+        y, m = int(d[:4]), int(d[5:7])
+        monthly_close[(y, m)] = c
+
+    keys = sorted(monthly_close.keys())
+
+    returns_by_month: Dict[int, List[float]] = {m: [] for m in range(1, 13)}
+    for i in range(1, len(keys)):
+        y_prev, m_prev = keys[i - 1]
+        y_cur, m_cur   = keys[i]
+        # Mois suivant immédiat uniquement (pas de trou dans l'historique)
+        expected = (y_prev, m_prev + 1) if m_prev < 12 else (y_prev + 1, 1)
+        if (y_cur, m_cur) != expected:
+            continue
+        prev_close = monthly_close[(y_prev, m_prev)]
+        cur_close  = monthly_close[(y_cur, m_cur)]
+        if prev_close:
+            returns_by_month[m_cur].append(round((cur_close / prev_close - 1) * 100, 2))
+
+    months = []
+    for m in range(1, 13):
+        rets = returns_by_month[m]
+        n = len(rets)
+        if n == 0:
+            months.append({
+                "month": m, "label": _MONTH_LABELS[m - 1], "n": 0,
+                "pct_positive": None, "avg_return": None,
+                "best": None, "worst": None, "reliable": False,
+            })
+            continue
+        n_pos = sum(1 for r in rets if r > 0)
+        pct_positive = round(n_pos / n * 100, 1)
+        months.append({
+            "month":        m,
+            "label":        _MONTH_LABELS[m - 1],
+            "n":            n,
+            "pct_positive": pct_positive,
+            "avg_return":   round(sum(rets) / n, 2),
+            "best":         round(max(rets), 2),
+            "worst":        round(min(rets), 2),
+            "reliable":     n >= 7 and (pct_positive <= 30 or pct_positive >= 70),
+        })
+
+    return {"months": months}

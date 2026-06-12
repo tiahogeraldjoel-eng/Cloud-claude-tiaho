@@ -1108,9 +1108,11 @@ function renderRecommendationBox(containerId, reco) {
           <div class="flex items-start gap-2 text-xs px-3 py-1.5 rounded-lg ${
             f.type==='detachement'
               ? 'bg-amber-900/30 text-amber-200 border border-amber-700/40'
-              : f.positive
-                ? 'bg-green-900/30 text-green-300'
-                : 'bg-red-900/20 text-red-300'
+              : f.positive === null
+                ? 'bg-slate-800/60 text-slate-400'
+                : f.positive
+                  ? 'bg-green-900/30 text-green-300'
+                  : 'bg-red-900/20 text-red-300'
           }">
             ${f.text}
           </div>`).join('')}
@@ -1179,6 +1181,33 @@ function renderRecommendationBox(containerId, reco) {
             </div>
           </div>
           <div class="mt-2 text-xs text-slate-500 italic">${fv.interpretation||''}</div>
+        </div>`;
+      })() : ''}
+      <!-- Saisonnalité mensuelle -->
+      ${reco.seasonality && (reco.seasonality.months||[]).some(m=>m.n>0) ? (()=>{
+        const months = reco.seasonality.months;
+        const curMonth = new Date().getMonth()+1;
+        return `<div class="mt-4 rounded-lg border border-slate-700/60 bg-slate-900/40 p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-sm">📅</span>
+            <span class="text-xs font-semibold text-slate-300">Saisonnalité mensuelle (historique du titre)</span>
+          </div>
+          <div class="grid grid-cols-6 sm:grid-cols-12 gap-1.5">
+            ${months.map(m=>{
+              const isCur = m.month === curMonth;
+              if(!m.n) return `<div class="text-center"><div class="h-16 bg-slate-800/40 rounded"></div><div class="text-xs text-slate-600 mt-1">${m.label}</div></div>`;
+              const pos = m.pct_positive;
+              return `<div class="text-center ${isCur?'ring-2 ring-indigo-500 rounded':''}">
+                <div class="h-16 rounded overflow-hidden flex flex-col-reverse" title="${m.label} : ${pos}% positif sur ${m.n} ans · moyenne ${m.avg_return>=0?'+':''}${m.avg_return}%">
+                  <div style="height:${pos}%;background:#22c55e"></div>
+                  <div style="height:${100-pos}%;background:#ef4444"></div>
+                </div>
+                <div class="text-xs text-slate-400 mt-1">${m.label}</div>
+                <div class="text-xs font-bold ${m.avg_return>=0?'text-green-400':'text-red-400'}">${m.avg_return>=0?'+':''}${m.avg_return}%</div>
+              </div>`;
+            }).join('')}
+          </div>
+          <div class="mt-2 text-xs text-slate-500">Vert = % d'années en hausse ce mois · Rouge = % en baisse · cadre = mois en cours. Un facteur clé n'apparaît ci-dessus que si ≥7 ans de données et tendance nette (≥70% dans un sens).</div>
         </div>`;
       })() : ''}
       <div class="mt-3 text-xs text-slate-600 text-right">Calculé le ${new Date(reco.computed||Date.now()).toLocaleString('fr-FR')}</div>

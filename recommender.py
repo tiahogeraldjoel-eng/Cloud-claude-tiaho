@@ -17,6 +17,7 @@ Axes d'analyse :
 
 from typing import List, Dict, Optional
 import math
+from datetime import datetime
 import indicators as ind
 
 
@@ -1009,7 +1010,19 @@ def compute_recommendation(
         elif fv_mos >= -15: fv_delta = -5.0   # surcote légère → pénalité
         else:               fv_delta = -10.0  # surcote forte → pénalité forte
 
-    composite = round(max(0.0, min(100.0, composite + sekide_delta + fv_delta)), 1)
+    # Saisonnalité : tendance mensuelle historique → ±2 pts seulement si le
+    # signal est statistiquement net (≥7 ans de données, ≥70% dans un sens)
+    seasonality = ind.compute_seasonality(prices)
+    current_month_stats = None
+    seasonality_delta = 0.0
+    if seasonality.get("months"):
+        current_month_stats = seasonality["months"][datetime.now().month - 1]
+        if current_month_stats.get("reliable"):
+            pct = current_month_stats["pct_positive"]
+            if pct >= 70:   seasonality_delta = +2.0
+            elif pct <= 30: seasonality_delta = -2.0
+
+    composite = round(max(0.0, min(100.0, composite + sekide_delta + fv_delta + seasonality_delta)), 1)
     label     = _score_to_label(composite)
     cfg       = RECO_CONFIG[label]
 
@@ -1079,6 +1092,31 @@ def compute_recommendation(
                             "positive": True,
                         })
                         break
+
+    # ── Saisonnalité du mois en cours ─────────────────────────────────────────
+    if current_month_stats and current_month_stats.get("n", 0) >= 5:
+        cms = current_month_stats
+        if cms["reliable"]:
+            sens = "haussier" if cms["pct_positive"] >= 70 else "baissier"
+            emoji = "📅✅" if cms["pct_positive"] >= 70 else "📅⚠️"
+            key_factors.append({
+                "type": "saisonnalite",
+                "text": (
+                    f"{emoji} {cms['label']} historiquement {sens} pour ce titre : "
+                    f"{cms['pct_positive']:.0f}% des {cms['n']} dernières années, "
+                    f"moyenne {cms['avg_return']:+.1f}%"
+                ),
+                "positive": cms["pct_positive"] >= 70,
+            })
+        else:
+            key_factors.append({
+                "type": "saisonnalite",
+                "text": (
+                    f"📅 {cms['label']} : pas de tendance saisonnière nette "
+                    f"({cms['pct_positive']:.0f}% positif sur {cms['n']} ans, moyenne {cms['avg_return']:+.1f}%)"
+                ),
+                "positive": None,
+            })
 
     if sentiment:
         s_label = sentiment.get("label","Neutre")
@@ -1224,4 +1262,9 @@ def compute_recommendation(
         "sekide":      sekide_result,
         "data_points": tech_result["data_points"],
         "fair_value":  fv_data,
+        "seasonality": {
+            "months":            seasonality.get("months", []),
+            "current_month":     current_month_stats,
+            "seasonality_delta": seasonality_delta,
+        },
     }
