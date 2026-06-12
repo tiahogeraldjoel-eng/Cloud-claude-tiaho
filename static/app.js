@@ -1130,9 +1130,17 @@ function renderRecommendationBox(containerId, reco) {
         ${['technique','fondamentale','psychologie'].map(ax=>{
           const a=axes[ax];
           if(!a) return '';
+          const cons = a.consensus;
           return `<div class="bg-slate-900/50 rounded-lg p-3">
             <div class="font-semibold mb-2 capitalize" style="color:${scoreColor(a.score)}">${ax.charAt(0).toUpperCase()+ax.slice(1)} : ${a.score}/100</div>
             <p class="text-slate-400 mb-2 text-xs leading-snug">${a.summary||''}</p>
+            ${cons && cons.total ? `
+            <div class="flex items-center gap-2 mb-2 text-xs px-2 py-1.5 rounded bg-slate-800/60">
+              <span class="text-green-400 font-bold">${cons.haussier}↑</span>
+              <span class="text-red-400 font-bold">${cons.baissier}↓</span>
+              <span class="text-slate-500 font-bold">${cons.neutre}=</span>
+              <span class="text-slate-500 ml-auto">Confiance : <span class="font-bold text-slate-300">${cons.confidence}%</span></span>
+            </div>` : ''}
             <div class="space-y-1.5">
               ${(a.details||[]).map(d=>`
                 <div class="text-xs">

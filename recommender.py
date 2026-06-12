@@ -407,7 +407,8 @@ def score_technique(prices: List[Dict]) -> Dict:
     n      = len(closes)
     if n < 14:
         return {"score": 50, "details": [], "summary": "Données insuffisantes (< 14 jours)",
-                "data_points": n}
+                "data_points": n, "rsi_value": None,
+                "consensus": {"haussier": 0, "baissier": 0, "neutre": 0, "total": 0, "confidence": 50.0}}
 
     details = []
     total_weight = 0
@@ -553,12 +554,27 @@ def score_technique(prices: List[Dict]) -> Dict:
     else:
         summary = f"Configuration technique défavorable. Les indicateurs pointent vers une pression vendeuse."
 
+    # Décompte des critères (style "indice de confiance" Sikafinance) :
+    # chaque indicateur est classé haussier/baissier/neutre selon son score
+    n_haussier = sum(1 for d in details if d["score"] > 55)
+    n_baissier = sum(1 for d in details if d["score"] < 45)
+    n_neutre   = len(details) - n_haussier - n_baissier
+    n_directional = n_haussier + n_baissier
+    confidence = round(n_haussier / n_directional * 100, 1) if n_directional else 50.0
+
     return {
         "score":       round(score, 1),
         "details":     details,
         "summary":     summary,
         "data_points": n,
         "rsi_value":   round(rsi_val, 1) if rsi_val else None,
+        "consensus": {
+            "haussier":   n_haussier,
+            "baissier":   n_baissier,
+            "neutre":     n_neutre,
+            "total":      len(details),
+            "confidence": confidence,
+        },
     }
 
 
@@ -1215,11 +1231,12 @@ def compute_recommendation(
         "profil_label":   PROFIL_LABELS.get(profil, "Mixte"),
         "axes": {
             "technique": {
-                "score":   tech_score,
-                "label":   _score_to_label(tech_score),
-                "summary": tech_result["summary"],
-                "details": tech_result["details"],
-                "weight":  f"{round(w_tech*100)}%",
+                "score":     tech_score,
+                "label":     _score_to_label(tech_score),
+                "summary":   tech_result["summary"],
+                "details":   tech_result["details"],
+                "weight":    f"{round(w_tech*100)}%",
+                "consensus": tech_result.get("consensus"),
             },
             "fondamentale": {
                 "score":   fund_score,
