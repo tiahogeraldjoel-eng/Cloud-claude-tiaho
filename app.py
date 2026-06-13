@@ -348,15 +348,24 @@ def _refresh_data():
         return
     _state["is_refreshing"] = True
     try:
+        is_trading_day = datetime.now(timezone.utc).weekday() < 5  # 0=lundi … 4=vendredi
         result = scraper.fetch_all()
-        saved_count = len(result.get("stocks") or [])
-        _save_stocks(result["stocks"])
-        if result["market"]:
-            m = result["market"]
-            for k in ["brvm_10", "total_value", "advances", "declines",
-                       "unchanged", "total_volume"]:
-                m.setdefault(k, None)
-            db.upsert_market_data(m)
+        if is_trading_day:
+            saved_count = len(result.get("stocks") or [])
+            _save_stocks(result["stocks"])
+            if result["market"]:
+                m = result["market"]
+                for k in ["brvm_10", "total_value", "advances", "declines",
+                           "unchanged", "total_volume"]:
+                    m.setdefault(k, None)
+                db.upsert_market_data(m)
+        else:
+            # Marché fermé le week-end : les sources (afx, brvm.org...) ré-affichent
+            # souvent les cours de vendredi sous la date du jour — on ne les enregistre
+            # pas pour ne pas créer de fausses lignes "samedi/dimanche" en base et
+            # conserver les vraies données de clôture de vendredi soir.
+            saved_count = 0
+            logger.info("Week-end : cours non sauvegardés (données de vendredi conservées)")
         news = result.get("news") or []
         if news:
             db.save_news(news)
@@ -369,9 +378,9 @@ def _refresh_data():
         logger.info(f"Données rafraîchies (#{_state['refresh_count']}) — {saved_count} cours reçus")
         _check_price_alerts()
 
-        # Si le scraper n'a rien renvoyé (week-end, marché fermé, source indispo)
+        # Si le scraper n'a rien renvoyé un jour ouvré (marché fermé, source indispo)
         # et que les données en DB sont périmées (> 7 jours), lancer un rattrapage historique
-        if saved_count == 0 and not _state["history_loading"]:
+        if saved_count == 0 and is_trading_day and not _state["history_loading"]:
             cutoff = _last_brvm_trading_day()
             rows = db.get_latest_prices_all()
             stale_symbols = [

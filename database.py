@@ -302,6 +302,12 @@ def init_db() -> None:
             (name, sector, country, sym)
         )
 
+    # ── Migration 8 : supprimer les lignes "samedi/dimanche" en base ─────────
+    # La BRVM ne cote pas le week-end : ces lignes proviennent d'un ancien bug
+    # où les sources ré-affichaient les cours de vendredi sous la date du jour.
+    # strftime('%w', date) : 0 = dimanche, 6 = samedi
+    c.execute("DELETE FROM prices WHERE CAST(strftime('%w', date) AS INTEGER) IN (0, 6)")
+
     conn.commit()
 
     # ── Seed stocks (INSERT OR IGNORE — ne touche pas aux lignes existantes) ─
