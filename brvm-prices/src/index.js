@@ -248,15 +248,25 @@ export default {
       await markCronRan(env, job);
       return json({ ok: true, job, durationMs: Date.now() - started });
     }
+    // /snapshot : capture manuelle d'un instantané de clôture (KV) — utile le
+    // premier week-end, avant que runClosingBell() n'en ait posé un automatiquement
+    if (pathname === '/snapshot') {
+      const { stocks, source } = await fetchLiveStocksRaw();
+      if (source !== 'brvm.org' || !stocks.length) {
+        return json({ ok: false, error: 'Source non fiable pour un instantané', source, count: stocks.length }, 503);
+      }
+      await saveStockSnapshot(env, stocks);
+      return json({ ok: true, saved: stocks.length, source, date: new Date().toISOString().slice(0, 10) });
+    }
     if (pathname === '/portfolio') {
       const portfolio    = await getPortfolio(env);
-      const { stocks }   = await fetchLiveStocks();
+      const { stocks, source } = await fetchLiveStocks(env);
       const computed     = computePortfolioRows(portfolio, stocks);
-      return new Response(renderPortfolioHTML(computed), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+      return new Response(renderPortfolioHTML(computed, source), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     if (pathname === '/portfolio.csv') {
       const portfolio    = await getPortfolio(env);
-      const { stocks }   = await fetchLiveStocks();
+      const { stocks }   = await fetchLiveStocks(env);
       const computed     = computePortfolioRows(portfolio, stocks);
       const today        = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       return new Response(buildPortfolioCSV(computed), {
@@ -267,7 +277,7 @@ export default {
       });
     }
     if (pathname === '/' || pathname === '/stocks') {
-      const { stocks, source } = await fetchLiveStocks();
+      const { stocks, source } = await fetchLiveStocks(env);
       return json({ stocks, count: stocks.length, source, timestamp: Date.now() });
     }
     return json({ error: 'Not found' }, 404);
@@ -311,6 +321,26 @@ async function savePortfolio(env, positions) {
     positions,
     lastUpdated: new Date().toISOString(),
   }));
+}
+
+// ─── Cache cours de clôture (KV) ───────────────────────────────────────────────
+// La BRVM est fermée le week-end : fetchLiveStocks(env) restitue alors le dernier
+// instantané enregistré à la clôture (vendredi 15h30), au lieu d'interroger
+// brvm.org/Yahoo qui peuvent renvoyer des données obsolètes ou hors-sujet hors
+// séance. L'instantané est posé par runClosingBell() chaque jour ouvré.
+async function saveStockSnapshot(env, stocks) {
+  try {
+    await env.PORTFOLIO_KV.put('stocks:snapshot', JSON.stringify({
+      stocks,
+      date: new Date().toISOString().slice(0, 10),
+    }));
+  } catch (e) { console.warn('KV saveStockSnapshot échoué:', e.message); }
+}
+
+async function loadStockSnapshot(env) {
+  try {
+    return await env.PORTFOLIO_KV.get('stocks:snapshot', { type: 'json' });
+  } catch (e) { return null; }
 }
 
 // ─── Filet de secours cron (KV) ────────────────────────────────────────────────
@@ -434,10 +464,13 @@ function buildPortfolioCSV({ rows, totalVal, totalCout, totalPnl, totalPct }) {
   return [header, ...lines].join('\n');
 }
 
-function renderPortfolioHTML({ rows, totalVal, totalCout, totalPnl, totalPct }) {
+function renderPortfolioHTML({ rows, totalVal, totalCout, totalPnl, totalPct }, source) {
   const fmt  = n => Math.round(n).toLocaleString('fr-FR');
   const sign = n => n >= 0 ? '+' : '';
   const updated = new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan', dateStyle: 'long', timeStyle: 'short' });
+  const sourceNote = source?.startsWith('clôture vendredi')
+    ? ` · 🗓 Marché fermé — cours de la ${source}`
+    : '';
 
   const tr = rows.map(r => `
     <tr>
@@ -505,7 +538,7 @@ function renderPortfolioHTML({ rows, totalVal, totalCout, totalPnl, totalPct }) 
 <div class="container">
   <header>
     <h1>💼 Portefeuille BRVM</h1>
-    <p>Mis à jour le ${updated} (heure d'Abidjan) · ${rows.length} positions</p>
+    <p>Mis à jour le ${updated} (heure d'Abidjan) · ${rows.length} positions${sourceNote}</p>
   </header>
   <div class="summary">
     <div class="card"><span class="label">Valeur marchande</span><span class="value">${fmt(totalVal)} F</span></div>
@@ -608,7 +641,7 @@ async function handleTelegramCommand(update, env) {
 
     } else if (cmd === 'portfolio' || cmd === 'p') {
       const portfolio  = await getPortfolio(env);
-      const { stocks } = await fetchLiveStocks();
+      const { stocks } = await fetchLiveStocks(env);
       const { rows, totalVal, totalPnl, totalPct } = computePortfolioRows(portfolio, stocks);
       const lines = [`💼 *Portefeuille BRVM* — ${rows.length} positions`, ''];
       for (const r of rows) {
@@ -625,7 +658,7 @@ async function handleTelegramCommand(update, env) {
 
     } else if (cmd === 'export') {
       const portfolio  = await getPortfolio(env);
-      const { stocks } = await fetchLiveStocks();
+      const { stocks } = await fetchLiveStocks(env);
       const computed   = computePortfolioRows(portfolio, stocks);
       const { totalPnl, totalPct, rows } = computed;
       const csv    = buildPortfolioCSV(computed);
@@ -664,7 +697,7 @@ async function runPostFixing(env) {
     const day = new Date().getUTCDay();
     if (day === 0 || day === 6) { console.log('Weekend — scan ignoré.'); return; }
 
-    const { stocks, source } = await fetchLiveStocks();
+    const { stocks, source } = await fetchLiveStocks(env);
 
     if (!stocks.length) {
       await tg(env, [
@@ -730,7 +763,7 @@ async function runMidSession(env) {
     const day = new Date().getUTCDay();
     if (day === 0 || day === 6) return;
 
-    const { stocks, source } = await fetchLiveStocks();
+    const { stocks, source } = await fetchLiveStocks(env);
     if (!stocks.length) {
       await tg(env, '⚠️ *Mid-Session* : données indisponibles — surveillance impossible.');
       return;
@@ -825,11 +858,14 @@ async function runClosingBell(env) {
     const day = new Date().getUTCDay();
     if (day === 0 || day === 6) return;
 
-    const { stocks, source } = await fetchLiveStocks();
+    const { stocks, source } = await fetchLiveStocks(env);
     if (!stocks.length) {
       await tg(env, '⚠️ *Clôture BRVM* : données indisponibles.');
       return;
     }
+
+    // Instantané de clôture — restitué le week-end par fetchLiveStocks()
+    await saveStockSnapshot(env, stocks);
 
     const dated = stocks
       .filter(s => s.changePercent !== 0)
@@ -921,7 +957,7 @@ async function runClosingBell(env) {
 
 async function runWeeklyDigest(env) {
   try {
-    const { stocks, source } = await fetchLiveStocks();
+    const { stocks, source } = await fetchLiveStocks(env);
     if (!stocks.length) {
       await tg(env, '⚠️ *Digest hebdomadaire* : données indisponibles.');
       return;
@@ -1020,7 +1056,21 @@ async function runWeeklyDigest(env) {
 //  FETCH DONNÉES BRVM
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async function fetchLiveStocks() {
+async function fetchLiveStocks(env) {
+  // BRVM fermée le week-end → restituer la clôture de vendredi (KV) plutôt que
+  // d'interroger brvm.org/Yahoo (réponses hors-séance peu fiables).
+  const day = new Date().getUTCDay();
+  if (env && (day === 0 || day === 6)) {
+    const snapshot = await loadStockSnapshot(env);
+    if (snapshot?.stocks?.length) {
+      return { stocks: snapshot.stocks, source: `clôture vendredi ${snapshot.date}` };
+    }
+  }
+
+  return fetchLiveStocksRaw();
+}
+
+async function fetchLiveStocksRaw() {
   // Toutes les variantes BRVM.org sont tentées EN PARALLÈLE avec un timeout
   // réel (AbortController — `cf: { timeout }` n'a aucun effet sur fetch()).
   // Avant : 5 tentatives séquentielles pouvant dépasser le budget d'exécution
