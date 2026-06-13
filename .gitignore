@@ -18,8 +18,3 @@ test_output.pdf
 ngrok-config.yml
 diag.py
 logo_generator.py
-
-# Base de données — ne JAMAIS committer : un déploiement écraserait la base
-# live (à jour) par cette version figée, faisant régresser les cours/news/etc.
-brvm.db
-data/brvm.db
