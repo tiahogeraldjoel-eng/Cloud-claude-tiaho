@@ -902,6 +902,61 @@ def api_dividend_manual_delete(symbol: str):
     return {"ok": True, "symbol": symbol}
 
 
+@app.post("/api/stocks/{symbol}/price-manual")
+def api_price_manual(symbol: str, body: dict):
+    """
+    Correction manuelle du cours de clôture d'un titre — utile quand la source
+    scrapée (afx) est périmée sur un titre peu liquide.
+    Source = 'MANUEL' — prioritaire sur AFX pour cette date jusqu'à suppression.
+    """
+    symbol = symbol.upper()
+    stock  = db.get_stock(symbol)
+    if not stock:
+        return JSONResponse({"error": f"Titre {symbol} introuvable"}, 404)
+
+    close_raw = body.get("close")
+    if close_raw is None:
+        return JSONResponse({"error": "close requis"}, 400)
+    try:
+        close = float(close_raw)
+    except (TypeError, ValueError):
+        return JSONResponse({"error": "close invalide"}, 400)
+    if close <= 0:
+        return JSONResponse({"error": "close doit être > 0"}, 400)
+
+    target_date = body.get("date") or _last_brvm_trading_day()
+
+    latest = db.get_latest_price(symbol)
+    prev_close = latest["close"] if latest and latest.get("date", "") < target_date else None
+    if prev_close is None:
+        history = [p for p in db.get_prices(symbol, 30) if p["date"] < target_date]
+        prev_close = history[-1]["close"] if history else None
+
+    variation_pct = round((close / prev_close - 1) * 100, 2) if prev_close else 0.0
+
+    db.set_manual_price({
+        "symbol": symbol, "date": target_date,
+        "open": None, "high": None, "low": None, "close": close,
+        "volume": None, "market_cap": None,
+        "variation_pct": variation_pct, "reference_price": prev_close,
+    })
+    _sentiment_cache["data"] = None
+    _screener_cache["data"] = None
+    return {"symbol": symbol, "date": target_date, "close": close,
+            "variation_pct": variation_pct, "source": "MANUEL"}
+
+
+@app.delete("/api/stocks/{symbol}/price-manual")
+def api_price_manual_delete(symbol: str, date: Optional[str] = None):
+    """Supprime une correction manuelle — le cours scrapé reprend le dessus au prochain refresh."""
+    symbol = symbol.upper()
+    target_date = date or _last_brvm_trading_day()
+    db.delete_manual_price(symbol, target_date)
+    _sentiment_cache["data"] = None
+    _screener_cache["data"] = None
+    return {"ok": True, "symbol": symbol, "date": target_date}
+
+
 @app.get("/api/news")
 def api_news(limit: int = 20, source: Optional[str] = None):
     """

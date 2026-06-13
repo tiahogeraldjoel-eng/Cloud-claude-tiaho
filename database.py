@@ -308,6 +308,13 @@ def init_db() -> None:
     # strftime('%w', date) : 0 = dimanche, 6 = samedi
     c.execute("DELETE FROM prices WHERE CAST(strftime('%w', date) AS INTEGER) IN (0, 6)")
 
+    # ── Migration 9 : source du cours (AFX vs saisie manuelle de correction) ──
+    try:
+        c.execute("ALTER TABLE prices ADD COLUMN source TEXT DEFAULT 'AFX'")
+        conn.commit()
+    except Exception:
+        pass
+
     conn.commit()
 
     # ── Seed stocks (INSERT OR IGNORE — ne touche pas aux lignes existantes) ─
@@ -352,6 +359,7 @@ def upsert_price(data: Dict) -> None:
             market_cap=excluded.market_cap,
             variation_pct=excluded.variation_pct,
             reference_price=excluded.reference_price
+        WHERE prices.source IS NOT 'MANUEL'
     """, data)
     conn.commit()
     conn.close()
@@ -370,7 +378,34 @@ def upsert_prices_bulk(rows: List[Dict]) -> None:
             market_cap=excluded.market_cap,
             variation_pct=excluded.variation_pct,
             reference_price=excluded.reference_price
+        WHERE prices.source IS NOT 'MANUEL'
     """, rows)
+    conn.commit()
+    conn.close()
+
+
+def set_manual_price(data: Dict) -> None:
+    """Corrige/insère le cours de clôture d'un titre pour une date donnée.
+    Source = 'MANUEL' — prioritaire sur les données scrapées (AFX) pour cette date,
+    utile quand la source est périmée sur un titre peu liquide."""
+    conn = get_connection()
+    conn.execute("""
+        INSERT INTO prices (symbol,date,open,high,low,close,volume,market_cap,variation_pct,reference_price,source)
+        VALUES (:symbol,:date,:open,:high,:low,:close,:volume,:market_cap,:variation_pct,:reference_price,'MANUEL')
+        ON CONFLICT(symbol,date) DO UPDATE SET
+            close=excluded.close,
+            variation_pct=excluded.variation_pct,
+            reference_price=excluded.reference_price,
+            source='MANUEL'
+    """, data)
+    conn.commit()
+    conn.close()
+
+
+def delete_manual_price(symbol: str, date: str) -> None:
+    """Supprime une correction manuelle — le cours scrapé reprendra le dessus au prochain refresh."""
+    conn = get_connection()
+    conn.execute("DELETE FROM prices WHERE symbol=? AND date=? AND source='MANUEL'", (symbol.upper(), date))
     conn.commit()
     conn.close()
 

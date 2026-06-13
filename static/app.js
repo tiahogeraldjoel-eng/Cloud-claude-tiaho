@@ -1231,6 +1231,35 @@ function scoreColor(s) {
   return '#ef4444';
 }
 
+// ─── CORRECTION MANUELLE DU COURS ─────────────────────────────────────────────
+async function correctPrice(symbol) {
+  if(!symbol) return;
+  const last = await api(`/api/stocks/${symbol}/prices?days=5`).catch(()=>null);
+  const current = last?.prices?.at(-1)?.close;
+  const input = prompt(
+    `Cours actuel de ${symbol} : ${current!=null?fmt(current,0)+' FCFA':'inconnu'}\n` +
+    `Saisir le cours correct (dernière clôture réelle) :`,
+    current!=null ? String(current) : ''
+  );
+  if(input === null) return;
+  const close = parseFloat(input.replace(',','.'));
+  if(isNaN(close) || close <= 0) { toast('Valeur invalide', 2000); return; }
+
+  try {
+    const r = await fetch(`/api/stocks/${symbol}/price-manual`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ close })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Erreur serveur');
+    toast(`${symbol} — cours corrigé : ${fmt(d.close,0)} FCFA`, 3000);
+    loadTechnical(symbol);
+  } catch(e) {
+    toast(`Erreur : ${e.message}`, 3000);
+  }
+}
+
 // ─── DIVIDENDE MANUEL ────────────────────────────────────────────────────────
 function _syncTechIfActive(symbol) {
   if (STATE.techSymbol !== symbol) return;
