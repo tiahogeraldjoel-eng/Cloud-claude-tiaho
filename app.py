@@ -350,22 +350,27 @@ def _refresh_data():
     try:
         is_trading_day = datetime.now(timezone.utc).weekday() < 5  # 0=lundi … 4=vendredi
         result = scraper.fetch_all()
-        if is_trading_day:
-            saved_count = len(result.get("stocks") or [])
-            _save_stocks(result["stocks"])
-            if result["market"]:
-                m = result["market"]
-                for k in ["brvm_10", "total_value", "advances", "declines",
-                           "unchanged", "total_volume"]:
-                    m.setdefault(k, None)
-                db.upsert_market_data(m)
-        else:
+        stocks = result.get("stocks") or []
+        saved_count = len(stocks)
+        if not is_trading_day:
             # Marché fermé le week-end : les sources (afx, brvm.org...) ré-affichent
-            # souvent les cours de vendredi sous la date du jour — on ne les enregistre
-            # pas pour ne pas créer de fausses lignes "samedi/dimanche" en base et
-            # conserver les vraies données de clôture de vendredi soir.
-            saved_count = 0
-            logger.info("Week-end : cours non sauvegardés (données de vendredi conservées)")
+            # les cours de vendredi sous la date du jour — on les enregistre sous la
+            # vraie date de clôture de vendredi (mise à jour de cette ligne), pour que
+            # le site affiche les cours de vendredi soir pendant tout le week-end,
+            # sans créer de fausse ligne "samedi/dimanche".
+            last_session = _last_brvm_trading_day()
+            for s in stocks:
+                s["date"] = last_session
+            if result.get("market"):
+                result["market"]["date"] = last_session
+            logger.info(f"Week-end : cours enregistrés sous la date de clôture {last_session}")
+        _save_stocks(stocks)
+        if result.get("market"):
+            m = result["market"]
+            for k in ["brvm_10", "total_value", "advances", "declines",
+                       "unchanged", "total_volume"]:
+                m.setdefault(k, None)
+            db.upsert_market_data(m)
         news = result.get("news") or []
         if news:
             db.save_news(news)
