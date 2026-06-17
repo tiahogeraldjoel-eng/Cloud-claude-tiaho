@@ -3,7 +3,7 @@ BRVM Analytics — Backend FastAPI
 Routes: /api/stocks, /api/market, /api/recommendation, /api/sentiment
 Planificateur APScheduler : mise à jour toutes les heures en semaine.
 """
-import logging, os, smtplib, statistics, threading, time
+import logging, os, smtplib, socket, statistics, threading, time
 from datetime import datetime, timezone, timedelta, date as _date
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -1738,17 +1738,26 @@ def _notify_email(subject: str, body: str) -> None:
     if not user or not pwd or not to:
         logger.warning("Notification alerte non envoyée (email) : GMAIL_USER/GMAIL_APP_PASSWORD absents")
         return
+    # Render ne route pas l'IPv6 sortant ; smtp.gmail.com publie une adresse AAAA
+    # que la résolution DNS standard préfère, d'où "[Errno 101] Network is
+    # unreachable". On force temporairement la résolution en IPv4.
+    orig_getaddrinfo = socket.getaddrinfo
+    def _ipv4_only(host, port, family=0, type=0, proto=0, flags=0):
+        return orig_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
     try:
         msg = EmailMessage()
         msg["Subject"] = subject
         msg["From"]    = user
         msg["To"]      = to
         msg.set_content(body)
+        socket.getaddrinfo = _ipv4_only
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as smtp:
             smtp.login(user, pwd)
             smtp.send_message(msg)
     except Exception as e:
         logger.warning(f"Erreur envoi email: {e}")
+    finally:
+        socket.getaddrinfo = orig_getaddrinfo
 
 
 def _check_price_alerts():
