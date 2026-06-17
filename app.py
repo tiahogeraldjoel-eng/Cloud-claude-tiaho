@@ -3,11 +3,12 @@ BRVM Analytics — Backend FastAPI
 Routes: /api/stocks, /api/market, /api/recommendation, /api/sentiment
 Planificateur APScheduler : mise à jour toutes les heures en semaine.
 """
-import logging, os, statistics, threading, time
+import logging, os, smtplib, statistics, threading, time
 from datetime import datetime, timezone, timedelta, date as _date
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from email.message import EmailMessage
 from io import BytesIO
 
 import requests
@@ -1713,7 +1714,7 @@ def _notify_telegram(text: str) -> None:
     token   = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
     if not token or not chat_id:
-        logger.warning("Notification alerte non envoyée : TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID absents")
+        logger.warning("Notification alerte non envoyée (Telegram) : TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID absents")
         return
     try:
         requests.post(
@@ -1723,6 +1724,29 @@ def _notify_telegram(text: str) -> None:
         )
     except Exception as e:
         logger.warning(f"Erreur envoi Telegram: {e}")
+
+
+def _notify_email(subject: str, body: str) -> None:
+    """Envoie un email via SMTP Gmail — canal de secours en plus de Telegram.
+    Nécessite un mot de passe d'application Gmail (pas le mot de passe du compte) :
+    https://myaccount.google.com/apppasswords"""
+    user = os.environ.get("GMAIL_USER")
+    pwd  = os.environ.get("GMAIL_APP_PASSWORD")
+    to   = os.environ.get("EMAIL_TO", user)
+    if not user or not pwd or not to:
+        logger.warning("Notification alerte non envoyée (email) : GMAIL_USER/GMAIL_APP_PASSWORD absents")
+        return
+    try:
+        msg = EmailMessage()
+        msg["Subject"] = subject
+        msg["From"]    = user
+        msg["To"]      = to
+        msg.set_content(body)
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as smtp:
+            smtp.login(user, pwd)
+            smtp.send_message(msg)
+    except Exception as e:
+        logger.warning(f"Erreur envoi email: {e}")
 
 
 def _check_price_alerts():
@@ -1750,6 +1774,11 @@ def _check_price_alerts():
                     f"🔔 *Alerte BRVM Analytics*\n"
                     f"*{alert['symbol']}* a atteint {price:,.0f} FCFA "
                     f"({sens} cible {alert['target_price']:,.0f} FCFA)"
+                )
+                _notify_email(
+                    f"🔔 Alerte BRVM — {alert['symbol']}",
+                    f"{alert['symbol']} a atteint {price:,.0f} FCFA "
+                    f"({sens} cible {alert['target_price']:,.0f} FCFA)."
                 )
         if triggered:
             _sentiment_cache["data"] = None
