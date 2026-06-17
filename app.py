@@ -3,12 +3,14 @@ BRVM Analytics — Backend FastAPI
 Routes: /api/stocks, /api/market, /api/recommendation, /api/sentiment
 Planificateur APScheduler : mise à jour toutes les heures en semaine.
 """
-import logging, statistics, threading, time
+import logging, os, statistics, threading, time
 from datetime import datetime, timezone, timedelta, date as _date
 from pathlib import Path
 from typing import Dict, List, Optional
 
 from io import BytesIO
+
+import requests
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
@@ -1705,6 +1707,24 @@ def api_delete_alert(alert_id: int):
     return {"message": "Alerte supprimée"}
 
 
+def _notify_telegram(text: str) -> None:
+    """Envoie un message via le bot Telegram déjà utilisé par le scanner pré-ouverture
+    (mêmes secrets TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID, configurés sur Render)."""
+    token   = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        logger.warning("Notification alerte non envoyée : TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID absents")
+        return
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
+            timeout=10,
+        )
+    except Exception as e:
+        logger.warning(f"Erreur envoi Telegram: {e}")
+
+
 def _check_price_alerts():
     """Vérifie les alertes actives après chaque refresh de cours."""
     try:
@@ -1722,10 +1742,14 @@ def _check_price_alerts():
             if hit:
                 db.trigger_price_alert(alert["id"])
                 triggered.append(alert)
+                sens = "≥" if alert["direction"] == "above" else "≤"
                 logger.info(
-                    f"ALERTE {alert['symbol']} : cours {price} FCFA "
-                    f"{'≥' if alert['direction']=='above' else '≤'} "
-                    f"cible {alert['target_price']} FCFA"
+                    f"ALERTE {alert['symbol']} : cours {price} FCFA {sens} cible {alert['target_price']} FCFA"
+                )
+                _notify_telegram(
+                    f"🔔 *Alerte BRVM Analytics*\n"
+                    f"*{alert['symbol']}* a atteint {price:,.0f} FCFA "
+                    f"({sens} cible {alert['target_price']:,.0f} FCFA)"
                 )
         if triggered:
             _sentiment_cache["data"] = None
