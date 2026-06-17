@@ -1730,9 +1730,11 @@ def _notify_email(subject: str, body: str) -> None:
     """Envoie un email via SMTP Gmail — canal de secours en plus de Telegram.
     Nécessite un mot de passe d'application Gmail (pas le mot de passe du compte) :
     https://myaccount.google.com/apppasswords"""
-    user = os.environ.get("GMAIL_USER")
-    pwd  = os.environ.get("GMAIL_APP_PASSWORD")
-    to   = os.environ.get("EMAIL_TO", user)
+    user = (os.environ.get("GMAIL_USER") or "").strip()
+    # Gmail affiche le mot de passe d'application avec des espaces (lisibilité) ;
+    # l'API SMTP attend les 16 caractères sans espace.
+    pwd  = (os.environ.get("GMAIL_APP_PASSWORD") or "").replace(" ", "")
+    to   = (os.environ.get("EMAIL_TO") or user).strip()
     if not user or not pwd or not to:
         logger.warning("Notification alerte non envoyée (email) : GMAIL_USER/GMAIL_APP_PASSWORD absents")
         return
