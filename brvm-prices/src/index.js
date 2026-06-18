@@ -1070,7 +1070,7 @@ async function fetchLiveStocks(env) {
   return fetchLiveStocksRaw();
 }
 
-async function fetchLiveStocksRaw() {
+async function fetchLiveStocksRaw(retried = false) {
   // Toutes les variantes BRVM.org sont tentées EN PARALLÈLE avec un timeout
   // réel (AbortController — `cf: { timeout }` n'a aucun effet sur fetch()).
   // Avant : 5 tentatives séquentielles pouvant dépasser le budget d'exécution
@@ -1106,6 +1106,15 @@ async function fetchLiveStocksRaw() {
     const stocks = await fetchYahoo();
     if (stocks) { console.log(`Yahoo Finance OK: ${stocks.length} titres`); return { stocks, source: 'yahoo-finance' }; }
   } catch (e) { console.warn('Yahoo Finance:', e.message); }
+
+  // Panne transitoire observée pile aux horaires de cron (13h30/15h30) — brvm.org
+  // répond normalement quelques minutes plus tard. Une seule nouvelle tentative
+  // après un court délai avant d'abandonner et d'envoyer "données indisponibles".
+  if (!retried) {
+    console.warn('BRVM.org + Yahoo indisponibles — nouvelle tentative dans 4s.');
+    await new Promise(r => setTimeout(r, 4000));
+    return fetchLiveStocksRaw(true);
+  }
 
   return { stocks: [], source: 'unavailable' };
 }
