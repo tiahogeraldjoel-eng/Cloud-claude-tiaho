@@ -284,19 +284,26 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    console.log('CRON déclenché :', event.cron, new Date().toISOString());
+    const d = new Date(event.scheduledTime);
+    console.log('CRON déclenché :', event.cron, d.toISOString());
     // S'assurer que le webhook Telegram est enregistré à chaque cron
     ctx.waitUntil(ensureWebhook(env));
     // Plan gratuit Cloudflare = 3 crons max → digest vendredi fusionné dans le cron 15h30
     // runAndMark pose un flag KV (cf. cronAlreadyRan) UNIQUEMENT si le job va au bout —
     // le filet de secours GitHub Actions (/run/<job>?backup=1) s'appuie sur ce flag.
-    if (event.cron === '15 10 * * 1-5') ctx.waitUntil(runAndMark(env, 'post-fixing', runPostFixing));
-    else if (event.cron === '30 13 * * 1-5') ctx.waitUntil(runAndMark(env, 'mid-session', runMidSession));
-    else if (event.cron === '30 15 * * 1-5') {
+    // Dispatch sur l'heure réelle de déclenchement (scheduledTime), pas sur la chaîne
+    // event.cron — Cloudflare numérote les jours 1=dimanche...7=samedi (pas 0=dimanche
+    // comme le cron Unix standard), ce qui a un temps rendu "1-5" équivalent à
+    // dim-jeu au lieu de lun-ven. D'où l'usage de MON-FRI dans wrangler.toml désormais,
+    // mais on évite ici toute dépendance à la représentation exacte de la chaîne cron.
+    const hm = `${d.getUTCHours()}:${d.getUTCMinutes()}`;
+    if (hm === '10:15') ctx.waitUntil(runAndMark(env, 'post-fixing', runPostFixing));
+    else if (hm === '13:30') ctx.waitUntil(runAndMark(env, 'mid-session', runMidSession));
+    else if (hm === '15:30') {
       ctx.waitUntil(runAndMark(env, 'closing', runClosingBell));
-      if (new Date().getUTCDay() === 5) ctx.waitUntil(runAndMark(env, 'weekly-digest', runWeeklyDigest));
+      if (d.getUTCDay() === 5) ctx.waitUntil(runAndMark(env, 'weekly-digest', runWeeklyDigest));
     }
-    else console.warn('Cron non reconnu :', event.cron);
+    else console.warn('Cron non reconnu :', event.cron, hm);
   },
 };
 
