@@ -1,0 +1,51 @@
+name: BRVM Cron Backup
+
+# Filet de secours : si le Cron Trigger Cloudflare ne s'est pas déclenché
+# aujourd'hui, déclenche le job via l'endpoint /run/<job>?backup=1 du Worker
+# (Cloudflare edge fait le fetch BRVM.org — pas de geo-blocking GitHub Actions).
+# Si le cron Cloudflare a déjà tourné jusqu'au bout (flag KV posé), le Worker
+# répond "skipped: true" et ne renvoie pas d'alerte en double.
+#
+# Horaires décalés de 15 min après les crons Cloudflare (10h15 / 13h30 / 15h30 GMT)
+# pour leur laisser le temps de s'exécuter normalement.
+
+on:
+  schedule:
+    - cron: '30 10 * * 1-5'   # backup post-fixing
+    - cron: '45 13 * * 1-5'   # backup mid-session
+    - cron: '45 15 * * 1-5'   # backup closing (+ weekly-digest le vendredi)
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Job à vérifier (post-fixing, mid-session, closing, weekly-digest)'
+        required: false
+        default: 'post-fixing'
+
+jobs:
+  backup:
+    name: Vérifier et relancer si besoin
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Déterminer le(s) job(s) à vérifier
+        id: jobs
+        run: |
+          case "${{ github.event.schedule }}" in
+            '30 10 * * 1-5') echo "jobs=post-fixing" >> "$GITHUB_OUTPUT" ;;
+            '45 13 * * 1-5') echo "jobs=mid-session" >> "$GITHUB_OUTPUT" ;;
+            '45 15 * * 1-5')
+              if [ "$(date -u +%u)" = "5" ]; then
+                echo "jobs=closing weekly-digest" >> "$GITHUB_OUTPUT"
+              else
+                echo "jobs=closing" >> "$GITHUB_OUTPUT"
+              fi
+              ;;
+            *) echo "jobs=${{ github.event.inputs.job || 'post-fixing' }}" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Appeler le filet de secours
+        run: |
+          for job in ${{ steps.jobs.outputs.jobs }}; do
+            echo "→ Vérification du job: $job"
+            curl -sf "https://brvm-prices.tiahogeraldjoel.workers.dev/run/${job}?backup=1" | python3 -m json.tool
+          done
