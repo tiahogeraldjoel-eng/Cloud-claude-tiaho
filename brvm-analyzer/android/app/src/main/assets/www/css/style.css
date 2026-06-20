@@ -553,3 +553,23 @@ canvas { max-width: 100%; }
 ::-webkit-scrollbar { width: 2px; height: 2px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 1px; }
+
+/* ===== GRAPHIFY PLUGIN ===== */
+.graphify-tab { background: linear-gradient(135deg, #1B4F72, #2E86AB) !important; color: #fff !important; }
+.graphify-tab.active { background: linear-gradient(135deg, #2E86AB, #00C896) !important; }
+
+.graphify-panel { padding: 4px 0; }
+.graphify-section {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.graphify-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
