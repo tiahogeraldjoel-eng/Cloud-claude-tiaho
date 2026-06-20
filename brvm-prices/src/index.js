@@ -330,6 +330,23 @@ async function savePortfolio(env, positions) {
   }));
 }
 
+// ─── Objectifs de vente (KV) ───────────────────────────────────────────────────
+// Snapshot des cibles "Objectif" (reco.sortie, positions CONSERVER) posé à chaque
+// clôture, comparé au cours du jour suivant pour détecter qu'il a été franchi.
+// Une cible calculée sur le cours du jour même (sortie = price × 1.0x) serait
+// toujours au-dessus du cours actuel — donc jamais "atteinte" sans ce décalage.
+async function getObjectifs(env) {
+  try {
+    return await env.PORTFOLIO_KV.get('objectifs', { type: 'json' }) || {};
+  } catch (e) { return {}; }
+}
+
+async function saveObjectifs(env, objectifs) {
+  try {
+    await env.PORTFOLIO_KV.put('objectifs', JSON.stringify(objectifs));
+  } catch (e) { console.warn('KV saveObjectifs échoué:', e.message); }
+}
+
 // ─── Cache cours de clôture (KV) ───────────────────────────────────────────────
 // La BRVM est fermée le week-end : fetchLiveStocks(env) restitue alors le dernier
 // instantané enregistré à la clôture (vendredi 15h30), au lieu d'interroger
@@ -886,12 +903,14 @@ async function runClosingBell(env) {
     const positions = portfolio.map(pos => {
       const stock = stocks.find(s => s.symbol === pos.symbol);
       if (!stock) return null;
+      const pnlTotal = (stock.price - pos.avgCost) / pos.avgCost * 100;
       return {
         ...pos,
         currentPrice: stock.price,
         chgDay:   stock.changePercent,
-        pnlTotal: (stock.price - pos.avgCost) / pos.avgCost * 100,
+        pnlTotal,
         pnlFcfa:  (stock.price - pos.avgCost) * pos.qty,
+        reco: getRecommendation(pnlTotal, stock.price, pos.avgCost, KNOWN_STOCKS[pos.symbol]?.liq),
       };
     }).filter(Boolean);
 
@@ -904,6 +923,20 @@ async function runClosingBell(env) {
       const stopPct = STOP_LOSS_BY_LIQ[KNOWN_STOCKS[p.symbol]?.liq] ?? -3;
       return p.currentPrice <= p.avgCost * (1 + stopPct / 100);
     });
+
+    // Objectifs de vente atteints — voir getObjectifs/saveObjectifs ci-dessus
+    const prevObjectifs = await getObjectifs(env);
+    const objectifsHit  = [];
+    const nextObjectifs = {};
+    for (const p of positions) {
+      if (p.reco.label === 'CONSERVER') {
+        const prev = prevObjectifs[p.symbol];
+        if (prev && p.currentPrice >= prev.sortie) objectifsHit.push({ ...p, objectif: prev.sortie });
+        nextObjectifs[p.symbol] = { sortie: p.reco.sortie };
+      }
+    }
+    await saveObjectifs(env, nextObjectifs);
+
     const dayWinners  = positions.filter(p => p.chgDay > 0).sort((a, b) => b.chgDay - a.chgDay).slice(0, 3);
     const dayLosers   = positions.filter(p => p.chgDay < 0).sort((a, b) => a.chgDay - b.chgDay).slice(0, 3);
 
@@ -947,6 +980,13 @@ async function runClosingBell(env) {
       lines.push('', '🛑 *STOP-LOSS FRANCHIS — décision requise demain :*');
       stopsHit.forEach(p => lines.push(
         `  • *${p.symbol}* @ ${p.currentPrice.toLocaleString()} F (coût moy. ${p.avgCost.toLocaleString()} F) · *${p.pnlTotal.toFixed(1)}%*`
+      ));
+    }
+
+    if (objectifsHit.length) {
+      lines.push('', '🎯 *OBJECTIF DE VENTE ATTEINT :*');
+      objectifsHit.forEach(p => lines.push(
+        `  • *${p.symbol}* @ ${p.currentPrice.toLocaleString()} F (objectif ${Math.round(p.objectif).toLocaleString()} F) · *${p.pnlTotal >= 0 ? '+' : ''}${p.pnlTotal.toFixed(1)}%*`
       ));
     }
 
