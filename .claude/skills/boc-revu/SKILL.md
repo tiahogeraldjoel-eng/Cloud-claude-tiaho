@@ -49,3 +49,23 @@ Analyse le carnet d'ordres résiduel (Achat vs Vente) des principaux titres pour
 - Risques identifiés à court terme.
 - Plan d'action immédiat : ACHETER / ATTENDRE / ÉVITER.
 - Disclaimer légal final : document à but pédagogique, ne constitue pas un conseil personnalisé en investissement.
+
+## Livrables
+
+En plus de la réponse en conversation, produis systématiquement les fichiers suivants dans `reports/` (nommage `BOC-<numéro>-<date ISO>-BOC_REVU.<ext>`) :
+
+1. `.md` — le rapport complet en Markdown (les 7 étapes).
+2. `.html` — la même synthèse avec mise en couleur (voir gabarit ci-dessous), pour une lecture rapide à fort contraste visuel.
+3. `.pdf` — généré à partir du `.html` via `wkhtmltopdf --enable-local-file-access <fichier>.html <fichier>.pdf` (installer au besoin avec `apt-get install -y wkhtmltopdf`). Envoie ce PDF à l'utilisateur avec l'outil d'envoi de fichier.
+
+### Gabarit de mise en couleur (HTML)
+
+Code couleur constant à respecter dans le `.html` :
+- **Vert** (`#1a7f37`) : variations positives, secteur le plus solide, recommandation **ACHETER**, Top 3.
+- **Rouge** (`#cf222e`) : variations négatives, secteur le plus faible, recommandation **ÉVITER**, titres chers/risque de bulle, section Risques.
+- **Orange/ambre** (`#bf8700`) : recommandation **ATTENDRE**, avertissements (Profit Warning, anomalies à ne pas extrapoler).
+- **Bleu marine** (`#0b3d91`) : titres `h1`/`h2`, en-têtes de tableaux (fond bleu marine, texte blanc).
+- Tableaux Markdown → tableaux HTML avec lignes alternées (`#f6f8fa` sur les lignes paires) pour la lisibilité.
+- Les recommandations ACHETER/ATTENDRE/ÉVITER en badges (fond coloré plein, texte blanc, coins arrondis).
+
+Garde la structure des 7 étapes identique entre le `.md` et le `.html` — le HTML est une mise en forme visuelle de la même analyse, jamais une version différente ou simplifiée.
