@@ -123,49 +123,49 @@ const YAHOO_REV = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b,y]) => [y
 const KNOWN_STOCKS = {
   ABJC:  { name: 'Servair CI',                   avgVol:   551, refPrice:  3250,  liq:'M' },
   BICC:  { name: 'BICICI CI (BNP Paribas)',       avgVol:   180, refPrice:  5500,  liq:'L' },
-  BICB:  { name: 'BIIC Bénin',                           avgVol:   200, refPrice:  5_590,  liq:'L' },
+  BICB:  { name: 'BIIC Bénin',                           avgVol:   200, refPrice:  5_700,  liq:'L' },
   BNBC:  { name: 'Bernabé CI',                    avgVol:  4650, refPrice:  1700,  liq:'M' },
-  BOAB:  { name: 'Bank of Africa Bénin',          avgVol:   980, refPrice:  8_745,  liq:'M' },
-  BOABF: { name: 'Bank of Africa Burkina Faso',   avgVol:   180, refPrice:  5_595,  liq:'L' },
-  BOAC:  { name: "Bank of Africa Côte d'Ivoire",  avgVol:  2800, refPrice:  8_890,  liq:'M' },
+  BOAB:  { name: 'Bank of Africa Bénin',          avgVol:   980, refPrice:  8_950,  liq:'M' },
+  BOABF: { name: 'Bank of Africa Burkina Faso',   avgVol:   180, refPrice:  5_600,  liq:'L' },
+  BOAC:  { name: "Bank of Africa Côte d'Ivoire",  avgVol:  2800, refPrice:  9_100,  liq:'M' },
   BOAM:  { name: 'Bank of Africa Mali',           avgVol:    95, refPrice:  4_630,  liq:'L' },
   BOAN:  { name: 'Bank of Africa Niger',          avgVol:   380, refPrice:  3_740,  liq:'L' },
   BOAS:  { name: 'Bank of Africa Sénégal',        avgVol:   750, refPrice:  7_400,  liq:'M' },
   CABC:  { name: 'SICABLE CI',                    avgVol:   820, refPrice:  2850,  liq:'M' },
-  CBIBF: { name: 'Coris Bank International BF',   avgVol:   580, refPrice: 21_500,  liq:'M' },
+  CBIBF: { name: 'Coris Bank International BF',   avgVol:   580, refPrice: 21_995,  liq:'M' },
   CFAC:  { name: 'CFAO Motors CI',                avgVol:   580, refPrice:  4800,  liq:'M' },
   ECOC:  { name: "Ecobank Côte d'Ivoire",         avgVol:   650, refPrice: 16_800,  liq:'M' },
   ETIT:  { name: 'Ecobank Transnational (ETI)',   avgVol: 98000, refPrice:     33,  liq:'H' },
   NEIC:  { name: 'NEI-CEDA CI',                   avgVol:   800, refPrice:   620,  liq:'M' },
-  NSBC:  { name: 'NSIA Banque CI',                avgVol:   950, refPrice: 19_250,  liq:'M' },
+  NSBC:  { name: 'NSIA Banque CI',                avgVol:   950, refPrice: 19_500,  liq:'M' },
   NTLC:  { name: 'Nestlé CI',                     avgVol:   660, refPrice: 14_225,  liq:'M' },
   ONAT:  { name: 'Onatel BF',                     avgVol:   310, refPrice:  4950,  liq:'L' },
   ORAC:  { name: "Orange Côte d'Ivoire",          avgVol:  5400, refPrice: 14750,  liq:'H' },
   ORGT:  { name: 'Oragroup',                      avgVol:   980, refPrice:  2650,  liq:'M' },
   PALC:  { name: 'PALM-CI',                       avgVol:  2200, refPrice:  7800,  liq:'M' },
   PRSC:  { name: 'Tractafric Motor CI',           avgVol:   104, refPrice:  4100,  liq:'L' },
-  SAFC:  { name: 'SAFCA',                         avgVol:   516, refPrice:  3_700,  liq:'M' },
+  SAFC:  { name: 'SAFCA',                         avgVol:   516, refPrice:  4_480,  liq:'M' },
   SAPH:  { name: 'SAPH CI',                       avgVol:   850, refPrice:  5100,  liq:'M' },
   SCRC:  { name: 'Sucrivoire CI',                 avgVol:   560, refPrice:   680,  liq:'M' },
-  SDSC:  { name: 'AGL CI — Africa Global Logistics (ex-Bolloré)', avgVol: 1200, refPrice:  2_000,  liq:'M' },
+  SDSC:  { name: 'AGL CI — Africa Global Logistics (ex-Bolloré)', avgVol: 1200, refPrice:  2_500,  liq:'M' },
   SEMC:  { name: 'Crown Siem CI',                 avgVol:  3800, refPrice:   680,  liq:'M' },
   SGBC:  { name: 'Société Générale CI',           avgVol:   720, refPrice: 12500,  liq:'M' },
   SHEC:  { name: 'Vivo Energie CI',               avgVol:  1612, refPrice:  1915,  liq:'M' },
   SIAC:  { name: 'SIFCA CI',                      avgVol:  1500, refPrice:  4200,  liq:'M' },
-  SIBC:  { name: 'SIB CI',                        avgVol:  1400, refPrice:  8_510,  liq:'M' },
+  SIBC:  { name: 'SIB CI',                        avgVol:  1400, refPrice:  8_890,  liq:'M' },
   SICC:  { name: 'SICOR CI',                      avgVol:   220, refPrice:  3800,  liq:'L' },
   SIPH:  { name: "SIPH CI Plantations d'Hévéas", avgVol:   290, refPrice:  8900,  liq:'L' },
-  SIVC:  { name: "Erium Côte d'Ivoire (ex-Air Liquide CI)", avgVol: 240, refPrice:  2_845,  liq:'L' },
+  SIVC:  { name: "Erium Côte d'Ivoire (ex-Air Liquide CI)", avgVol: 240, refPrice:  2_650,  liq:'L' },
   SLBC:  { name: 'Solibra CI',                    avgVol:    30, refPrice:120000,  liq:'L' },
-  SMBC:  { name: 'SMB CI',                        avgVol:   120, refPrice: 15_380,  liq:'L' },
-  SNTS:  { name: 'Sonatel (Orange Sénégal)',      avgVol:  3800, refPrice: 15800,  liq:'M' },
+  SMBC:  { name: 'SMB CI',                        avgVol:   120, refPrice: 16_500,  liq:'L' },
+  SNTS:  { name: 'Sonatel (Orange Sénégal)',      avgVol:  3800, refPrice: 28_600,  liq:'M' },
   SOGB:  { name: 'SOGB CI',                       avgVol:   520, refPrice:  8_490,  liq:'M' },
   SPHC:  { name: 'SAPH CI (pref.)',               avgVol:    85, refPrice:  4200,  liq:'L' },
   STAC:  { name: 'SETAO CI',                      avgVol:  1670, refPrice:  3100,  liq:'M' },
-  STBC:  { name: 'SITAB CI',                      avgVol:   497, refPrice: 21_900,  liq:'M' },
+  STBC:  { name: 'SITAB CI',                      avgVol:   497, refPrice: 22_310,  liq:'M' },
   SVOC:  { name: 'SVO CI',                        avgVol:   680, refPrice:  2200,  liq:'M' },
   TPCI:  { name: 'Tropical Partners CI',          avgVol:    60, refPrice:  1100,  liq:'L' },
-  TTLC:  { name: 'TotalEnergies CI',              avgVol:  2800, refPrice:  2_805,  liq:'M' },
+  TTLC:  { name: 'TotalEnergies CI',              avgVol:  2800, refPrice:  2_780,  liq:'M' },
   TTLS:  { name: 'TotalEnergies Sénégal',         avgVol:  1200, refPrice:  2100,  liq:'M' },
   UNLC:  { name: 'Unilever CI',                   avgVol:  1100, refPrice:  5600,  liq:'M' },
   UNXC:  { name: "Uniwax Côte d'Ivoire",          avgVol:   260, refPrice:  1_905,  liq:'L' },
@@ -1124,7 +1124,16 @@ async function fetchLiveStocks(env) {
     }
   }
 
-  return fetchLiveStocksRaw();
+  const live = await fetchLiveStocksRaw();
+  if (live.stocks.length || !env) return live;
+
+  // brvm.org et Yahoo indisponibles (hors séance, panne…) → dernier instantané
+  // connu plutôt que le refPrice générique de KNOWN_STOCKS (bien plus stale).
+  const snapshot = await loadStockSnapshot(env);
+  if (snapshot?.stocks?.length) {
+    return { stocks: snapshot.stocks, source: `dernier instantané (${snapshot.date})` };
+  }
+  return live;
 }
 
 async function fetchLiveStocksRaw(retried = false) {
