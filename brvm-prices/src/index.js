@@ -28,7 +28,7 @@ const WARN_STOP_PCT    = 0.01;      // alerter si prix ≤ stopLoss + 1%
 // Seuils par liquidité — getThresholds() les utilise
 const THRESH = {
   H: { mpr: 2.5, obi: 0.85 },  // avgVol ≥ 5 000  (ETIT, ORAC…)
-  M: { mpr: 2.0, obi: 0.75 },  // avgVol 500–4 999 (SIBC, BOACI…)
+  M: { mpr: 2.0, obi: 0.75 },  // avgVol 500–4 999 (SIBC, BOAC…)
   L: { mpr: 3.5, obi: 0.90 },  // avgVol < 500     (SLBC, SMBC…)
 };
 
@@ -36,25 +36,19 @@ const THRESH = {
 // Mettre à jour après chaque achat / vente
 
 const USER_PORTFOLIO = [
-  { symbol: 'SAFC',  qty:    5, avgCost:  3_745 },
+  { symbol: 'SAFC',  qty:   25, avgCost:  3_844 },
   { symbol: 'STBC',  qty:   23, avgCost: 21_115 },
-  { symbol: 'SOGB',  qty:   78, avgCost:  8_020 },
   { symbol: 'SMBC',  qty:   50, avgCost: 11_817 },
-  { symbol: 'NTLC',  qty:   20, avgCost: 11_048 },
-  { symbol: 'UNXC',  qty:  100, avgCost:  1_957 },
-  { symbol: 'SIVC',  qty:   61, avgCost:  2_757 },
-  { symbol: 'BOAB',  qty:   40, avgCost:  5_648 },
+  { symbol: 'SNTS',  qty:   64, avgCost: 29_348 },
+  { symbol: 'SIVC',  qty:   10, avgCost:  2_737 },
+  { symbol: 'BOAB',  qty:   60, avgCost:  6_701 },
   { symbol: 'TTLC',  qty:  117, avgCost:  2_834 },
-  { symbol: 'BOAN',  qty:   30, avgCost:  2_677 },
-  { symbol: 'ETIT',  qty: 4000, avgCost:     16 },
-  { symbol: 'SDSC',  qty:  250, avgCost:  1_575 },
-  { symbol: 'BOACI', qty:  115, avgCost:  7_488 },
-  { symbol: 'BOABF', qty:   67, avgCost:  4_737 },
-  { symbol: 'BOAS',  qty:   20, avgCost:  7_447 },
-  { symbol: 'BOAM',  qty:   30, avgCost:  4_834 },
+  { symbol: 'SDSC',  qty:  200, avgCost:  1_575 },
+  { symbol: 'BOAC',  qty:  115, avgCost:  7_488 },
+  { symbol: 'BOABF', qty:  100, avgCost:  5_005 },
   { symbol: 'SIBC',  qty:   78, avgCost:  6_337 },
-  { symbol: 'CBBF',  qty:   30, avgCost: 10_211 },
-  { symbol: 'NSBC',  qty:   77, avgCost:  8_301 },
+  { symbol: 'CBIBF', qty:   56, avgCost: 15_807 },
+  { symbol: 'NSBC',  qty:   27, avgCost:  8_301 },
   { symbol: 'ECOC',  qty:   32, avgCost: 14_127 },
   { symbol: 'BICB',  qty:   50, avgCost:  5_182 },
 ];
@@ -75,7 +69,7 @@ const DIVIDEND_CALENDAR = [
   { symbol: 'SOGB',  exDate: '2026-07-25', amount:  530 },
   { symbol: 'SLBC',  exDate: '2026-08-15', amount: 6000 },
   { symbol: 'SMBC',  exDate: '2026-08-10', amount:  800 },
-  { symbol: 'BOACI', exDate: '2026-07-12', amount:  480 },
+  { symbol: 'BOAC',  exDate: '2026-07-12', amount:  480 },
   { symbol: 'ECOC',  exDate: '2026-07-05', amount:  900 },
   { symbol: 'NSBC',  exDate: '2026-07-18', amount:  650 },
   { symbol: 'SIBC',  exDate: '2026-07-22', amount:  450 },
@@ -85,7 +79,7 @@ const DIVIDEND_CALENDAR = [
 // Détecte quand 3+ titres du même secteur signalent en même temps (= macro)
 
 const SECTORS = {
-  BANK: ['BOAB','BOABF','BOACI','BOAM','BOAN','BOAS','CBBF','ECOC','NSBC','SIBC','SGBC','BICC'],
+  BANK: ['BOAB','BOABF','BOAC','BOAM','BOAN','BOAS','CBIBF','ECOC','NSBC','SIBC','SGBC','BICC'],
   AGRI: ['PALC','SAPH','SIPH','SOGB','SIAC','SCRC'],
   TELE: ['ORAC','SNTS'],
   ENER: ['TTLC','TTLS','SHEC'],
@@ -109,8 +103,8 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 const YAHOO_MAP = {
   ABJC:'ABJC.CI',  BICC:'BICC.CI',  BICB:'BICB.BJ',  BNBC:'BNBC.BJ',  BOAB:'BOAB.BJ',
-  BOABF:'BOABF.BF',BOACI:'BOACI.CI',BOAM:'BOAM.ML',   BOAN:'BOAN.NE',
-  BOAS:'BOAS.SN',  CABC:'CABC.CI',  CBBF:'CBBF.BF',   CFAC:'CFAC.CI',
+  BOABF:'BOABF.BF',BOAC:'BOAC.CI',   BOAM:'BOAM.ML',   BOAN:'BOAN.NE',
+  BOAS:'BOAS.SN',  CABC:'CABC.CI',  CBIBF:'CBIBF.BF', CFAC:'CFAC.CI',
   ECOC:'ECOC.CI',  ETIT:'ETIT.TG',  NEIC:'NEIC.CI',
   NSBC:'NSBC.CI',  NTLC:'NTLC.CI',  ONAT:'ONAT.BF',   ORAC:'ORAC.CI',
   ORGT:'ORGT.CI',  PALC:'PALC.CI',  PRSC:'PRSC.CI',   SAFC:'SAFC.CI',
@@ -133,12 +127,12 @@ const KNOWN_STOCKS = {
   BNBC:  { name: 'Bernabé CI',                    avgVol:  4650, refPrice:  1700,  liq:'M' },
   BOAB:  { name: 'Bank of Africa Bénin',          avgVol:   980, refPrice:  8_745,  liq:'M' },
   BOABF: { name: 'Bank of Africa Burkina Faso',   avgVol:   180, refPrice:  5_595,  liq:'L' },
-  BOACI: { name: "Bank of Africa Côte d'Ivoire",  avgVol:  2800, refPrice:  8_890,  liq:'M' },
+  BOAC:  { name: "Bank of Africa Côte d'Ivoire",  avgVol:  2800, refPrice:  8_890,  liq:'M' },
   BOAM:  { name: 'Bank of Africa Mali',           avgVol:    95, refPrice:  4_630,  liq:'L' },
   BOAN:  { name: 'Bank of Africa Niger',          avgVol:   380, refPrice:  3_740,  liq:'L' },
   BOAS:  { name: 'Bank of Africa Sénégal',        avgVol:   750, refPrice:  7_400,  liq:'M' },
   CABC:  { name: 'SICABLE CI',                    avgVol:   820, refPrice:  2850,  liq:'M' },
-  CBBF:  { name: 'Coris Bank International BF',   avgVol:   580, refPrice: 21_500,  liq:'M' },
+  CBIBF: { name: 'Coris Bank International BF',   avgVol:   580, refPrice: 21_500,  liq:'M' },
   CFAC:  { name: 'CFAO Motors CI',                avgVol:   580, refPrice:  4800,  liq:'M' },
   ECOC:  { name: "Ecobank Côte d'Ivoire",         avgVol:   650, refPrice: 16_800,  liq:'M' },
   ETIT:  { name: 'Ecobank Transnational (ETI)',   avgVol: 98000, refPrice:     33,  liq:'H' },
@@ -690,6 +684,21 @@ async function handleTelegramCommand(update, env) {
       const cap    = `💼 ${rows.length} positions · P&L ${totalPnl >= 0 ? '+' : ''}${Math.round(totalPnl).toLocaleString()} F (${totalPnl >= 0 ? '+' : ''}${totalPct.toFixed(1)}%)`;
       await sendDocument(env, csv, `BRVM_Portfolio_${today}.csv`, replyTo, cap);
 
+    } else if (cmd === 'reset') {
+      if (parts[1]?.toUpperCase() !== 'CONFIRM') {
+        await reply([
+          '⚠️ *Cette commande remplace TOUT le portefeuille suivi*',
+          `par la référence intégrée au bot (${USER_PORTFOLIO.length} positions).`,
+          '',
+          'Tape `/reset CONFIRM` pour valider.',
+        ].join('\n'));
+        return;
+      }
+      const fresh = USER_PORTFOLIO.map(p => ({ ...p }));
+      await savePortfolio(env, fresh);
+      await saveObjectifs(env, {});
+      await reply(`✅ *Portefeuille réinitialisé* — ${fresh.length} positions chargées depuis la référence.\n🔗 ${WORKER_URL}/portfolio`);
+
     } else if (cmd === 'help' || cmd === 'aide' || cmd === 'start') {
       await reply([
         '📖 *Commandes disponibles :*',
@@ -699,6 +708,7 @@ async function handleTelegramCommand(update, env) {
         '`/sell BOAM 30` — vendre (tout ou partie)',
         '`/portfolio` — voir toutes tes positions avec P&L live',
         '`/export` — recevoir le portefeuille en fichier CSV',
+        '`/reset CONFIRM` — remplacer tout le portefeuille par la référence du bot',
         '',
         `🔗 *Page complète :* ${WORKER_URL}/portfolio`,
         '_(téléchargeable en CSV ou imprimable en PDF)_',
