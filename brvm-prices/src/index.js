@@ -684,6 +684,49 @@ async function handleTelegramCommand(update, env) {
       const cap    = `💼 ${rows.length} positions · P&L ${totalPnl >= 0 ? '+' : ''}${Math.round(totalPnl).toLocaleString()} F (${totalPnl >= 0 ? '+' : ''}${totalPct.toFixed(1)}%)`;
       await sendDocument(env, csv, `BRVM_Portfolio_${today}.csv`, replyTo, cap);
 
+    } else if (cmd === 'check' || cmd === 'carnet') {
+      const symbol = parts[1]?.toUpperCase();
+      if (!symbol || !KNOWN_STOCKS[symbol]) {
+        await reply('❌ Usage : `/carnet SYMBOLE`\nExemple : `/carnet SNTS`');
+        return;
+      }
+      const { stocks, source } = await fetchLiveStocks(env);
+      const stock = stocks.find(s => s.symbol === symbol);
+      if (!stock) {
+        await reply(`❌ Pas de cours live pour *${symbol}* pour l'instant (source : ${source}). Réessaie en séance (9h35–15h30 GMT, lun-ven).`);
+        return;
+      }
+      const sig = analyzeSignal(stock);
+      const { obi: OBI_THRESH } = getThresholds(sig.meta.avgVol);
+      let verdict;
+      if (sig.obi >= OBI_THRESH)
+        verdict = '🟢 *Pression ACHETEUSE forte* — le marché semble plutôt acheteur sur ce titre.';
+      else if (sig.obi >= OBI_THRESH * 0.4)
+        verdict = '🟢 Pression acheteuse modérée.';
+      else if (sig.obi > -OBI_THRESH * 0.4)
+        verdict = '🟡 Neutre — pas de tendance nette, prudence.';
+      else if (sig.obi > -OBI_THRESH)
+        verdict = '🔴 Pression vendeuse modérée — vérifie bien avant d\'acheter.';
+      else
+        verdict = '🔴 *Pression VENDEUSE forte* — le marché semble plutôt vendeur, évite d\'acheter au cours actuel.';
+
+      const portfolio = await getPortfolio(env);
+      const held      = getPortfolioContext(portfolio, symbol);
+      const heldLine  = held ? `\n📂 Déjà en portefeuille : ${held.qty} titres @ coût moy. ${held.avgCost.toLocaleString()} F` : '';
+
+      await reply([
+        `🔍 *Avant-achat — ${symbol}* — ${stock.name}`,
+        '━━━━━━━━━━━━━━━━━━━━━',
+        `💰 Cours : *${stock.price.toLocaleString()} FCFA* (${stock.changePercent >= 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%)`,
+        `🛒 Volume : ${stock.volume.toLocaleString()} titres${sig.iceberg ? '  🐋 Iceberg' : ''}`,
+        `📈 MPR : ${sig.mpr.toFixed(2)} · ⚖️ OBI : ${sig.obi.toFixed(3)}`,
+        '──────────────────────',
+        verdict + heldLine,
+        '──────────────────────',
+        '⚠️ _Estimation BRVM Analytics (volume + momentum) — PAS le vrai carnet d\'ordres. La BRVM ne publie pas le carnet bid/ask en accès libre (flux temps réel réservé aux abonnés via FIX/ICE). Avant de valider ton ordre, vérifie le carnet réel dans Coris Bourse Online._',
+        `📡 _Source cours : ${source}_`,
+      ].join('\n'));
+
     } else if (cmd === 'reset') {
       if (parts[1]?.toUpperCase() !== 'CONFIRM') {
         await reply([
@@ -708,6 +751,7 @@ async function handleTelegramCommand(update, env) {
         '`/sell BOAM 30` — vendre (tout ou partie)',
         '`/portfolio` — voir toutes tes positions avec P&L live',
         '`/export` — recevoir le portefeuille en fichier CSV',
+        '`/carnet SNTS` — pression achat/vente avant de placer un ordre',
         '`/reset CONFIRM` — remplacer tout le portefeuille par la référence du bot',
         '',
         `🔗 *Page complète :* ${WORKER_URL}/portfolio`,
