@@ -684,6 +684,39 @@ async function handleTelegramCommand(update, env) {
       const cap    = `💼 ${rows.length} positions · P&L ${totalPnl >= 0 ? '+' : ''}${Math.round(totalPnl).toLocaleString()} F (${totalPnl >= 0 ? '+' : ''}${totalPct.toFixed(1)}%)`;
       await sendDocument(env, csv, `BRVM_Portfolio_${today}.csv`, replyTo, cap);
 
+    } else if (cmd === 'fix') {
+      // /fix SYMBOLE QUANTITE AVGCOST  — correction directe sans recalcul pondéré
+      const symbol  = parts[1]?.toUpperCase();
+      const qty     = parseInt(parts[2]);
+      const avgCost = parseInt(parts[3]);
+      if (!symbol || !qty || !avgCost || isNaN(qty) || isNaN(avgCost)) {
+        await reply('❌ Usage : `/fix SYMBOLE QUANTITE COUTMOYEN`\nExemple : `/fix NSBC 32 10012`\n\n_Utilise cette commande pour corriger directement une quantité ou un coût moyen erroné._');
+        return;
+      }
+      if (!KNOWN_STOCKS[symbol]) {
+        await reply(`❌ Symbole *${symbol}* inconnu.`);
+        return;
+      }
+      const portfolio = await getPortfolio(env);
+      const existing  = portfolio.find(p => p.symbol === symbol);
+      if (existing) {
+        const oldQty  = existing.qty;
+        const oldAvg  = existing.avgCost;
+        existing.qty     = qty;
+        existing.avgCost = avgCost;
+        await savePortfolio(env, portfolio);
+        await reply([
+          `✅ *${symbol} corrigé*`,
+          `Avant : ${oldQty} titres @ ${oldAvg.toLocaleString()} F`,
+          `Après : *${qty} titres @ ${avgCost.toLocaleString()} F*`,
+          `💰 Valeur position : ${(qty * avgCost).toLocaleString()} F`,
+        ].join('\n'));
+      } else {
+        portfolio.push({ symbol, qty, avgCost });
+        await savePortfolio(env, portfolio);
+        await reply(`✅ *${symbol} créé* — ${qty} titres @ ${avgCost.toLocaleString()} F`);
+      }
+
     } else if (cmd === 'check' || cmd === 'carnet') {
       const symbol = parts[1]?.toUpperCase();
       if (!symbol || !KNOWN_STOCKS[symbol]) {
@@ -752,6 +785,7 @@ async function handleTelegramCommand(update, env) {
         '`/portfolio` — voir toutes tes positions avec P&L live',
         '`/export` — recevoir le portefeuille en fichier CSV',
         '`/carnet SNTS` — pression achat/vente avant de placer un ordre',
+        '`/fix NSBC 32 10012` — corriger directement une quantité ou un CMP erroné',
         '`/reset CONFIRM` — remplacer tout le portefeuille par la référence du bot',
         '',
         `🔗 *Page complète :* ${WORKER_URL}/portfolio`,
