@@ -69,3 +69,25 @@ Code couleur constant à respecter dans le `.html` :
 - Les recommandations ACHETER/ATTENDRE/ÉVITER en badges (fond coloré plein, texte blanc, coins arrondis).
 
 Garde la structure des 7 étapes identique entre le `.md` et le `.html` — le HTML est une mise en forme visuelle de la même analyse, jamais une version différente ou simplifiée.
+
+### Règles d'encodage HTML obligatoires (compatibilité wkhtmltopdf)
+
+**Ne jamais utiliser d'emojis dans le fichier `.html`** — wkhtmltopdf ne dispose pas de police emoji et les rend en caractères parasites dans le PDF. Règle absolue pour tout rapport BOC :
+
+1. **Première ligne du HTML** : toujours `<meta charset="UTF-8">` avant la balise `<title>`.
+
+2. **Remplacements d'emojis obligatoires** :
+
+| Emoji interdit | Remplacement HTML |
+|---|---|
+| ✅ (validation) | `<span style="color:#1a7f37;font-weight:800;">&#10003;</span>` |
+| ❌ (échec) | `<span style="color:#cf222e;font-weight:800;">&#10007;</span>` |
+| ⚠ (alerte) | `<span style="color:#bf8700;font-weight:800;">[!]</span>` |
+| 📅 (calendrier) | Supprimer — redondant avec le texte |
+| 🥇 (1er) | `<span style="background:#ffd700;color:#333;padding:1px 7px;border-radius:3px;font-weight:700;">#1</span>` |
+| 🥈 (2ème) | `<span style="background:#c0c0c0;color:#333;padding:1px 7px;border-radius:3px;font-weight:700;">#2</span>` |
+| 🥉 (3ème) | `<span style="background:#cd7f32;color:#333;padding:1px 7px;border-radius:3px;font-weight:700;">#3</span>` |
+
+3. **Caractères Unicode autorisés** (rendus correctement par wkhtmltopdf) : `→ ← ≥ ≤ – — × ÷ ° ✓ ✗` et tous les caractères accentués latins. Ne pas les remplacer.
+
+4. **Caractères à encoder en entité HTML** dans les cellules de tableaux : `&` → `&amp;`, `>` → `&gt;`, `<` → `&lt;`.
