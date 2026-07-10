@@ -1,0 +1,406 @@
+<title>BOC_REVU N°129 — BRVM 10 juillet 2026</title>
+<style>
+  body { font-family: "Helvetica Neue", Arial, sans-serif; color: #1f2328; background: #ffffff; margin: 0; padding: 24px 48px; line-height: 1.6; font-size: 14px; }
+  h1 { color: #0b3d91; border-bottom: 3px solid #0b3d91; padding-bottom: 10px; font-size: 1.8em; }
+  h2 { color: #0b3d91; background: #eef3fb; border-left: 5px solid #0b3d91; padding: 8px 14px; font-size: 1.2em; margin-top: 32px; }
+  h3 { color: #0b3d91; font-size: 1.05em; margin-top: 20px; border-bottom: 1px solid #cdd9ea; padding-bottom: 4px; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 13px; }
+  th { background: #0b3d91; color: #ffffff; padding: 8px 10px; text-align: left; font-weight: 600; }
+  td { padding: 7px 10px; border: 1px solid #d0d7de; vertical-align: top; }
+  tr:nth-child(even) td { background: #f6f8fa; }
+  tr:hover td { background: #e8f0fb; }
+  .pos { color: #1a7f37; font-weight: 600; }
+  .neg { color: #cf222e; font-weight: 600; }
+  .flat { color: #57606a; font-weight: 600; }
+  .acheter { background: #1a7f37; color: white; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .attendre { background: #bf8700; color: white; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .eviter { background: #cf222e; color: white; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .badge-fort { background: #1a7f37; color: white; padding: 1px 7px; border-radius: 3px; font-size: 11px; font-weight: 700; display: inline-block; }
+  .badge-faible { background: #cf222e; color: white; padding: 1px 7px; border-radius: 3px; font-size: 11px; font-weight: 700; display: inline-block; }
+  .badge-neutre { background: #57606a; color: white; padding: 1px 7px; border-radius: 3px; font-size: 11px; font-weight: 700; display: inline-block; }
+  .badge-haussier { background: #1a7f37; color: white; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .callout { background: #fff8e6; border-left: 5px solid #bf8700; padding: 12px 16px; margin: 14px 0; border-radius: 0 4px 4px 0; }
+  .callout-risk { background: #fdecea; border-left: 5px solid #cf222e; padding: 12px 16px; margin: 14px 0; border-radius: 0 4px 4px 0; }
+  .callout-info { background: #eef3fb; border-left: 5px solid #0b3d91; padding: 12px 16px; margin: 14px 0; border-radius: 0 4px 4px 0; }
+  .callout-green { background: #eaf6ec; border-left: 5px solid #1a7f37; padding: 12px 16px; margin: 14px 0; border-radius: 0 4px 4px 0; }
+  .top3 { background: #eaf6ec; border-left: 5px solid #1a7f37; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; font-weight: 600; }
+  .stock { border-left: 4px solid #0b3d91; background: #fafbfd; padding: 12px 16px; margin: 12px 0; border-radius: 0 4px 4px 0; }
+  .stock-alert { border-left: 4px solid #cf222e; background: #fdecea; padding: 12px 16px; margin: 12px 0; border-radius: 0 4px 4px 0; }
+  .stock-warn { border-left: 4px solid #bf8700; background: #fff8e6; padding: 12px 16px; margin: 12px 0; border-radius: 0 4px 4px 0; }
+  .disclaimer { background: #f6f8fa; border: 1px solid #d0d7de; padding: 14px 18px; font-size: 12px; color: #57606a; border-radius: 4px; margin-top: 24px; }
+  .source { font-size: 12px; color: #57606a; font-style: italic; margin-bottom: 20px; }
+  .mega { background: #fffbf0; border: 2px solid #bf8700; border-radius: 6px; padding: 14px 18px; margin: 14px 0; }
+  .prediction-ok { background: #eaf6ec; border: 2px solid #1a7f37; border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-size: 13px; }
+  .prediction-fail { background: #fdecea; border: 2px solid #cf222e; border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-size: 13px; }
+  .prediction-partial { background: #fff8e6; border: 2px solid #bf8700; border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-size: 13px; }
+  .rotation-obli { background: #f0f4ff; border: 2px solid #0b3d91; border-radius: 6px; padding: 14px 18px; margin: 14px 0; }
+  .distorsion { background: #fff0f0; border: 2px solid #cf222e; border-radius: 6px; padding: 14px 18px; margin: 14px 0; }
+  .score-top { background: #eaf6ec; font-weight: 700; }
+  .carnet-achat { color: #1a7f37; font-weight: 700; }
+  .carnet-vente { color: #cf222e; font-weight: 700; }
+  .absorption { background: #e6f4ea; border: 2px solid #1a7f37; border-radius: 6px; padding: 14px 18px; margin: 14px 0; }
+  .record { background: #fff3e0; border: 2px solid #e65c00; border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-size: 13px; }
+</style>
+
+<h1>BOC_REVU — N°129 | Séance du vendredi 10 juillet 2026</h1>
+<p class="source">Source : Bulletin Officiel de la Cote BRVM N°129, vendredi 10 juillet 2026. Données extraites directement du PDF officiel — aucune valeur fictive ou interpolée.</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Étape 1 — Vue d'ensemble du marché</h2>
+
+<h3>Indices généraux</h3>
+<table>
+  <tr><th>Indice</th><th>Niveau</th><th>Variation Jour</th><th>Variation Annuelle</th></tr>
+  <tr><td>BRVM COMPOSITE</td><td>474,92</td><td class="pos"><strong>+0,95 %</strong></td><td class="pos">+37,36 %</td></tr>
+  <tr><td>BRVM 30</td><td>225,00</td><td class="pos"><strong>+1,28 %</strong></td><td class="pos">+35,35 %</td></tr>
+  <tr><td>BRVM PRESTIGE</td><td>177,91</td><td class="pos"><strong>+0,26 %</strong></td><td class="pos">+23,33 %</td></tr>
+  <tr><td>BRVM PRINCIPAL</td><td>353,81</td><td class="pos"><strong>+1,51 %</strong></td><td class="pos">+62,56 %</td></tr>
+</table>
+
+<div class="callout-info">
+  <strong>PER moyen du marché : 14,52</strong> (hors UNLC) | Taux rendement moyen : <strong>6,32 %</strong> | Rentabilité moyenne : <strong>6,66 %</strong>
+</div>
+
+<h3>Lecture de la séance : 4 indices verts, breadth confirmée</h3>
+<p>Première séance entièrement haussière de la semaine — les 4 indices verdissent simultanément. Décompte <strong>22 hausses / 21 baisses / 4 inchangés</strong> : la breadth confirme (légèrement) le sens des indices. Contrairement au BOC N°127 (divergence indices/breadth), aujourd'hui la cohérence est réelle. Le Composite franchit 474 points, au plus haut de la semaine.</p>
+
+<h3>Distorsion volumétrique ETIT — Record de la semaine (95,4 %)</h3>
+<div class="distorsion">
+  <strong>⚠ RECORD DISTORSION ETIT — Volume brut inopérant</strong>
+  <table style="margin-top:10px;">
+    <tr><th>Périmètre</th><th>Volume</th><th>% total</th><th>Valeur</th><th>% total</th></tr>
+    <tr><td>Marché total</td><td>4 838 020</td><td>100 %</td><td>1 624 627 369 FCFA</td><td>100 %</td></tr>
+    <tr><td>ETIT seul</td><td><span class="neg"><strong>4 615 129</strong></span></td><td><span class="neg"><strong>95,4 %</strong></span></td><td>295 313 419</td><td>18,2 %</td></tr>
+    <tr style="background:#eaf6ec;"><td><strong>Hors ETIT</strong></td><td><strong>222 891</strong></td><td><strong>4,6 %</strong></td><td><strong>1 329 313 950</strong></td><td><strong>81,8 %</strong></td></tr>
+  </table>
+  <p style="font-size:13px;margin-top:6px;">95,4 % du volume = record de la semaine (vs 82,2 % hier). Le carnet acheteur ETIT atteint <strong>2 290 501</strong> — nouveau record absolu.</p>
+</div>
+
+<h3>Indices sectoriels</h3>
+<table>
+  <tr><th>Secteur</th><th>Valeur</th><th>Var. Jour</th><th>Var. Annuelle</th><th>PER moyen</th><th>Force</th></tr>
+  <tr><td>BRVM-SERVICES FINANCIERS</td><td>228,59</td><td class="pos"><strong>+1,91 %</strong></td><td class="pos">+56,72 %</td><td>15,00</td><td><span class="badge-fort">FORT</span></td></tr>
+  <tr><td>BRVM-CONSOMMATION DISC.</td><td>190,24</td><td class="pos">+1,03 %</td><td class="pos">+9,95 %</td><td>52,50</td><td><span class="badge-neutre">NEUTRE+</span></td></tr>
+  <tr><td>BRVM-TÉLÉCOMMUNICATIONS</td><td>111,03</td><td class="pos">+1,14 %</td><td class="pos">+17,00 %</td><td>10,82</td><td><span class="badge-neutre">NEUTRE+</span></td></tr>
+  <tr><td>BRVM-SERVICES PUBLICS</td><td>234,41</td><td class="pos">+0,46 %</td><td class="pos">+121,35 %</td><td>21,66</td><td><span class="badge-neutre">NEUTRE+</span></td></tr>
+  <tr><td>BRVM-INDUSTRIELS</td><td>201,29</td><td class="flat">+0,01 %</td><td class="pos">+52,11 %</td><td>21,79</td><td><span class="badge-neutre">NEUTRE</span></td></tr>
+  <tr><td>BRVM-ÉNERGIE</td><td>165,93</td><td class="neg">-1,23 %</td><td class="pos">+49,61 %</td><td>18,43</td><td><span class="badge-faible">FAIBLE</span></td></tr>
+  <tr><td>BRVM-CONSOMMATION DE BASE</td><td>283,48</td><td class="neg"><strong>-1,90 %</strong></td><td class="pos">+31,19 %</td><td>10,77</td><td><span class="badge-faible">FAIBLE</span></td></tr>
+</table>
+
+<p><strong>Secteur le plus solide :</strong> <span class="pos">SERVICES FINANCIERS (+1,91 %, PER 15,00)</span> — CBIBF +7,50 %, BOAN +6,44 %, BOABF +1,34 %, BICC +1,59 %.<br>
+<strong>Secteur le plus faible :</strong> <span class="neg">CONSOMMATION DE BASE (-1,90 %, PER 10,77)</span> — TTLC -4,11 % (anticipation ex-div 16/07), SPHC -3,82 %.</p>
+
+<div class="callout-green">
+  <strong>Biais de marché : <span class="badge-haussier">HAUSSIER modéré</span></strong><br>
+  22H / 21B / 4I — 4 indices verts avec breadth confirmée. Séance cohérente, sans la divergence indices/breadth du BOC N°127.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Étape 2 — Filtrage des actions</h2>
+
+<h3>2A. Valorisation (PER 8–15 &amp; Rdt ≥ 5 %)</h3>
+<table>
+  <tr><th>Symbole</th><th>Titre</th><th>Cours</th><th>PER</th><th>Rdt Net</th><th>Interprétation</th></tr>
+  <tr><td>SNTS</td><td>SONATEL SN</td><td>30 900</td><td><strong>7,47</strong></td><td class="pos">5,63 %</td><td>Décote structurelle — titre le moins cher du marché</td></tr>
+  <tr><td>PALC</td><td>PALM CI</td><td>8 820</td><td><strong>8,79</strong></td><td class="pos">5,00 %</td><td>Double critère ✓ — signal carnet validé</td></tr>
+  <tr><td>STBC</td><td>SITAB CI</td><td>24 105</td><td>11,87</td><td class="pos">8,70 %</td><td>Double critère ✓ — AG 15/07 (5 jours)</td></tr>
+  <tr><td>BOAC</td><td>BOA CI</td><td>9 500</td><td>10,69</td><td class="pos">6,29 %</td><td>Double critère ✓</td></tr>
+  <tr><td>BOAS</td><td>BOA SN</td><td>7 300</td><td>12,00</td><td class="pos">6,16 %</td><td>Double critère ✓</td></tr>
+  <tr><td>BOABF</td><td>BOA BF</td><td>6 050</td><td>13,83</td><td class="pos">6,56 %</td><td>Double critère ✓</td></tr>
+  <tr><td>BOAM</td><td>BOA ML</td><td>5 450</td><td>13,50</td><td class="pos">5,60 %</td><td>Double critère ✓</td></tr>
+  <tr><td>ONTBF</td><td>ONATEL BF</td><td>2 800</td><td>13,11</td><td class="pos">5,19 %</td><td>Double critère ✓</td></tr>
+  <tr><td>SOGC</td><td>SOGB CI</td><td>8 360</td><td>14,46</td><td class="pos">6,32 %</td><td>Double critère ✓ (mais -2,79 % ce jour)</td></tr>
+  <tr><td>SPHC</td><td>SAPH CI</td><td>7 550</td><td><strong>7,73</strong></td><td class="flat">4,29 %</td><td>PER attractif mais Rdt sous 5 %</td></tr>
+  <tr><td>SGBC</td><td>SGB CI</td><td>39 000</td><td>11,97</td><td class="flat">4,22 %</td><td>PER correct, Rdt sous 5 %</td></tr>
+  <tr><td>CBIBF</td><td>CORIS BANK INTL</td><td>29 610</td><td>14,47</td><td class="flat">3,04 %</td><td>PER corridor mais Rdt insuffisant</td></tr>
+  <tr><td>TTLC</td><td>TOTAL MARKETING CI</td><td>2 800</td><td>19,40</td><td class="pos">6,99 %</td><td>Rdt attractif mais PER hors corridor + ex-div 16/07</td></tr>
+</table>
+
+<div class="callout-risk">
+  <strong>Titres chers à éviter :</strong>
+  <table style="margin-top:8px;">
+    <tr><th>Symbole</th><th>Titre</th><th>Cours</th><th>PER</th><th>Alerte</th></tr>
+    <tr><td>UNLC</td><td>UNILEVER CI</td><td>50 500</td><td><span class="neg"><strong>724,25</strong></span></td><td>-6,02 % + PER bulle</td></tr>
+    <tr><td>BNBC</td><td>BERNABE CI</td><td>1 755</td><td><span class="neg"><strong>520,88</strong></span></td><td>Liquidation continue</td></tr>
+    <tr><td>BOAN</td><td>BOA NG</td><td>4 790</td><td><span class="neg"><strong>243,44</strong></span></td><td>+6,44 % purement spéculatif</td></tr>
+    <tr><td>SIVC</td><td>ERIUM CI</td><td>2 060</td><td><span class="neg">100,35</span></td><td>Rebond spéculatif pré-AG</td></tr>
+    <tr><td>FTSC</td><td>FILTISAC CI</td><td>1 975</td><td><span class="neg">59,78</span></td><td>Rdt 87,42 %¹ non-récurrent</td></tr>
+    <tr><td>SAFC</td><td>SAFCA CI</td><td>4 270</td><td><span class="neg">49,46</span></td><td>Surévalué</td></tr>
+  </table>
+  <p style="font-size:12px;margin-top:4px;">¹ Dividende exceptionnel FTSC 1 726,56 FCFA — non-récurrent.</p>
+</div>
+
+<h3>2B. Momentum — Variations croisées aux volumes</h3>
+<p><strong>Hausses notables :</strong></p>
+<table>
+  <tr><th>Symbole</th><th>Var.</th><th>Volume</th><th>Valeur</th><th>Validation</th></tr>
+  <tr><td>CBIBF</td><td class="pos">+7,50 %</td><td>1 181</td><td>34,2 MFCFA</td><td>Bon volume — carnet 933/0 acheteur</td></tr>
+  <tr><td>LNBB</td><td class="pos">+7,42 %</td><td>13 261</td><td>57,6 MFCFA</td><td>Très bon volume — carnet 7 937/32</td></tr>
+  <tr><td>UNXC</td><td class="pos">+7,20 %</td><td>9 655</td><td>12,8 MFCFA</td><td>Fort volume — pré-AG 16/07</td></tr>
+  <tr><td>SIVC</td><td class="pos">+7,29 %</td><td>15 169</td><td>29,6 MFCFA</td><td>Fort volume — rebond pré-AG 13/07</td></tr>
+  <tr><td>BOAN</td><td class="pos">+6,44 %</td><td>11 023</td><td>50,3 MFCFA</td><td>Bon volume — PER 243 (spéculatif)</td></tr>
+  <tr><td>ETIT</td><td class="pos">+6,67 %</td><td>4 615 129*</td><td>295,3 MFCFA</td><td>*Volume mécanique (95,4 %)</td></tr>
+  <tr><td>SCRC</td><td class="pos">+5,75 %</td><td>6 944</td><td>23,5 MFCFA</td><td>Volume significatif</td></tr>
+  <tr><td>ORAC</td><td class="pos">+3,09 %</td><td>2 446</td><td>39,1 MFCFA</td><td>Bon volume — bilan liquidité publié</td></tr>
+  <tr><td>PALC</td><td class="pos">+0,23 %</td><td>16 881</td><td>150,8 MFCFA</td><td><strong>Signal BOC N°128 validé — volume record Prestige</strong></td></tr>
+  <tr><td>BOAC</td><td class="pos">+0,80 %</td><td>10 587</td><td>100,4 MFCFA</td><td><strong>Signal BOC N°128 validé — excellent volume</strong></td></tr>
+</table>
+<p><strong>Baisses notables :</strong></p>
+<table>
+  <tr><th>Symbole</th><th>Var.</th><th>Volume</th><th>Valeur</th><th>Signal</th></tr>
+  <tr><td>UNLC</td><td class="neg">-6,02 %</td><td>20</td><td>1,1 MFCFA</td><td>Volume dérisoire — panique sur peu de titres</td></tr>
+  <tr><td>NEIC</td><td class="neg">-4,53 %</td><td>3 530</td><td>7,3 MFCFA</td><td>Volume significatif → structurel</td></tr>
+  <tr><td>TTLC</td><td class="neg">-4,11 %</td><td>11 198</td><td>31,9 MFCFA</td><td><strong>Fort volume → anticipation ex-div 16/07</strong></td></tr>
+  <tr><td>SPHC</td><td class="neg">-3,82 %</td><td>491</td><td>3,8 MFCFA</td><td>Volume faible — technique</td></tr>
+  <tr><td>SDSC</td><td class="neg">-3,49 %</td><td>12 237</td><td>27,4 MFCFA</td><td>Volume significatif</td></tr>
+  <tr><td>SOGC</td><td class="neg">-2,79 %</td><td>2 769</td><td>23,0 MFCFA</td><td>Volume modéré</td></tr>
+</table>
+
+<h3>2C. Catalyseurs détectés</h3>
+<table>
+  <tr><th>Émetteur</th><th>Dividende</th><th>Date</th></tr>
+  <tr><td>TOTALENERGIES MARKETING SN (TTLS)</td><td>176,65 FCFA/action</td><td><strong>17/07/2026 → ex-div 16/07 (6 jours)</strong></td></tr>
+  <tr><td>CIE CI</td><td>234 FCFA/action</td><td>28/07/2026</td></tr>
+  <tr><td>SIB (SIBC)</td><td>425 FCFA/action</td><td>31/07/2026</td></tr>
+  <tr><td>BIIC (BICB)</td><td>254,6 FCFA/action</td><td>31/07/2026</td></tr>
+</table>
+
+<div class="callout">
+  <strong>AG imminentes :</strong><br>
+  ⚠ <strong>ERIUM CI (SIVC)</strong> : AG le <strong>13/07 — lundi !</strong> → +7,29 % ce jour (spéculatif)<br>
+  📅 <strong>SITAB CI (STBC)</strong> : AG le <strong>15/07 — dans 5 jours</strong> ← catalyseur principal<br>
+  📅 <strong>UNIWAX CI (UNXC)</strong> : AG le <strong>16/07 — dans 6 jours</strong> → +7,20 % ce jour
+</div>
+
+<div class="callout-info">
+  <strong>Communiqués S1 2025 :</strong><br>
+  STBC (20260710) : Bilan liquidité S1 2025 — 20 titres en portefeuille SGI Hudson, cash 4 575 143 FCFA (–4,84 % vs S2 2025). Animation faible.<br>
+  ORAC (20260710-1) : Bilan liquidité S1 2025 — 7 449 titres, cash 551 422 241 FCFA (+0,90 % vs S2 2025). Animation en hausse.
+</div>
+
+<div class="rotation-obli">
+  <strong>⚠ 3ème journée consécutive — Rotation vers la dette sénégalaise : SIGNAL STRUCTUREL CONFIRMÉ</strong>
+  <table style="margin-top:10px;">
+    <tr><th>BOC</th><th>Titre</th><th>Montant</th><th>Coupon</th></tr>
+    <tr><td>N°127</td><td>EOS.O32 (ETAT DU SENEGAL 6,75 %)</td><td>717,4 MFCFA</td><td>6,75 %</td></tr>
+    <tr><td>N°128</td><td>EOS.O26 (ETAT DU SENEGAL 6,40 %)</td><td>585,0 MFCFA</td><td>6,40 %</td></tr>
+    <tr><td>N°129</td><td>EOS.O26 + EOS.O27 (ETAT DU SENEGAL)</td><td><strong>119,0 MFCFA</strong></td><td>6,40–6,60 %</td></tr>
+    <tr><td><strong>Total 3 jours</strong></td><td></td><td><strong>1 421,4 MFCFA</strong></td><td></td></tr>
+  </table>
+  <p style="font-size:13px;margin-top:6px;">→ Signal confirmé sur 3 jours. Montants décroissants (717→585→119 MFCFA) : la phase d'achat massif se calme, mais la rotation est structurellement installée. + 69,6 % de la valeur obligataire du jour liée à des actifs sénégalais (Etat + SENELEC).</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Étape 3 — Sélection des actions clés</h2>
+
+<div class="stock">
+  <strong>STBC — SITAB CI (24 105 FCFA, <span class="neg">-0,80 %</span>)</strong> — PER 11,87 | Rdt 8,70 %<br>
+  Légère baisse de -0,80 % à la veille de l'AG 15/07 — prises de profits normales. Bilan de liquidité S1 2025 publié (20 titres SGI Hudson). PER 11,87 et Rdt 8,70 % restent les meilleurs fondamentaux combinés de la cote. Carnet 7/377 → bruit court terme. Signal BOC N°128 (44/196 léger vendeur → -0,80 %) validé à 100 %. Opportunité d'entrée à 24 105 FCFA.
+</div>
+
+<div class="stock">
+  <strong>PALC — PALM CI (8 820 FCFA, <span class="pos">+0,23 %</span>)</strong> — PER 8,79 | Rdt 5,00 %<br>
+  Signal carnet BOC N°128 (4 404/13 — ratio 339:1) validé : +0,23 % avec <strong>16 881 titres / 150,8 MFCFA</strong> — plus fort volume du Prestige ! La demande institutionnelle s'est concrétisée. Carnet résiduel 493/20 (ratio 24,6:1) — signal maintenu mais plus modéré. Accumulation progressive en cours.
+</div>
+
+<div class="stock">
+  <strong>CBIBF — CORIS BANK INTERNATIONAL (29 610 FCFA, <span class="pos">+7,50 %</span>)</strong> — PER 14,47 | Rdt 3,04 %<br>
+  Plus forte hausse substantielle de la séance. Carnet <span class="carnet-achat">933 acheteurs / 0 vendeur</span> — signal post-hausse fort. PER dans le corridor mais Rdt 3,04 % insuffisant pour le filtre valeur. Stratégie croissance uniquement.
+</div>
+
+<div class="stock">
+  <strong>BOAC — BANK OF AFRICA CI (9 500 FCFA, <span class="pos">+0,80 %</span>)</strong> — PER 10,69 | Rdt 6,29 %<br>
+  Signal BOC N°128 validé : +0,80 % sur 10 587 titres / 100,4 MFCFA. Mais carnet retourné : <span class="carnet-vente">22/220 (vendeur)</span> — profit taking post-hausse. Valorisation excellente (PER 10,69, Rdt 6,29 %) mais signal court terme défavorable. Attendre stabilisation avant d'entrer.
+</div>
+
+<div class="stock">
+  <strong>SNTS — SONATEL SN (30 900 FCFA, <span class="neg">-0,32 %</span>)</strong> — PER 7,47 | Rdt 5,63 %<br>
+  -0,32 % sur 1 744 titres / 53,9 MFCFA. Mur vendeur réduit : <span class="carnet-vente">691 vs 1 159 hier (-40 %)</span>. L'absorption institutionnelle se poursuit mais ne suffit pas encore à inverser la tendance. PER 7,47 — titre le plus sous-valorisé de la cote. Patience.
+</div>
+
+<div class="record">
+  <strong>ETIT — ECOBANK TG (64 FCFA, <span class="pos">+6,67 %</span>)</strong> — PER 3,35 | Rdt 1,44 %<br>
+  Carnet acheteur : <span class="carnet-achat"><strong>2 290 501</strong></span> acheteurs "au Marché" / 0 vendeur — record absolu de la semaine (+48,7 % vs 1 540 232 hier). Volume 4 615 129 = 95,4 % du total marché.
+</div>
+
+<div class="stock">
+  <strong>LNBB — LOTERIE NATIONALE DU BÉNIN (4 415 FCFA, <span class="pos">+7,42 %</span>)</strong> — PER 19,10 | Rdt 6,24 %<br>
+  Hausse forte sur 13 261 titres / 57,6 MFCFA. Carnet <span class="carnet-achat">7 937/32 (ratio 248:1)</span> — signal acheteur massif. PER 19,10 hors corridor mais Rdt 6,24 % attractif. À surveiller pour un franchissement des 4 500 FCFA.
+</div>
+
+<div class="absorption">
+  <strong>SMBC — SMB CI (17 295 FCFA, <span class="neg">-0,32 %</span>)</strong> — PER 10,31 | Rdt 3,56 %<br>
+  <strong>Absorption spectaculaire :</strong> le mur vendeur de <span class="carnet-vente">19 592</span> (BOC N°128) a été presque entièrement résorbé — carnet résiduel <strong>7/5</strong>. Quelqu'un a silencieusement acheté ~19 587 titres (~338 MFCFA) pendant la séance. SMBC n'a reculé que de -0,32 %. Signal de retournement haussier probable lundi.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Étape 4 — Scoring /10</h2>
+
+<table>
+  <tr><th>Rang</th><th>Titre</th><th>Symbole</th><th>Cours</th><th>Valorisation /3</th><th>Momentum /3</th><th>Catalyseur /4</th><th>Score /10</th><th>Recommandation</th></tr>
+  <tr class="score-top"><td>1</td><td>SITAB CI</td><td>STBC</td><td>24 105</td><td>3</td><td>2</td><td>4</td><td><strong>9</strong></td><td><span class="acheter">ACHETER</span></td></tr>
+  <tr><td>2</td><td>PALM CI</td><td>PALC</td><td>8 820</td><td>3</td><td>2</td><td>2</td><td><strong>7</strong></td><td><span class="acheter">ACHETER</span></td></tr>
+  <tr><td>2</td><td>CORIS BANK</td><td>CBIBF</td><td>29 610</td><td>1</td><td>3</td><td>3</td><td><strong>7</strong></td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td>4</td><td>BOA CI</td><td>BOAC</td><td>9 500</td><td>3</td><td>2</td><td>1</td><td><strong>6</strong></td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td>5</td><td>SONATEL SN</td><td>SNTS</td><td>30 900</td><td>3</td><td>1</td><td>1</td><td><strong>5</strong></td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td>5</td><td>SMB CI</td><td>SMBC</td><td>17 295</td><td>2</td><td>1</td><td>2</td><td><strong>5</strong></td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td>5</td><td>BOA ML</td><td>BOAM</td><td>5 450</td><td>2</td><td>2</td><td>1</td><td><strong>5</strong></td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td>5</td><td>ECOBANK TG</td><td>ETIT</td><td>64</td><td>1</td><td>3</td><td>1</td><td><strong>5</strong></td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td>9</td><td>ORANGE CI</td><td>ORAC</td><td>16 495</td><td>1</td><td>2</td><td>1</td><td><strong>4</strong></td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td>9</td><td>SOGB CI</td><td>SOGC</td><td>8 360</td><td>2</td><td>1</td><td>1</td><td><strong>4</strong></td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td>11</td><td>BOA BF</td><td>BOABF</td><td>6 050</td><td>2</td><td>1</td><td>0</td><td><strong>3</strong></td><td><span class="eviter">ÉVITER (CT)</span></td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Étape 5 — Validation par le marché</h2>
+
+<h3>Volumes et valeurs transigées</h3>
+<table>
+  <tr><th>Compartiment</th><th>Volume</th><th>Valeur</th></tr>
+  <tr><td>Prestige</td><td>46 694</td><td>450 046 875 FCFA</td></tr>
+  <tr><td>Principal</td><td>4 791 326</td><td>1 174 580 494 FCFA</td></tr>
+  <tr><td><strong>Total Actions</strong></td><td><strong>4 838 020 <span class="pos">(+156,16 %)</span></strong></td><td><strong>1 624 627 369 FCFA <span class="neg">(-47,80 %)</span></strong></td></tr>
+  <tr><td>Obligations</td><td>27 188 <span class="neg">(-55,63 %)</span></td><td>222 274 698 FCFA <span class="neg">(-62,78 %)</span></td></tr>
+</table>
+
+<div class="callout-info">
+  <strong>Paradoxe volume/valeur :</strong> volume +156 % (ETIT 95,4 %) mais valeur -47,8 % (absence de méga-transaction actions). Le marché "réel" hors ETIT : 222 891 titres / 1,33 MFCFA — séance normale en termes de valeur.
+</div>
+
+<div class="callout-green">
+  <strong>PALC — Signal BOC N°128 validé avec force :</strong> +0,23 % sur <strong>16 881 titres / 150,8 MFCFA</strong> — la demande institutionnelle accumulée dans le carnet 4 404/13 s'est effectivement matérialisée. C'est le signal carnet le plus retentissant de la semaine.
+</div>
+
+<div class="absorption">
+  <strong>SMBC — Absorption silencieuse de 19 592 vendeurs :</strong> Le mur vendeur colossal (5/19 592 au BOC N°128) a été presque entièrement absorbé pendant la séance. Carnet résiduel 7/5. SMBC perd seulement -0,32 %. ~338 MFCFA d'achat institutionnel silencieux. Signal de retournement haussier pour lundi.
+</div>
+
+<h3>Compartiment obligataire — Analyse des flux</h3>
+<table>
+  <tr><th>Source</th><th>Montant</th><th>% obligataire</th></tr>
+  <tr><td><strong>Obligations sénégalaises (EOS.O26 + EOS.O27)</strong></td><td><strong>118 942 600 FCFA</strong></td><td><strong>53,5 %</strong></td></tr>
+  <tr><td>Obligations ORAGROUP (corporate ORGT.O2)</td><td>64 711 400 FCFA</td><td>29,1 %</td></tr>
+  <tr><td>FCTC SENELEC (FSNLC.O1 + O2)</td><td>35 701 048 FCFA</td><td>16,1 %</td></tr>
+  <tr><td>Autres (FSNBB.O1, PTRC, EOM.O7, etc.)</td><td>2 919 650 FCFA</td><td>1,3 %</td></tr>
+  <tr><td><strong>TOTAL</strong></td><td><strong>222 274 698 FCFA</strong></td><td>100 %</td></tr>
+</table>
+<p>69,6 % de la valeur obligataire du jour est liée à des émetteurs sénégalais (Etat + infra SENELEC). La rotation vers les actifs sénégalais est confirmée sur 3 jours consécutifs.</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Étape 6 — Quantités résiduelles</h2>
+
+<h3>Signaux acheteurs</h3>
+<table>
+  <tr><th>Symbole</th><th>Titre</th><th>Qté Achat</th><th>Cours A</th><th>/</th><th>Cours V</th><th>Qté Vente</th><th>Signal</th></tr>
+  <tr style="background:#eaf6ec;"><td>ETIT</td><td>ECOBANK TG</td><td><span class="carnet-achat"><strong>2 290 501</strong></span></td><td>Marché</td><td>/</td><td>—</td><td>0</td><td>Record absolu semaine — 3ème jour</td></tr>
+  <tr style="background:#eaf6ec;"><td>SIVC</td><td>ERIUM CI</td><td><span class="carnet-achat"><strong>12 604</strong></span></td><td>Marché</td><td>/</td><td>—</td><td>0</td><td>Retournement acheteur pré-AG 13/07</td></tr>
+  <tr style="background:#eaf6ec;"><td>UNXC</td><td>UNIWAX CI</td><td><span class="carnet-achat"><strong>6 541</strong></span></td><td>Marché</td><td>/</td><td>—</td><td>0</td><td>Retournement acheteur pré-AG 16/07</td></tr>
+  <tr style="background:#eaf6ec;"><td>LNBB</td><td>LOTERIE NAT. BN</td><td><span class="carnet-achat"><strong>7 937</strong></span></td><td>4 115</td><td>/</td><td>4 415</td><td>32</td><td>Fort signal post +7,42 % (ratio 248:1)</td></tr>
+  <tr><td>CBIBF</td><td>CORIS BANK</td><td><span class="carnet-achat">933</span></td><td>29 610</td><td>/</td><td>—</td><td>0</td><td>Carnet acheteur post +7,50 %</td></tr>
+  <tr><td>CIEC</td><td>CIE CI</td><td>1 304</td><td>5 340</td><td>/</td><td>5 350</td><td>172</td><td>Acheteur net (ratio 7,6:1)</td></tr>
+  <tr><td>PALC</td><td>PALM CI</td><td>493</td><td>8 820</td><td>/</td><td>8 900</td><td>20</td><td>Signal maintenu (ratio 24,6:1 vs 339:1 hier)</td></tr>
+  <tr><td>ABJC</td><td>SERVAIR CI</td><td>520</td><td>3 150</td><td>/</td><td>3 160</td><td>27</td><td>Acheteur net (19:1)</td></tr>
+  <tr><td>SAFC</td><td>SAFCA CI</td><td>207</td><td>4 265</td><td>/</td><td>4 270</td><td>9</td><td>Acheteur net post +3,52 %</td></tr>
+  <tr><td>SMBC</td><td>SMB CI</td><td>7</td><td>17 000</td><td>/</td><td>17 295</td><td>5</td><td><strong>Quasi-équilibré — mur 19 592 absorbé !</strong></td></tr>
+</table>
+
+<h3>Signaux vendeurs — risques à court terme</h3>
+<table>
+  <tr><th>Symbole</th><th>Titre</th><th>Qté Achat</th><th>Cours A</th><th>/</th><th>Cours V</th><th>Qté Vente</th><th>Signal</th></tr>
+  <tr style="background:#fdecea;"><td>SIBC</td><td>SIB CI</td><td>10</td><td>8 950</td><td>/</td><td>8 990</td><td><span class="carnet-vente"><strong>5 214</strong></span></td><td>Mur vendeur massif persistant</td></tr>
+  <tr style="background:#fdecea;"><td>BOAS</td><td>BOA SN</td><td>12</td><td>7 295</td><td>/</td><td>7 300</td><td><span class="carnet-vente"><strong>4 561</strong></span></td><td>Mur vendeur massif</td></tr>
+  <tr><td>BOABF</td><td>BOA BF</td><td>764</td><td>6 000</td><td>/</td><td>6 050</td><td><span class="carnet-vente"><strong>3 911</strong></span></td><td>7ème retournement vendeur¹</td></tr>
+  <tr><td>TTLS</td><td>TOTAL SN</td><td>16</td><td>4 400</td><td>/</td><td>4 410</td><td><span class="carnet-vente"><strong>3 601</strong></span></td><td>Mur vendeur pré-ex-div 16/07</td></tr>
+  <tr><td>SOGC</td><td>SOGB CI</td><td>2</td><td>8 360</td><td>/</td><td>8 565</td><td><span class="carnet-vente">2 892</span></td><td>Mur vendeur post -2,79 %</td></tr>
+  <tr><td>SGBC</td><td>SGB CI</td><td>5</td><td>38 905</td><td>/</td><td>39 000</td><td><span class="carnet-vente">2 658</span></td><td>Mur vendeur persistant</td></tr>
+  <tr><td>BOAM</td><td>BOA ML</td><td>203</td><td>5 450</td><td>/</td><td>5 500</td><td><span class="carnet-vente">790</span></td><td>Retourné vendeur (était 1 681/60 hier)</td></tr>
+  <tr><td>BOAC</td><td>BOA CI</td><td>22</td><td>9 500</td><td>/</td><td>9 530</td><td><span class="carnet-vente">220</span></td><td>Retourné vendeur (était 1 212/10 hier)</td></tr>
+  <tr><td>STBC</td><td>SITAB CI</td><td>7</td><td>24 105</td><td>/</td><td>24 200</td><td>377</td><td>Pression vendeur pré-AG (bruit CT)</td></tr>
+  <tr><td>SNTS</td><td>SONATEL SN</td><td>116</td><td>30 850</td><td>/</td><td>30 900</td><td>691</td><td>Mur réduit (1 159→691) — absorption continue</td></tr>
+  <tr><td>ONTBF</td><td>ONATEL BF</td><td>927</td><td>2 795</td><td>/</td><td>2 800</td><td>2 585</td><td>Mur vendeur persistant</td></tr>
+  <tr><td>BOAN</td><td>BOA NG</td><td>100</td><td>4 785</td><td>/</td><td>4 790</td><td>1 196</td><td>Prise de profit post +6,44 %</td></tr>
+</table>
+<p style="font-size:12px;">¹ BOABF 7ème retournement : de 67/22 acheteur (BOC N°128) à 764/3 911 vendeur — oscillation systématique.</p>
+
+<h3>Tableau de suivi des retournements de carnet (semaine)</h3>
+<table>
+  <tr><th>Titre</th><th>BOC N°127</th><th>BOC N°128</th><th>BOC N°129</th><th>Signal</th></tr>
+  <tr><td>PALC</td><td>7/590 (V)</td><td><span class="carnet-achat">4 404/13 (A) retourné</span></td><td><span class="carnet-achat">493/20 (A) maintenu</span></td><td>Affaibli (339:1→24:1) mais haussier</td></tr>
+  <tr><td>BOAC</td><td>3/1267 (V)</td><td><span class="carnet-achat">1 212/10 (A) retourné</span></td><td><span class="carnet-vente">22/220 (V) retourné</span></td><td>Hausse +0,80 % puis profit taking</td></tr>
+  <tr><td>BOAM</td><td>84/469 (V)</td><td><span class="carnet-achat">1 681/60 (A)</span></td><td><span class="carnet-vente">203/790 (V) retourné</span></td><td>Oscillation — instable</td></tr>
+  <tr><td>BOABF</td><td>35/880 (V)</td><td><span class="carnet-achat">67/22 (A)</span></td><td><span class="carnet-vente"><strong>764/3 911 (V) — 7ème retournement</strong></span></td><td>Éviter court terme</td></tr>
+  <tr><td>SMBC</td><td>Non suivi</td><td><span class="carnet-vente">5/19 592 (V)</span></td><td><span class="carnet-achat">7/5 (équilibré)</span></td><td>Absorption spectaculaire du mur</td></tr>
+  <tr><td>SIVC</td><td>Non suivi</td><td>Non suivi</td><td><span class="carnet-achat">12 604 Marché/0</span></td><td>Pré-AG 13/07 (spéculatif)</td></tr>
+  <tr><td>UNXC</td><td>730/131 (A)</td><td>6 541 Marché (A)</td><td>Pré-AG 16/07</td><td>Accumulation continue</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Étape 7 — Conclusion stratégique</h2>
+
+<h3>Validation des prédictions BOC N°128</h3>
+<div class="prediction-ok">✅ <strong>STBC 44/196 léger vendeur → légère baisse</strong> : STBC <strong>-0,80 %</strong> — VALIDÉE</div>
+<div class="prediction-ok">✅ <strong>PALC 4 404/13 acheteur → hausse</strong> : PALC <strong>+0,23 %</strong> + volume record 150 MFCFA — VALIDÉE</div>
+<div class="prediction-ok">✅ <strong>BOAC 1 212/10 acheteur → hausse</strong> : BOAC <strong>+0,80 %</strong> sur 100 MFCFA — VALIDÉE</div>
+<div class="prediction-ok">✅ <strong>SMBC 5/19 592 vendeur → baisse</strong> : SMBC <strong>-0,32 %</strong> — VALIDÉE</div>
+<div class="prediction-fail">❌ <strong>BOAN 112/3 535 vendeur → baisse</strong> : BOAN <strong>+6,44 %</strong> (spéculatif PER 243) — INVALIDE</div>
+<div class="prediction-ok">✅ <strong>BOABF 67/22 acheteur → hausse</strong> : BOABF <strong>+1,34 %</strong> — VALIDÉE</div>
+<div class="prediction-ok">✅ <strong>SNTS 113/1 159 vendeur → baisse</strong> : SNTS <strong>-0,32 %</strong> — VALIDÉE</div>
+<div class="prediction-ok">✅ <strong>BOAM carnet croisé → hausse</strong> : BOAM <strong>+0,46 %</strong> — VALIDÉE</div>
+<div class="prediction-ok">✅ <strong>ETIT 1 540 232 acheteur → hausse</strong> : ETIT <strong>+6,67 %</strong> — VALIDÉE</div>
+
+<div class="callout-green">
+  <strong>Score BOC N°129 : 8 validées / 1 invalide = 89 % — meilleur score de la semaine !</strong><br>
+  Score cumulé semaine : 12 validées / 5 partielles / 2 invalides sur 19 signaux (63 % exactes, 26 % partielles, 11 % invalides)<br>
+  <strong>Enseignement BOAN :</strong> PER 243 = momentum purement spéculatif. Le carnet vendeur (112/3 535) n'a pas résisté à l'achat spéculatif pré-résultats. Les signaux carnet sont moins prédictifs sur les titres à PER > 100.
+</div>
+
+<h3>Top 3 des opportunités globales</h3>
+<div class="top3">
+  🥇 <strong>STBC (SITAB CI) — 9/10</strong> <span class="acheter">ACHETER</span><br>
+  AG 15/07 dans 5 jours. PER 11,87, Rdt 8,70 %. Repli de -0,80 % = point d'entrée amélioré. Signal semaine maintenu à 9/10. Positionnement immédiat recommandé avant que la demande pré-AG reprenne lundi.
+</div>
+<div class="top3">
+  🥈 <strong>PALC (PALM CI) — 7/10</strong> <span class="acheter">ACHETER</span><br>
+  Signal carnet validé avec volume record (150,8 MFCFA). Carnet 493/20 maintenu. PER 8,79, Rdt 5,00 %. Accumulation institutionnelle progressive confirmée.
+</div>
+<div class="top3">
+  🥉 <strong>CBIBF (CORIS BANK) — 7/10</strong> <span class="attendre">ATTENDRE</span><br>
+  +7,50 % avec carnet 933/0 — momentum bancaire fort. PER 14,47 dans le corridor mais Rdt 3,04 % insuffisant. Attendre repli pour entrer — stratégie croissance uniquement.
+</div>
+
+<h3>Risques identifiés à court terme</h3>
+<div class="callout-risk">
+  <ol>
+    <li><strong>BOABF 7ème retournement vendeur (764/3 911)</strong> : Correction probable lundi.</li>
+    <li><strong>BOAS mur vendeur 4 561 / SIBC 5 214 / SOGC 2 892 / SGBC 2 658</strong> : Pressions vendeuses multiples dans le secteur bancaire.</li>
+    <li><strong>TTLS ex-dividende 16/07</strong> : Mur vendeur 3 601 + drop mécanique ~4 % le 16/07. Ne pas acheter avant l'ex-div.</li>
+    <li><strong>BOAC et BOAM retournés vendeurs</strong> : Prises de profits post-hausse — attendre stabilisation.</li>
+    <li><strong>SIVC rebond spéculatif pré-AG (PER 100)</strong> : Carnet 12 604 acheteurs mais PER 100,35 — risque de rechute post-AG 13/07.</li>
+    <li><strong>Distorsion ETIT 95,4 %</strong> : Toute statistique de volume brut est inopérante — record de la semaine.</li>
+    <li><strong>BOAN prise de profit (100/1 196)</strong> : Post +6,44 %, les vendeurs dominent. PER 243 — éviter.</li>
+  </ol>
+</div>
+
+<h3>Plan d'action immédiat</h3>
+<table>
+  <tr><th>Titre</th><th>Action</th><th>Horizon</th><th>Justification</th></tr>
+  <tr><td><strong>STBC (SITAB CI)</strong></td><td><span class="acheter">ACHETER</span></td><td>Court terme</td><td>AG 15/07 + PER 11,87 + Rdt 8,70 % — repli -0,80 % = opportunité</td></tr>
+  <tr><td><strong>PALC (PALM CI)</strong></td><td><span class="acheter">ACHETER</span></td><td>Court terme</td><td>Carnet 493/20 maintenu + PER 8,79 + volume record</td></tr>
+  <tr><td>CBIBF (CORIS BANK)</td><td><span class="attendre">ATTENDRE</span></td><td>Court terme</td><td>Momentum fort mais Rdt 3,04 % — entrer sur repli</td></tr>
+  <tr><td>BOAC (BOA CI)</td><td><span class="attendre">ATTENDRE</span></td><td>Court terme</td><td>Carnet retourné 22/220 — stabilisation d'abord</td></tr>
+  <tr><td>SNTS (SONATEL SN)</td><td><span class="attendre">ATTENDRE</span></td><td>Moyen terme</td><td>Mur vendeur réduit — absorption en cours</td></tr>
+  <tr><td>SMBC (SMB CI)</td><td><span class="attendre">ATTENDRE</span></td><td>Court terme</td><td>Absorption spectaculaire — surveiller rebond lundi</td></tr>
+  <tr><td>LNBB</td><td><span class="attendre">ATTENDRE</span></td><td>Court terme</td><td>Carnet 7 937/32 fort mais PER 19,10 hors corridor</td></tr>
+  <tr><td>BOAM (BOA ML)</td><td><span class="attendre">ATTENDRE</span></td><td>Court terme</td><td>Retourné vendeur 203/790</td></tr>
+  <tr><td>BOABF (BOA BF)</td><td><span class="eviter">ÉVITER</span></td><td>Court terme</td><td>7ème retournement vendeur 764/3 911</td></tr>
+  <tr><td>BOAS (BOA SN)</td><td><span class="eviter">ÉVITER</span></td><td>Court terme</td><td>Mur vendeur massif 4 561</td></tr>
+  <tr><td>TTLS</td><td><span class="eviter">ÉVITER</span></td><td>Court terme</td><td>Ex-div 16/07 → drop mécanique ~4 %</td></tr>
+  <tr><td>SIVC / BOAN</td><td><span class="eviter">ÉVITER</span></td><td>Court terme</td><td>Spéculatif pur — PER > 100 / 243</td></tr>
+  <tr><td>SGBC / SIBC / SOGC</td><td><span class="eviter">ÉVITER</span></td><td>Court terme</td><td>Murs vendeurs : 2 658 / 5 214 / 2 892</td></tr>
+  <tr><td>UNLC / BNBC</td><td><span class="eviter">ÉVITER</span></td><td>—</td><td>PER &gt; 500 — bulles spéculatives</td></tr>
+</table>
+
+<div class="disclaimer">
+  <strong>Disclaimer légal :</strong> Ce rapport est produit à des fins exclusivement pédagogiques et informatives à partir des données officielles du Bulletin Officiel de la Cote BRVM N°129 du vendredi 10 juillet 2026. Il ne constitue pas un conseil personnalisé en investissement au sens de la réglementation AMF-UMOA. Tout investissement en bourse comporte un risque de perte en capital. L'investisseur doit apprécier les risques en fonction de sa situation patrimoniale et de ses objectifs. Les performances passées ne préjugent pas des performances futures. Le taux de validation des prédictions sur carnet d'ordres (89 % sur ce BOC, 63 % sur la semaine) ne constitue pas une garantie de performance future.
+</div>
