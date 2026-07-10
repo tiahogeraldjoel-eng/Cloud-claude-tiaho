@@ -70,21 +70,6 @@ Code couleur constant à respecter dans le `.html` :
 
 Garde la structure des 7 étapes identique entre le `.md` et le `.html` — le HTML est une mise en forme visuelle de la même analyse, jamais une version différente ou simplifiée.
 
-### Résumé hebdomadaire automatique (BOC_HEBDO)
-
-Chaque fin de semaine (vendredi, après la production du dernier BOC de la semaine), produire un rapport **BOC_HEBDO** dans `reports/archives/hebdo/` nommé `SEMAINE-W<num>-<date_lundi>_<date_vendredi>-BOC_HEBDO.<ext>` (ex. `SEMAINE-W28-2026-07-06_10-BOC_HEBDO.pdf`).
-
-Ce rapport compile les 5 BOC hebdomadaires en 7 sections :
-1. **Bilan indices** — Composite + biais jour par jour (tableau)
-2. **Top 5 performeurs de la semaine** — classement par variation de cours lundi→vendredi, avec médailles #1–#5
-3. **Top 5 recommandations ACHETER pour la semaine suivante** — basé sur : score moyen hebdo + carnet résiduel vendredi + catalyseurs identifiés (AG, ex-div, publications)
-4. **Actions à ÉVITER** — récurrents de la semaine + risques spécifiques identifiés dans les carnets vendredi
-5. **Signal structurel de la semaine** — signal transversal détecté sur plusieurs séances (ex. rotation obligataire, distorsion ETIT, retournements de carnet)
-6. **Agenda catalyseurs** — AG, ex-dividendes, publications prévues la semaine suivante
-7. **Plan d'action** — tableau ACHETER / SURVEILLER / ATTENDRE / ÉVITER avec cours cibles et timing
-
-Livrables : `.md` + `.html` + `.pdf` (mêmes règles d'encodage que les BOC quotidiens). Envoyer le PDF à l'utilisateur.
-
 ### Règles d'encodage HTML obligatoires (compatibilité wkhtmltopdf)
 
 **Ne jamais utiliser d'emojis dans le fichier `.html`** — wkhtmltopdf ne dispose pas de police emoji et les rend en caractères parasites dans le PDF. Règle absolue pour tout rapport BOC :
