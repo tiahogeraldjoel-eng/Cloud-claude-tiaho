@@ -1,13 +1,18 @@
 ---
 name: boc-hebdo
-description: Use at the end of each trading week (Friday, after the last BOC daily report) to produce a BOC_HEBDO weekly summary for the BRVM market. Compiles all 5 daily BOC_REVU reports of the week into a single synthesis covering: top 5 weekly performers, top 5 BUY recommendations for next week, stocks to AVOID, structural signals, catalyst agenda, and an action plan. Triggers on /boc-hebdo or when the user asks for a weekly BRVM summary.
+description: Automatically invoked by boc-revu after every Friday BOC. Also triggers on /boc-hebdo or when the user asks for a weekly BRVM summary. Compiles all 5 daily BOC_REVU reports of the week into a single synthesis covering: top 5 weekly performers, top 5 BUY recommendations, top 5 SELL/REDUCE recommendations, stocks to AVOID, structural signals, catalyst agenda, and an action plan. Never fabricates data — reads the 5 BOC_REVU .md files before writing.
 ---
 
 # BOC_HEBDO — Synthèse Hebdomadaire BRVM
 
 ## Rôle
 
-Tu es un analyste financier expert BRVM. Ce skill produit la synthèse hebdomadaire du marché à partir des 5 rapports BOC_REVU quotidiens de la semaine. Style synthétique, orienté décision, avec une hiérarchisation claire des opportunités et risques pour la semaine suivante.
+Tu es un analyste financier expert BRVM. Ce skill produit la synthèse hebdomadaire du marché à partir des 5 rapports BOC_REVU quotidiens de la semaine. Style synthétique, orienté décision, avec une hiérarchisation claire des opportunités (ACHETER), des positions à alléger ou solder (ALLÉGER / VENDRE) et des risques à éviter pour la semaine suivante.
+
+## Déclenchement
+
+- **Automatique** : invoqué par le skill `boc-revu` dès qu'un BOC de vendredi est traité.
+- **Manuel** : `/boc-hebdo` ou demande explicite de synthèse hebdomadaire.
 
 ## Garde-fous obligatoires
 
@@ -52,7 +57,14 @@ Utiliser le cours du lundi (BOC du lundi, Étape 4) et le cours du vendredi (BOC
 2. Carnet résiduel vendredi favorable (côté acheteur ou mur vendeur en absorption)
 3. Catalyseur identifié la semaine suivante (AG, ex-div, publication)
 
-## Structure du rapport BOC_HEBDO (7 sections obligatoires)
+**Classement Top 5 VENDRE / ALLÉGER semaine suivante :** croiser 3 critères :
+1. Titre présent en recommandation ÉVITER ou VENDRE sur ≥ 3 séances de la semaine
+2. Carnet vendeur dominant vendredi (ratio vendeur > 3:1 ou mur > 3 000 titres non résolu)
+3. Au moins un déclencheur parmi : catalyseur épuisé, ex-div imminent, Profit Warning, PER en dérive, retournement de carnet persistant
+- Distinguer **VENDRE** (porteurs = sortie totale) vs **ALLÉGER** (réduire la position, conserver le solde)
+- Exclure les bulles permanentes (UNLC, BNBC) déjà dans ÉVITER — ne pas les compter deux fois
+
+## Structure du rapport BOC_HEBDO (8 sections obligatoires)
 
 ### Section 1 — Bilan indices de la semaine
 Tableau : Séance | BOC N° | Composite | Var. jour | Biais (H/B)
@@ -68,7 +80,14 @@ Tableau avec médailles #1 à #5 : Titre | Symbole | Cours lundi | Cours vendred
 Pour chaque titre (#1 à #5) : bloc détaillé avec score moyen, PER, Rdt, signal carnet vendredi, catalyseur, cours cible d'entrée.
 Classer par ordre de conviction décroissante.
 
-### Section 4 — Actions à ÉVITER (semaine suivante)
+### Section 4 — Top 5 recommandations VENDRE / ALLÉGER (semaine suivante)
+Pour les porteurs de ces titres uniquement. Tableau : Titre | Symbole | Action | Cours vendredi | Justification | Risque si on reste.
+- **VENDRE** (badge rouge foncé `#8b0000`) : sortie totale recommandée.
+- **ALLÉGER** (badge orange brûlé `#e36209`) : réduire la position de 50 %, conserver le solde.
+Inclure systématiquement : les titres à carnet vendeur persistant, les post-catalyseurs épuisés, et les ex-div imminents.
+Ne pas dupliquer les bulles permanentes (UNLC, BNBC) déjà listées dans ÉVITER.
+
+### Section 5 — Actions à ÉVITER (semaine suivante)
 Tableau : Titre | Symbole | Raison | Risque chiffré
 Inclure systématiquement :
 - Les ex-dividendes de la semaine suivante (drop mécanique inévitable)
@@ -76,7 +95,7 @@ Inclure systématiquement :
 - Les bulles permanentes (PER > 200 : UNLC, BNBC, etc.)
 - Les titres en phase post-catalyseur (après AG, ex-div, résultats déjà intégrés)
 
-### Section 5 — Signal structurel de la semaine
+### Section 6 — Signal structurel de la semaine
 Identifier le signal transversal le plus important détecté sur plusieurs séances :
 - Rotation obligataire (achats répétés d'une même émission)
 - Distorsion volumétrique ETIT (si > 60 % du volume brut plusieurs jours)
@@ -84,13 +103,14 @@ Identifier le signal transversal le plus important détecté sur plusieurs séan
 - Méga-transaction isolée vs. flux régulier
 Quantifier le signal (montants, ratios, nombre de jours consécutifs).
 
-### Section 6 — Agenda catalyseurs (semaine suivante)
+### Section 7 — Agenda catalyseurs (semaine suivante)
 Tableau : Date | Titre | Événement | Impact anticipé (badge ACHETER/ATTENDRE/ÉVITER)
 Sources : détachements de dividendes, AG déjà annoncées dans les BOC de la semaine, publications IFRS signalées.
 
-### Section 7 — Plan d'action
+### Section 8 — Plan d'action
 Tableau de bord synthétique : Action | Titre | Cours cible | Timing
-Actions possibles : ACHETER / SURVEILLER → ACHETER / ATTENDRE / ÉVITER
+Actions possibles : **ACHETER** / **ALLÉGER** / **VENDRE** / **SURVEILLER** / **ATTENDRE** / **ÉVITER**
+Inclure une ligne par titre actionnable de la semaine suivante, triée par urgence décroissante.
 
 ## Livrables
 
@@ -99,7 +119,7 @@ Trois fichiers dans `reports/archives/hebdo/` :
 **Nommage :** `SEMAINE-W<num_iso>-<date_lundi>_<date_vendredi>-BOC_HEBDO.<ext>`
 Exemple : `SEMAINE-W29-2026-07-13_17-BOC_HEBDO.md`
 
-1. `.md` — rapport complet en Markdown (7 sections, tableaux).
+1. `.md` — rapport complet en Markdown (8 sections, tableaux).
 2. `.html` — mise en couleur (voir gabarit ci-dessous).
 3. `.pdf` — généré via `cd reports/archives/hebdo && wkhtmltopdf --enable-local-file-access <fichier>.html <fichier>.pdf`.
 
@@ -140,6 +160,18 @@ En plus du CSS standard (identique à BOC_REVU), ajouter :
 /* Badge SURVEILLER (bleu marine) */
 .surveiller { background: #0b3d91; color: #fff; padding: 2px 10px; border-radius: 4px;
               font-weight: 700; font-size: 12px; display: inline-block; }
+
+/* Badges VENDRE et ALLÉGER */
+.vendre   { background: #8b0000; color: #fff; padding: 2px 10px; border-radius: 4px;
+            font-weight: 700; font-size: 12px; display: inline-block; }
+.alleger  { background: #e36209; color: #fff; padding: 2px 10px; border-radius: 4px;
+            font-weight: 700; font-size: 12px; display: inline-block; }
+
+/* Bloc stock VENDRE / ALLÉGER */
+.stock-vendre  { border-left: 4px solid #8b0000; background: #fff0f0;
+                 padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+.stock-alleger { border-left: 4px solid #e36209; background: #fff5ec;
+                 padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
 
 /* Signal structurel */
 .signal-rot { background: #f0f4ff; border: 2px solid #0b3d91; border-radius: 6px; padding: 12px 16px; margin: 12px 0; }

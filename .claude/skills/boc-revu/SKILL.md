@@ -1,6 +1,6 @@
 ---
 name: boc-revu
-description: Use when the user shares raw data from a BRVM (Bourse Régionale des Valeurs Mobilières) Bulletin Officiel de la Cote (BOC) and asks for a market analysis report, or types /boc-revu. Produces a structured 7-step BRVM equity-market report (indices, valuation/momentum screening, top stock picks, scoring, market validation, order book, strategic conclusion). Requires the actual BOC bulletin data as input — never fabricates prices, PER, yields or volumes.
+description: Use when the user shares raw data from a BRVM (Bourse Régionale des Valeurs Mobilières) Bulletin Officiel de la Cote (BOC) and asks for a market analysis report, or types /boc-revu. Produces a structured 7-step BRVM equity-market report (indices, valuation/momentum screening, top stock picks with buy/sell/avoid recommendations, scoring, market validation, order book, strategic conclusion). Requires the actual BOC bulletin data as input — never fabricates prices, PER, yields or volumes. When the BOC is a Friday session, automatically invoke the boc-hebdo skill after completing the daily report.
 ---
 
 # BOC_REVU — Analyse du Bulletin Officiel de la Cote (BRVM)
@@ -31,6 +31,14 @@ Analyse la performance des indices généraux (Composite, BRVM 30, Prestige, Pri
 - *2A. Valorisation* : filtre les titres avec un PER idéal (cible 8–15) et un rendement de dividende ≥ 5 %, avec une interprétation par titre. Liste à part les "titres chers à éviter" (PER disproportionnés, ex. Bernabé, Unilever, Sicor) en expliquant le risque de bulle.
 - *2B. Momentum* : plus fortes variations du jour (hausses/baisses) croisées avec les volumes pour valider la force du mouvement.
 - *2C. Catalyseurs détectés* : événements matériels proches (détachements de dividendes, Profit Warnings, publications IFRS, calendrier des Assemblées Générales).
+- *2D. Recommandations de vente* : identifie les titres que les porteurs devraient VENDRE ou ALLÉGER. Critères déclencheurs (au moins un suffit) :
+  1. **Objectif de cours atteint** — titre en hausse de +15 % ou plus depuis le signal d'achat initial : prise de profit recommandée.
+  2. **Retournement de carnet vers la vente** — carnet passe d'acheteur à vendeur dominant (ratio vendeur > 5:1) après une hausse récente.
+  3. **Mur vendeur institutionnel persistant** — > 5 000 titres côté vente depuis ≥ 3 séances consécutives sans absorption.
+  4. **Catalyseur épuisé** — titre qui a progressé grâce à un événement déjà intégré dans le cours (post-AG, post-ex-div, post-résultats) sans nouvelle raison de monter.
+  5. **Détérioration fondamentale** — Profit Warning, résultats sous les attentes, ou PER en dérive (cours monte sans croissance des bénéfices).
+  6. **Ex-dividende imminent (≤ 3 jours)** — vendre avant l'ex-date pour éviter le drop mécanique si le dividende est déjà dans le cours.
+  Distinguer : **VENDRE** (sortie totale recommandée) vs **ALLÉGER** (réduire la position de 50 % et conserver le solde).
 
 **Étape 3 — Sélection des actions clés**
 Paragraphe de synthèse analytique pour chaque action sélectionnée du jour, en justifiant l'intérêt technique ou fondamental. Sauf instruction contraire de l'utilisateur, couvrir au moins : SITAB, PALM CI, BOA BF, SONATEL, CORIS, AGL, BOA CI, NSIA, SAFCA, ORANGE, BERNABE, CFAO MOTORS.
@@ -47,8 +55,16 @@ Analyse le carnet d'ordres résiduel (Achat vs Vente) des principaux titres pour
 **Étape 7 — Conclusion stratégique**
 - Top 3 des opportunités globales.
 - Risques identifiés à court terme.
-- Plan d'action immédiat : ACHETER / ATTENDRE / ÉVITER.
+- Plan d'action immédiat : tableau avec 5 colonnes — Titre | Action | Cours | Timing | Justification.
+  Actions possibles : **ACHETER** / **ALLÉGER** / **VENDRE** / **ATTENDRE** / **ÉVITER**.
 - Disclaimer légal final : document à but pédagogique, ne constitue pas un conseil personnalisé en investissement.
+
+## Déclenchement automatique du BOC_HEBDO (vendredi uniquement)
+
+Quand le BOC analysé correspond à une **séance de vendredi** (détectable par la date ISO ou par le libellé "vendredi" dans le titre du rapport) :
+- Après avoir produit, commité et pushé les 3 fichiers du BOC quotidien (`.md`, `.html`, `.pdf`)
+- **Invoquer automatiquement le skill `boc-hebdo`** sans attendre de demande explicite de l'utilisateur
+- Annoncer clairement : "BOC du vendredi détecté — je génère maintenant la synthèse hebdomadaire BOC_HEBDO."
 
 ## Livrables
 
@@ -66,7 +82,13 @@ Code couleur constant à respecter dans le `.html` :
 - **Orange/ambre** (`#bf8700`) : recommandation **ATTENDRE**, avertissements (Profit Warning, anomalies à ne pas extrapoler).
 - **Bleu marine** (`#0b3d91`) : titres `h1`/`h2`, en-têtes de tableaux (fond bleu marine, texte blanc).
 - Tableaux Markdown → tableaux HTML avec lignes alternées (`#f6f8fa` sur les lignes paires) pour la lisibilité.
-- Les recommandations ACHETER/ATTENDRE/ÉVITER en badges (fond coloré plein, texte blanc, coins arrondis).
+- Les recommandations en badges (fond coloré plein, texte blanc, coins arrondis) :
+  - **ACHETER** : `#1a7f37` (vert)
+  - **ALLÉGER** : `#e36209` (orange brûlé — distinct de ATTENDRE)
+  - **VENDRE** : `#8b0000` (rouge foncé — distinct de ÉVITER)
+  - **ATTENDRE** : `#bf8700` (ambre)
+  - **ÉVITER** : `#cf222e` (rouge vif)
+  - **SURVEILLER** : `#0b3d91` (bleu marine)
 
 Garde la structure des 7 étapes identique entre le `.md` et le `.html` — le HTML est une mise en forme visuelle de la même analyse, jamais une version différente ou simplifiée.
 
