@@ -1,252 +1,361 @@
 <meta charset="UTF-8">
-<title>BOC_HEBDO W28 — BRVM 06-10 juillet 2026</title>
+<title>BOC_HEBDO — Semaine W28 | 6–10 juillet 2026</title>
 <style>
-  body { font-family: "Helvetica Neue", Arial, sans-serif; color: #1f2328; background: #fff; margin: 0; padding: 24px 48px; line-height: 1.6; font-size: 14px; }
-  h1 { color: #0b3d91; border-bottom: 3px solid #0b3d91; padding-bottom: 10px; font-size: 1.8em; }
-  h2 { color: #0b3d91; background: #eef3fb; border-left: 5px solid #0b3d91; padding: 8px 14px; font-size: 1.2em; margin-top: 32px; }
-  h3 { color: #0b3d91; font-size: 1.05em; margin-top: 20px; border-bottom: 1px solid #cdd9ea; padding-bottom: 4px; }
-  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 13px; }
-  th { background: #0b3d91; color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; }
-  td { padding: 7px 10px; border: 1px solid #d0d7de; vertical-align: top; }
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #24292f; margin: 0; padding: 20px 32px; background: #fff; }
+  h1 { color: #0b3d91; font-size: 1.5em; border-bottom: 3px solid #0b3d91; padding-bottom: 6px; }
+  h2 { color: #0b3d91; font-size: 1.15em; border-left: 5px solid #0b3d91; padding-left: 10px; margin-top: 28px; }
+  h3 { color: #0b3d91; font-size: 1em; margin-top: 18px; }
+  p { margin: 6px 0 10px; line-height: 1.55; }
+  blockquote { border-left: 4px solid #d0d7de; margin: 8px 0 8px 0; padding: 4px 14px; color: #57606a; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0 16px; font-size: 12px; }
+  th { background: #0b3d91; color: #fff; padding: 7px 10px; text-align: left; }
+  td { padding: 6px 10px; border-bottom: 1px solid #e1e4e8; }
   tr:nth-child(even) td { background: #f6f8fa; }
   .pos { color: #1a7f37; font-weight: 700; }
   .neg { color: #cf222e; font-weight: 700; }
-  .flat { color: #57606a; font-weight: 600; }
-  .acheter  { background: #1a7f37; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
-  .attendre { background: #bf8700; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
-  .eviter   { background: #cf222e; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
-  .surveiller { background: #0b3d91; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
-  .medal-gold   { background: #ffd700; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
-  .medal-silver { background: #c0c0c0; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
-  .medal-bronze { background: #cd7f32; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
-  .medal-4 { background: #57606a; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
-  .medal-5 { background: #57606a; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .neu { color: #57606a; font-weight: 700; }
+  /* KPI row */
   .kpi-row { display: flex; gap: 16px; flex-wrap: wrap; margin: 16px 0; }
   .kpi { background: #eef3fb; border: 1px solid #cdd9ea; border-radius: 6px; padding: 12px 18px; text-align: center; min-width: 120px; flex: 1; }
   .kpi .val { font-size: 1.6em; font-weight: 800; color: #0b3d91; }
   .kpi .val.pos { color: #1a7f37; }
   .kpi .val.neg { color: #cf222e; }
   .kpi .lbl { font-size: 11px; color: #57606a; text-transform: uppercase; letter-spacing: .04em; }
-  .callout { background: #fff8e6; border-left: 5px solid #bf8700; padding: 12px 16px; margin: 14px 0; border-radius: 0 4px 4px 0; }
-  .callout-green { background: #eaf6ec; border-left: 5px solid #1a7f37; padding: 12px 16px; margin: 14px 0; border-radius: 0 4px 4px 0; }
-  .callout-red   { background: #fdecea; border-left: 5px solid #cf222e; padding: 12px 16px; margin: 14px 0; border-radius: 0 4px 4px 0; }
-  .callout-blue  { background: #eef3fb; border-left: 5px solid #0b3d91; padding: 12px 16px; margin: 14px 0; border-radius: 0 4px 4px 0; }
-  .stock { border-left: 4px solid #0b3d91; background: #fafbfd; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  /* Medailles */
+  .medal-gold   { background: #ffd700; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-silver { background: #c0c0c0; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-bronze { background: #cd7f32; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-4, .medal-5 { background: #57606a; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  /* Biais badges */
+  .biais-hausse { background: #1a7f37; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-vente  { background: #cf222e; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-neutre { background: #57606a; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-mixte  { background: #bf8700; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  /* Action badges */
+  .acheter  { background: #1a7f37; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .alleger  { background: #e36209; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .vendre   { background: #8b0000; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .attendre { background: #bf8700; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .eviter   { background: #cf222e; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .surveiller { background: #0b3d91; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  /* Stock blocks */
   .stock-acheter { border-left: 4px solid #1a7f37; background: #f0faf3; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
   .stock-eviter  { border-left: 4px solid #cf222e; background: #fdecea; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
-  .biais-hausse  { background: #1a7f37; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
-  .biais-vente   { background: #cf222e; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
-  .biais-neutre  { background: #57606a; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
-  .biais-mixte   { background: #bf8700; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
-  .score-line { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px; }
-  .score-bar-wrap { flex: 1; background: #e8ecf0; border-radius: 4px; height: 8px; }
-  .score-bar { height: 8px; border-radius: 4px; background: #1a7f37; }
-  .disclaimer { background: #f6f8fa; border: 1px solid #d0d7de; padding: 14px 18px; font-size: 11px; color: #57606a; border-radius: 4px; margin-top: 28px; }
+  .stock-vendre  { border-left: 4px solid #8b0000; background: #fff0f0; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-alleger { border-left: 4px solid #e36209; background: #fff5ec; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  /* Signal structurel */
   .signal-rot { background: #f0f4ff; border: 2px solid #0b3d91; border-radius: 6px; padding: 12px 16px; margin: 12px 0; }
+  .disclaimer { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; padding: 12px 16px; margin-top: 28px; font-size: 11px; color: #57606a; }
 </style>
 
-<h1>BOC_HEBDO — Semaine W28 | 06 au 10 juillet 2026</h1>
-<p style="color:#57606a;font-size:13px;">Synthèse compilée à partir des BOC N&#176;125 (lundi) au N&#176;129 (vendredi) &mdash; 5 séances analysées</p>
+<h1>BOC_HEBDO &#8212; Semaine W28 | Du 06 au 10 juillet 2026</h1>
+<p style="color:#57606a;font-size:12px;">Synthese compilee a partir des BOC N&#176;125 (lundi) au N&#176;129 (vendredi) &#8212; 5 seances | <strong>Version 2 &#8212; inclut recommandations de vente</strong></p>
 
-<!-- KPIs -->
 <div class="kpi-row">
   <div class="kpi"><div class="val pos">+3,20 %</div><div class="lbl">Composite semaine</div></div>
-  <div class="kpi"><div class="val pos">+37,36 %</div><div class="lbl">YTD (clôture vendredi)</div></div>
-  <div class="kpi"><div class="val" style="color:#0b3d91;">474,92</div><div class="lbl">Composite clôture</div></div>
+  <div class="kpi"><div class="val pos">+37,36 %</div><div class="lbl">YTD cloture vendredi</div></div>
+  <div class="kpi"><div class="val">474,92</div><div class="lbl">Composite vendredi</div></div>
   <div class="kpi"><div class="val pos">4/5</div><div class="lbl">Sessions positives</div></div>
-  <div class="kpi"><div class="val" style="color:#bf8700;">~63 %</div><div class="lbl">Taux prédiction carnets</div></div>
+  <div class="kpi"><div class="val">~70 %</div><div class="lbl">Taux prediction carnets</div></div>
 </div>
 
-<!-- Section 1 -->
-<h2>1. Bilan de la semaine &mdash; Indices &amp; Biais</h2>
-
+<h2>Section 1 &#8212; Bilan indices de la semaine</h2>
 <table>
-  <tr><th>Séance</th><th>BOC</th><th>Composite</th><th>Variation</th><th>Biais du jour</th></tr>
-  <tr><td>Lundi 06/07</td><td>N&#176;125</td><td>460,21</td><td class="pos">+0,11 %</td><td><span class="biais-hausse">ACHETEUR MODÉRÉ</span> 21H / 20B</td></tr>
-  <tr><td>Mardi 07/07</td><td>N&#176;126</td><td>~463,89</td><td class="pos">+0,80 %</td><td><span class="biais-vente">VENDEUR CONFIRMÉ</span> 14H / 24B</td></tr>
-  <tr><td>Mercredi 08/07</td><td>N&#176;127</td><td>470,48</td><td class="pos">+1,42 %</td><td><span class="biais-mixte">MIXTE</span> 16H / 27B</td></tr>
-  <tr><td>Jeudi 09/07</td><td>N&#176;128</td><td>470,47</td><td class="flat">0,00 %</td><td><span class="biais-neutre">NEUTRE</span> 19H / 21B</td></tr>
-  <tr><td>Vendredi 10/07</td><td>N&#176;129</td><td>474,92</td><td class="pos">+0,95 %</td><td><span class="biais-hausse">HAUSSIER MODÉRÉ</span> 22H / 21B</td></tr>
+  <tr><th>Seance</th><th>BOC</th><th>Composite</th><th>Var. jour</th><th>Biais du jour</th></tr>
+  <tr><td>Lundi 06/07</td><td>N&#176;125</td><td>460,21</td><td class="pos">+0,11 %</td><td><span class="biais-hausse">ACHETEUR MODERE</span> (21H / 20B)</td></tr>
+  <tr><td>Mardi 07/07</td><td>N&#176;126</td><td>~463,89</td><td class="pos">+0,80 %</td><td><span class="biais-vente">VENDEUR CONFIRME</span> (14H / 24B)</td></tr>
+  <tr><td>Mercredi 08/07</td><td>N&#176;127</td><td>470,48</td><td class="pos">+1,42 %</td><td><span class="biais-mixte">MIXTE</span> (16H / 27B)</td></tr>
+  <tr><td>Jeudi 09/07</td><td>N&#176;128</td><td>470,47</td><td class="neu">0,00 %</td><td><span class="biais-neutre">NEUTRE</span> (19H / 21B)</td></tr>
+  <tr><td>Vendredi 10/07</td><td>N&#176;129</td><td>474,92</td><td class="pos">+0,95 %</td><td><span class="biais-hausse">HAUSSIER MODERE</span> (22H / 21B)</td></tr>
 </table>
 
-<div class="callout">
-  <strong>[!] Divergence indices / breadth :</strong> Mardi et mercredi, les indices ont progressé alors que la majorité des titres reculaient. La hausse hebdomadaire a été portée par <strong>BOAM, ECOC, TTLS et SNTS</strong> &mdash; sans eux, le Composite aurait clôturé en territoire négatif plusieurs jours. Lire les indices sans filtrer par breadth serait trompeur cette semaine.
-</div>
+<p><strong>Performance hebdomadaire Composite : 460,21 &#8594; 474,92 = <span class="pos">+3,20 %</span></strong><br>
+<strong>YTD cloture vendredi : <span class="pos">+37,36 %</span> | 4 sessions positives sur 5</strong></p>
 
-<!-- Section 2 -->
-<h2>2. Top 5 &mdash; Actions les plus performantes de la semaine</h2>
+<blockquote><strong>Divergence indices / breadth :</strong> Mardi et mercredi, les indices ont progresse alors que la majorite des titres reculaient. La hausse hebdomadaire a ete concentree sur BOAM, ECOC, TTLS, SNTS et CBIBF &#8212; sans eux, le Composite aurait cloture negatif plusieurs jours. La breadth ne confirme la hausse qu'a partir du vendredi.</blockquote>
 
+<h2>Section 2 &#8212; Top 5 actions les plus performantes de la semaine</h2>
 <table>
-  <tr><th>Rang</th><th>Titre</th><th>Symbole</th><th>Cours lundi</th><th>Cours vendredi</th><th>Perf. hebdo</th><th>Commentaire</th></tr>
-  <tr style="background:#eaf6ec;">
+  <tr><th>Rang</th><th>Titre</th><th>Symbole</th><th>Cours lundi</th><th>Cours vendredi</th><th>Perf. hebdo</th><th>Note</th></tr>
+  <tr>
     <td><span class="medal-gold">#1</span></td>
-    <td><strong>BOA MALI</strong></td><td>BOAM</td>
+    <td>BOA MALI</td><td>BOAM</td>
     <td>4 930 FCFA</td><td>5 450 FCFA</td>
     <td class="pos"><strong>+10,53 %</strong></td>
-    <td>Meilleure performance fondamentale &mdash; PER 13,50, Rdt 5,60 %. Momentum soutenu 5 jours.</td>
+    <td>Momentum soutenu 5 jours &#8212; fondamentaux valides (PER 13,50, Rdt 5,60 %)</td>
   </tr>
   <tr>
     <td><span class="medal-silver">#2</span></td>
-    <td><strong>CORIS BANK INTL</strong></td><td>CBIBF</td>
+    <td>CORIS BANK INTL</td><td>CBIBF</td>
     <td>~27 500 FCFA</td><td>29 610 FCFA</td>
-    <td class="pos"><strong>+7,50 % vendredi*</strong></td>
-    <td>Bond concentré sur la dernière séance. Carnet 933/0 post-hausse. Rdt 3,04 % insuffisant pour filtre valeur.</td>
+    <td class="pos"><strong>+7,50 %</strong></td>
+    <td>Bond concentre sur vendredi uniquement &#8212; Rdt 3,04 % insuffisant pour filtre valeur</td>
   </tr>
-  <tr style="background:#eaf6ec;">
+  <tr>
     <td><span class="medal-bronze">#3</span></td>
-    <td><strong>SONATEL SN</strong></td><td>SNTS</td>
+    <td>SONATEL SN</td><td>SNTS</td>
     <td>29 500 FCFA</td><td>30 900 FCFA</td>
     <td class="pos"><strong>+4,75 %</strong></td>
-    <td>Progression régulière 5 jours. PER 7,47 = le plus bas de la cote. Signal structurel.</td>
+    <td>Progression reguliere 5 jours &#8212; PER 7,47 le plus bas de la cote</td>
   </tr>
   <tr>
     <td><span class="medal-4">#4</span></td>
-    <td><strong>BOA CI</strong></td><td>BOAC</td>
+    <td>BOA CI</td><td>BOAC</td>
     <td>9 200 FCFA</td><td>9 500 FCFA</td>
     <td class="pos"><strong>+3,26 %</strong></td>
-    <td>Solide toute la semaine. Signal carnet validé jeudi (+0,80 %). Retournement vendeur vendredi à surveiller.</td>
+    <td>Solide &#8212; signal carnet valide jeudi (+0,80 %)</td>
   </tr>
-  <tr style="background:#eaf6ec;">
+  <tr>
     <td><span class="medal-5">#5</span></td>
-    <td><strong>ECOBANK CI</strong></td><td>ECOC</td>
+    <td>ECOBANK CI</td><td>ECOC</td>
     <td>16 500 FCFA</td><td>~16 700 FCFA</td>
     <td class="pos"><strong>+1,21 %</strong></td>
-    <td>Méga-transaction lundi (meilleur score de la semaine : 9/10 mardi). Consolidation en fin de semaine.</td>
+    <td>Mega-transaction lundi-mardi ; consolidation fin de semaine</td>
   </tr>
 </table>
 
-<p style="font-size:12px;color:#57606a;">* CBIBF : hausse concentrée sur vendredi uniquement &mdash; performance hebdomadaire moins représentative que BOAM ou SNTS.</p>
+<blockquote><strong>Cas STBC :</strong> meilleure note hebdo (moyenne 8,6/10 &#8212; record 10/10 jeudi) mais cours legerement baissier (24 350 &#8594; 24 105, -1,01 %) en raison de prises de profit normales pre-AG. Valeur fondamentale intacte &#8212; reste l'opportunite principale de la semaine prochaine.</blockquote>
 
-<div class="callout">
-  <strong>Cas STBC :</strong> Meilleure note hebdo (8,6/10 en moyenne, record 10/10 jeudi) mais cours en légère baisse sur la semaine (24 350 &#8594; 24 105, -1,01 %) &mdash; prises de profit pré-AG normales. La valeur fondamentale (PER 11,87, Rdt 8,70 %) et le catalyseur AG du 15/07 restent intacts. STBC reste l'opportunité principale pour la semaine prochaine.
-</div>
-
-<!-- Section 3 -->
-<h2>3. Top 5 recommandations <span class="acheter">ACHETER</span> &mdash; Semaine du 13 au 17 juillet 2026</h2>
-
-<div class="stock-acheter">
-  <strong><span class="medal-gold">#1</span> SITAB CI (STBC) &mdash; 24 105 FCFA</strong>
-  &nbsp;<span class="acheter">ACHETER</span>
-  <br>Score moyen semaine : <strong>8,6/10</strong> &mdash; présent dans le Top 3 les 5 jours.
-  <br>Rdt <strong>8,70 %</strong> (meilleur de la cote) | PER 11,87 | AG Ordinaire <strong>15/07/2026</strong> dans 5 jours.
-  <br>Carnet résiduel : 7/377 (léger mur vendeur CT, mais AG dominera). Entrée cible : 24 000&ndash;24 200 FCFA.
-</div>
+<h2>Section 3 &#8212; Top 5 recommandations ACHETER (semaine du 13 au 17 juillet)</h2>
+<table>
+  <tr><th>Rang</th><th>Titre</th><th>Sym.</th><th>Cours entree</th><th>Score moy.</th><th>PER</th><th>Rdt</th><th>Catalyseur</th></tr>
+  <tr><td><span class="medal-gold">#1</span></td><td>SITAB CI</td><td>STBC</td><td>24 000&#8211;24 200 FCFA</td><td><strong>8,6/10</strong></td><td>11,87</td><td>8,70 %</td><td><strong>AG Ordinaire 15/07</strong> &#8212; 5eme signal consecutif</td></tr>
+  <tr><td><span class="medal-silver">#2</span></td><td>PALM CI</td><td>PALC</td><td>8 750&#8211;8 850 FCFA</td><td><strong>6,2/10</strong></td><td>8,79</td><td>5,00 %</td><td>Carnet 493/20 maintenu (24,6:1) &#8212; signal valide</td></tr>
+  <tr><td><span class="medal-bronze">#3</span></td><td>SONATEL SN</td><td>SNTS</td><td>30 500&#8211;31 000 FCFA</td><td><strong>6,2/10</strong></td><td>7,47</td><td>5,63 %</td><td>PER le plus bas du marche &#8212; mur vendeur en absorption</td></tr>
+  <tr><td><span class="medal-4">#4</span></td><td>SMB CI</td><td>SMBC</td><td>~17 000&#8211;17 500 FCFA</td><td><strong>5,0/10</strong></td><td>n/a</td><td>3,56 %</td><td>Mur 19 592 absorbe &#8594; 7 residuel &#8212; rebond lundi probable</td></tr>
+  <tr><td><span class="medal-5">#5</span></td><td>BOA CI</td><td>BOAC</td><td>9 400&#8211;9 500 FCFA</td><td><strong>6,6/10</strong></td><td>10,69</td><td>6,29 %</td><td>Fondamentaux solides &#8212; entrer si carnet lundi repasse acheteur</td></tr>
+</table>
 
 <div class="stock-acheter">
-  <strong><span class="medal-silver">#2</span> PALM CI (PALC) &mdash; 8 820 FCFA</strong>
-  &nbsp;<span class="acheter">ACHETER</span>
-  <br>Score moyen semaine : <strong>6,2/10</strong> &mdash; signal carnet maintenu 2 séances consécutives.
-  <br>Carnet 493/20 (ratio 24,6:1) vendredi &mdash; après le signal record 4 404/13 (339:1) jeudi validé à 100 %.
-  <br>PER <strong>8,79</strong> | Rdt <strong>5,00 %</strong> | Double critère satisfait. Entrée cible : 8 750&ndash;8 850 FCFA.
+  <strong><span class="acheter">ACHETER</span> STBC</strong> &#8212; 5 jours consecutifs dans le Top 3 (7&#8594;8&#8594;9&#8594;10&#8594;9/10). La baisse de vendredi (-0,80 %) est une prise de profit pre-week-end, non un signal de retournement. AG 15/07 = catalyseur majeur. Entree cible avant mercredi.
 </div>
 
 <div class="stock-acheter">
-  <strong><span class="medal-bronze">#3</span> SONATEL SN (SNTS) &mdash; 30 900 FCFA</strong>
-  &nbsp;<span class="acheter">ACHETER</span>
-  <br>Score moyen semaine : <strong>6,2/10</strong> &mdash; progression constante lundi&#8594;jeudi.
-  <br>PER <strong>7,47</strong> = le titre le moins cher de toute la cote. Rdt <strong>5,63 %</strong>.
-  <br>Mur vendeur en absorption active (1 159 &#8594; 691 entre jeudi et vendredi, -40 % en 1 séance). Horizon moyen terme.
+  <strong><span class="acheter">ACHETER</span> PALC</strong> &#8212; Signal carnet 493/20 vendredi (apres record 4 404/13 jeudi). Ratio 24,6:1 &#8212; la demande accumulee se materialisera en hausse. PER 8,79 + Rdt 5,00 % = double critere valide.
 </div>
 
 <div class="stock-acheter">
-  <strong><span class="medal-4">#4</span> SMB CI (SMBC) &mdash; ~17 295 FCFA</strong>
-  &nbsp;<span class="surveiller">SURVEILLER &#8594; ACHETER</span>
-  <br>Absorption spectaculaire du mur vendeur <strong>19 592 &#8594; 7 résiduel</strong> (vendredi) &mdash; acheteur institutionnel confirmé.
-  <br>Rebond technique probable lundi. Attendre carnet d'ouverture avant d'intervenir.
-  <br>Position à limiter (spéculative) &mdash; confirmer le rebond avant de renforcer.
+  <strong><span class="acheter">ACHETER</span> SNTS</strong> &#8212; Absorption du mur vendeur accelere (1 159 &#8594; 691 entre jeudi et vendredi, -40 % en 1 seance). PER 7,47 = decote structurelle persistante. Horizon moyen terme.
 </div>
 
 <div class="stock-acheter">
-  <strong><span class="medal-5">#5</span> BOA CI (BOAC) &mdash; 9 500 FCFA</strong>
-  &nbsp;<span class="attendre">ATTENDRE &#8594; ACHETER</span>
-  <br>Score moyen semaine : <strong>6,6/10</strong> &mdash; solide sur les fondamentaux.
-  <br>PER <strong>10,69</strong> | Rdt <strong>6,29 %</strong>. Carnet retourné vendeur vendredi (22/220) après hausse +0,80 %.
-  <br>Condition d'entrée : carnet lundi repassé côté achat. Si confirmé, saisir à 9 400&ndash;9 500 FCFA.
+  <strong><span class="surveiller">SURVEILLER</span> SMBC</strong> &#8212; Absorption institutionnelle spectaculaire de 19 592 &#8594; 7 residuel en 1 seance. Signal de retournement haussier. Position limitee &#8212; confirmer lundi avant de renforcer.
 </div>
 
-<!-- Section 4 -->
-<h2>4. Actions à <span class="eviter">ÉVITER</span> &mdash; Semaine du 13 au 17 juillet 2026</h2>
+<div class="stock-acheter">
+  <strong><span class="surveiller">SURVEILLER</span> BOAC</strong> &#8212; Carnet retourne vendeur vendredi (22/220) apres hausse +0,80 %. Condition d'entree : carnet d'ouverture lundi cote achat. Fondamentaux PER 10,69 + Rdt 6,29 % restent solides.
+</div>
+
+<h2>Section 4 &#8212; Top 5 recommandations VENDRE / ALLEGER (pour les porteurs)</h2>
+<blockquote>Ces recommandations s'adressent exclusivement aux porteurs actuels de ces titres. Les non-porteurs trouveront les titres a ne pas acheter en Section 5.</blockquote>
 
 <table>
-  <tr><th>Titre</th><th>Symbole</th><th>Raison</th><th>Risque chiffré</th></tr>
+  <tr><th>Rang</th><th>Titre</th><th>Sym.</th><th>Action</th><th>Cours vendredi</th><th>Justification</th><th>Risque si on reste</th></tr>
   <tr>
-    <td><strong>TOTALENERGIES MKT SN</strong></td><td>TTLS</td>
-    <td><span class="neg">Ex-dividende 16/07</span> &mdash; drop mécanique inévitable</td>
-    <td class="neg"><strong>-176,65 FCFA/action &#8594; ~-4 %</strong></td>
+    <td><span class="medal-gold">#1</span></td>
+    <td>TOTALENERGIES MKT SN</td><td>TTLS</td>
+    <td><span class="vendre">VENDRE</span></td>
+    <td>~4 410 FCFA</td>
+    <td>Ex-div 16/07 : drop mecanique -176,65 FCFA (~4 %) inevitable. Mur vendeur 3 601 titres.</td>
+    <td class="neg">Perte de ~176 FCFA/action garantie si detenu apres le 16/07</td>
   </tr>
   <tr>
-    <td><strong>BOA BF</strong></td><td>BOABF</td>
-    <td>7&#232;me retournement vendeur (764/3 911) &mdash; correction probable</td>
-    <td class="neg">-2 % &#224; -4 % probable CT</td>
+    <td><span class="medal-silver">#2</span></td>
+    <td>ERIUM CI</td><td>SIVC</td>
+    <td><span class="vendre">VENDRE</span></td>
+    <td>2 060 FCFA</td>
+    <td>AG 13/07 (lundi) = catalyseur epuise des mardi. PER 100,35 = pas de plancher fondamental.</td>
+    <td class="neg">Retour en liquidation probable mardi post-AG</td>
   </tr>
   <tr>
-    <td><strong>BOA SN</strong></td><td>BOAS</td>
-    <td>Mur vendeur massif 4 561 titres non résolu</td>
-    <td class="neg">Pression vendeuse persistante</td>
+    <td><span class="medal-bronze">#3</span></td>
+    <td>BOA NIGER</td><td>BOAN</td>
+    <td><span class="vendre">VENDRE</span></td>
+    <td>4 790 FCFA</td>
+    <td>PER 243 + carnet 100/1 196 vendeur post-hausse +6,44 %. Hausse speculative pure.</td>
+    <td class="neg">Correction -5 a -10 % probable &#8212; aucun plancher fondamental a 4 790 FCFA</td>
   </tr>
   <tr>
-    <td><strong>ERIUM CI</strong></td><td>SIVC</td>
-    <td>AG 13/07 (lundi) &mdash; catalyseur épuisé post-AG, PER 100,35</td>
-    <td class="neg">Pas de plancher fondamental</td>
+    <td><span class="medal-4">#4</span></td>
+    <td>BOA BF</td><td>BOABF</td>
+    <td><span class="alleger">ALLEGER</span></td>
+    <td>6 050 FCFA</td>
+    <td>7eme retournement de carnet vendeur (764/3 911). Le titre oscille systematiquement.</td>
+    <td class="neg">Pression vendeuse 3 911 titres non resolue</td>
   </tr>
   <tr>
-    <td><strong>UNILEVER CI / BNB CI</strong></td><td>UNLC / BNBC</td>
-    <td>PER &gt; 500 &mdash; bulles spéculatives permanentes</td>
-    <td class="neg">Aucun support fondamental</td>
-  </tr>
-  <tr>
-    <td><strong>BOA NIGER</strong></td><td>BOAN</td>
-    <td>PER 243 + carnet 100/1 196 vendeur résiduel</td>
-    <td class="neg">Spéculatif pur, risque fort</td>
+    <td><span class="medal-5">#5</span></td>
+    <td>BOA MALI</td><td>BOAM</td>
+    <td><span class="alleger">ALLEGER</span></td>
+    <td>5 450 FCFA</td>
+    <td>+10,53 % en 5 seances = prise de profit partielle justifiee. Carnet retourne vendeur 203/790.</td>
+    <td class="neg">Risque consolidation -3 a -5 % apres le fort rallye</td>
   </tr>
 </table>
 
-<div class="callout-red">
-  <strong>Attention TTLS &mdash; piège ex-dividende :</strong> Acheter TTLS avant le 16/07 revient à payer le dividende (176,65 FCFA) dans le cours d'achat, puis le récupérer sous forme de dividende &mdash; opération neutre fiscalement défavorable. Repositionnement rationnel : après l'ex-date (17/07 ou après). Le mur vendeur résiduel de 3 601 titres confirme que les institutionnels soldent leurs positions.
+<div class="stock-vendre">
+  <strong><span class="vendre">VENDRE</span> TTLS &#8212; Mecanique ex-dividende expliquee :</strong> Le cours de TTLS integre deja le dividende de 176,65 FCFA. A l'ex-date (16/07), le cours sera mecaniquement reduit de ce montant, peu importe la demande. Vendre avant le 16/07 = encaisser la valeur dividende dans le cours de vente. Attendre l'ex-date = subir le drop puis recuperer le dividende (operation neutre avant impots, defavorable apres).
 </div>
 
-<!-- Section 5 -->
-<h2>5. Signal structurel de la semaine</h2>
+<div class="stock-vendre">
+  <strong><span class="vendre">VENDRE</span> SIVC &#8212; Fin du catalyseur speculatif :</strong> Le rebond de +7,29 % vendredi est une anticipation de l'AG de lundi. Des mardi, sans catalyseur, le titre retrouvera sa tendance de fond : PER 100 sans croissance = liquidation lente. Ceux qui ont achete sur la hausse speculative doivent sortir lundi matin.
+</div>
+
+<div class="stock-alleger">
+  <strong><span class="alleger">ALLEGER</span> BOAM &#8212; Prise de profit partielle :</strong> Alleger 50 % de la position apres +10,53 % en 1 semaine est une gestion prudente du risque. Conserver 50 % pour capter le potentiel moyen terme (fondamentaux solides : PER 13,50, Rdt 5,60 %).
+</div>
+
+<h2>Section 5 &#8212; Actions a EVITER (semaine du 13 au 17 juillet)</h2>
+<table>
+  <tr><th>Titre</th><th>Symbole</th><th>Raison principale</th><th>Risque chiffre</th></tr>
+  <tr>
+    <td>TOTALENERGIES MKT SN</td><td>TTLS</td>
+    <td><strong>Ex-dividende 16/07</strong> &#8212; drop mecanique inevitable pour les acheteurs</td>
+    <td class="neg">-176,65 FCFA/action (~4 %)</td>
+  </tr>
+  <tr>
+    <td>BOA SN</td><td>BOAS</td>
+    <td>Mur vendeur massif 4 561 titres persistant vendredi</td>
+    <td class="neg">Pression vendeuse non resolue</td>
+  </tr>
+  <tr>
+    <td>SIB CI</td><td>SIBC</td>
+    <td>Mur vendeur 5 214 titres + ex-div 31/07 qui approche</td>
+    <td class="neg">Double pression vendeuse</td>
+  </tr>
+  <tr>
+    <td>SGB CI</td><td>SGBC</td>
+    <td>Mur vendeur 2 658 &#8212; 2eme semaine consecutive</td>
+    <td class="neg">Resistance institutionnelle forte</td>
+  </tr>
+  <tr>
+    <td>UNILEVER CI</td><td>UNLC</td>
+    <td>PER 724,25 &#8212; bulle permanente</td>
+    <td class="neg">Aucun plancher fondamental</td>
+  </tr>
+  <tr>
+    <td>BERNABE CI</td><td>BNBC</td>
+    <td>PER 520,88 &#8212; liquidation continue (-2,77 % vendredi)</td>
+    <td class="neg">Tendance baissiere confirmee</td>
+  </tr>
+  <tr>
+    <td>ERIUM CI</td><td>SIVC</td>
+    <td>Post-AG 13/07 &#8212; catalyseur epuise des mardi</td>
+    <td class="neg">Retour en liquidation PER 100</td>
+  </tr>
+</table>
+
+<h2>Section 6 &#8212; Signal structurel de la semaine</h2>
 
 <div class="signal-rot">
-  <strong>Rotation obligataire sénégalaise &mdash; 3 jours consécutifs (SIGNAL CONFIRMÉ)</strong>
-  <table style="margin-top:10px;">
-    <tr><th>BOC</th><th>Emission</th><th>Montant</th></tr>
-    <tr><td>N&#176;127 &mdash; Mercredi</td><td>EOS.O32 (État Sénégal)</td><td class="pos"><strong>717 MFCFA</strong></td></tr>
-    <tr><td>N&#176;128 &mdash; Jeudi</td><td>EOS.O26 (État Sénégal)</td><td class="pos"><strong>585 MFCFA</strong></td></tr>
-    <tr><td>N&#176;129 &mdash; Vendredi</td><td>EOS.O26 + O27</td><td class="pos"><strong>119 MFCFA</strong></td></tr>
-    <tr style="background:#eef3fb;"><td><strong>TOTAL 3 jours</strong></td><td></td><td class="pos"><strong>1 421,4 MFCFA</strong></td></tr>
+  <h3>Rotation obligataire senegalaise &#8212; SIGNAL CONFIRME (3 jours consecutifs)</h3>
+  <table>
+    <tr><th>BOC</th><th>Date</th><th>Emission</th><th>Montant</th></tr>
+    <tr><td>N&#176;127</td><td>Mercredi 08/07</td><td>EOS.O32 (Etat Senegal)</td><td class="pos"><strong>717 MFCFA</strong></td></tr>
+    <tr><td>N&#176;128</td><td>Jeudi 09/07</td><td>EOS.O26 (Etat Senegal)</td><td class="pos"><strong>585 MFCFA</strong></td></tr>
+    <tr><td>N&#176;129</td><td>Vendredi 10/07</td><td>EOS.O26 + O27</td><td><strong>119 MFCFA</strong></td></tr>
+    <tr><td><strong>Total 3 jours</strong></td><td colspan="2"></td><td class="pos"><strong>1 421,4 MFCFA</strong></td></tr>
   </table>
-  <p style="margin-top:8px;font-size:13px;">La décroissance des montants (717&#8594;585&#8594;119 MFCFA) signale la fin de la phase d'achat massif, mais confirme une rotation structurelle des capitaux vers la dette sénégalaise. À surveiller semaine prochaine : les capitaux libérés pourraient se repositionner sur actions si le marché obligataire se tend.</p>
+  <p>La decroissance des montants (717&#8594;585&#8594;119 MFCFA) signale la fin de la phase d'achat massif. La rotation structurelle vers la dette senegalaise est installee. Semaine prochaine : les capitaux liberes pourraient se repositionner sur actions si le marche obligataire se tend.</p>
 </div>
 
-<!-- Section 6 -->
-<h2>6. Agenda catalyseurs &mdash; Semaine du 13 au 17 juillet</h2>
+<blockquote><strong>Signal secondaire &#8212; Distorsion ETIT :</strong> ECOBANK TRANS. INC. TG a represente 82,2 % du volume brut jeudi et 95,4 % vendredi (record absolu, 4 615 129 / 4 838 020 titres). Volume brut BRVM inoperant sans filtrage ETIT.</blockquote>
 
+<h2>Section 7 &#8212; Agenda catalyseurs (semaine du 13 au 17 juillet)</h2>
 <table>
-  <tr><th>Date</th><th>Titre</th><th>Événement</th><th>Impact anticipé</th></tr>
-  <tr><td><strong>Lundi 13/07</strong></td><td>ERIUM CI (SIVC)</td><td>AG Ordinaire</td><td><span class="attendre">ATTENDRE</span> &mdash; catalyseur spéculatif, PER 100</td></tr>
-  <tr><td><strong>Mercredi 15/07</strong></td><td>SITAB CI (STBC)</td><td>AG Ordinaire</td><td><span class="acheter">POSITIF</span> &mdash; catalyseur principal de la semaine</td></tr>
-  <tr><td><strong>Jeudi 16/07</strong></td><td>UNIWAX CI (UNXC)</td><td>AG Ordinaire</td><td><span class="attendre">NEUTRE</span> &mdash; spéculatif, surveiller résolution</td></tr>
-  <tr><td><strong>Jeudi 16/07</strong></td><td>TOTALENERGIES MKT SN (TTLS)</td><td>Ex-dividende 176,65 FCFA</td><td><span class="eviter">NÉGATIF</span> &mdash; drop mécanique ~4 % inévitable</td></tr>
+  <tr><th>Date</th><th>Titre</th><th>Symbole</th><th>Evenement</th><th>Impact</th></tr>
+  <tr>
+    <td><strong>Lundi 13/07</strong></td><td>ERIUM CI</td><td>SIVC</td>
+    <td>AG Ordinaire</td>
+    <td><span class="vendre">VENDRE</span> avant / <span class="eviter">EVITER</span> apres</td>
+  </tr>
+  <tr>
+    <td><strong>Mercredi 15/07</strong></td><td>SITAB CI</td><td>STBC</td>
+    <td>AG Ordinaire</td>
+    <td><span class="acheter">ACHETER</span> avant &#8212; catalyseur principal</td>
+  </tr>
+  <tr>
+    <td><strong>Jeudi 16/07</strong></td><td>UNIWAX CI</td><td>UNXC</td>
+    <td>AG Ordinaire</td>
+    <td><span class="attendre">ATTENDRE</span> resolution</td>
+  </tr>
+  <tr>
+    <td><strong>Jeudi 16/07</strong></td><td>TOTALENERGIES MKT SN</td><td>TTLS</td>
+    <td><strong>Ex-dividende 176,65 FCFA</strong></td>
+    <td><span class="vendre">VENDRE</span> avant / <span class="eviter">EVITER</span> jusqu'au 17/07+</td>
+  </tr>
+  <tr>
+    <td><strong>Vendredi 17/07</strong></td><td>TOTALENERGIES MKT SN</td><td>TTLS</td>
+    <td>Premier jour ex-div</td>
+    <td>Repositionnement possible si cours stabilise</td>
+  </tr>
 </table>
 
-<!-- Section 7 -->
-<h2>7. Plan d'action &mdash; Tableau de bord</h2>
-
+<h2>Section 8 &#8212; Plan d'action complet</h2>
 <table>
-  <tr><th>Action</th><th>Titre</th><th>Cours cible</th><th>Timing</th></tr>
-  <tr style="background:#eaf6ec;"><td><span class="acheter">ACHETER</span></td><td><strong>STBC</strong></td><td>24 000&ndash;24 200 FCFA</td><td>Avant AG 15/07 &mdash; dès lundi</td></tr>
-  <tr style="background:#eaf6ec;"><td><span class="acheter">ACHETER</span></td><td><strong>PALC</strong></td><td>8 750&ndash;8 850 FCFA</td><td>Dès lundi (carnet maintenu)</td></tr>
-  <tr style="background:#eaf6ec;"><td><span class="acheter">ACHETER</span></td><td><strong>SNTS</strong></td><td>30 500&ndash;31 000 FCFA</td><td>Horizon moyen terme</td></tr>
-  <tr><td><span class="surveiller">SURVEILLER</span></td><td><strong>SMBC</strong></td><td>~17 000&ndash;17 500 FCFA</td><td>Attendre carnet ouverture lundi</td></tr>
-  <tr><td><span class="surveiller">SURVEILLER</span></td><td><strong>BOAC</strong></td><td>9 400&ndash;9 500 FCFA</td><td>Attendre carnet lundi</td></tr>
-  <tr><td><span class="attendre">ATTENDRE</span></td><td><strong>CBIBF</strong></td><td>&lt; 29 000 FCFA</td><td>Entrer sur repli &mdash; momentum fort, Rdt insuffisant</td></tr>
-  <tr style="background:#fdecea;"><td><span class="eviter">ÉVITER</span></td><td><strong>TTLS</strong></td><td>&mdash;</td><td>Jusqu'au 17/07 minimum</td></tr>
-  <tr style="background:#fdecea;"><td><span class="eviter">ÉVITER</span></td><td><strong>BOABF</strong></td><td>&mdash;</td><td>Attendre stabilisation carnet</td></tr>
-  <tr style="background:#fdecea;"><td><span class="eviter">ÉVITER</span></td><td><strong>SIVC</strong></td><td>&mdash;</td><td>Post-AG 13/07 &mdash; catalyseur épuisé</td></tr>
+  <tr><th>Action</th><th>Titre</th><th>Sym.</th><th>Cours cible</th><th>Timing</th><th>Justification</th></tr>
+  <tr>
+    <td><span class="acheter">ACHETER</span></td><td>SITAB CI</td><td>STBC</td>
+    <td>24 000&#8211;24 200</td><td>Avant 15/07</td><td>AG + meilleur Rdt du marche</td>
+  </tr>
+  <tr>
+    <td><span class="acheter">ACHETER</span></td><td>PALM CI</td><td>PALC</td>
+    <td>8 750&#8211;8 850</td><td>Des lundi</td><td>Carnet acheteur maintenu</td>
+  </tr>
+  <tr>
+    <td><span class="acheter">ACHETER</span></td><td>SONATEL SN</td><td>SNTS</td>
+    <td>30 500&#8211;31 000</td><td>Horizon MT</td><td>PER le plus bas, absorption en cours</td>
+  </tr>
+  <tr>
+    <td><span class="surveiller">SURVEILLER</span></td><td>SMB CI</td><td>SMBC</td>
+    <td>~17 000&#8211;17 500</td><td>Lundi ouverture</td><td>Confirmer carnet avant d'entrer</td>
+  </tr>
+  <tr>
+    <td><span class="surveiller">SURVEILLER</span></td><td>BOA CI</td><td>BOAC</td>
+    <td>9 400&#8211;9 500</td><td>Lundi ouverture</td><td>Entrer si carnet repasse acheteur</td>
+  </tr>
+  <tr>
+    <td><span class="attendre">ATTENDRE</span></td><td>CORIS BANK</td><td>CBIBF</td>
+    <td>&lt; 29 000</td><td>Repli</td><td>Momentum fort, Rdt 3,04 % insuffisant</td>
+  </tr>
+  <tr>
+    <td><span class="attendre">ATTENDRE</span></td><td>ORANGE CI</td><td>ORAC</td>
+    <td>&lt; 16 000</td><td>Repli</td><td>Bilan liquidite positif mais Rdt sous seuil</td>
+  </tr>
+  <tr>
+    <td><span class="alleger">ALLEGER</span></td><td>BOA MALI</td><td>BOAM</td>
+    <td>&#8212;</td><td>Lundi</td><td>Prendre 50 % des profits apres +10,53 %</td>
+  </tr>
+  <tr>
+    <td><span class="alleger">ALLEGER</span></td><td>BOA BF</td><td>BOABF</td>
+    <td>&#8212;</td><td>Des lundi</td><td>7eme retournement &#8212; reduire exposition</td>
+  </tr>
+  <tr>
+    <td><span class="vendre">VENDRE</span></td><td>TOTALENERGIES SN</td><td>TTLS</td>
+    <td>&#8212;</td><td>Avant 16/07</td><td>Drop mecanique ex-div inevitable</td>
+  </tr>
+  <tr>
+    <td><span class="vendre">VENDRE</span></td><td>ERIUM CI</td><td>SIVC</td>
+    <td>&#8212;</td><td>Lundi matin</td><td>Catalyseur AG epuise des mardi</td>
+  </tr>
+  <tr>
+    <td><span class="vendre">VENDRE</span></td><td>BOA NIGER</td><td>BOAN</td>
+    <td>&#8212;</td><td>Des que possible</td><td>PER 243, momentum speculatif termine</td>
+  </tr>
+  <tr>
+    <td><span class="eviter">EVITER</span></td><td>BOA SN</td><td>BOAS</td>
+    <td>&#8212;</td><td>&#8212;</td><td>Mur vendeur 4 561 non resolu</td>
+  </tr>
+  <tr>
+    <td><span class="eviter">EVITER</span></td><td>SIB CI</td><td>SIBC</td>
+    <td>&#8212;</td><td>&#8212;</td><td>Mur vendeur 5 214</td>
+  </tr>
+  <tr>
+    <td><span class="eviter">EVITER</span></td><td>UNILEVER / BERNABE</td><td>UNLC/BNBC</td>
+    <td>&#8212;</td><td>&#8212;</td><td>PER &gt; 500, bulles permanentes</td>
+  </tr>
 </table>
 
 <div class="disclaimer">
-  <strong>Disclaimer :</strong> Document de synthèse hebdomadaire à but analytique et pédagogique uniquement. Ne constitue pas un conseil personnalisé en investissement au sens de la réglementation CREPMF / UEMOA. Les cours, carnets d'ordres et signaux sont datés de la clôture du vendredi 10 juillet 2026 (BOC N&#176;129). La situation de marché peut évoluer significativement en début de semaine suivante. Toute décision d'investissement relève de la responsabilité exclusive de l'investisseur.
+  Document de synthese hebdomadaire a but analytique et pedagogique. Ne constitue pas un conseil personnalise en investissement. Cours et signaux dates de la cloture du vendredi 10 juillet 2026 (BOC N&#176;129). La situation de marche peut evoluer en debut de semaine suivante.
 </div>
