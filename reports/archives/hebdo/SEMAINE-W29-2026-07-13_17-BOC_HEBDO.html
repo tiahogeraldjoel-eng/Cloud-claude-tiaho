@@ -1,0 +1,540 @@
+<meta charset="UTF-8">
+<title>BOC_HEBDO W29 — Semaine 13–17 juillet 2026 | BRVM</title>
+<style>
+  /* Reset minimal */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #24292f;
+    background: #ffffff;
+    padding: 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* Titres */
+  h1 { font-size: 1.7em; color: #0b3d91; border-bottom: 3px solid #0b3d91; padding-bottom: 8px; margin-bottom: 16px; }
+  h2 { font-size: 1.25em; color: #0b3d91; border-bottom: 2px solid #0b3d91; padding: 6px 0; margin: 24px 0 12px; }
+  h3 { font-size: 1.05em; color: #0b3d91; margin: 16px 0 8px; }
+  p { margin: 8px 0; }
+
+  /* KPI row */
+  .kpi-row { display: flex; gap: 16px; flex-wrap: wrap; margin: 16px 0; }
+  .kpi {
+    background: #eef3fb;
+    border: 1px solid #cdd9ea;
+    border-radius: 6px;
+    padding: 12px 18px;
+    text-align: center;
+    min-width: 120px;
+    flex: 1;
+  }
+  .kpi .val { font-size: 1.6em; font-weight: 800; color: #0b3d91; }
+  .kpi .val.pos { color: #1a7f37; }
+  .kpi .val.neg { color: #cf222e; }
+  .kpi .lbl { font-size: 11px; color: #57606a; text-transform: uppercase; letter-spacing: .04em; }
+
+  /* Tableaux */
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; overflow-x: auto; display: block; }
+  th { background: #0b3d91; color: #fff; padding: 7px 10px; text-align: left; font-weight: 700; white-space: nowrap; }
+  td { padding: 6px 10px; border-bottom: 1px solid #e1e4e8; vertical-align: top; }
+  tr:nth-child(even) td { background: #f6f8fa; }
+  tr:hover td { background: #eef3fb; }
+
+  /* Badges recommandations */
+  .acheter  { background: #1a7f37; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .alleger  { background: #e36209; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .vendre   { background: #8b0000; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .attendre { background: #bf8700; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .eviter   { background: #cf222e; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .surveiller { background: #0b3d91; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .conserver  { background: #1a7f37; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+
+  /* Badges biais */
+  .biais-hausse { background: #1a7f37; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-vente  { background: #cf222e; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-neutre { background: #57606a; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-mixte  { background: #bf8700; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+
+  /* Médailles */
+  .medal-gold   { background: #ffd700; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-silver { background: #c0c0c0; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-bronze { background: #cd7f32; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-4, .medal-5 { background: #57606a; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+
+  /* Blocs stock */
+  .stock-acheter { border-left: 4px solid #1a7f37; background: #f0faf3; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-eviter  { border-left: 4px solid #cf222e; background: #fdecea; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-vendre  { border-left: 4px solid #8b0000; background: #fff0f0; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-alleger { border-left: 4px solid #e36209; background: #fff5ec; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-neutre  { border-left: 4px solid #0b3d91; background: #eef3fb; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+
+  /* Signal structurel */
+  .signal-rot { background: #f0f4ff; border: 2px solid #0b3d91; border-radius: 6px; padding: 12px 16px; margin: 12px 0; }
+
+  /* Boîtes info/alerte */
+  .info-box  { border-left: 4px solid #1a7f37; background: #f0faf3; padding: 10px 14px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .warn-box  { border-left: 4px solid #bf8700; background: #fff8e6; padding: 10px 14px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .alert-box { border-left: 4px solid #cf222e; background: #fdecea; padding: 10px 14px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+
+  /* Variations couleurs */
+  .pos { color: #1a7f37; font-weight: 700; }
+  .neg { color: #cf222e; font-weight: 700; }
+  .neut { color: #57606a; }
+
+  /* Note bas de page */
+  .disclaimer { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; padding: 14px 18px; margin-top: 32px; font-size: 12px; color: #57606a; }
+
+  /* Dark mode */
+  @media (prefers-color-scheme: dark) {
+    body { background: #0d1117; color: #c9d1d9; }
+    h1, h2, h3 { color: #79c0ff; border-color: #388bfd; }
+    th { background: #1f3a6e; }
+    td { border-color: #30363d; }
+    tr:nth-child(even) td { background: #161b22; }
+    tr:hover td { background: #1f2937; }
+    .kpi { background: #161b22; border-color: #30363d; }
+    .kpi .val { color: #79c0ff; }
+    .signal-rot { background: #131d31; border-color: #388bfd; }
+    .stock-acheter { background: #0d2318; }
+    .stock-eviter  { background: #2d0a0a; }
+    .stock-vendre  { background: #2d0a0a; }
+    .stock-alleger { background: #2d1500; }
+    .stock-neutre  { background: #131d31; }
+    .info-box  { background: #0d2318; }
+    .warn-box  { background: #2d1f00; }
+    .alert-box { background: #2d0a0a; }
+    .disclaimer { background: #161b22; border-color: #30363d; color: #8b949e; }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117; --text: #c9d1d9;
+  }
+  :root[data-theme="dark"] body { background: #0d1117; color: #c9d1d9; }
+  :root[data-theme="dark"] h1, :root[data-theme="dark"] h2, :root[data-theme="dark"] h3 { color: #79c0ff; border-color: #388bfd; }
+  :root[data-theme="dark"] th { background: #1f3a6e; }
+  :root[data-theme="dark"] td { border-color: #30363d; }
+  :root[data-theme="dark"] tr:nth-child(even) td { background: #161b22; }
+  :root[data-theme="dark"] .kpi { background: #161b22; border-color: #30363d; }
+  :root[data-theme="dark"] .kpi .val { color: #79c0ff; }
+  :root[data-theme="dark"] .signal-rot { background: #131d31; border-color: #388bfd; }
+  :root[data-theme="light"] body { background: #ffffff; color: #24292f; }
+  :root[data-theme="light"] h1, :root[data-theme="light"] h2, :root[data-theme="light"] h3 { color: #0b3d91; border-color: #0b3d91; }
+</style>
+
+<h1>BOC_HEBDO &mdash; Synthèse Hebdomadaire BRVM | Semaine W29<br>
+<small style="font-size:0.65em; color:#57606a; font-weight:400;">13 juillet &rarr; 17 juillet 2026 &mdash; 5 séances (BOC N°130 à N°134)</small></h1>
+
+<!-- KPI ROW -->
+<div class="kpi-row">
+  <div class="kpi">
+    <div class="val pos">+0,58 %</div>
+    <div class="lbl">Composite hebdo</div>
+  </div>
+  <div class="kpi">
+    <div class="val">478,53</div>
+    <div class="lbl">Composite vendredi</div>
+  </div>
+  <div class="kpi">
+    <div class="val pos">+38,40 %</div>
+    <div class="lbl">YTD clôture vendredi</div>
+  </div>
+  <div class="kpi">
+    <div class="val">3 / 5</div>
+    <div class="lbl">Séances positives</div>
+  </div>
+  <div class="kpi">
+    <div class="val">70 %</div>
+    <div class="lbl">Prédiction carnets</div>
+  </div>
+</div>
+
+<!-- SECTION 1 -->
+<h2>Section 1 &mdash; Bilan indices de la semaine</h2>
+
+<table>
+  <tr>
+    <th>Séance</th><th>BOC N°</th><th>BRVM Composite</th><th>Var. jour</th><th>Biais séance</th>
+  </tr>
+  <tr><td>Lundi 13/07</td><td>130</td><td>475,78</td><td class="pos">+0,18 %</td><td><span class="biais-hausse">ACHETEUR MODÉRÉ</span> 23H/22B</td></tr>
+  <tr><td>Mardi 14/07</td><td>131</td><td>479,46</td><td class="pos">+0,77 %</td><td><span class="biais-neutre">NEUTRE</span> 19H=19B</td></tr>
+  <tr><td>Mercredi 15/07</td><td>132</td><td>481,23</td><td class="pos">+0,37 %</td><td><span class="biais-neutre">NEUTRE</span> 20H/24B lgt. vendeur</td></tr>
+  <tr><td>Jeudi 16/07</td><td>133</td><td>479,92</td><td class="neg">-0,27 %</td><td><span class="biais-neutre">NEUTRE</span> 21H/22B lgt. vendeur</td></tr>
+  <tr><td>Vendredi 17/07</td><td>134</td><td>478,53</td><td class="neg">-0,29 %</td><td><span class="biais-neutre">NEUTRE</span> 21H/19B lgt. positif</td></tr>
+</table>
+
+<div class="info-box">
+  <strong>Performance hebdomadaire Composite :</strong> (478,53 &ndash; 475,78) / 475,78 = <strong class="pos">+0,58 %</strong> | YTD : <strong class="pos">+38,40 %</strong> | Séances positives : 3/5
+</div>
+
+<p>La semaine W29 illustre une divergence structurelle entre le Prestige et le Principal. Le BRVM Prestige perd -0,93 % sur la semaine (176,67 &rarr; 175,04) pendant que le BRVM Principal gagne +1,14 % (358,77 &rarr; 362,87). Cette rotation large caps &rarr; mid-caps est confirmatoire : l'argent institutionnel cible les titres du Principal à fort potentiel de revalorisation (SDSC, BOABF, BOAC) plutôt que les grandes caps du Prestige.</p>
+
+<div class="warn-box">
+  <strong>[!] Distorsion ETIT systémique :</strong> Ecobank Trans. TG représente 91,58 % (BOC 130), 85,83 % (BOC 131), 86,54 % (BOC 132), 96,95 % (BOC 133) et 88,3 % (BOC 134) du volume brut. Toute lecture du volume brut sans filtrage ETIT est invalide.
+</div>
+
+<!-- SECTION 2 -->
+<h2>Section 2 &mdash; Top 5 actions les plus performantes de la semaine</h2>
+
+<p style="font-size:12px; color:#57606a;">Perf = (cours vendredi BOC 134 &ndash; cours lundi BOC 130) / cours lundi BOC 130. (*) Cours lundi reconstruit depuis la variation du mardi pour les titres non listés dans BOC 130.</p>
+
+<table>
+  <tr>
+    <th>Rang</th><th>Titre</th><th>Sym.</th><th>Cours lundi 13/07</th><th>Cours vendredi 17/07</th><th>Perf. hebdo</th><th>Commentaire</th>
+  </tr>
+  <tr>
+    <td><span class="medal-gold">#1</span></td>
+    <td>UNIWAX CI</td><td>UNXC</td>
+    <td>1 440 FCFA</td><td>1 845 FCFA</td>
+    <td class="pos"><strong>+28,1 %</strong></td>
+    <td>AG 16/07 déclencheur ; +7,46 % lundi, +7,29 % mardi, +7,23 % jeudi, +3,65 % vendredi. Carnet vendredi 41,2:1 ACH (4 000/97). PER 31,79 &mdash; spike catalyseur non extrapolable</td>
+  </tr>
+  <tr>
+    <td><span class="medal-silver">#2</span></td>
+    <td>AFRICA GLOBAL LOGISTICS</td><td>SDSC</td>
+    <td>~2 190 FCFA*</td><td>2 720 FCFA</td>
+    <td class="pos"><strong>+24,2 %</strong></td>
+    <td>5 hausses consécutives (+7,31 % &rarr; +7,45 % &rarr; +7,33 % &rarr; +0,37 %). PER 7,03 = décote structurelle profonde. Score moyen W29 : 6,75/10 &mdash; meilleur score moyen de la semaine</td>
+  </tr>
+  <tr>
+    <td><span class="medal-bronze">#3</span></td>
+    <td>BANK OF AFRICA BF</td><td>BOABF</td>
+    <td>6 100 FCFA</td><td>7 200 FCFA</td>
+    <td class="pos"><strong>+18,0 %</strong></td>
+    <td>Absorption du mur vendeur de 1 947 titres en début de semaine ; 3 hausses consécutives puis retournement jeudi/vendredi. Gain latent porteur +43 % depuis coût moyen. Signal de sortie activé</td>
+  </tr>
+  <tr>
+    <td><span class="medal-4">#4</span></td>
+    <td>NSIA BANQUE CI</td><td>NSBC</td>
+    <td>~21 950 FCFA*</td><td>23 650 FCFA</td>
+    <td class="pos"><strong>+7,7 %</strong></td>
+    <td>Hausse concentrée vendredi (+7,50 %). Pas de catalyseur identifié. PER 14,37 dans filtre mais Rdt 2,83 % sous seuil. Ne pas initier</td>
+  </tr>
+  <tr>
+    <td><span class="medal-5">#5</span></td>
+    <td>BANK OF AFRICA SN</td><td>BOAS</td>
+    <td>7 300 FCFA</td><td>7 700 FCFA</td>
+    <td class="pos"><strong>+5,5 %</strong></td>
+    <td>Bloc institutionnel jeudi 140,5 M FCFA (19 109 titres). Carnet vendredi 8,1:1 ACH. PER 12,65 + Rdt 5,84 % = double critère validé</td>
+  </tr>
+</table>
+
+<div class="warn-box">
+  <strong>[!] Note UNXC :</strong> La performance de +28,1 % est concentrée sur 3 séances de catalyseur (pré-AG + post-AG). PER 31,79 post-hausse = surévaluation réelle. Signal non extrapolable. Les porteurs conservent ; les non-porteurs n'initient pas.
+</div>
+
+<div class="info-box">
+  <strong>Note SDSC :</strong> Performance la plus significative et la plus durable. Valorisation profonde (PER 7,03) + momentum sur 5 séances + aucun vendeur résiduel sur 4 séances consécutives = la valeur de fond de la semaine. Score moyen W29 6,75/10.
+</div>
+
+<!-- SECTION 3 -->
+<h2>Section 3 &mdash; Top 5 recommandations ACHETER (semaine S30)</h2>
+
+<p>Classement par ordre de conviction décroissante, croisant score moyen W29, carnet vendredi et catalyseur disponible.</p>
+
+<div class="stock-acheter">
+  <span class="medal-gold">#1</span> &nbsp; <strong>SITAB CI (STBC)</strong> &mdash; <span class="acheter">ACHETER</span>
+  <table style="margin-top:8px;">
+    <tr><td style="width:180px;font-weight:700;background:transparent;border:none;padding:3px 8px;">Score moyen W29</td><td style="background:transparent;border:none;padding:3px 8px;">6,2 / 10 (9-8-3-2-9 sur 5 séances)</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Cours vendredi</td><td style="background:transparent;border:none;padding:3px 8px;">23 900 FCFA | PER 11,77 | Rdt 8,77 %</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Carnet vendredi</td><td style="background:transparent;border:none;padding:3px 8px;"><strong class="pos">60 ACH @ Marché / 0 VEN</strong> &mdash; aucun vendeur résiduel</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Cours cible</td><td style="background:transparent;border:none;padding:3px 8px;">23 500 &ndash; 24 000 FCFA &mdash; lundi 20/07 à l'ouverture</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Justification</td><td style="background:transparent;border:none;padding:3px 8px;">Fin confirmée de la distribution post-AG. Rebond +7,49 % vendredi avec carnet 60:0 = accumulation institutionnelle pure. Meilleur PER+Rdt du marché. La correction de -7,1 % (BOC 132&ndash;133) est terminée</td></tr>
+  </table>
+</div>
+
+<div class="stock-acheter">
+  <span class="medal-silver">#2</span> &nbsp; <strong>BANK OF AFRICA SN (BOAS)</strong> &mdash; <span class="acheter">ACHETER</span>
+  <table style="margin-top:8px;">
+    <tr><td style="width:180px;font-weight:700;background:transparent;border:none;padding:3px 8px;">Score moyen W29</td><td style="background:transparent;border:none;padding:3px 8px;">6,67 / 10 (6-7-7 sur 3 séances scorées)</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Cours vendredi</td><td style="background:transparent;border:none;padding:3px 8px;">7 700 FCFA | PER 12,65 | Rdt 5,84 %</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Carnet vendredi</td><td style="background:transparent;border:none;padding:3px 8px;"><strong class="pos">97 ACH @ 7 660 / 12 VEN @ 7 700 (8,1:1 ACH)</strong></td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Cours cible</td><td style="background:transparent;border:none;padding:3px 8px;">&lt; 7 700 FCFA &mdash; lundi 20/07</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Justification</td><td style="background:transparent;border:none;padding:3px 8px;">Bloc institutionnel 140,5 M FCFA jeudi (19 109 titres), prolongé vendredi (+4,05 %). Double critère fondamental validé. Deux séances consécutives de signal institutionnel = prise de position structurelle</td></tr>
+  </table>
+</div>
+
+<div class="stock-acheter">
+  <span class="medal-bronze">#3</span> &nbsp; <strong>BANK OF AFRICA CI (BOAC)</strong> &mdash; <span class="acheter">ACHETER</span>
+  <table style="margin-top:8px;">
+    <tr><td style="width:180px;font-weight:700;background:transparent;border:none;padding:3px 8px;">Score moyen W29</td><td style="background:transparent;border:none;padding:3px 8px;">6,2 / 10 (5-5-7-7-7 sur 5 séances)</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Cours vendredi</td><td style="background:transparent;border:none;padding:3px 8px;">9 745 FCFA | PER 10,97 | Rdt 6,13 %</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Carnet vendredi</td><td style="background:transparent;border:none;padding:3px 8px;">13 ACH @ 9 740 / 10 VEN @ 9 745 (1,3:1 ACH, quasi neutre)</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Cours cible</td><td style="background:transparent;border:none;padding:3px 8px;">9 650 &ndash; 9 750 FCFA &mdash; mardi 21/07 (après réception trésorerie)</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Justification</td><td style="background:transparent;border:none;padding:3px 8px;">Accumulation institutionnelle douce et persistante sur 4 séances consécutives (BOC 131 &rarr; 134). Score croissant : 5-5-7-7-7. Double critère valorisation. Profil d'accumulation progressive sans rush</td></tr>
+  </table>
+</div>
+
+<div class="stock-acheter">
+  <span class="medal-4">#4</span> &nbsp; <strong>AFRICA GLOBAL LOGISTICS (SDSC)</strong> &mdash; <span class="acheter">ACHETER sur repli</span>
+  <table style="margin-top:8px;">
+    <tr><td style="width:180px;font-weight:700;background:transparent;border:none;padding:3px 8px;">Score moyen W29</td><td style="background:transparent;border:none;padding:3px 8px;">6,75 / 10 (7-8-7-5 sur 4 séances) &mdash; meilleur score moyen</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Cours vendredi</td><td style="background:transparent;border:none;padding:3px 8px;">2 720 FCFA | PER 7,03 | Rdt 3,38 %</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Carnet vendredi</td><td style="background:transparent;border:none;padding:3px 8px;">25 ACH @ 2 715 / 26 VEN @ 2 720 (1:1 neutre &mdash; pause saine)</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Cours cible</td><td style="background:transparent;border:none;padding:3px 8px;">Repli sous 2 700 FCFA &mdash; mardi 21/07</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Justification</td><td style="background:transparent;border:none;padding:3px 8px;">PER 7,03 = décote structurelle la plus profonde de la cote sur un actif logistique régional de premier rang. Thèse fondamentale à 6 mois : 3 000&ndash;3 200 FCFA. Le Rdt 3,38 % sous seuil est compensé par la valorisation exceptionnelle</td></tr>
+  </table>
+</div>
+
+<div class="stock-acheter">
+  <span class="medal-5">#5</span> &nbsp; <strong>SONATEL SN (SNTS)</strong> &mdash; <span class="attendre">ATTENDRE absorption du mur</span>
+  <table style="margin-top:8px;">
+    <tr><td style="width:180px;font-weight:700;background:transparent;border:none;padding:3px 8px;">Score moyen W29</td><td style="background:transparent;border:none;padding:3px 8px;">7,0 / 10 (6-8-9-7-5 sur 5 séances) &mdash; score le plus élevé de la semaine</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Cours vendredi</td><td style="background:transparent;border:none;padding:3px 8px;">32 000 FCFA | PER 7,74 | Rdt 5,44 %</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Carnet vendredi</td><td style="background:transparent;border:none;padding:3px 8px;"><strong class="neg">8 ACH @ 31 965 / 1 945 VEN @ 32 000 (243:1 VEN &mdash; mur de résistance)</strong></td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Cours cible</td><td style="background:transparent;border:none;padding:3px 8px;">&lt; 32 000 FCFA &mdash; seulement après absorption visible du mur lundi</td></tr>
+    <tr><td style="background:transparent;border:none;padding:3px 8px;font-weight:700;">Justification</td><td style="background:transparent;border:none;padding:3px 8px;">Méga-flux 2,67 Mds FCFA sur 2 séances (BOC 131&ndash;132). PER 7,74 + Rdt 5,44 % = double critère. Score moyen 7,0 = le plus élevé. MAIS mur technique de 1 945 VEN @ 32 000 bloque le renforcement. Condition nécessaire : absorption de ce mur confirmée à l'ouverture lundi</td></tr>
+  </table>
+</div>
+
+<!-- SECTION 4 -->
+<h2>Section 4 &mdash; Top 5 recommandations VENDRE / ALLÉGER (semaine S30)</h2>
+
+<p><em>Destiné exclusivement aux porteurs actuels de ces titres.</em></p>
+
+<table>
+  <tr>
+    <th>Titre</th><th>Sym.</th><th>Action</th><th>Cours vendredi 17/07</th><th>Justification</th><th>Risque si on reste</th>
+  </tr>
+  <tr>
+    <td><strong>BANK OF AFRICA BF</strong></td><td>BOABF</td>
+    <td><span class="vendre">VENDRE</span></td>
+    <td>7 200 FCFA</td>
+    <td>77,7:1 VEN (BOC 134). Retournement après 4 hausses. PER 16,46 hors filtre. 39 titres déjà vendus BOC 133 @ 7 255. Si carnet confirme lundi : sortie totale des 66 titres restants</td>
+    <td>Correction vers 6 800&ndash;7 000 FCFA</td>
+  </tr>
+  <tr>
+    <td><strong>CORIS BANK INT. BF</strong></td><td>CBIBF</td>
+    <td><span class="alleger">ALLÉGER</span></td>
+    <td>28 490 FCFA</td>
+    <td>36:1 VEN (2ème séance consécutive). -5,03 % en séance. Gain latent +100 % depuis coût d'acquisition. Critères 2 et 3 activés. Sortir 50 % lundi urgent</td>
+    <td>Poursuite vers 26 000&ndash;27 000 FCFA (-5 à -10 %)</td>
+  </tr>
+  <tr>
+    <td><strong>ONATEL BF</strong></td><td>ONTBF</td>
+    <td><span class="alleger">ALLÉGER</span></td>
+    <td>2 675 FCFA</td>
+    <td>Mur vendeur de 36 585 titres @ 2 675 FCFA (3 659:1 VEN) &mdash; signal de liquidation institutionnelle. Le mur le plus massif de la cote hors ETIT cette semaine</td>
+    <td>Crash possible si l'institutionnel passe au marché</td>
+  </tr>
+  <tr>
+    <td><strong>SITAB CI (porteurs en VENDRE)</strong></td><td>STBC</td>
+    <td><span class="surveiller">SURVEILLER</span></td>
+    <td>23 900 FCFA</td>
+    <td>Porteurs qui n'avaient pas vendu au signal BOC 132 (23 005 FCFA) : le rebond de +7,49 % offre une 2ème occasion de sortir à cours amélioré OU de conserver en rachetant la thèse ACHETER</td>
+    <td>Décision au porteur selon horizon d'investissement</td>
+  </tr>
+  <tr>
+    <td><strong>SMB CI</strong></td><td>SMBC</td>
+    <td><span class="conserver" style="background:#57606a;">SORTIE TERMINÉE</span></td>
+    <td>15 195 FCFA</td>
+    <td>Vente totale exécutée sur les 25 titres résiduels. Carnet vendredi 534,9:1 VEN (-3,83 %) valide la décision. Aucune action requise</td>
+    <td>&mdash;</td>
+  </tr>
+</table>
+
+<div class="warn-box">
+  <strong>[!] Note BOABF :</strong> La décision entre ALLÉGER et VENDRE dépend du carnet lundi 20/07. 77,7:1 VEN confirmé ou aggravé &rarr; VENDRE les 66 titres. Carnet revenu neutre (&lt; 5:1 VEN) &rarr; ALLÉGER seulement (vendre 33, conserver 33).
+</div>
+
+<!-- SECTION 5 -->
+<h2>Section 5 &mdash; Actions à ÉVITER (semaine S30)</h2>
+
+<table>
+  <tr>
+    <th>Titre</th><th>Sym.</th><th>Raison</th><th>Risque chiffré</th>
+  </tr>
+  <tr><td>UNILEVER CI</td><td>UNLC</td><td>Bulle extrême &mdash; PER 781,54</td><td class="neg">Perte de capital totale possible</td></tr>
+  <tr><td>BERNABE CI</td><td>BNBC</td><td>Bulle &mdash; PER 556,50</td><td class="neg">Aucun fondamental</td></tr>
+  <tr><td>BANK OF AFRICA NG</td><td>BOAN</td><td>PER 271,90 post-spike +104 % YTD</td><td class="neg">Correction possible -30 à -50 %</td></tr>
+  <tr><td>SUCRIVOIRE CI</td><td>SCRC</td><td>PER 249,53 post-chute -5,48 % BOC 134</td><td class="neg">Surévaluation sévère</td></tr>
+  <tr><td>SAFCA CI</td><td>SAFC</td><td>PER 49,75, carnet 18,9:1 VEN vendredi</td><td class="neg">Distribution active</td></tr>
+  <tr><td>CFAO MOTORS CI</td><td>CFAC</td><td>PER 34,48, Rdt 0,44 %</td><td class="neg">Aucun fondamental</td></tr>
+  <tr><td>ECOBANK TRANS. TG</td><td>ETIT</td><td>5,17 M VEN @ Marché, distorsion terminale</td><td class="neg">Distribution sans fond visible</td></tr>
+  <tr><td>CIE CI</td><td>CIEC</td><td>Ex-div 27/07 (234 FCFA brut)</td><td class="neg">Drop mécanique inévitable</td></tr>
+  <tr><td>SOLIBRA CI</td><td>SLBC</td><td>Ex-div 29/07 (2 127 FCFA brut)</td><td class="neg">Drop mécanique inévitable</td></tr>
+  <tr><td>ONATEL BF</td><td>ONTBF</td><td>Mur vendeur 36 585 VEN &mdash; le plus massif de la cote</td><td class="neg">Risque de décrochage brutal</td></tr>
+</table>
+
+<!-- SECTION 6 -->
+<h2>Section 6 &mdash; Signal structurel de la semaine</h2>
+
+<h3>Signal principal : Rotation obligataire aller-retour en 24 heures (BOC 133&ndash;134)</h3>
+
+<div class="signal-rot">
+  <p>Le signal le plus important de la semaine W29 n'est pas une action individuelle &mdash; c'est le comportement du marché obligataire sur deux séances consécutives&nbsp;:</p>
+  <table style="margin-top:10px;">
+    <tr><th>Séance</th><th>BOC N°</th><th>Valeur obligations</th><th>Variation</th></tr>
+    <tr><td>Mercredi 15/07</td><td>132</td><td>109 615 750 FCFA</td><td class="pos">+4 780 % vs BOC 131</td></tr>
+    <tr><td>Jeudi 16/07</td><td>133</td><td>1 896 342 190 FCFA</td><td class="pos">+1 630 % vs BOC 132</td></tr>
+    <tr><td>Vendredi 17/07</td><td>134</td><td>9 991 380 FCFA</td><td class="neg"><strong>-99,47 % vs BOC 133</strong></td></tr>
+  </table>
+  <p style="margin-top:10px;">Le jeudi 16/07, deux TPCI Côte d'Ivoire ont concentré 1,5 Mds FCFA en une seule séance : <strong>TPCI.O69</strong> (5,75 % | 2022&ndash;2037) pour 1 milliard FCFA et <strong>TPCI.O43</strong> (5,90 % | 2020&ndash;2030) pour 500 millions FCFA. La quasi-disparition du vendredi (9,99 M FCFA) signe un arbitrage tactique court terme &mdash; non une rotation durable. Ce capital de ~1,9 Md FCFA cherche une nouvelle destination en S30.</p>
+  <p><strong>Quantification :</strong> Différentiel aller-retour = 1,886 Mds FCFA en 24 heures.</p>
+</div>
+
+<h3>Signal secondaire : Méga-flux SNTS sur 2 séances (BOC 131&ndash;132)</h3>
+
+<table>
+  <tr><th>Séance</th><th>BOC N°</th><th>Valeur SNTS</th><th>Part marché réel</th></tr>
+  <tr><td>Mardi 14/07</td><td>131</td><td>1 527 966 115 FCFA</td><td><strong>40,6 %</strong></td></tr>
+  <tr><td>Mercredi 15/07</td><td>132</td><td>1 139 621 070 FCFA</td><td><strong>42,0 %</strong></td></tr>
+  <tr><td><strong>Cumul 2 séances</strong></td><td></td><td><strong>2 667 587 185 FCFA</strong></td><td>&mdash;</td></tr>
+</table>
+
+<p>Deux séances consécutives où SNTS représente 40&ndash;42 % de TOUTE la valeur réelle des actions échangées. Un positionnement institutionnel de grande ampleur sur la valeur fondamentale la plus solide du marché télécom UEMOA (PER 7,74). Score moyen W29 : 7,0/10 &mdash; le plus élevé de la semaine.</p>
+
+<!-- SECTION 7 -->
+<h2>Section 7 &mdash; Agenda catalyseurs (semaine S30 : 20&ndash;24 juillet 2026)</h2>
+
+<table>
+  <tr><th>Date</th><th>Titre</th><th>Sym.</th><th>Événement</th><th>Impact anticipé</th></tr>
+  <tr>
+    <td>Lundi 20/07</td><td>SITAB CI</td><td>STBC</td>
+    <td>Ouverture avec carnet 60:0 ACH &mdash; demande non satisfaite vendredi</td>
+    <td><span class="acheter">ACHETER</span></td>
+  </tr>
+  <tr>
+    <td>Lundi 20/07</td><td>CORIS BANK BF</td><td>CBIBF</td>
+    <td>ALLÉGER 50 % urgent &mdash; 36:1 VEN vendredi (2 séances consécutives)</td>
+    <td><span class="alleger">ALLÉGER</span></td>
+  </tr>
+  <tr>
+    <td>Lundi 20/07</td><td>BANK OF AFRICA BF</td><td>BOABF</td>
+    <td>Confirmer ou infirmer le signal 77,7:1 VEN</td>
+    <td><span class="surveiller">SURVEILLER</span> &rarr; <span class="vendre">VENDRE</span></td>
+  </tr>
+  <tr>
+    <td>Mardi 21/07</td><td>&mdash;</td><td>&mdash;</td>
+    <td>Réception trésorerie T+3 (ventes SMBC, SIBC partiels, BOABF partiels des séances 14&ndash;17/07)</td>
+    <td><span class="acheter">ACHETER BOAC / SDSC</span></td>
+  </tr>
+  <tr>
+    <td>Jeudi 23/07</td><td>ORAGROUP TOGO</td><td>ORGT</td>
+    <td>AG Mixte &mdash; délibérations à surveiller</td>
+    <td><span class="attendre">ATTENDRE</span></td>
+  </tr>
+  <tr>
+    <td>Vendredi 25/07</td><td>SIBC + BICB</td><td>SIBC / BICB</td>
+    <td>Date limite décision avant ex-div du 30/07 (SIBC 425F brut &asymp; 374F net ; BICB 254,6F net)</td>
+    <td><span class="surveiller">DÉCISION PORTEUR</span></td>
+  </tr>
+  <tr>
+    <td>Dimanche 27/07</td><td>CIE CI</td><td>CIEC</td>
+    <td>Ex-dividende 234 FCFA brut (205,92F net)</td>
+    <td><span class="eviter">ÉVITER avant cette date</span></td>
+  </tr>
+  <tr>
+    <td>Mardi 29/07</td><td>SOLIBRA CI</td><td>SLBC</td>
+    <td>Ex-dividende 2 127 FCFA brut (1 871,76F net)</td>
+    <td><span class="eviter">ÉVITER avant cette date</span></td>
+  </tr>
+  <tr>
+    <td>Mercredi 30/07</td><td>SIBC + BICB</td><td>SIBC / BICB</td>
+    <td>Ex-div 425F brut (SIBC) + 254,6F net (BICB) &mdash; drop mécanique</td>
+    <td><span class="surveiller">DÉCISION AVANT 25/07</span></td>
+  </tr>
+</table>
+
+<!-- SECTION 8 -->
+<h2>Section 8 &mdash; Plan d'action S30</h2>
+
+<table>
+  <tr><th>Titre</th><th>Action</th><th>Cours cible</th><th>Timing</th><th>Justification</th></tr>
+  <tr>
+    <td><strong>SITAB CI</strong></td>
+    <td><span class="acheter">ACHETER</span></td>
+    <td>23 500&ndash;24 000 F</td>
+    <td>Lundi 20/07 ouverture</td>
+    <td>Carnet 60:0 ACH. PER 11,77 + Rdt 8,77 %. Signal d'accumulation institutionnelle le plus fort de la semaine</td>
+  </tr>
+  <tr>
+    <td><strong>BANK OF AFRICA SN</strong></td>
+    <td><span class="acheter">ACHETER</span></td>
+    <td>&lt; 7 700 F</td>
+    <td>Lundi 20/07</td>
+    <td>Carnet 8,1:1 ACH. Bloc institutionnel 140,5 M FCFA jeudi. Double critère PER+Rdt</td>
+  </tr>
+  <tr>
+    <td><strong>CORIS BANK BF</strong></td>
+    <td><span class="alleger">ALLÉGER</span></td>
+    <td>28 490 F</td>
+    <td>Lundi 20/07 URGENT</td>
+    <td>36:1 VEN (2 séances). Gain latent +100 %. Sortir 50 %</td>
+  </tr>
+  <tr>
+    <td><strong>BANK OF AFRICA BF</strong></td>
+    <td><span class="vendre">SURVEILLER &rarr; VENDRE</span></td>
+    <td>7 200 F</td>
+    <td>Lundi 20/07 (décision en séance)</td>
+    <td>77,7:1 VEN &mdash; VENDRE les 66 titres si confirmé lundi</td>
+  </tr>
+  <tr>
+    <td><strong>ONATEL BF</strong></td>
+    <td><span class="alleger">ALLÉGER</span></td>
+    <td>2 675 F</td>
+    <td>Lundi 20/07</td>
+    <td>Mur 36 585 VEN = liquidation institutionnelle imminente</td>
+  </tr>
+  <tr>
+    <td><strong>BANK OF AFRICA CI</strong></td>
+    <td><span class="acheter">ACHETER</span></td>
+    <td>9 650&ndash;9 750 F</td>
+    <td>Mardi 21/07</td>
+    <td>Accumulation institutionnelle douce 4 séances. Double critère. Après réception trésorerie</td>
+  </tr>
+  <tr>
+    <td><strong>AFRICA GLOBAL LOG.</strong></td>
+    <td><span class="acheter">ACHETER</span></td>
+    <td>Repli &lt; 2 700 F</td>
+    <td>Mardi 21/07</td>
+    <td>PER 7,03 = décote structurelle. Attendre repli post-pause des 5 hausses</td>
+  </tr>
+  <tr>
+    <td><strong>SIB CI</strong></td>
+    <td><span class="conserver">CONSERVER</span></td>
+    <td>8 760 F</td>
+    <td>Jusqu'au 25/07</td>
+    <td>Carnet 2,3:1 ACH. Ex-div 30/07 (~374F net). Décider avant le 25/07</td>
+  </tr>
+  <tr>
+    <td><strong>SONATEL SN</strong></td>
+    <td><span class="attendre">ATTENDRE</span></td>
+    <td>&lt; 32 000 F</td>
+    <td>Après absorption mur</td>
+    <td>Mur 1 945 VEN @ 32 000. Ne renforcer qu'après confirmation d'absorption lundi</td>
+  </tr>
+  <tr>
+    <td><strong>BIIC BN</strong></td>
+    <td><span class="surveiller">SURVEILLER</span></td>
+    <td>6 300 F</td>
+    <td>Avant 25/07</td>
+    <td>Ex-div 30/07 (254,6F net). Décider conserver ou vendre avant l'ex-date</td>
+  </tr>
+  <tr>
+    <td><strong>CIE CI</strong></td>
+    <td><span class="eviter">ÉVITER</span></td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>Ex-div 27/07 &mdash; drop mécanique 205,92 F inévitable</td>
+  </tr>
+  <tr>
+    <td><strong>SOLIBRA CI</strong></td>
+    <td><span class="eviter">ÉVITER</span></td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>Ex-div 29/07 &mdash; drop mécanique 1 871,76 F inévitable</td>
+  </tr>
+  <tr>
+    <td><strong>UNILEVER CI / BERNABE CI</strong></td>
+    <td><span class="eviter">ÉVITER</span></td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>Bulles PER &gt; 500 &mdash; risque de perte totale</td>
+  </tr>
+</table>
+
+<div class="disclaimer">
+  <strong>Disclaimer légal :</strong> Ce rapport BOC_HEBDO est produit à des fins pédagogiques et d'information financière uniquement, sur la base des données publiées dans les Bulletins Officiels de la Cote N°130 à N°134 de la BRVM (semaine du 13 au 17 juillet 2026). Il ne constitue pas un conseil personnalisé en investissement au sens réglementaire CREPMF/UMOA. Toute décision d'investissement doit être prise en tenant compte de votre situation financière personnelle, de vos objectifs et de votre tolérance au risque. Les performances passées ne préjugent pas des performances futures. L'auteur ne saurait être tenu responsable des pertes éventuelles résultant d'une décision d'investissement basée sur ce document.
+</div>
