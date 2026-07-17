@@ -54,14 +54,19 @@ Performance = (cours vendredi BOC 134 – cours lundi BOC 130) / cours lundi BOC
 
 Classement par ordre de conviction décroissante, croisant score moyen W29, carnet vendredi et catalyseur.
 
-### #1 — SITAB CI (STBC) | Cours cible d'entrée : 23 500–24 000 FCFA
+### #1 — SITAB CI (STBC) | Règle anti-round-trip — Recommandation différenciée
 
 - **Score moyen W29 :** 6,2/10 (9-8-3-2-9 sur les 5 séances)
 - **Cours vendredi :** 23 900 FCFA | **PER :** 11,77 | **Rdt :** 8,77 %
 - **Carnet vendredi :** 60 ACH à cours Marché / 0 VEN — aucun vendeur résiduel
-- **Catalyseur :** Fin confirmée de la distribution post-AG. La correction de -7,1 % (BOC 132–133) est terminée. Le rebond de +7,49 % le vendredi avec carnet 60:0 est le signal d'accumulation institutionnelle pure le plus clair de la semaine.
-- **Double critère fondamental :** Meilleur PER+Rdt du marché (PER 11,77 + Rdt 8,77 %).
-- **Cours cible d'entrée :** 23 500–24 000 FCFA dès lundi 20/07 à l'ouverture.
+- **Signal récent VENDRE :** Signal VENDRE émis sur STBC au BOC 132–133 (cours d'exécution : 22 235 FCFA). Seuil de re-entrée net de frais aller-retour (3,2 %) : 22 235 × 0,9685 ≈ **21 535 FCFA**.
+- **Prix proposé (23 900 FCFA) > Seuil (21 535 FCFA) → règle anti-round-trip activée : interdiction de recommander ACHETER global.**
+
+**Volet 1 — Porteurs qui n'ont PAS suivi le signal de vente (tiennent encore STBC) :**
+**CONSERVER.** Le rebond de +7,49 % vendredi avec carnet 60:0 ACH et le double critère fondamental (PER 11,77 + Rdt 8,77 %) confirment la thèse d'investissement. Pas de raison de sortir à ce niveau — le titre est fondamentalement sain.
+
+**Volet 2 — Porteurs qui ont vendu STBC suivant le signal BOC 132–133 :**
+**NE PAS RE-ENTRER** tant que le cours est au-dessus de 21 535 FCFA. Racheter à 23 900 FCFA génère une perte latente de ~10 % net de frais aller-retour. Réorienter la trésorerie libérée vers BOAS, BOAC ou SDSC — ces trois titres offrent un meilleur point d'entrée sans coût de round-trip.
 
 ### #2 — BANK OF AFRICA SN (BOAS) | Cours cible d'entrée : < 7 700 FCFA
 
@@ -110,7 +115,8 @@ Destiné exclusivement aux porteurs actuels de ces titres.
 | BANK OF AFRICA BF | BOABF | **VENDRE** | 7 200 FCFA | 77,7:1 VEN (BOC 134), retournement après 4 hausses consécutives, PER 16,46 hors filtre. 39 titres vendus BOC 133 à 7 255. Si carnet confirme lundi : sortie totale des 66 titres restants | Poursuite de la correction vers 6 800–7 000 FCFA |
 | CORIS BANK INT. BF | CBIBF | **ALLÉGER** | 28 490 FCFA | 36:1 VEN (2ème séance consécutive), -5,03 % en séance. Gain latent porteur : +100 % depuis coût d'acquisition (~14 000 FCFA). Critères 2 et 3 activés | Poursuite vers 26 000–27 000 FCFA (-5 à -10 %) |
 | ONATEL BF | ONTBF | **ALLÉGER** | 2 675 FCFA | Mur vendeur de 36 585 titres @ 2 675 FCFA (3 659:1 VEN) — signal de liquidation institutionnelle. C'est le mur vendeur le plus massif observé sur toute la semaine | Crash sur ONTBF possible si l'institutionnel passe ses ordres au marché |
-| SITAB CI (anciens porteurs en VENDRE) | STBC | **SURVEILLER** | 23 900 FCFA | Porteurs qui n'ont pas vendu au signal BOC 132 (23 005 FCFA) : le rebond de +7,49 % vendredi donne une 2ème occasion de sortir à cours amélioré OU de conserver en rachetant la thèse ACH. Décision au porteur | Sans action : soit gain si la hausse continue, soit distribution si le carnet se retourne |
+| SITAB CI (porteurs non vendus) | STBC | **CONSERVER** | 23 900 FCFA | Porteurs qui n'ont pas suivi le signal BOC 132–133 : fondamentaux confirmés (PER 11,77 + Rdt 8,77 %, carnet 60:0 ACH vendredi). Conserver la position — thèse intacte. | — |
+| SITAB CI (porteurs ayant vendu) | STBC | **NE PAS RE-ENTRER** | Seuil : < 21 535 FCFA | Prix actuel 23 900 FCFA > seuil de break-even 21 535 FCFA. Round-trip perdant (~10 % net de frais). Réorienter la trésorerie vers BOAC, SDSC ou BOAS. | Perte latente ~10 % net de frais si rachat à 23 900 FCFA |
 | SMB CI | SMBC | **SORTIE TERMINÉE** | 15 195 FCFA | Vente totale exécutée : 25 titres résiduels vendus BOC 133–134. Carnet vendredi 534,9:1 VEN (-3,83 % vendredi) valide la décision | — |
 
 **Note BOABF :** La décision entre ALLÉGER et VENDRE dépend du carnet lundi 20/07. Si 77,7:1 VEN se confirme ou s'aggrave → VENDRE les 66 titres restants. Si le carnet repasse neutre (< 5:1 VEN) → ALLÉGER seulement (vendre 33, conserver 33).
@@ -172,10 +178,10 @@ Deux séances consécutives où SNTS représente 40 à 42 % de TOUTE la valeur r
 
 | Date | Titre | Sym. | Événement | Impact anticipé |
 |------|-------|------|-----------|-----------------|
-| Lundi 20/07 | SITAB CI | STBC | Ouverture avec carnet 60:0 ACH — demande non satisfaite vendredi | ACHETER |
+| Lundi 20/07 | SITAB CI | STBC | Carnet 60:0 ACH vendredi. CONSERVER si porteur non vendu / NE PAS RE-ENTRER si vendu au BOC 132–133 (seuil re-entrée : < 21 535 FCFA) | CONSERVER / NE PAS RE-ENTRER |
 | Lundi 20/07 | CORIS BANK BF | CBIBF | ALLÉGER 50 % urgent — 36:1 VEN vendredi | ALLÉGER |
 | Lundi 20/07 | BANK OF AFRICA BF | BOABF | Confirmer ou infirmer le signal 77,7:1 VEN | SURVEILLER → VENDRE |
-| Mardi 21/07 | — | — | Réception trésorerie T+3 (ventes SMBC, SIBC, BOABF des 14–18/07) | Disponibilité pour achats STBC, BOAC, SDSC |
+| Mardi 21/07 | — | — | Réception trésorerie T+3 (ventes SMBC, SIBC, BOABF des 14–18/07) | Disponibilité pour achats BOAC, SDSC, BOAS |
 | Jeudi 23/07 | ORAGROUP TOGO | ORGT | AG Mixte | ATTENDRE (surveiller les délibérations) |
 | Vendredi 25/07 | SIBC + BICB | SIBC / BICB | Date limite décision avant ex-div du 30/07 (SIBC 425F brut, BICB 254,6F net) | CONSERVER ou VENDRE selon choix porteur |
 | Dimanche 27/07 | CIE CI | CIEC | Ex-div 234 FCFA brut (205,92F net) | ÉVITER avant cette date — drop mécanique |
@@ -188,7 +194,8 @@ Deux séances consécutives où SNTS représente 40 à 42 % de TOUTE la valeur r
 
 | Titre | Action | Cours cible | Timing | Justification |
 |-------|--------|-------------|--------|---------------|
-| SITAB CI | **ACHETER** | 23 500–24 000 F | Lundi 20/07 ouverture | Carnet 60:0 ACH. PER 11,77 + Rdt 8,77 %. Signal d'accumulation le plus fort de la semaine |
+| SITAB CI (non vendus) | **CONSERVER** | 23 900 F | — | PER 11,77 + Rdt 8,77 %. Carnet 60:0 ACH vendredi. Thèse fondamentale intacte — tenir la position |
+| SITAB CI (vendus BOC 132–133) | **NE PAS RE-ENTRER** | Seuil : < 21 535 F | — | 23 900 F > seuil break-even 21 535 F. Round-trip perdant ~10 % net de frais. Réorienter vers BOAC / SDSC / BOAS |
 | BANK OF AFRICA SN | **ACHETER** | < 7 700 F | Lundi 20/07 | Carnet 8,1:1 ACH. Bloc institutionnel 140,5 M FCFA jeudi. Double critère |
 | CORIS BANK BF | **ALLÉGER** | 28 490 F | Lundi 20/07 URGENT | 36:1 VEN (2 séances). Gain latent +100 %. Sortir 50 % |
 | BANK OF AFRICA BF | **SURVEILLER → VENDRE** | 7 200 F | Lundi 20/07 (décision en séance) | 77,7:1 VEN — VENDRE les 66 titres si confirmé |
