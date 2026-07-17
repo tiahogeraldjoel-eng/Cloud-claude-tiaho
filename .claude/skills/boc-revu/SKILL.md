@@ -40,6 +40,30 @@ Analyse la performance des indices généraux (Composite, BRVM 30, Prestige, Pri
   6. **Ex-dividende imminent (≤ 3 jours)** — vendre avant l'ex-date pour éviter le drop mécanique si le dividende est déjà dans le cours.
   Distinguer : **VENDRE** (sortie totale recommandée) vs **ALLÉGER** (réduire la position de 50 % et conserver le solde).
 
+### Règle de cohérence inter-séances — Garde-fou anti-round-trip (obligatoire)
+
+Avant d'émettre un signal **ACHETER** sur un titre, lire les BOC précédents (fenêtre : 10 séances glissantes) pour vérifier si ce même titre a fait l'objet d'un signal **VENDRE** ou **ALLÉGER** récent.
+
+**Si oui, appliquer systématiquement la logique suivante :**
+
+| Cas | Prix ACHETER proposé vs Prix VENDRE récent | Action correcte |
+|-----|-------------------------------------------|-----------------|
+| Prix rachat < Prix vente × 0,9685 | En dessous du seuil de break-even (frais aller-retour ≈ 3,2 %) | **ACHETER** standard — le round-trip est économiquement cohérent |
+| Prix rachat ≥ Prix vente × 0,9685 | Au-dessus du seuil de break-even | **Ne jamais émettre de signal ACHETER global** — distinguer les deux cas ci-dessous |
+
+**Lorsque le prix de rachat est supérieur au seuil de break-even, formuler la recommandation en deux volets :**
+
+1. **Porteurs qui n'ont PAS suivi le signal de vente** (tiennent encore le titre) → **CONSERVER** si les fondamentaux confirment, ou **SURVEILLER** si signal mixte. Ne pas dire ACHETER car ils ont déjà la position.
+2. **Porteurs qui ont vendu suivant le signal** → **NE PAS RE-ENTRER** au-dessus du prix de vente. Préciser le seuil de re-entrée cohérent : `Prix_revente × 0,9685` (net de frais aller-retour). Mentionner explicitement que réinvestir la liquidité libérée sur d'autres opportunités du marché est préférable à un retour perdant sur le même titre.
+
+**Formule du seuil de re-entrée :**
+`Seuil = Prix_vente_exécuté × (0,984 / 1,016) ≈ Prix_vente × 0,9685`
+
+Exemple concret (STBC, BOC 133→134) :
+- Vente exécutée à 22 235 F → seuil de re-entrée : 22 235 × 0,9685 ≈ **21 535 F**
+- Prix proposé au BOC suivant : 23 900 F → **au-dessus du seuil → interdiction de recommander ACHETER globalement**
+- Recommandation correcte : "CONSERVER si non vendu / NE PAS RE-ENTRER si vendu (seuil : < 21 535 F)"
+
 **Étape 3 — Sélection des actions clés**
 Paragraphe de synthèse analytique pour chaque action sélectionnée du jour, en justifiant l'intérêt technique ou fondamental. Sauf instruction contraire de l'utilisateur, couvrir au moins : SITAB, PALM CI, BOA BF, SONATEL, CORIS, AGL, BOA CI, NSIA, SAFCA, ORANGE, BERNABE, CFAO MOTORS.
 
