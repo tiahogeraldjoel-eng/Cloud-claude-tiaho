@@ -1194,13 +1194,22 @@ async function runWeeklyDigest(env) {
 //  FETCH DONNÉES BRVM
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// Rejette un snapshot de plus de 5 jours : évite d'afficher des P&L faussés
+// quand l'utilisateur a acheté des titres à un prix supérieur au dernier cours
+// connu dans le snapshot (ex. achat UNXC à 1 918 alors que le snapshot date
+// d'une semaine à 1 460 → faux stop-loss à -24%).
+function isSnapshotFresh(dateStr) {
+  if (!dateStr) return false;
+  return (Date.now() - new Date(dateStr).getTime()) / 86_400_000 <= 5;
+}
+
 async function fetchLiveStocks(env) {
   // BRVM fermée le week-end → restituer la clôture de vendredi (KV) plutôt que
   // d'interroger brvm.org/Yahoo (réponses hors-séance peu fiables).
   const day = new Date().getUTCDay();
   if (env && (day === 0 || day === 6)) {
     const snapshot = await loadStockSnapshot(env);
-    if (snapshot?.stocks?.length) {
+    if (snapshot?.stocks?.length && isSnapshotFresh(snapshot.date)) {
       return { stocks: snapshot.stocks, source: `clôture vendredi ${snapshot.date}` };
     }
   }
@@ -1209,12 +1218,13 @@ async function fetchLiveStocks(env) {
   if (live.stocks.length || !env) return live;
 
   // brvm.org et Yahoo indisponibles (hors séance, panne…) → dernier instantané
-  // connu plutôt que le refPrice générique de KNOWN_STOCKS (bien plus stale).
+  // connu. On le rejette s'il est trop ancien (>5 j) pour éviter les faux
+  // stop-loss quand le CMP a été mis à jour après la date du snapshot.
   const snapshot = await loadStockSnapshot(env);
-  if (snapshot?.stocks?.length) {
+  if (snapshot?.stocks?.length && isSnapshotFresh(snapshot.date)) {
     return { stocks: snapshot.stocks, source: `dernier instantané (${snapshot.date})` };
   }
-  return live;
+  return live; // snapshot absent ou trop vieux → computePortfolioRows utilisera refPrice
 }
 
 async function fetchLiveStocksRaw(retried = false) {
