@@ -293,6 +293,41 @@ async def startup():
 
 # ─── SCHEDULER ────────────────────────────────────────────────────────────────
 
+def _snapshot_all_recommendations():
+    """Calcule et persiste la recommandation du jour pour tous les titres (16h00 UTC).
+    Construit l'historique de conviction — un enregistrement par titre par jour ouvré."""
+    today = datetime.now(timezone.utc).date().isoformat()
+    stocks = db.get_all_stocks()
+    saved = 0
+    sentiment = _get_sentiment_data()
+    for stock in stocks:
+        sym = stock["symbol"]
+        try:
+            prices  = db.get_prices(sym, 730)
+            if not prices:
+                continue
+            fund     = db.get_fundamental(sym)
+            derived  = ind.compute_derived_fundamental(prices)
+            hw       = db.get_52w_highlow(sym)
+            latest   = db.get_latest_price(sym)
+            country  = stock.get("country")
+            fund_net = _apply_net_dividend(fund, country)
+            result = rec.compute_recommendation(
+                prices=prices,
+                fundamentals=fund_net,
+                derived=derived,
+                hw=hw,
+                sentiment=sentiment,
+                latest=latest,
+                symbol=sym,
+            )
+            db.save_recommendation_history(sym, today, result)
+            saved += 1
+        except Exception as e:
+            logger.warning(f"Snapshot reco {sym}: {e}")
+    logger.info(f"Snapshot recommandations {today} : {saved}/{len(stocks)} titres enregistrés")
+
+
 def _start_scheduler():
     """
     Calendrier de rafraîchissement BRVM (Abidjan = UTC+0, pas de DST) :
@@ -338,8 +373,13 @@ def _start_scheduler():
             day_of_week="mon-fri", hour="*/2", minute="15"),
             id="news")
 
+        # Snapshot recommandations (16h00 UTC) — un enregistrement par titre par jour
+        sch.add_job(_snapshot_all_recommendations, CronTrigger(
+            day_of_week="mon-fri", hour="16", minute="0"),
+            id="reco_snapshot")
+
         sch.start()
-        logger.info("Planificateur démarré — rafraîchissement toutes les 20 min + triggers 09h50/15h10")
+        logger.info("Planificateur démarré — rafraîchissement toutes les 20 min + triggers 09h50/15h10/16h00")
     except Exception as e:
         logger.warning(f"Planificateur non démarré: {e}")
 
@@ -658,7 +698,25 @@ def api_recommendation(symbol: str, profil: str = "mixte"):
     )
     result["symbol"]   = sym
     result["computed"] = datetime.now(timezone.utc).isoformat()
+
+    # Persister dans l'historique des recommandations (une entrée par jour)
+    today = datetime.now(timezone.utc).date().isoformat()
+    try:
+        db.save_recommendation_history(sym, today, result)
+    except Exception as e:
+        logger.warning(f"Impossible de sauvegarder l'historique reco {sym}: {e}")
+
     return result
+
+
+@app.get("/api/stocks/{symbol}/recommendation/history")
+def api_recommendation_history(symbol: str, days: int = 90):
+    """Retourne l'historique des recommandations sur les N derniers jours."""
+    sym = symbol.upper()
+    if not db.get_stock(sym):
+        raise HTTPException(404, f"Titre '{sym}' introuvable")
+    history = db.get_recommendation_history(sym, days)
+    return {"symbol": sym, "history": history, "count": len(history)}
 
 
 def _get_sentiment_data() -> Optional[Dict]:

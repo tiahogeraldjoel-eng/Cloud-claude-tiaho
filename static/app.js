@@ -413,6 +413,11 @@ async function loadTechnical(symbol) {
     // Recommandation
     if(recoD) renderRecommendationBox('tech-reco-box', {...recoD, symbol});
 
+    // Historique des recommandations
+    api(`/api/stocks/${symbol}/recommendation/history?days=90`)
+      .then(h => renderRecoHistory('tech-reco-history', h.history||[]))
+      .catch(()=>{});
+
     // Afficher le bouton d'export PDF
     document.getElementById('pdf-export-section')?.classList.remove('hidden');
 
@@ -1223,6 +1228,106 @@ function renderRecommendationBox(containerId, reco) {
     </div>`;
 }
 
+// ─── HISTORIQUE DES RECOMMANDATIONS ──────────────────────────────────────────
+function renderRecoHistory(containerId, history) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!history || history.length === 0) { el.innerHTML = ''; return; }
+
+  const COLORS = {
+    'ACHAT':     { bg:'#14532d', border:'#22c55e', text:'#4ade80', dot:'#22c55e' },
+    'ACCUMULER': { bg:'#166534', border:'#16a34a', text:'#86efac', dot:'#16a34a' },
+    'NEUTRE':    { bg:'#1e293b', border:'#475569', text:'#94a3b8', dot:'#64748b' },
+    'ALLÉGER':   { bg:'#431407', border:'#ea580c', text:'#fdba74', dot:'#f97316' },
+    'VENTE':     { bg:'#450a0a', border:'#dc2626', text:'#fca5a5', dot:'#ef4444' },
+  };
+  const def = { bg:'#1e293b', border:'#475569', text:'#94a3b8', dot:'#64748b' };
+
+  const counts = {};
+  history.forEach(h => { counts[h.recommendation] = (counts[h.recommendation]||0)+1; });
+  const dominant = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+  const stability = Math.round(dominant[1] / history.length * 100);
+  const dominantCfg = COLORS[dominant[0]] || def;
+
+  // Sparkline SVG
+  const scores = history.map(h => h.score ?? 50);
+  const minS = Math.min(...scores), maxS = Math.max(...scores);
+  const range = maxS - minS || 1;
+  const W = 200, H = 32;
+  const pts = scores.map((s,i) => {
+    const x = (i/(scores.length-1||1))*W;
+    const y = H - ((s-minS)/range)*(H-4) - 2;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const lastPt = pts.split(' ').at(-1).split(',');
+  const sparkline = scores.length >= 2
+    ? `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="opacity-80">
+        <polyline points="${pts}" fill="none" stroke="${dominantCfg.dot}" stroke-width="1.5" stroke-linejoin="round"/>
+        <circle cx="${lastPt[0]}" cy="${lastPt[1]}" r="3" fill="${dominantCfg.dot}"/>
+       </svg>` : '';
+
+  // Dots timeline
+  const shown = history.slice(-60);
+  const dots = shown.map(h => {
+    const c = COLORS[h.recommendation] || def;
+    const ds = (h.date||'').slice(5);
+    return `<div class="relative group cursor-default">
+      <div class="w-2.5 h-2.5 rounded-full transition-transform group-hover:scale-150" style="background:${c.dot}"></div>
+      <div class="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 hidden group-hover:flex flex-col items-center pointer-events-none">
+        <div class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs whitespace-nowrap shadow-lg">
+          <span style="color:${c.text}">${h.recommendation}</span>
+          <span class="text-slate-500 ml-1">${ds}</span>
+          ${h.score!=null?`<span class="text-slate-400 ml-1">${Math.round(h.score)}/100</span>`:''}
+        </div>
+        <div class="w-1.5 h-1.5 bg-slate-800 border-r border-b border-slate-600 rotate-45 -mt-0.5"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const lastEntry = history.at(-1);
+  const lastCfg = COLORS[lastEntry.recommendation] || def;
+  const firstDate = history[0].date.slice(0,10);
+  const lastDate  = lastEntry.date.slice(0,10);
+
+  el.innerHTML = `
+    <div class="rounded-xl border border-slate-700 bg-slate-900/60 p-4 mt-1">
+      <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold text-slate-300">Historique des signaux</span>
+          <span class="text-xs text-slate-500">(${history.length} jours — ${firstDate} → ${lastDate})</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="text-xs text-slate-400">Stabilité : <span class="font-bold" style="color:${dominantCfg.dot}">${stability}% ${dominant[0]}</span></div>
+          <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold"
+               style="background:${lastCfg.bg};color:${lastCfg.text};border:1px solid ${lastCfg.border}">
+            Dernier : ${lastEntry.recommendation}
+          </div>
+        </div>
+      </div>
+      <div class="flex items-end gap-4 mb-3">
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Score composite</div>
+          ${sparkline}
+          <div class="flex justify-between text-xs text-slate-600 mt-0.5" style="width:${W}px">
+            <span>${firstDate}</span><span>${lastDate}</span>
+          </div>
+        </div>
+        <div class="text-xs text-slate-500 leading-relaxed pb-5">
+          ${Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([sig,n])=>{
+            const c=COLORS[sig]||def;
+            return `<div class="flex items-center gap-1.5">
+              <div class="w-2 h-2 rounded-full shrink-0" style="background:${c.dot}"></div>
+              <span style="color:${c.text}">${sig}</span>
+              <span class="text-slate-600">${n}j (${Math.round(n/history.length*100)}%)</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-1.5 items-center">${dots}</div>
+      <div class="text-xs text-slate-600 mt-2">● = 1 jour ouvré — survolez pour les détails</div>
+    </div>`;
+}
+
 function scoreColor(s) {
   if(s>=70) return '#22c55e';
   if(s>=55) return '#84cc16';
@@ -1527,6 +1632,7 @@ function renderFundamental(d, reco) {
 
     <!-- Recommandation -->
     <div id="fund-reco-box"></div>
+    <div id="fund-reco-history" class="mt-3"></div>
 
     <!-- Saisie manuelle dividende -->
     ${manualDivForm}
@@ -1597,6 +1703,11 @@ function renderFundamental(d, reco) {
 
   // Injecter la recommandation
   if(reco) renderRecommendationBox('fund-reco-box', {...reco, symbol: d?.symbol || reco.symbol || ''});
+
+  // Historique des recommandations (onglet Fondamentale)
+  api(`/api/stocks/${symbol}/recommendation/history?days=90`)
+    .then(h => renderRecoHistory('fund-reco-history', h.history||[]))
+    .catch(()=>{});
 
   // Afficher le bouton d'export PDF
   document.getElementById('pdf-export-section-fund')?.classList.remove('hidden');
