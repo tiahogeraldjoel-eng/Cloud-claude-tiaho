@@ -1026,17 +1026,31 @@ def compute_recommendation(
         elif fv_mos >= -15: fv_delta = -5.0   # surcote légère → pénalité
         else:               fv_delta = -10.0  # surcote forte → pénalité forte
 
-    # Saisonnalité : tendance mensuelle historique → ±2 pts seulement si le
-    # signal est statistiquement net (≥7 ans de données, ≥70% dans un sens)
+    # ── Saisonnalité renforcée ────────────────────────────────────────────────
+    # Delta max ±8 pts, pondéré par le score de confiance statistique
+    # (signal_strength × couverture temporelle, saturé à 10 ans).
+    # Bonus additionnel ±1 pt si les 3 prochains mois convergent dans le même sens.
     seasonality = ind.compute_seasonality(prices)
     current_month_stats = None
     seasonality_delta = 0.0
     if seasonality.get("months"):
         current_month_stats = seasonality["months"][datetime.now().month - 1]
-        if current_month_stats.get("reliable"):
-            pct = current_month_stats["pct_positive"]
-            if pct >= 70:   seasonality_delta = +2.0
-            elif pct <= 30: seasonality_delta = -2.0
+        conf    = current_month_stats.get("confidence", 0)
+        pct     = current_month_stats.get("pct_positive") or 50
+        if conf >= 20:  # seuil minimal — n'agit que si confiance réelle
+            direction = 1 if pct >= 50 else -1
+            # Delta calibré : 8 pts max à confiance=100, ~3 pts à confiance=40
+            seasonality_delta = round(direction * (conf / 100) * 8, 2)
+
+        # Bonus convergence trimestrielle : si les 3 prochains mois pointent
+        # tous dans le même direction avec confiance >= 30 → ±1 pt
+        next3 = seasonality.get("next_3m", [])
+        if len(next3) >= 2:
+            dirs = [m["direction"] for m in next3 if (m.get("confidence") or 0) >= 30]
+            if len(dirs) >= 2 and all(d == "haussier" for d in dirs):
+                seasonality_delta = min(8, seasonality_delta + 1.0)
+            elif len(dirs) >= 2 and all(d == "baissier" for d in dirs):
+                seasonality_delta = max(-8, seasonality_delta - 1.0)
 
     composite = round(max(0.0, min(100.0, composite + sekide_delta + fv_delta + seasonality_delta)), 1)
     label     = _score_to_label(composite)
@@ -1110,29 +1124,57 @@ def compute_recommendation(
                         break
 
     # ── Saisonnalité du mois en cours ─────────────────────────────────────────
-    if current_month_stats and current_month_stats.get("n", 0) >= 5:
-        cms = current_month_stats
-        if cms["reliable"]:
-            sens = "haussier" if cms["pct_positive"] >= 70 else "baissier"
-            emoji = "📅✅" if cms["pct_positive"] >= 70 else "📅⚠️"
+    if current_month_stats and current_month_stats.get("n", 0) >= 3:
+        cms  = current_month_stats
+        conf = cms.get("confidence", 0)
+        pct  = cms.get("pct_positive") or 50
+        n    = cms.get("n", 0)
+        avg  = cms.get("avg_return") or 0
+        sharpe = cms.get("sharpe")
+        coverage = seasonality.get("coverage_years", n)
+
+        if conf >= 40:
+            sens  = "haussier" if pct >= 60 else "baissier"
+            emoji = "📅✅" if pct >= 60 else "📅⚠️"
+            sharpe_txt = f" | Sharpe mensuel : {sharpe:+.2f}" if sharpe else ""
             key_factors.append({
                 "type": "saisonnalite",
                 "text": (
-                    f"{emoji} {cms['label']} historiquement {sens} pour ce titre : "
-                    f"{cms['pct_positive']:.0f}% des {cms['n']} dernières années, "
-                    f"moyenne {cms['avg_return']:+.1f}%"
+                    f"{emoji} {cms['label']} historiquement {sens} "
+                    f"({pct:.0f}% positif, {n}/{coverage} ans, moyenne {avg:+.1f}%"
+                    f"{sharpe_txt}) — confiance {conf:.0f}/100"
                 ),
-                "positive": cms["pct_positive"] >= 70,
+                "positive": pct >= 60,
             })
-        else:
+        elif conf >= 20:
             key_factors.append({
                 "type": "saisonnalite",
                 "text": (
-                    f"📅 {cms['label']} : pas de tendance saisonnière nette "
-                    f"({cms['pct_positive']:.0f}% positif sur {cms['n']} ans, moyenne {cms['avg_return']:+.1f}%)"
+                    f"📅 {cms['label']} : signal saisonnier faible "
+                    f"({pct:.0f}% positif, {n} ans, moy. {avg:+.1f}%, confiance {conf:.0f}/100)"
                 ),
                 "positive": None,
             })
+
+        # Prévision convergente sur 3 mois à venir
+        next3 = seasonality.get("next_3m", [])
+        strong_next = [m for m in next3 if (m.get("confidence") or 0) >= 40]
+        if len(strong_next) >= 2:
+            dirs = [m["direction"] for m in strong_next]
+            if all(d == "haussier" for d in dirs):
+                labels_txt = " → ".join(m["label"] for m in strong_next)
+                key_factors.append({
+                    "type": "saisonnalite",
+                    "text": f"📅 Convergence haussière sur {labels_txt} (saisonnalité historique confirmée)",
+                    "positive": True,
+                })
+            elif all(d == "baissier" for d in dirs):
+                labels_txt = " → ".join(m["label"] for m in strong_next)
+                key_factors.append({
+                    "type": "saisonnalite",
+                    "text": f"📅 Convergence baissière sur {labels_txt} (saisonnalité historique confirmée)",
+                    "positive": False,
+                })
 
     if sentiment:
         s_label = sentiment.get("label","Neutre")
@@ -1280,8 +1322,14 @@ def compute_recommendation(
         "data_points": tech_result["data_points"],
         "fair_value":  fv_data,
         "seasonality": {
-            "months":            seasonality.get("months", []),
-            "current_month":     current_month_stats,
-            "seasonality_delta": seasonality_delta,
+            "months":         seasonality.get("months", []),
+            "quarters":       seasonality.get("quarters", []),
+            "annual_returns": seasonality.get("annual_returns", {}),
+            "next_3m":        seasonality.get("next_3m", []),
+            "coverage_years": seasonality.get("coverage_years", 0),
+            "best_month":     seasonality.get("best_month"),
+            "worst_month":    seasonality.get("worst_month"),
+            "current_month":  current_month_stats,
+            "delta":          seasonality_delta,
         },
     }

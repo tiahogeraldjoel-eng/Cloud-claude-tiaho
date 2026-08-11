@@ -1197,33 +1197,150 @@ function renderRecommendationBox(containerId, reco) {
           <div class="mt-2 text-xs text-slate-500 italic">${fv.interpretation||''}</div>
         </div>`;
       })() : ''}
-      <!-- Saisonnalité mensuelle -->
-      ${reco.seasonality && (reco.seasonality.months||[]).some(m=>m.n>0) ? (()=>{
-        const months = reco.seasonality.months;
+      <!-- Saisonnalité enrichie -->
+      ${(()=>{
+        const sea = reco.seasonality;
+        if(!sea || !(sea.months||[]).some(m=>m.n>0)) return '';
+        const months  = sea.months || [];
+        const quarts  = sea.quarters || [];
+        const annuals = sea.annual_returns || {};
+        const next3   = sea.next_3m || [];
         const curMonth = new Date().getMonth()+1;
-        return `<div class="mt-4 rounded-lg border border-slate-700/60 bg-slate-900/40 p-4">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="text-sm">📅</span>
-            <span class="text-xs font-semibold text-slate-300">Saisonnalité mensuelle (historique du titre)</span>
-          </div>
-          <div class="grid grid-cols-6 sm:grid-cols-12 gap-1.5">
-            ${months.map(m=>{
-              const isCur = m.month === curMonth;
-              if(!m.n) return `<div class="text-center"><div class="h-16 bg-slate-800/40 rounded"></div><div class="text-xs text-slate-600 mt-1">${m.label}</div></div>`;
-              const pos = m.pct_positive;
-              return `<div class="text-center ${isCur?'ring-2 ring-indigo-500 rounded':''}">
-                <div class="h-16 rounded overflow-hidden flex flex-col-reverse" title="${m.label} : ${pos}% positif sur ${m.n} ans · moyenne ${m.avg_return>=0?'+':''}${m.avg_return}%">
-                  <div style="height:${pos}%;background:#22c55e"></div>
-                  <div style="height:${100-pos}%;background:#ef4444"></div>
-                </div>
-                <div class="text-xs text-slate-400 mt-1">${m.label}</div>
-                <div class="text-xs font-bold ${m.avg_return>=0?'text-green-400':'text-red-400'}">${m.avg_return>=0?'+':''}${m.avg_return}%</div>
+        const coverage = sea.coverage_years || 0;
+        const best     = sea.best_month;
+        const worst    = sea.worst_month;
+        const delta    = sea.delta || 0;
+
+        // ── Heatmap 12 mois ──
+        const heatmap = months.map(m=>{
+          const isCur = m.month === curMonth;
+          if(!m.n) return `<div class="text-center opacity-40">
+            <div class="h-16 bg-slate-800/40 rounded"></div>
+            <div class="text-xs text-slate-600 mt-1">${m.label.slice(0,4)}</div>
+          </div>`;
+          const pos  = m.pct_positive || 50;
+          const conf = m.confidence || 0;
+          const avg  = m.avg_return || 0;
+          const confBadge = conf>=60?'🔵':conf>=40?'🟡':conf>=20?'⚫':'';
+          const sharpeStr = m.sharpe ? ` | Sh:${m.sharpe>0?'+':''}${m.sharpe.toFixed(2)}` : '';
+          return `<div class="text-center ${isCur?'ring-2 ring-indigo-400 rounded':''} cursor-default group relative">
+            <div class="h-16 rounded overflow-hidden flex flex-col-reverse"
+                 title="${m.label} · ${pos.toFixed(0)}% positif · ${m.n}/${coverage} ans · moy ${avg>=0?'+':''}${avg.toFixed(1)}%${sharpeStr}">
+              <div style="height:${pos}%;background:${conf>=40?'#22c55e':'#4ade8080'}" class="transition-all"></div>
+              <div style="height:${100-pos}%;background:${conf>=40?'#ef4444':'#f8717180'}" class="transition-all"></div>
+            </div>
+            <div class="text-xs text-slate-400 mt-1">${m.label.slice(0,4)}</div>
+            <div class="text-xs font-bold ${avg>=0?'text-green-400':'text-red-400'}">${avg>=0?'+':''}${avg.toFixed(1)}%</div>
+            ${confBadge?`<div class="text-xs">${confBadge}</div>`:''}
+          </div>`;
+        }).join('');
+
+        // ── Barres trimestrielles ──
+        const qBars = quarts.length ? `
+          <div class="mt-4 grid grid-cols-4 gap-2">
+            ${quarts.map(q=>{
+              if(!q.n) return `<div class="bg-slate-800/30 rounded p-2 text-center text-xs text-slate-600">${q.label}<br>—</div>`;
+              const pos = q.pct_positive || 50;
+              const avg = q.avg_return || 0;
+              const conf = q.confidence || 0;
+              return `<div class="rounded p-2 text-center ${conf>=40?(avg>=0?'bg-green-900/30 border border-green-700/40':'bg-red-900/30 border border-red-700/40'):'bg-slate-800/40 border border-slate-700/40'}">
+                <div class="text-xs font-semibold text-slate-300">${q.label}</div>
+                <div class="text-base font-bold ${avg>=0?'text-green-400':'text-red-400'}">${avg>=0?'+':''}${avg.toFixed(1)}%</div>
+                <div class="text-xs text-slate-500">${pos.toFixed(0)}% pos · ${q.n}ans</div>
+                ${conf>=40?`<div class="text-xs text-slate-400">conf ${conf.toFixed(0)}</div>`:''}
               </div>`;
             }).join('')}
+          </div>` : '';
+
+        // ── Rendements annuels ──
+        const annKeys = Object.keys(annuals).map(Number).sort();
+        let annBars = '';
+        if(annKeys.length >= 2) {
+          const annVals = annKeys.map(y=>annuals[y]);
+          const maxAbs  = Math.max(...annVals.map(Math.abs), 1);
+          const BAR_H   = 48;
+          annBars = `
+          <div class="mt-4">
+            <div class="text-xs text-slate-400 mb-2">Rendement annuel (cours fin décembre)</div>
+            <div class="flex items-end gap-1 overflow-x-auto pb-1" style="height:${BAR_H*2+20}px">
+              ${annKeys.map((yr,i)=>{
+                const v = annuals[yr];
+                const h = Math.round(Math.abs(v)/maxAbs*BAR_H);
+                return `<div class="flex flex-col items-center shrink-0 cursor-default" title="${yr} : ${v>=0?'+':''}${v.toFixed(1)}%">
+                  ${v>=0?`<div style="height:${BAR_H}px" class="flex flex-col justify-end w-6">
+                    <div style="height:${h}px;background:#22c55e99" class="rounded-t w-full"></div>
+                  </div>
+                  <div style="height:${BAR_H}px" class="w-6"></div>`
+                  :`<div style="height:${BAR_H}px" class="w-6"></div>
+                  <div style="height:${BAR_H}px" class="flex flex-col justify-start w-6">
+                    <div style="height:${h}px;background:#ef444499" class="rounded-b w-full"></div>
+                  </div>`}
+                  <div class="text-xs text-slate-500 mt-0.5" style="font-size:9px">${yr}</div>
+                  <div class="text-xs font-bold ${v>=0?'text-green-400':'text-red-400'}" style="font-size:9px">${v>=0?'+':''}${v.toFixed(0)}%</div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>`;
+        }
+
+        // ── Prévision 3 mois ──
+        const n3Html = next3.length ? `
+          <div class="mt-4">
+            <div class="text-xs text-slate-400 mb-2">Prévision saisonnière — 3 prochains mois</div>
+            <div class="flex gap-2">
+              ${next3.map(m=>{
+                const conf = m.confidence || 0;
+                const pos  = m.pct_positive || 50;
+                const avg  = m.avg_return || 0;
+                const color = conf>=40?(avg>=0?'#22c55e':'#ef4444'):'#64748b';
+                const bg    = conf>=40?(avg>=0?'bg-green-900/30':'bg-red-900/30'):'bg-slate-800/40';
+                return `<div class="flex-1 rounded-lg p-2.5 text-center ${bg} border border-slate-700/40">
+                  <div class="text-xs font-semibold text-slate-300 mb-1">${m.label}</div>
+                  <div class="text-sm font-bold" style="color:${color}">${avg>=0?'+':''}${avg!=null?avg.toFixed(1):'—'}%</div>
+                  <div class="text-xs text-slate-500 mt-0.5">${pos!=null?pos.toFixed(0):'—'}% pos</div>
+                  <div class="mt-1.5 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full" style="width:${conf}%;background:${color}"></div>
+                  </div>
+                  <div class="text-xs text-slate-600 mt-0.5">conf ${conf.toFixed(0)}/100</div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>` : '';
+
+        const bestWorst = (best||worst) ? `
+          <div class="mt-3 flex gap-3 text-xs">
+            ${best?`<div class="flex-1 bg-green-900/20 rounded p-2 text-center">
+              <div class="text-green-400 font-bold">${best.label} ✅ meilleur mois</div>
+              <div class="text-slate-300">${best.avg_return>=0?'+':''}${best.avg_return.toFixed(1)}% · ${best.pct_positive.toFixed(0)}% positif · conf ${best.confidence.toFixed(0)}/100</div>
+            </div>`:''}
+            ${worst?`<div class="flex-1 bg-red-900/20 rounded p-2 text-center">
+              <div class="text-red-400 font-bold">${worst.label} ⚠️ pire mois</div>
+              <div class="text-slate-300">${worst.avg_return>=0?'+':''}${worst.avg_return.toFixed(1)}% · ${worst.pct_positive.toFixed(0)}% positif · conf ${worst.confidence.toFixed(0)}/100</div>
+            </div>`:''}
+          </div>` : '';
+
+        return `<div class="mt-4 rounded-lg border border-slate-700/60 bg-slate-900/40 p-4">
+          <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-sm">📅</span>
+              <span class="text-xs font-semibold text-slate-300">Saisonnalité — ${coverage} ans de données</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+              ${delta!==0?`<span class="px-2 py-0.5 rounded font-bold ${delta>0?'bg-green-900/40 text-green-300':'bg-red-900/40 text-red-300'}">
+                Impact reco : ${delta>0?'+':''}${delta.toFixed(1)} pts
+              </span>`:''}
+              <span class="text-slate-500">🔵 conf ≥60 · 🟡 conf ≥40 · ⚫ conf ≥20</span>
+            </div>
           </div>
-          <div class="mt-2 text-xs text-slate-500">Vert = % d'années en hausse ce mois · Rouge = % en baisse · cadre = mois en cours. Un facteur clé n'apparaît ci-dessus que si ≥7 ans de données et tendance nette (≥70% dans un sens).</div>
+          <!-- Heatmap 12 mois -->
+          <div class="grid grid-cols-6 sm:grid-cols-12 gap-1.5">${heatmap}</div>
+          <div class="mt-1 text-xs text-slate-600">Vert = % d'années en hausse · Rouge = % en baisse · Cadre indigo = mois en cours · Intensité = confiance statistique</div>
+          ${bestWorst}
+          ${qBars}
+          ${annBars}
+          ${n3Html}
         </div>`;
-      })() : ''}
+      })()}
       <div class="mt-3 text-xs text-slate-600 text-right">Calculé le ${new Date(reco.computed||Date.now()).toLocaleString('fr-FR')}</div>
     </div>`;
 }

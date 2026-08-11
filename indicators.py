@@ -1028,25 +1028,22 @@ _MONTH_LABELS = ["Janv.", "Févr.", "Mars", "Avril", "Mai", "Juin",
 
 def compute_seasonality(prices: List[Dict]) -> Dict:
     """
-    Calcule la saisonnalité mensuelle d'un titre à partir de son historique de cours.
+    Saisonnalité statistique multi-fenêtre sur historique long (>2 ans idéalement).
 
-    Pour chaque mois calendaire (1-12), sur les années disponibles dans
-    l'historique :
-      - performance moyenne du mois (variation du dernier cours du mois
-        précédent au dernier cours du mois en cours)
-      - % d'années où cette performance est positive
-      - meilleure / pire performance observée
-      - n = nombre d'années avec données consécutives pour ce mois
-
-    Un mois est marqué "reliable" si n >= 7 et que le % d'années positives
-    est ≤ 30% ou ≥ 70% (équivalent approximatif à un test binomial p < 0.2
-    contre une probabilité de base de 50%).
+    Retourne :
+      months        : stats mensuelles (1-12) avec score de confiance pondéré
+      quarters      : stats trimestrielles Q1-Q4
+      annual_returns: rendement total de chaque année calendaire disponible
+      next_3m       : prévision saisonnière sur les 3 prochains mois
+      coverage_years: nombre d'années couvertes par l'historique
+      best_month    : mois historiquement le plus haussier (confiance >= 40)
+      worst_month   : mois historiquement le plus baissier (confiance >= 40)
     """
     if not prices:
-        return {"months": []}
+        return {"months": [], "quarters": [], "annual_returns": {}, "next_3m": [],
+                "coverage_years": 0, "best_month": None, "worst_month": None}
 
-    # Dernier cours connu de chaque (année, mois) — les prix sont triés par
-    # date croissante, donc la dernière entrée d'un mois écrase les précédentes.
+    # ── 1. Agrégation : dernier cours de chaque (année, mois) ────────────────
     monthly_close: Dict[Tuple[int, int], float] = {}
     for p in prices:
         d = p.get("date")
@@ -1057,45 +1054,156 @@ def compute_seasonality(prices: List[Dict]) -> Dict:
         monthly_close[(y, m)] = c
 
     keys = sorted(monthly_close.keys())
+    if len(keys) < 2:
+        return {"months": [], "quarters": [], "annual_returns": {}, "next_3m": [],
+                "coverage_years": 0, "best_month": None, "worst_month": None}
 
+    years_covered = keys[-1][0] - keys[0][0] + 1
+
+    # ── 2. Rendements mensuels consécutifs ───────────────────────────────────
     returns_by_month: Dict[int, List[float]] = {m: [] for m in range(1, 13)}
     for i in range(1, len(keys)):
         y_prev, m_prev = keys[i - 1]
         y_cur, m_cur   = keys[i]
-        # Mois suivant immédiat uniquement (pas de trou dans l'historique)
         expected = (y_prev, m_prev + 1) if m_prev < 12 else (y_prev + 1, 1)
         if (y_cur, m_cur) != expected:
             continue
-        prev_close = monthly_close[(y_prev, m_prev)]
-        cur_close  = monthly_close[(y_cur, m_cur)]
-        if prev_close:
-            returns_by_month[m_cur].append(round((cur_close / prev_close - 1) * 100, 2))
+        prev_c = monthly_close[(y_prev, m_prev)]
+        cur_c  = monthly_close[(y_cur, m_cur)]
+        if prev_c:
+            returns_by_month[m_cur].append(round((cur_c / prev_c - 1) * 100, 4))
 
-    months = []
-    for m in range(1, 13):
+    # ── 3. Stats mensuelles avec score de confiance ───────────────────────────
+    # Confiance = (qualité signal) × (couverture temporelle)
+    #   signal_strength = |pct_positive - 50| / 50   → [0, 1]
+    #   coverage_weight = min(1, n / 10)              → sature à 10 ans
+    #   sharpe_monthly  = avg / std                   → ratio risque/rendement
+    def _month_stats(m: int) -> Dict:
         rets = returns_by_month[m]
         n = len(rets)
         if n == 0:
-            months.append({
-                "month": m, "label": _MONTH_LABELS[m - 1], "n": 0,
-                "pct_positive": None, "avg_return": None,
-                "best": None, "worst": None, "reliable": False,
-            })
-            continue
+            return {"month": m, "label": _MONTH_LABELS[m-1], "n": 0,
+                    "pct_positive": None, "avg_return": None, "std_return": None,
+                    "best": None, "worst": None, "reliable": False,
+                    "confidence": 0, "sharpe": None, "direction": "neutre"}
         n_pos = sum(1 for r in rets if r > 0)
-        pct_positive = round(n_pos / n * 100, 1)
-        months.append({
+        pct_pos = round(n_pos / n * 100, 1)
+        avg = round(sum(rets) / n, 3)
+        std = round(math.sqrt(sum((r - avg)**2 for r in rets) / n), 3) if n > 1 else None
+        sharpe = round(avg / std, 2) if std and std > 0 else None
+
+        signal_strength = abs(pct_pos - 50) / 50
+        coverage_weight = min(1.0, n / 10)
+        confidence = round(signal_strength * coverage_weight * 100, 1)
+
+        # "reliable" : confiance >= 40 (seuil calibré pour BRVM avec 7-10 ans)
+        reliable = confidence >= 40
+        direction = "haussier" if pct_pos >= 60 else "baissier" if pct_pos <= 40 else "neutre"
+        return {
             "month":        m,
-            "label":        _MONTH_LABELS[m - 1],
+            "label":        _MONTH_LABELS[m-1],
             "n":            n,
-            "pct_positive": pct_positive,
-            "avg_return":   round(sum(rets) / n, 2),
+            "pct_positive": pct_pos,
+            "avg_return":   avg,
+            "std_return":   std,
             "best":         round(max(rets), 2),
             "worst":        round(min(rets), 2),
-            "reliable":     n >= 7 and (pct_positive <= 30 or pct_positive >= 70),
+            "reliable":     reliable,
+            "confidence":   confidence,
+            "sharpe":       sharpe,
+            "direction":    direction,
+        }
+
+    months = [_month_stats(m) for m in range(1, 13)]
+
+    # ── 4. Saisonnalité trimestrielle ─────────────────────────────────────────
+    QUARTERS = [(1, [1,2,3]), (2, [4,5,6]), (3, [7,8,9]), (4, [10,11,12])]
+    quarters = []
+    for q_num, q_months in QUARTERS:
+        # Rendement de chaque trimestre sur chaque année disponible
+        years_range = range(keys[0][0], keys[-1][0] + 1)
+        q_returns = []
+        for yr in years_range:
+            start_m = q_months[0]
+            end_m   = q_months[-1]
+            # Cours fin du trimestre précédent
+            prev_m  = (yr - 1, 12) if start_m == 1 else (yr, start_m - 1)
+            end_key = (yr, end_m)
+            if prev_m in monthly_close and end_key in monthly_close:
+                p0 = monthly_close[prev_m]
+                p1 = monthly_close[end_key]
+                if p0:
+                    q_returns.append(round((p1 / p0 - 1) * 100, 3))
+
+        n = len(q_returns)
+        if n == 0:
+            quarters.append({"quarter": q_num, "label": f"T{q_num}", "n": 0,
+                              "avg_return": None, "pct_positive": None, "confidence": 0})
+            continue
+        n_pos = sum(1 for r in q_returns if r > 0)
+        pct_pos = round(n_pos / n * 100, 1)
+        avg = round(sum(q_returns) / n, 2)
+        signal_strength = abs(pct_pos - 50) / 50
+        coverage_weight = min(1.0, n / 8)
+        confidence = round(signal_strength * coverage_weight * 100, 1)
+        quarters.append({
+            "quarter":      q_num,
+            "label":        f"T{q_num}",
+            "n":            n,
+            "avg_return":   avg,
+            "pct_positive": pct_pos,
+            "best":         round(max(q_returns), 2),
+            "worst":        round(min(q_returns), 2),
+            "confidence":   confidence,
+            "direction":    "haussier" if pct_pos >= 60 else "baissier" if pct_pos <= 40 else "neutre",
         })
 
-    return {"months": months}
+    # ── 5. Rendements annuels ─────────────────────────────────────────────────
+    annual_returns: Dict[int, float] = {}
+    all_years = set(y for (y, _) in monthly_close.keys())
+    for yr in sorted(all_years):
+        # Cours fin décembre de l'année précédente → fin décembre de cette année
+        prev_dec = monthly_close.get((yr - 1, 12))
+        this_dec = monthly_close.get((yr, 12))
+        # Fallback : cours de janvier si décembre indisponible
+        if prev_dec is None:
+            this_jan = monthly_close.get((yr, 1))
+            if this_jan and this_dec:
+                annual_returns[yr] = round((this_dec / this_jan - 1) * 100, 2)
+        elif this_dec:
+            annual_returns[yr] = round((this_dec / prev_dec - 1) * 100, 2)
+
+    # ── 6. Prévision 3 mois à venir ──────────────────────────────────────────
+    today_m = keys[-1][1] if keys else 1  # Mois du dernier cours disponible
+    next_3m = []
+    for offset in range(1, 4):
+        nm = ((today_m - 1 + offset) % 12) + 1
+        ms = months[nm - 1]
+        next_3m.append({
+            "offset":       offset,
+            "month":        nm,
+            "label":        _MONTH_LABELS[nm - 1],
+            "avg_return":   ms["avg_return"],
+            "pct_positive": ms["pct_positive"],
+            "confidence":   ms["confidence"],
+            "direction":    ms["direction"],
+            "n":            ms["n"],
+        })
+
+    # ── 7. Meilleur / pire mois (confiance >= 40) ────────────────────────────
+    reliable_months = [m for m in months if m["confidence"] >= 40]
+    best_month  = max(reliable_months, key=lambda m: m["avg_return"] or -999) if reliable_months else None
+    worst_month = min(reliable_months, key=lambda m: m["avg_return"] or 999)  if reliable_months else None
+
+    return {
+        "months":         months,
+        "quarters":       quarters,
+        "annual_returns": annual_returns,
+        "next_3m":        next_3m,
+        "coverage_years": years_covered,
+        "best_month":     best_month,
+        "worst_month":    worst_month,
+    }
 
 
 # ─── Phase de cycle (screener marché) ─────────────────────────────────────────
