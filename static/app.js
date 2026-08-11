@@ -1822,7 +1822,7 @@ function renderFundamental(d, reco) {
   if(reco) renderRecommendationBox('fund-reco-box', {...reco, symbol: d?.symbol || reco.symbol || ''});
 
   // Historique des recommandations (onglet Fondamentale)
-  api(`/api/stocks/${symbol}/recommendation/history?days=90`)
+  api(`/api/stocks/${stock.symbol}/recommendation/history?days=90`)
     .then(h => renderRecoHistory('fund-reco-history', h.history||[]))
     .catch(()=>{});
 
