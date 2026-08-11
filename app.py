@@ -699,12 +699,14 @@ def api_recommendation(symbol: str, profil: str = "mixte"):
     result["symbol"]   = sym
     result["computed"] = datetime.now(timezone.utc).isoformat()
 
-    # Persister dans l'historique des recommandations (une entrée par jour)
-    today = datetime.now(timezone.utc).date().isoformat()
-    try:
-        db.save_recommendation_history(sym, today, result)
-    except Exception as e:
-        logger.warning(f"Impossible de sauvegarder l'historique reco {sym}: {e}")
+    # Persister dans l'historique uniquement pour le profil canonique "mixte"
+    # (évite que des requêtes profil=rentier/trader n'écrasent le snapshot du jour)
+    if profil == "mixte":
+        today = datetime.now(timezone.utc).date().isoformat()
+        try:
+            db.save_recommendation_history(sym, today, result)
+        except Exception as e:
+            logger.warning(f"Impossible de sauvegarder l'historique reco {sym}: {e}")
 
     return result
 

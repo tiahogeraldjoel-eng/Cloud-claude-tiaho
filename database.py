@@ -804,44 +804,48 @@ def delete_ago_event(event_id: int) -> None:
 def save_recommendation_history(symbol: str, date_str: str, reco: Dict) -> None:
     """Enregistre (ou met à jour) la recommandation du jour pour un titre."""
     conn = get_connection()
-    axes = reco.get("axes") or {}
-    conn.execute("""
-        INSERT INTO recommendation_history
-            (symbol, date, recommendation, score, score_technique, score_fondamentale,
-             score_psychologie, score_sekide)
-        VALUES (?,?,?,?,?,?,?,?)
-        ON CONFLICT(symbol, date) DO UPDATE SET
-            recommendation     = excluded.recommendation,
-            score              = excluded.score,
-            score_technique    = excluded.score_technique,
-            score_fondamentale = excluded.score_fondamentale,
-            score_psychologie  = excluded.score_psychologie,
-            score_sekide       = excluded.score_sekide,
-            created_at         = CURRENT_TIMESTAMP
-    """, (
-        symbol.upper(),
-        date_str,
-        reco.get("recommendation"),
-        reco.get("score"),
-        axes.get("technique",    {}).get("score"),
-        axes.get("fondamentale", {}).get("score"),
-        axes.get("psychologie",  {}).get("score"),
-        axes.get("sekide",       {}).get("score"),
-    ))
-    conn.commit()
-    conn.close()
+    try:
+        axes = reco.get("axes") or {}
+        conn.execute("""
+            INSERT INTO recommendation_history
+                (symbol, date, recommendation, score, score_technique, score_fondamentale,
+                 score_psychologie, score_sekide)
+            VALUES (?,?,?,?,?,?,?,?)
+            ON CONFLICT(symbol, date) DO UPDATE SET
+                recommendation     = excluded.recommendation,
+                score              = excluded.score,
+                score_technique    = excluded.score_technique,
+                score_fondamentale = excluded.score_fondamentale,
+                score_psychologie  = excluded.score_psychologie,
+                score_sekide       = excluded.score_sekide,
+                created_at         = CURRENT_TIMESTAMP
+        """, (
+            symbol.upper(),
+            date_str,
+            reco.get("recommendation"),
+            reco.get("score"),
+            axes.get("technique",    {}).get("score"),
+            axes.get("fondamentale", {}).get("score"),
+            axes.get("psychologie",  {}).get("score"),
+            axes.get("sekide",       {}).get("score"),
+        ))
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def get_recommendation_history(symbol: str, days: int = 90) -> List[Dict]:
     """Retourne l'historique des recommandations sur N jours pour un titre."""
     conn = get_connection()
-    rows = conn.execute("""
-        SELECT date, recommendation, score,
-               score_technique, score_fondamentale, score_psychologie, score_sekide
-        FROM recommendation_history
-        WHERE symbol = ?
-          AND date >= date('now', ? || ' days')
-        ORDER BY date ASC
-    """, (symbol.upper(), f"-{days}")).fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+    try:
+        rows = conn.execute("""
+            SELECT date, recommendation, score,
+                   score_technique, score_fondamentale, score_psychologie, score_sekide
+            FROM recommendation_history
+            WHERE symbol = ?
+              AND date >= date('now', ? || ' days')
+            ORDER BY date ASC
+        """, (symbol.upper(), f"-{days}")).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()

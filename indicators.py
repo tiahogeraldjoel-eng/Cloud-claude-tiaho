@@ -4,6 +4,7 @@ Tous les calculs sont effectués sur des listes Python (pas de dépendance panda
 """
 from typing import List, Dict, Optional, Tuple
 import math
+from datetime import datetime, timezone
 
 
 # ─── Utilités ────────────────────────────────────────────────────────────────
@@ -1089,7 +1090,7 @@ def compute_seasonality(prices: List[Dict]) -> Dict:
         n_pos = sum(1 for r in rets if r > 0)
         pct_pos = round(n_pos / n * 100, 1)
         avg = round(sum(rets) / n, 3)
-        std = round(math.sqrt(sum((r - avg)**2 for r in rets) / n), 3) if n > 1 else None
+        std = round(math.sqrt(sum((r - avg)**2 for r in rets) / (n - 1)), 3) if n > 1 else None
         sharpe = round(avg / std, 2) if std and std > 0 else None
 
         signal_strength = abs(pct_pos - 50) / 50
@@ -1174,7 +1175,9 @@ def compute_seasonality(prices: List[Dict]) -> Dict:
             annual_returns[yr] = round((this_dec / prev_dec - 1) * 100, 2)
 
     # ── 6. Prévision 3 mois à venir ──────────────────────────────────────────
-    today_m = keys[-1][1] if keys else 1  # Mois du dernier cours disponible
+    # Ancré sur le mois calendaire UTC, pas sur le dernier mois en base
+    # (évite un décalage si les prix sont légèrement en retard)
+    today_m = datetime.now(timezone.utc).month
     next_3m = []
     for offset in range(1, 4):
         nm = ((today_m - 1 + offset) % 12) + 1
@@ -1192,8 +1195,8 @@ def compute_seasonality(prices: List[Dict]) -> Dict:
 
     # ── 7. Meilleur / pire mois (confiance >= 40) ────────────────────────────
     reliable_months = [m for m in months if m["confidence"] >= 40]
-    best_month  = max(reliable_months, key=lambda m: m["avg_return"] or -999) if reliable_months else None
-    worst_month = min(reliable_months, key=lambda m: m["avg_return"] or 999)  if reliable_months else None
+    best_month  = max(reliable_months, key=lambda m: m["avg_return"] if m["avg_return"] is not None else -999) if reliable_months else None
+    worst_month = min(reliable_months, key=lambda m: m["avg_return"] if m["avg_return"] is not None else  999) if reliable_months else None
 
     return {
         "months":         months,

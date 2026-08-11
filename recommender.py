@@ -1034,7 +1034,7 @@ def compute_recommendation(
     current_month_stats = None
     seasonality_delta = 0.0
     if seasonality.get("months"):
-        current_month_stats = seasonality["months"][datetime.now().month - 1]
+        current_month_stats = seasonality["months"][datetime.now(timezone.utc).month - 1]
         conf    = current_month_stats.get("confidence", 0)
         pct     = current_month_stats.get("pct_positive") or 50
         if conf >= 20:  # seuil minimal — n'agit que si confiance réelle
