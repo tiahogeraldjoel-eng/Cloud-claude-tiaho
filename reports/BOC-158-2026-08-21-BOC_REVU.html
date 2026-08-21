@@ -1,0 +1,433 @@
+<meta charset="UTF-8">
+<title>BOC_REVU N°158 — Vendredi 21 août 2026</title>
+<style>
+  :root {
+    --vert: #1a7f37;
+    --rouge: #cf222e;
+    --ambre: #bf8700;
+    --bleu: #0b3d91;
+    --rouge-fonce: #8b0000;
+    --orange-brule: #e36209;
+    --gris: #57606a;
+    --bg: #ffffff;
+    --bg-alt: #f6f8fa;
+    --border: #d0d7de;
+    --text: #1f2328;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1117;
+      --bg-alt: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-alt: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: var(--text); background: var(--bg); padding: 24px; max-width: 1100px; margin: 0 auto; }
+  h1 { color: var(--bleu); font-size: 1.6em; border-bottom: 3px solid var(--bleu); padding-bottom: 8px; margin-bottom: 20px; }
+  h2 { color: var(--bleu); font-size: 1.2em; background: var(--bleu); color: #fff; padding: 6px 12px; margin: 28px 0 12px; border-radius: 4px; }
+  h3 { color: var(--bleu); font-size: 1.05em; margin: 18px 0 8px; border-left: 4px solid var(--bleu); padding-left: 10px; }
+  h4 { font-size: 0.95em; margin: 14px 0 6px; color: var(--text); }
+  p { margin: 8px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; overflow-x: auto; display: block; }
+  th { background: var(--bleu); color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--bg-alt); }
+  tr:hover td { background: #eef3fb; }
+  blockquote { border-left: 4px solid var(--ambre); background: #fffbe6; padding: 10px 16px; margin: 12px 0; border-radius: 0 4px 4px 0; color: #5a4000; }
+  .alerte { border-left: 4px solid var(--rouge); background: #fdecea; padding: 12px 16px; margin: 12px 0; border-radius: 0 4px 4px 0; font-weight: 600; color: #7d1a1a; }
+
+  /* Badges recommandations */
+  .acheter  { background: var(--vert); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .alleger  { background: var(--orange-brule); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .vendre   { background: var(--rouge-fonce); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .attendre { background: var(--ambre); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .eviter   { background: var(--rouge); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .surveiller { background: var(--bleu); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .maintenir { background: var(--gris); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .ne-pas-rentrer { background: #5a0080; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+
+  /* Valeurs positives / négatives */
+  .pos { color: var(--vert); font-weight: 700; }
+  .neg { color: var(--rouge); font-weight: 700; }
+  .neutre { color: var(--gris); }
+
+  /* Biais */
+  .biais-neutre { background: var(--gris); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 13px; display: inline-block; }
+
+  /* Stock blocks */
+  .stock-acheter { border-left: 4px solid var(--vert); background: #f0faf3; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-surveiller { border-left: 4px solid var(--bleu); background: #eef3fb; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-vendre { border-left: 4px solid var(--rouge-fonce); background: #fff0f0; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-eviter { border-left: 4px solid var(--rouge); background: #fdecea; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-maintenir { border-left: 4px solid var(--gris); background: #f5f5f5; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+
+  /* Alerte calendrier */
+  .calendrier { background: #fff9e6; border: 2px solid var(--ambre); border-radius: 6px; padding: 14px 18px; margin: 14px 0; }
+  .calendrier strong { color: var(--rouge); }
+
+  .disclaimer { background: var(--bg-alt); border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin-top: 28px; font-size: 12px; color: var(--gris); }
+
+  /* Top 3 */
+  .top1 { background: #ffd700; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .top2 { background: #c0c0c0; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .top3 { background: #cd7f32; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+
+  /* Garde-fou */
+  .garde-fou { background: #f0e6ff; border-left: 4px solid #5a0080; padding: 12px 16px; margin: 12px 0; border-radius: 0 4px 4px 0; }
+
+  /* KPI row */
+  .kpi-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 16px 0 24px; }
+  .kpi { background: #eef3fb; border: 1px solid #cdd9ea; border-radius: 6px; padding: 10px 16px; text-align: center; min-width: 110px; flex: 1; }
+  .kpi .val { font-size: 1.5em; font-weight: 800; color: var(--bleu); }
+  .kpi .val.pos { color: var(--vert); }
+  .kpi .val.neg { color: var(--rouge); }
+  .kpi .lbl { font-size: 11px; color: var(--gris); text-transform: uppercase; letter-spacing: .04em; }
+
+  @media print { body { padding: 10px; } }
+</style>
+
+<h1>BOC_REVU — Bulletin Officiel de la Cote N°158 | Vendredi 21 août 2026</h1>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="val pos">+1,84 %</div><div class="lbl">Composite (jour)</div></div>
+  <div class="kpi"><div class="val pos">529,15</div><div class="lbl">Niveau Composite</div></div>
+  <div class="kpi"><div class="val pos">+53,04 %</div><div class="lbl">YTD Composite</div></div>
+  <div class="kpi"><div class="val">17H / 22B</div><div class="lbl">Breadth (Divergence)</div></div>
+  <div class="kpi"><div class="val">17,38</div><div class="lbl">PER marché</div></div>
+  <div class="kpi"><div class="val pos">5,82 %</div><div class="lbl">Rendement div.</div></div>
+</div>
+
+<h2>Étape 1 — Vue d'ensemble du marché</h2>
+
+<h3>Indices généraux</h3>
+<table>
+  <tr><th>Indice</th><th>Clôture</th><th>Variation jour</th><th>YTD</th></tr>
+  <tr><td>Composite</td><td>529,15</td><td class="pos">+1,84 %</td><td class="pos">+53,04 %</td></tr>
+  <tr><td>BRVM 30</td><td>255,75</td><td class="pos">+2,31 %</td><td>—</td></tr>
+  <tr><td>Prestige</td><td>196,68</td><td class="pos">+2,00 %</td><td>—</td></tr>
+  <tr><td>Principal</td><td>382,84</td><td class="pos">+0,15 %</td><td>—</td></tr>
+</table>
+
+<p><strong>PER marché :</strong> 17,38 &nbsp;|&nbsp; <strong>Rendement dividende :</strong> 5,82 %</p>
+
+<h3>Breadth — <span style="color:var(--rouge)">DIVERGENCE CRITIQUE</span></h3>
+<p>Bilan séance : <strong>17 hausses / 22 baisses / 8 inchangés</strong> sur 47 titres actifs.</p>
+<div class="alerte">
+  Biais de marché : <span class="biais-neutre">NEUTRE</span> (divergence breadth)<br>
+  Le Composite progresse de +1,84 % sur une majorité de titres en BAISSE (22 contre 17). La hausse est concentrée sur quelques poids lourds — SNTS (+7,50 %) en tête. Ce signal de divergence est classique d'une hausse non durable portée par un seul titre à forte pondération.
+</div>
+
+<h3>Indices sectoriels (force décroissante)</h3>
+<table>
+  <tr><th>Rang</th><th>Secteur</th><th>Variation</th><th>PER</th><th>Commentaire</th></tr>
+  <tr><td style="color:var(--vert);font-weight:700;">1</td><td><strong>Télécoms</strong></td><td class="pos">+5,63 %</td><td>13,52</td><td>Meilleur secteur — valorisation raisonnable</td></tr>
+  <tr><td>2</td><td>Finance</td><td class="pos">+1,50 %</td><td>—</td><td>Soutenu par BICB et SGBC ex-div</td></tr>
+  <tr><td>3</td><td>Industrie</td><td class="pos">+0,80 %</td><td>—</td><td>Progression modérée</td></tr>
+  <tr><td>4</td><td>Consommation</td><td class="neg">-0,20 %</td><td>—</td><td>Légèrement négatif</td></tr>
+  <tr><td>5</td><td>Énergie</td><td class="neg">-1,10 %</td><td>—</td><td>Sous pression</td></tr>
+  <tr><td style="color:var(--rouge);font-weight:700;">6</td><td><strong>Services Publics</strong></td><td class="neg">-3,08 %</td><td>27,05</td><td>Secteur le plus faible — PER élevé</td></tr>
+</table>
+
+<h2>Étape 2 — Filtrage des actions</h2>
+
+<h3>2A. Valorisation — PER cible (8–15) et rendement ≥ 5 %</h3>
+<table>
+  <tr><th>Titre</th><th>PER</th><th>Rdt Div</th><th>Statut</th></tr>
+  <tr><td>SPHC</td><td>~8,5</td><td class="pos">4,56 %</td><td>Borderline — ex-div imminent, intérêt tactique fort</td></tr>
+  <tr><td>SGBC</td><td>~10,2</td><td class="pos">~5,8 %</td><td>Valorisation attractive post-ex-div</td></tr>
+  <tr><td>BICB</td><td>13,07</td><td class="pos">~5,5 %</td><td>Zone cible — carnet acheteur puissant</td></tr>
+  <tr><td>PALC</td><td>~9,3</td><td class="pos">~6,2 %</td><td>Bon rendement, carnet stabilisé</td></tr>
+  <tr><td>BOAS</td><td>~11,5</td><td class="pos">~5,8 %</td><td>Fondamentaux sains</td></tr>
+  <tr><td>STBC</td><td>~14,5</td><td class="pos">~6,1 %</td><td>Zone haute de la cible, carnet rebondi</td></tr>
+</table>
+
+<h4 style="color:var(--rouge)">Titres chers à éviter — Risque de bulle</h4>
+<table>
+  <tr><th>Titre</th><th>PER</th><th>Risque</th></tr>
+  <tr><td style="color:var(--rouge);font-weight:700;">SAFC</td><td class="neg">&gt; 40</td><td>Bulle manifeste, aucun fondamental ne justifie ce niveau</td></tr>
+  <tr><td style="color:var(--rouge);font-weight:700;">NSBC</td><td class="neg">&gt; 30</td><td>Surévaluation persistante, carnet vendeur</td></tr>
+  <tr><td style="color:var(--ambre);font-weight:700;">Services Publics</td><td>27,05</td><td>PER sectoriel excessif</td></tr>
+</table>
+
+<h3>2B. Momentum — Variations du jour croisées avec volumes</h3>
+<table>
+  <tr><th>Titre</th><th>Variation</th><th>Valeur transigée</th><th>Signal</th></tr>
+  <tr><td><strong>SNTS</strong></td><td class="pos">+7,50 %</td><td>Significative</td><td>Spike haussier — carnet 1:12,5 vendeur post-hausse → <span style="color:var(--ambre);font-weight:700;">PRUDENCE</span></td></tr>
+  <tr><td><strong>SPHC</strong></td><td class="pos">+5,59 %</td><td>~1,6 M F</td><td>Momentum confirmé — ex-div catalyseur</td></tr>
+  <tr><td><strong>ORAC</strong></td><td class="pos">+3,95 %</td><td>Modérée</td><td>Progression saine — Télécoms porteur</td></tr>
+  <tr><td><strong>SGBC</strong></td><td class="pos">+3,95 %</td><td>Faible</td><td>Ex-div day — variation vs cours référence ajusté</td></tr>
+  <tr><td><strong>BICB</strong></td><td class="neg">-2,38 %</td><td>Très faible</td><td>Baisse anomale — carnet 226:1 ACHETEUR → signal fort</td></tr>
+  <tr><td><strong>NSBC</strong></td><td class="neg">-5,00 %</td><td>Faible</td><td>Baisse significative sur titre surévalué</td></tr>
+</table>
+
+<h3>2C. Catalyseurs détectés</h3>
+
+<div class="calendrier">
+  <strong>ALERTE CALENDRIER SEMAINE PROCHAINE :</strong><br>
+  &bull; Lundi 25/08 : <strong>FÉRIÉ — marché fermé</strong><br>
+  &bull; Mardi 26/08 : <strong>DERNIER JOUR CUM-DIVIDENDE SPHC</strong> (brut 489 F / net PP 430,32 F)<br>
+  &bull; Jeudi 27/08 : Ex-dividende SPHC — drop mécanique ~489 F (~5,2 %)<br>
+  &bull; Dimanche 24/08 : Paiement dividende SGBC
+</div>
+
+<table>
+  <tr><th>Date</th><th>Titre</th><th>Événement</th><th>Impact</th></tr>
+  <tr><td><strong>21/08 (auj.)</strong></td><td>SGBC</td><td>Ex-dividende (brut ~2 600 F)</td><td>Paiement 24/08 — cours ajusté</td></tr>
+  <tr><td style="color:var(--rouge);font-weight:700;">25/08 (lundi)</td><td>MARCHÉ</td><td><strong>FÉRIÉ — marché fermé</strong></td><td>Aucune transaction possible</td></tr>
+  <tr><td style="color:var(--vert);font-weight:700;">26/08 (mardi)</td><td>SPHC</td><td><strong>DERNIER JOUR cum-dividende</strong></td><td>Acheter avant clôture du 26/08</td></tr>
+  <tr><td>27/08 (jeudi)</td><td>SPHC</td><td>Ex-dividende</td><td>Drop ~489 F (brut PP) — cours théorique ~8 951 F</td></tr>
+</table>
+
+<h3>2D. Recommandations de vente / allègement</h3>
+
+<div class="garde-fou">
+  <strong>SDSC (AGL CI) — Garde-fou anti-aller-retour actif</strong><br>
+  Signal VENDRE émis précédemment. Prix vente référence : 2 510 F. Seuil re-entrée = 2 510 &times; 0,9685 = <strong>2 431 F</strong>. Cours BOC158 : 2 780 F &gt;&gt; seuil.<br>
+  &bull; Porteurs qui n'ont PAS vendu : <span class="surveiller">SURVEILLER</span><br>
+  &bull; Porteurs qui ont vendu : <span class="ne-pas-rentrer">NE PAS RE-ENTRER</span> au-dessus de 2 431 F
+</div>
+
+<div class="garde-fou">
+  <strong>STBC (Sitab CI) — Garde-fou anti-aller-retour actif</strong><br>
+  Signal ALLÉGER émis précédemment. Prix vente référence : 22 235 F. Seuil re-entrée = 22 235 &times; 0,9685 = <strong>21 535 F</strong>. Cours BOC158 : 22 900 F &gt;&gt; seuil.<br>
+  Retournement carnet notable (95:1 V → 4:1 A) — à confirmer sur 2-3 séances.<br>
+  &bull; Porteurs actuels : <span class="surveiller">SURVEILLER (CT)</span><br>
+  &bull; Ex-porteurs : <span class="ne-pas-rentrer">NE PAS RE-ENTRER</span> au-dessus de 21 535 F
+</div>
+
+<div class="stock-vendre">
+  <strong>NSBC — <span class="vendre">VENDRE</span></strong><br>
+  Titre surévalué (PER &gt; 30), baisse de -5,00 % ce jour, carnet vendeur. Sortie totale recommandée pour les porteurs.
+</div>
+
+<div class="stock-eviter">
+  <strong>SAFC — <span class="eviter">ÉVITER</span> / <span class="alleger">ALLÉGER</span> pour les porteurs</strong><br>
+  PER &gt; 40, bulle manifeste. Les porteurs devraient réduire leur exposition de 50 %.
+</div>
+
+<h2>Étape 3 — Sélection des actions clés</h2>
+
+<div class="stock-acheter">
+  <strong>SPHC (Société Pharmaceutique de Côte d'Ivoire) — <span class="acheter">ACHETER</span> d'urgence</strong><br>
+  Cours : 9 440 F (+5,59 %). Dividende brut 489 F, net PP 430,32 F (rendement 4,56 %). Dernier jour cum-div : <strong>mardi 26/08</strong> (marché fermé lundi 25/08). Carnet 1,5:1 acheteur. Après ex-div (jeudi 27/08), cours théorique ex-div ~8 951 F. Achat à exécuter impérativement avant clôture du 26/08.
+</div>
+
+<div class="stock-maintenir">
+  <strong>SNTS (Sonatel) — <span class="maintenir">MAINTENIR</span></strong><br>
+  Cours : 36 980 F (+7,50 %). Spike haussier majeur portant le Composite. Carnet 1:12,5 vendeur post-hausse (prises de profit massives). Aucun catalyseur fondamental identifié. Position personnelle (PR 34 000 F) : <strong>+8,76 % au-dessus du PR</strong>. Porteurs LT (horizon 20 ans) : tenir la position. Ne pas trader le spike.
+</div>
+
+<div class="stock-surveiller">
+  <strong>ORAC (Orange Côte d'Ivoire) — <span class="surveiller">SURVEILLER</span></strong><br>
+  Progression +3,95 %. Secteur Télécoms le plus solide (+5,63 %). PER dans la fourchette raisonnable. À surveiller pour point d'entrée après consolidation.
+</div>
+
+<div class="stock-surveiller">
+  <strong>SGBC (Société Générale de Banque en CI) — <span class="surveiller">SURVEILLER</span></strong><br>
+  Cours : 39 195 F. Ex-div day. La variation +3,95 % est calculée sur la base du cours de référence ajusté (~37 700 F). Le cours de marché (39 195 F) est au-dessus du prix théorique ex-div (~37 394 F brut) : signal de confiance du marché post-détachement. Paiement dividende : 24/08.
+</div>
+
+<div class="stock-surveiller">
+  <strong>BICB (Banque Internationale Commerce et Industrie du Burkina) — <span class="surveiller">SURVEILLER</span> / entrée possible</strong><br>
+  Cours : -2,38 % (baisse). Carnet 226:1 ACHETEUR (679 titres A / 3 titres V). Divergence cours/carnet = vente forcée absorbée par institutionnels. PER 13,07. Signal fort de soutien acheteur.
+</div>
+
+<div class="stock-surveiller">
+  <strong>PALC (Palm Côte d'Ivoire) — <span class="surveiller">SURVEILLER</span></strong><br>
+  Cours : 9 630 F (-0,10 %). Carnet 6,9:1 acheteur (normalisé vs 235,6:1 hier). PER ~9,3, rendement ~6,2 %. Attendre confirmation sur 2-3 séances.
+</div>
+
+<div class="stock-surveiller">
+  <strong>STBC (Sitab CI) — <span class="surveiller">SURVEILLER (CT)</span></strong><br>
+  Cours : 22 900 F (-0,43 %). Retournement carnet : 95:1 VENDEUR hier → 4:1 ACHETEUR (221A/55V). À confirmer. Garde-fou actif : seuil re-entrée 21 535 F (ex-vendeurs).
+</div>
+
+<div class="stock-vendre">
+  <strong>NSBC — <span class="vendre">VENDRE</span></strong><br>
+  PER &gt; 30, -5,00 % ce jour, carnet vendeur dominant. Sortie totale recommandée.
+</div>
+
+<div class="stock-eviter">
+  <strong>SDSC (AGL CI) — <span class="ne-pas-rentrer">NE PAS RE-ENTRER</span></strong><br>
+  Seuil anti-aller-retour : 2 431 F. Cours actuel 2 780 F &gt;&gt; seuil.
+</div>
+
+<div class="stock-eviter">
+  <strong>SAFC — <span class="eviter">ÉVITER</span></strong><br>
+  PER &gt; 40 — bulle manifeste.
+</div>
+
+<h2>Étape 4 — Scoring (/10)</h2>
+
+<table>
+  <tr><th>Titre</th><th>Valorisation /3</th><th>Momentum /3</th><th>Catalyseur /4</th><th>Total /10</th><th>Recommandation</th></tr>
+  <tr><td><strong>SPHC</strong></td><td>3</td><td>3</td><td>4</td><td style="font-weight:800;font-size:1.1em;">10</td><td><span class="acheter">ACHETER</span></td></tr>
+  <tr><td><strong>SNTS</strong></td><td>3</td><td>3</td><td>2</td><td style="font-weight:800;">8</td><td><span class="maintenir">MAINTENIR</span></td></tr>
+  <tr><td><strong>ORAC</strong></td><td>2</td><td>3</td><td>2</td><td style="font-weight:800;">7</td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td><strong>BOABF</strong></td><td>1</td><td>2</td><td>3</td><td style="font-weight:800;">6</td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td><strong>PALC</strong></td><td>3</td><td>1</td><td>2</td><td style="font-weight:800;">6</td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td><strong>BOAS</strong></td><td>3</td><td>1</td><td>2</td><td style="font-weight:800;">6</td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td><strong>BICB</strong></td><td>2</td><td>0</td><td>3</td><td style="font-weight:800;">5</td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td><strong>SGBC</strong></td><td>3</td><td>2</td><td>0</td><td style="font-weight:800;">5</td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td><strong>BOAB</strong></td><td>1</td><td>3</td><td>0</td><td style="font-weight:800;">4</td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td><strong>CBIBF</strong></td><td>2</td><td>2</td><td>0</td><td style="font-weight:800;">4</td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td><strong>STBC</strong></td><td>3</td><td>1</td><td>0</td><td style="font-weight:800;">4</td><td><span class="surveiller">SURVEILLER (CT)</span></td></tr>
+  <tr><td><strong>NSBC</strong></td><td>1</td><td>1</td><td>0</td><td style="font-weight:800;">2</td><td><span class="vendre">VENDRE</span></td></tr>
+  <tr><td><strong>SDSC</strong></td><td>0</td><td>2</td><td>0</td><td style="font-weight:800;">2</td><td><span class="ne-pas-rentrer">NE PAS RE-ENTRER</span></td></tr>
+  <tr><td><strong>SAFC</strong></td><td>0</td><td>1</td><td>0</td><td style="font-weight:800;">1</td><td><span class="eviter">ÉVITER</span></td></tr>
+</table>
+
+<blockquote>
+  Note : SNTS reçoit 8/10 mais la recommandation est <span class="maintenir">MAINTENIR</span> (position existante LT, pas ACHETER) — spike non catalysé + carnet 1:12,5 vendeur. Entrée de nouveaux porteurs à 36 980 F post-spike déconseillée.
+</blockquote>
+
+<h2>Étape 5 — Validation par le marché</h2>
+
+<h3>Distorsion volumétrique ETIT (systémique)</h3>
+<p>Le volume nominal de la séance est massivement gonflé par <strong>ETIT</strong> (~65 F/titre, échangé en millions d'unités). Cette distorsion est systémique à la BRVM et ne doit <strong>pas</strong> être interprétée comme un signal de liquidité du marché. En excluant ETIT, la valeur transigée effective est concentrée sur : SNTS (contribution dominante — spike +7,50 %), SPHC (~1,6 M F — flux acheteurs authentiques pré-ex-div), SGBC (flux ex-div day).</p>
+
+<h3>Divergence volume/valeur</h3>
+<p>La hausse du Composite (+1,84 %) est portée par un nombre limité de lignes à forte valeur unitaire, pendant que le breadth (17H/22B) révèle une session globalement vendeuse pour la majorité des petites et moyennes capitalisations. Signal classique d'<strong>"argent intelligent" concentré sur les blue chips</strong>.</p>
+
+<h3>Compartiment obligataire</h3>
+<p>Actif mais sans signal directionnel fort ce vendredi. Flux réguliers sur les émissions en cours. À surveiller pour détecter une éventuelle rotation actions → obligations si la divergence breadth persiste.</p>
+
+<h2>Étape 6 — Quantités résiduelles (Carnet d'ordres)</h2>
+
+<table>
+  <tr><th>Titre</th><th>Côté Achat</th><th>Côté Vente</th><th>Ratio A:V</th><th>Signal</th></tr>
+  <tr><td><strong>BICB</strong></td><td style="color:var(--vert);font-weight:700;">679</td><td>3</td><td class="pos"><strong>226:1</strong></td><td><span style="color:var(--vert);font-weight:700;">ACHETEUR ABSOLU</span></td></tr>
+  <tr><td><strong>SPHC</strong></td><td style="color:var(--vert);">Dominant</td><td>Faible</td><td class="pos">~1,5:1</td><td>Acheteur — flux pré-ex-div</td></tr>
+  <tr><td><strong>PALC</strong></td><td style="color:var(--vert);">Dominant</td><td>Faible</td><td class="pos">~6,9:1</td><td>Acheteur normalisé</td></tr>
+  <tr><td><strong>STBC</strong></td><td style="color:var(--vert);font-weight:700;">221</td><td>55</td><td class="pos">~4:1</td><td>Acheteur — retournement (95:1 V hier)</td></tr>
+  <tr><td><strong>SGBC</strong></td><td>Équilibré</td><td>Équilibré</td><td>~1:1</td><td>Neutre — ex-div day</td></tr>
+  <tr><td><strong>SNTS</strong></td><td>Faible</td><td style="color:var(--rouge);">Dominant</td><td class="neg">1:12,5</td><td>Vendeur — prise de profit post-spike</td></tr>
+  <tr><td><strong>NSBC</strong></td><td>Faible</td><td style="color:var(--rouge);">Dominant</td><td class="neg">&gt;3:1 V</td><td>Vendeur persistant</td></tr>
+  <tr><td><strong>SAFC</strong></td><td>Faible</td><td style="color:var(--rouge);">Dominant</td><td class="neg">&gt;3:1 V</td><td>Vendeur</td></tr>
+</table>
+
+<p style="margin-top:10px;">
+  <strong>BICB (226:1 A) :</strong> Signal de carnet le plus fort de la séance. Un ratio 226:1 malgré une baisse de cours indique une vente forcée absorbée par des institutionnels.<br>
+  <strong>STBC (retournement 95:1 V → 4:1 A) :</strong> Spectaculaire en une séance — à confirmer sur 2-3 séances.<br>
+  <strong>SNTS (1:12,5 V) :</strong> Prises de profit dominantes post-spike. Porteurs LT : tenir, ne pas vendre sous pression.
+</p>
+
+<h2>Étape 7 — Conclusion stratégique</h2>
+
+<h3>Top 3 des opportunités</h3>
+<table>
+  <tr><th>Rang</th><th>Titre</th><th>Signal</th><th>Justification</th></tr>
+  <tr>
+    <td><span class="top1">#1</span></td>
+    <td><strong>SPHC</strong></td>
+    <td><span class="acheter">ACHETER URGENT</span></td>
+    <td>Ex-div 27/08 — dernier jour cum-div : mardi 26/08. Dividende net PP 430,32 F (4,56 %). Score 10/10.</td>
+  </tr>
+  <tr>
+    <td><span class="top2">#2</span></td>
+    <td><strong>BICB</strong></td>
+    <td><span class="acheter">ACHETER</span></td>
+    <td>Carnet 226:1 ACHETEUR. PER 13,07 (zone cible). Opportunité sur baisse de cours (-2,38 %).</td>
+  </tr>
+  <tr>
+    <td><span class="top3">#3</span></td>
+    <td><strong>SGBC</strong></td>
+    <td><span class="surveiller">SURVEILLER</span></td>
+    <td>Post-ex-div attractif. Cours marché &gt; prix théorique ex-div = confiance. Paiement 24/08.</td>
+  </tr>
+</table>
+
+<h3 style="color:var(--rouge)">Risques à court terme</h3>
+<ul style="margin:10px 0 10px 20px;line-height:2;">
+  <li><strong>Divergence breadth persistante :</strong> Risque de correction technique si la majorité des titres continue de reculer.</li>
+  <li><strong>FÉRIÉ lundi 25/08 :</strong> Semaine tronquée — 4 séances seulement. Liquidité potentiellement réduite.</li>
+  <li><strong>Ex-div SPHC (jeudi 27/08) :</strong> Drop mécanique ~489 F (~5,2 % du cours). Risque pour les acheteurs tardifs.</li>
+  <li><strong>Spike SNTS non catalysé :</strong> Un rebond de +7,50 % sans catalyseur peut se corriger aussi brutalement.</li>
+  <li><strong>NSBC en tendance baissière :</strong> Accélération possible si les porteurs amplifient les sorties.</li>
+</ul>
+
+<h3>Plan d'action immédiat</h3>
+<table>
+  <tr><th>Titre</th><th>Action</th><th>Cours</th><th>Timing</th><th>Justification</th></tr>
+  <tr>
+    <td><strong>SPHC</strong></td>
+    <td><span class="acheter">ACHETER</span></td>
+    <td>9 440 F (max 9 600 F)</td>
+    <td style="color:var(--rouge);font-weight:700;">Avant clôture mardi 26/08</td>
+    <td>Ex-div 27/08 — dernier jour cum-div mardi 26/08 (marché fermé lundi 25)</td>
+  </tr>
+  <tr>
+    <td><strong>BICB</strong></td>
+    <td><span class="acheter">ACHETER</span></td>
+    <td>Cours actuel</td>
+    <td>Dès mardi 26/08</td>
+    <td>Carnet 226:1 A — divergence cours/carnet = opportunité</td>
+  </tr>
+  <tr>
+    <td><strong>SGBC</strong></td>
+    <td><span class="surveiller">SURVEILLER</span></td>
+    <td>39 195 F</td>
+    <td>Semaine prochaine</td>
+    <td>Post-ex-div, valorisation attractive — attendre stabilisation</td>
+  </tr>
+  <tr>
+    <td><strong>SNTS</strong></td>
+    <td><span class="maintenir">MAINTENIR</span></td>
+    <td>36 980 F</td>
+    <td>LT 20 ans</td>
+    <td>Position à +8,76 % du PR (34 000 F) — ne pas trader le spike</td>
+  </tr>
+  <tr>
+    <td><strong>ORAC</strong></td>
+    <td><span class="surveiller">SURVEILLER</span></td>
+    <td>—</td>
+    <td>Entrée sur consolidation</td>
+    <td>Momentum sectoriel Télécoms — attendre pullback</td>
+  </tr>
+  <tr>
+    <td><strong>PALC</strong></td>
+    <td><span class="surveiller">SURVEILLER</span></td>
+    <td>9 630 F</td>
+    <td>Semaine prochaine</td>
+    <td>Carnet normalisé — confirmation sur 2-3 séances</td>
+  </tr>
+  <tr>
+    <td><strong>STBC</strong></td>
+    <td><span class="surveiller">SURVEILLER</span></td>
+    <td>22 900 F</td>
+    <td>Observation CT</td>
+    <td>Retournement carnet à confirmer — seuil 21 535 F pour ex-vendeurs</td>
+  </tr>
+  <tr>
+    <td><strong>SDSC</strong></td>
+    <td><span class="ne-pas-rentrer">NE PAS RE-ENTRER</span></td>
+    <td>2 780 F</td>
+    <td>—</td>
+    <td>Seuil anti-aller-retour : 2 431 F — cours actuel &gt;&gt; seuil</td>
+  </tr>
+  <tr>
+    <td><strong>NSBC</strong></td>
+    <td><span class="vendre">VENDRE</span></td>
+    <td>—</td>
+    <td>Dès mardi 26/08</td>
+    <td>PER &gt; 30, -5 % ce jour, carnet vendeur</td>
+  </tr>
+  <tr>
+    <td><strong>SAFC</strong></td>
+    <td><span class="eviter">ÉVITER</span></td>
+    <td>—</td>
+    <td>—</td>
+    <td>Bulle manifeste, PER &gt; 40</td>
+  </tr>
+</table>
+
+<div class="disclaimer">
+  <strong>Disclaimer :</strong> Ce document est produit à titre pédagogique et informatif. Il ne constitue pas un conseil personnalisé en investissement au sens réglementaire. Toute décision d'investissement reste sous la responsabilité exclusive de l'investisseur. Les performances passées ne préjugent pas des performances futures. Les données proviennent du Bulletin Officiel de la Cote N°158 du 21 août 2026 publié par la BRVM.
+</div>
