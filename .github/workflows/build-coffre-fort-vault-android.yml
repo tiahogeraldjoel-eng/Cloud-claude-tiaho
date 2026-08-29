@@ -1,5 +1,8 @@
 name: Build Coffre-Fort Vault Android
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   push:
@@ -31,3 +34,15 @@ jobs:
           name: CoffreFortVault-android-debug
           path: coffre-fort-vault-android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      - name: Publier un lien de téléchargement direct (Release GitHub)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk CoffreFortVault.apk
+          gh release delete coffre-fort-vault-android-latest --yes --cleanup-tag || true
+          gh release create coffre-fort-vault-android-latest CoffreFortVault.apk \
+            --repo "${{ github.repository }}" \
+            --title "Coffre-Fort Vault Android (dernier build)" \
+            --notes "APK debug généré automatiquement depuis le commit ${{ github.sha }}." \
+            --prerelease
