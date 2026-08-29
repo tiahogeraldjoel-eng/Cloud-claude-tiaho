@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Coffre-Fort</string>
+    <string name="add_document">+ Ajouter Document</string>
+    <string name="p2p_share">📡 Partage P2P / QR</string>
+    <string name="search_hint">Recherche libre (ex: \'assurance moto\', \'2026\')…</string>
+    <string name="category_prompt">Catégorie (ex: Identité, Assurance, Facture) :</string>
+    <string name="category_hint">Général</string>
+    <string name="p2p_instructions">Scannez ce QR Code depuis un autre appareil sur le même réseau Wi-Fi/Hotspot :</string>
+    <string name="qr_code_description">QR code d\'appairage P2P</string>
+</resources>
