@@ -81,10 +81,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mv dist/CoffreFortVault-windows/CoffreFortVault.exe dist/CoffreFortVault-windows.exe
-          mv dist/CoffreFortVault-linux/CoffreFortVault dist/CoffreFortVault-linux
+          mv dist/CoffreFortVault-linux/CoffreFortVault dist/CoffreFortVault-linux.bin
           gh release delete coffre-fort-vault-latest --yes --cleanup-tag || true
           gh release create coffre-fort-vault-latest \
-            dist/CoffreFortVault-windows.exe dist/CoffreFortVault-linux \
+            dist/CoffreFortVault-windows.exe dist/CoffreFortVault-linux.bin \
             --repo "${{ github.repository }}" \
             --title "Coffre-Fort Vault Desktop (dernier build)" \
             --notes "Exécutables Windows/Linux générés automatiquement depuis le commit ${{ github.sha }}." \
