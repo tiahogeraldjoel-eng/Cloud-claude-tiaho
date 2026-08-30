@@ -7,4 +7,5 @@
     <string name="category_hint">Général</string>
     <string name="p2p_instructions">Scannez ce QR Code depuis un autre appareil sur le même réseau Wi-Fi/Hotspot :</string>
     <string name="qr_code_description">QR code d\'appairage P2P</string>
+    <string name="empty_state">Aucun document pour l\'instant.\nAppuyez sur « + Ajouter Document » pour commencer.</string>
 </resources>
