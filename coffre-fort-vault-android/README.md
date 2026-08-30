@@ -11,6 +11,8 @@ mêmes fonctionnalités avec les briques natives Android correspondantes.
 
 ## Fonctionnalités
 
+- **Verrouillage de l'application** : empreinte digitale, visage, ou code/schéma
+  de l'appareil en secours, requis à chaque ouverture ou retour au premier plan
 - **Import de documents** depuis la galerie, avec catégorisation manuelle
 - **OCR embarqué** (ML Kit Text Recognition, modèle inclus dans l'APK —
   fonctionne sans réseau) et détection automatique d'une date d'échéance
@@ -66,3 +68,6 @@ root — aucune permission de stockage n'est requise.
   limite).
 - L'OCR ML Kit reconnaît les scripts latins ; les documents dans d'autres
   écritures ne seront pas indexés par leur texte.
+- Si l'appareil n'a aucun verrouillage d'écran configuré (pas de code, pas
+  de biométrie), l'application ne peut pas imposer de verrou et démarre
+  directement, avec un avertissement affiché à l'utilisateur.

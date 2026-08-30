@@ -22,6 +22,7 @@ import com.tiaho.coffrefort.data.VaultDatabase
 import com.tiaho.coffrefort.databinding.ActivityMainBinding
 import com.tiaho.coffrefort.databinding.DialogAddDocumentBinding
 import com.tiaho.coffrefort.databinding.DialogP2pBinding
+import com.tiaho.coffrefort.lock.VaultLock
 import com.tiaho.coffrefort.network.NetworkUtils
 import com.tiaho.coffrefort.network.P2pServer
 import com.tiaho.coffrefort.ocr.OcrHelper
@@ -40,6 +41,9 @@ class MainActivity : AppCompatActivity() {
     private val database by lazy { VaultDatabase.getInstance(this) }
     private val p2pServer = P2pServer()
 
+    private var isUnlocked = false
+    private var authInProgress = false
+
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let { showAddDocumentDialog(it) }
     }
@@ -48,6 +52,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.root.visibility = View.INVISIBLE
 
         binding.documentList.layoutManager = LinearLayoutManager(this)
         binding.documentList.adapter = adapter
@@ -65,9 +70,50 @@ class MainActivity : AppCompatActivity() {
         p2pServer.start { /* réception simplifiée, non traitée pour l'instant */ }
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (!isUnlocked && !authInProgress) requestUnlock()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Reverrouille le coffre-fort dès qu'on quitte l'application.
+        isUnlocked = false
+        binding.root.visibility = View.INVISIBLE
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         p2pServer.stop()
+    }
+
+    private fun requestUnlock() {
+        if (!VaultLock.isAvailable(this)) {
+            // Aucun verrouillage d'écran configuré sur l'appareil : on ne peut pas
+            // protéger l'accès, mais on prévient plutôt que de bloquer silencieusement.
+            Toast.makeText(
+                this,
+                "Aucun verrouillage d'écran configuré sur cet appareil : le coffre-fort n'est pas protégé.",
+                Toast.LENGTH_LONG
+            ).show()
+            isUnlocked = true
+            binding.root.visibility = View.VISIBLE
+            return
+        }
+
+        authInProgress = true
+        VaultLock.authenticate(
+            activity = this,
+            onSuccess = {
+                authInProgress = false
+                isUnlocked = true
+                binding.root.visibility = View.VISIBLE
+            },
+            onFailure = {
+                authInProgress = false
+                finish()
+            }
+        )
     }
 
     private fun showAddDocumentDialog(imageUri: Uri) {
