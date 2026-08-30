@@ -17,19 +17,21 @@ impossible.
 (`.github/workflows/build-local-ai-indexer-apk.yml`) compile l'APK sur
 l'infrastructure de GitHub (qui a le SDK/NDK Android préinstallés et un
 accès réseau complet) à chaque push sur cette branche. L'APK résultant est
-déposé comme artifact téléchargeable sur l'exécution du workflow, dans
-l'onglet **Actions** du dépôt.
+publié sur une **Release GitHub** (lien de téléchargement direct, stable
+d'un build à l'autre) ainsi que comme artifact de l'exécution du workflow.
 
 ## Installer l'APK
 
-1. Ouvrez l'onglet **Actions** du dépôt sur GitHub, sélectionnez la dernière
-   exécution réussie de *Build Local AI Indexer APK*.
-2. Téléchargez l'artifact `LocalAIIndexer-debug` (fichier `.zip` contenant
-   `app-debug.apk`).
-3. Transférez l'APK sur votre téléphone (câble, Drive, etc.) et installez-le
-   (autoriser "sources inconnues" si demandé). C'est un build **debug**,
-   signé automatiquement avec la clé de debug — installable directement,
-   pas besoin de compte développeur.
+1. Allez dans l'onglet **Releases** du dépôt (ou directement sur
+   `github.com/<owner>/<repo>/releases/tag/local-ai-indexer-debug`) et
+   téléchargez `app-debug.apk` — lien de téléchargement direct, y compris
+   depuis un navigateur mobile. Si ce lien pose problème, l'APK reste aussi
+   disponible comme artifact `LocalAIIndexer-debug` sur la dernière
+   exécution réussie de l'onglet **Actions**.
+2. Transférez l'APK sur votre téléphone si nécessaire (câble, Drive, etc.)
+   et installez-le (autoriser "sources inconnues" si demandé). C'est un
+   build **debug**, signé automatiquement avec la clé de debug —
+   installable directement, pas besoin de compte développeur.
 
 Compatibilité : Android 8.0+ (minSdk 26), architecture **arm64-v8a**
 uniquement (couvre la quasi-totalité des téléphones récents, notamment

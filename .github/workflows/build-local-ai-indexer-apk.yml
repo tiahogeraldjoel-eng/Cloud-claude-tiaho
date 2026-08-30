@@ -6,6 +6,9 @@ on:
     branches: [ main, claude/local-ai-indexer-android-gaao4o ]
     paths: [ 'local-ai-indexer/**', '.github/workflows/build-local-ai-indexer-apk.yml' ]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -35,9 +38,24 @@ jobs:
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125
 
-      - name: Upload APK
+      - name: Upload APK (workflow artifact)
         uses: actions/upload-artifact@v4
         with:
           name: LocalAIIndexer-debug
           path: local-ai-indexer/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      # Also publish as a rolling GitHub Release asset: a plain static download
+      # link, more reliable than the Actions artifact UI (no login-gated JS
+      # fetch, no expiry) — easier to grab directly from a phone browser.
+      - name: Publish APK to rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: local-ai-indexer-debug
+          name: Local AI Indexer (debug build)
+          body: |
+            APK debug généré automatiquement depuis le dernier build réussi
+            de la branche `${{ github.ref_name }}` (commit ${{ github.sha }}).
+            Non signé pour la Play Store — build de test uniquement.
+          prerelease: true
+          files: local-ai-indexer/app/build/outputs/apk/debug/app-debug.apk
