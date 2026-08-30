@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.tiaho.coffrefort.crypto.CryptoManager
 import com.tiaho.coffrefort.data.DocumentEntity
@@ -47,9 +48,14 @@ class MainActivity : AppCompatActivity() {
 
     private var isUnlocked = false
     private var authInProgress = false
+    private var pendingCameraUri: Uri? = null
 
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let { showAddDocumentDialog(it) }
+    }
+
+    private val takePicture = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) pendingCameraUri?.let { showAddDocumentDialog(it) }
     }
 
     private val requestNotificationPermission =
@@ -70,7 +76,7 @@ class MainActivity : AppCompatActivity() {
         binding.documentList.layoutManager = LinearLayoutManager(this)
         binding.documentList.adapter = adapter
 
-        binding.addDocumentButton.setOnClickListener { pickImage.launch("image/*") }
+        binding.addDocumentButton.setOnClickListener { showAddSourceDialog() }
         binding.p2pButton.setOnClickListener { showP2pDialog() }
 
         binding.searchField.addTextChangedListener(object : TextWatcher {
@@ -127,6 +133,24 @@ class MainActivity : AppCompatActivity() {
                 finish()
             }
         )
+    }
+
+    private fun showAddSourceDialog() {
+        val options = arrayOf(getString(R.string.take_photo), getString(R.string.choose_from_gallery))
+        AlertDialog.Builder(this)
+            .setTitle(R.string.add_document_choice_title)
+            .setItems(options) { _, which ->
+                if (which == 0) launchCamera() else pickImage.launch("image/*")
+            }
+            .show()
+    }
+
+    private fun launchCamera() {
+        val cameraDir = File(cacheDir, "camera").apply { mkdirs() }
+        val photoFile = File(cameraDir, "capture_${System.currentTimeMillis()}.jpg")
+        val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", photoFile)
+        pendingCameraUri = uri
+        takePicture.launch(uri)
     }
 
     private fun showAddDocumentDialog(imageUri: Uri) {

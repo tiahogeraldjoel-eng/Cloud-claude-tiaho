@@ -13,7 +13,9 @@ mêmes fonctionnalités avec les briques natives Android correspondantes.
 
 - **Verrouillage de l'application** : empreinte digitale, visage, ou code/schéma
   de l'appareil en secours, requis à chaque ouverture ou retour au premier plan
-- **Import de documents** depuis la galerie, avec catégorisation manuelle
+- **Import de documents** par photo directe (caméra) ou depuis la galerie,
+  avec catégorisation manuelle — pensé aussi pour scanner sur le vif des
+  cartes physiques (carte bancaire, carte d'identité, permis de conduire…)
 - **OCR embarqué** (ML Kit Text Recognition, modèle inclus dans l'APK —
   fonctionne sans réseau) et détection automatique d'une date d'échéance
 - **Chiffrement AES-256/GCM** de chaque document via une clé générée et

@@ -8,4 +8,7 @@
     <string name="p2p_instructions">Scannez ce QR Code depuis un autre appareil sur le même réseau Wi-Fi/Hotspot :</string>
     <string name="qr_code_description">QR code d\'appairage P2P</string>
     <string name="empty_state">Aucun document pour l\'instant.\nAppuyez sur « + Ajouter Document » pour commencer.</string>
+    <string name="add_document_choice_title">Ajouter un document</string>
+    <string name="take_photo">📷 Prendre une photo</string>
+    <string name="choose_from_gallery">🖼️ Depuis la galerie</string>
 </resources>
