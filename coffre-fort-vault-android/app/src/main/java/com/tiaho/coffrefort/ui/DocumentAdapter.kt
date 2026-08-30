@@ -7,7 +7,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.tiaho.coffrefort.data.DocumentEntity
 import com.tiaho.coffrefort.databinding.ItemDocumentBinding
 
-class DocumentAdapter : RecyclerView.Adapter<DocumentAdapter.ViewHolder>() {
+class DocumentAdapter(
+    private val onItemClick: (DocumentEntity) -> Unit
+) : RecyclerView.Adapter<DocumentAdapter.ViewHolder>() {
 
     private var documents: List<DocumentEntity> = emptyList()
 
@@ -18,7 +20,7 @@ class DocumentAdapter : RecyclerView.Adapter<DocumentAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemDocumentBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolder(binding)
+        return ViewHolder(binding, onItemClick)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -27,7 +29,10 @@ class DocumentAdapter : RecyclerView.Adapter<DocumentAdapter.ViewHolder>() {
 
     override fun getItemCount(): Int = documents.size
 
-    class ViewHolder(private val binding: ItemDocumentBinding) : RecyclerView.ViewHolder(binding.root) {
+    class ViewHolder(
+        private val binding: ItemDocumentBinding,
+        private val onItemClick: (DocumentEntity) -> Unit
+    ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(document: DocumentEntity) {
             binding.title.text = document.title
             binding.category.text = "[${document.category}]"
@@ -35,6 +40,7 @@ class DocumentAdapter : RecyclerView.Adapter<DocumentAdapter.ViewHolder>() {
             binding.expiration.setTextColor(
                 if (document.expirationDate != "Non définie") Color.parseColor("#FFA500") else Color.GRAY
             )
+            binding.root.setOnClickListener { onItemClick(document) }
         }
     }
 }

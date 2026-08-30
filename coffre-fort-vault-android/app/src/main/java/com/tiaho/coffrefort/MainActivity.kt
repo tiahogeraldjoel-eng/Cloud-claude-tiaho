@@ -1,10 +1,15 @@
 package com.tiaho.coffrefort
 
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.ScrollView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -30,7 +35,7 @@ import java.io.File
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private val adapter = DocumentAdapter()
+    private val adapter = DocumentAdapter { document -> viewDocument(document) }
     private val database by lazy { VaultDatabase.getInstance(this) }
     private val p2pServer = P2pServer()
 
@@ -121,6 +126,38 @@ class MainActivity : AppCompatActivity() {
                 else database.documentDao().search(query)
             }
             adapter.submitList(documents)
+        }
+    }
+
+    private fun viewDocument(document: DocumentEntity) {
+        lifecycleScope.launch {
+            val bitmap = withContext(Dispatchers.IO) {
+                try {
+                    val encrypted = File(document.encryptedPath).readBytes()
+                    val decrypted = CryptoManager.decrypt(encrypted)
+                    BitmapFactory.decodeByteArray(decrypted, 0, decrypted.size)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+
+            if (bitmap == null) {
+                Toast.makeText(this@MainActivity, "Impossible d'ouvrir ce document.", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+
+            val imageView = ImageView(this@MainActivity).apply {
+                layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setImageBitmap(bitmap)
+            }
+            val scrollView = ScrollView(this@MainActivity).apply { addView(imageView) }
+
+            AlertDialog.Builder(this@MainActivity)
+                .setTitle(document.title)
+                .setView(scrollView)
+                .setPositiveButton("Fermer", null)
+                .show()
         }
     }
 
