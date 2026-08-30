@@ -20,6 +20,9 @@ mêmes fonctionnalités avec les briques natives Android correspondantes.
   conservée dans l'Android Keystore (la clé ne quitte jamais le composant
   sécurisé de l'appareil, contrairement à un fichier de clé sur disque)
 - **Recherche** sur titre, catégorie et texte OCR (base SQLite locale, Room)
+- **Notifications d'échéance** : une vérification quotidienne en arrière-plan
+  (WorkManager) alerte quand un document expire dans les 30 jours ou est déjà
+  expiré, même si l'application n'est pas ouverte
 - **Partage P2P local** : QR code contenant l'IP locale pour un appairage
   sur le même réseau Wi-Fi/Hotspot, sans serveur externe
 
@@ -71,3 +74,6 @@ root — aucune permission de stockage n'est requise.
 - Si l'appareil n'a aucun verrouillage d'écran configuré (pas de code, pas
   de biométrie), l'application ne peut pas imposer de verrou et démarre
   directement, avec un avertissement affiché à l'utilisateur.
+- La vérification quotidienne des échéances dépend de WorkManager, donc du
+  planificateur du système (Doze/optimisation de batterie) : l'heure exacte
+  d'exécution n'est pas garantie à la minute près.
