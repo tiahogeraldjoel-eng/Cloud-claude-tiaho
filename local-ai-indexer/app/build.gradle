@@ -86,7 +86,7 @@ dependencies {
     implementation 'com.google.mlkit:text-recognition:16.0.1'
 
     // ObjectBox vector database (HNSW nearest-neighbor search)
-    implementation 'io.objectbox:objectbox-android:4.0.3'
+    implementation 'io.objectbox:objectbox-android:5.4.2'
 
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1'
