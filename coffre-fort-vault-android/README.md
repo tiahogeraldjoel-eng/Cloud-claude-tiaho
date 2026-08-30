@@ -14,8 +14,11 @@ mêmes fonctionnalités avec les briques natives Android correspondantes.
 - **Verrouillage de l'application** : empreinte digitale, visage, ou code/schéma
   de l'appareil en secours, requis à chaque ouverture ou retour au premier plan
 - **Import de documents** par photo directe (caméra) ou depuis la galerie,
-  avec catégorisation manuelle — pensé aussi pour scanner sur le vif des
-  cartes physiques (carte bancaire, carte d'identité, permis de conduire…)
+  avec catégorisation manuelle et **verso optionnel** — pensé aussi pour
+  scanner sur le vif des cartes physiques (carte bancaire, carte d'identité,
+  permis de conduire…)
+- **Modification et suppression** d'un document existant (appui sur la carte
+  puis « Modifier » ou « Supprimer »)
 - **OCR embarqué** (ML Kit Text Recognition, modèle inclus dans l'APK —
   fonctionne sans réseau) et détection automatique d'une date d'échéance
 - **Chiffrement AES-256/GCM** de chaque document via une clé générée et
@@ -25,8 +28,12 @@ mêmes fonctionnalités avec les briques natives Android correspondantes.
 - **Notifications d'échéance** : une vérification quotidienne en arrière-plan
   (WorkManager) alerte quand un document expire dans les 30 jours ou est déjà
   expiré, même si l'application n'est pas ouverte
-- **Partage P2P local** : QR code contenant l'IP locale pour un appairage
-  sur le même réseau Wi-Fi/Hotspot, sans serveur externe
+- **Partage P2P local** : QR code d'appairage, puis envoi réel d'un document
+  vers l'IP d'un autre appareil sur le même réseau Wi-Fi/Hotspot (appui long
+  sur une carte de document → « Envoyer »), sans serveur externe
+- **Sauvegarde/restauration chiffrées** (menu ⋮ de la barre du haut) : export
+  de tous les documents dans un fichier `.zip` protégé par un mot de passe
+  que vous choisissez, importable sur ce téléphone ou un autre
 
 ## Prérequis
 
@@ -65,12 +72,25 @@ Les documents chiffrés et la base SQLite sont stockés dans l'espace privé
 de l'application (`context.filesDir`), inaccessible aux autres apps sans
 root — aucune permission de stockage n'est requise.
 
+## Pourquoi la sauvegarde n'utilise pas la clé de l'Android Keystore
+
+Les documents sont chiffrés au quotidien avec une clé qui vit dans l'Android
+Keystore — par conception, cette clé n'est **jamais extractible** de
+l'appareil, pas même par l'application elle-même : c'est ce qui la rend sûre,
+mais aussi impossible à réutiliser pour restaurer les documents ailleurs.
+La sauvegarde chiffre donc chaque document séparément avec une clé dérivée
+du mot de passe que vous choisissez (PBKDF2 + AES-256/GCM) ; à l'import, les
+documents sont ré-encodés avec la clé Keystore de l'appareil qui importe.
+**Sans ce mot de passe, la sauvegarde est irrécupérable** — il n'est stocké
+nulle part par l'application.
+
 ## Limites connues
 
-- Le partage P2P affiche un QR code d'appairage et démarre un serveur
-  d'écoute local, mais ne réalise pas encore un transfert de fichier
-  complet (parité avec la version Python d'origine, qui avait la même
-  limite).
+- Le protocole P2P (envoi et réception) transite en clair sur le réseau
+  local, sans authentification du pair — à n'utiliser que sur un Wi-Fi/
+  Hotspot de confiance, jamais sur un réseau public.
+- Les documents reçus par P2P ne bénéficient pas de la capture verso (une
+  seule face transmise par envoi).
 - L'OCR ML Kit reconnaît les scripts latins ; les documents dans d'autres
   écritures ne seront pas indexés par leur texte.
 - Si l'appareil n'a aucun verrouillage d'écran configuré (pas de code, pas

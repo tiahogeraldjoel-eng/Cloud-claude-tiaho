@@ -9,7 +9,8 @@ import com.tiaho.coffrefort.data.DocumentEntity
 import com.tiaho.coffrefort.databinding.ItemDocumentBinding
 
 class DocumentAdapter(
-    private val onItemClick: (DocumentEntity) -> Unit
+    private val onItemClick: (DocumentEntity) -> Unit,
+    private val onItemLongClick: (DocumentEntity) -> Unit
 ) : RecyclerView.Adapter<DocumentAdapter.ViewHolder>() {
 
     private var documents: List<DocumentEntity> = emptyList()
@@ -21,7 +22,7 @@ class DocumentAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemDocumentBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolder(binding, onItemClick)
+        return ViewHolder(binding, onItemClick, onItemLongClick)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -32,7 +33,8 @@ class DocumentAdapter(
 
     class ViewHolder(
         private val binding: ItemDocumentBinding,
-        private val onItemClick: (DocumentEntity) -> Unit
+        private val onItemClick: (DocumentEntity) -> Unit,
+        private val onItemLongClick: (DocumentEntity) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(document: DocumentEntity) {
             binding.title.text = document.title
@@ -51,6 +53,10 @@ class DocumentAdapter(
             )
 
             binding.root.setOnClickListener { onItemClick(document) }
+            binding.root.setOnLongClickListener {
+                onItemLongClick(document)
+                true
+            }
         }
     }
 }

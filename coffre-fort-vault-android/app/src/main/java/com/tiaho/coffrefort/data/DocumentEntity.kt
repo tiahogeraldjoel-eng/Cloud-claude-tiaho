@@ -10,5 +10,7 @@ data class DocumentEntity(
     val category: String,
     val expirationDate: String,
     val encryptedPath: String,
-    val ocrText: String
+    val ocrText: String,
+    /** Verso du document (carte bancaire, ID, permis…), optionnel. */
+    val encryptedPathBack: String? = null
 )
