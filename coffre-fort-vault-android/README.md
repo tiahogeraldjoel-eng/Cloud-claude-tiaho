@@ -18,7 +18,11 @@ mêmes fonctionnalités avec les briques natives Android correspondantes.
   de fichiers (images ou PDF — la première page d'un PDF est convertie en
   image), avec catégorisation manuelle et **verso optionnel** — pensé aussi
   pour scanner sur le vif des cartes physiques (carte bancaire, carte
-  d'identité, permis de conduire…)
+  d'identité, permis de conduire…). Le sélecteur de fichiers n'applique aucun
+  filtre de type strict (certains gestionnaires de fichiers/stockages cloud
+  déclarent un type MIME générique ou absent, ce qui grisait sinon les
+  fichiers valides) ; le contenu réel est vérifié après sélection et un
+  message s'affiche si le fichier choisi n'est ni une image ni un PDF
 - **Modification et suppression** d'un document existant (appui sur la carte
   puis « Modifier » ou « Supprimer »)
 - **OCR embarqué** (ML Kit Text Recognition, modèle inclus dans l'APK —

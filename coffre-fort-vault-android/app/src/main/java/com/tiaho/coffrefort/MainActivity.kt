@@ -104,7 +104,15 @@ class MainActivity : AppCompatActivity() {
         if (uri != null) {
             lifecycleScope.launch {
                 val resolvedUri = withContext(Dispatchers.IO) { resolveImportedUri(uri) }
-                handleCapturedImage(resolvedUri)
+                if (resolvedUri != null) {
+                    handleCapturedImage(resolvedUri)
+                } else {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Format de fichier non pris en charge (image ou PDF uniquement).",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
     }
@@ -240,7 +248,11 @@ class MainActivity : AppCompatActivity() {
                     launchDocumentScanner()
                 } else {
                     awaitingExternalResult = true
-                    pickImage.launch(arrayOf("image/*", "application/pdf"))
+                    // Pas de filtre MIME strict : certains gestionnaires de fichiers/fournisseurs
+                    // cloud ne déclarent pas (ou mal) le type MIME d'une image ou d'un PDF, ce qui
+                    // les grisait et les rendait sélectionnables en apparence seulement. Le type
+                    // réel est vérifié après sélection dans resolveImportedUri().
+                    pickImage.launch(arrayOf("*/*"))
                 }
             }
             .show()
@@ -262,19 +274,48 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
-    /** Si l'URI importée est un PDF, rend sa première page en image ; sinon la renvoie telle quelle. */
-    private fun resolveImportedUri(uri: Uri): Uri {
-        if (contentResolver.getType(uri) != "application/pdf") return uri
-
-        return try {
-            val pdfBitmap = renderFirstPdfPage(uri) ?: return uri
-            val importDir = File(cacheDir, "pdf_import").apply { mkdirs() }
-            val tempFile = File(importDir, "page_${System.currentTimeMillis()}.jpg")
-            FileOutputStream(tempFile).use { out -> pdfBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out) }
-            FileProvider.getUriForFile(this, "$packageName.fileprovider", tempFile)
-        } catch (e: Exception) {
-            uri
+    /**
+     * Vérifie et normalise l'URI importée : un PDF voit sa première page rendue en image ;
+     * une image est renvoyée telle quelle ; tout le reste renvoie null.
+     *
+     * Le type MIME déclaré par le fournisseur (contentResolver.getType) n'est pas fiable : de
+     * nombreux gestionnaires de fichiers et stockages cloud renvoient un type générique ou nul
+     * pour des images/PDF pourtant valides, ce qui grisait ces fichiers dans le sélecteur système
+     * (visibles mais impossibles à sélectionner). On sniffe donc le contenu réel du fichier.
+     */
+    private fun resolveImportedUri(uri: Uri): Uri? {
+        if (looksLikePdf(uri)) {
+            return try {
+                val pdfBitmap = renderFirstPdfPage(uri) ?: return null
+                val importDir = File(cacheDir, "pdf_import").apply { mkdirs() }
+                val tempFile = File(importDir, "page_${System.currentTimeMillis()}.jpg")
+                FileOutputStream(tempFile).use { out -> pdfBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out) }
+                FileProvider.getUriForFile(this, "$packageName.fileprovider", tempFile)
+            } catch (e: Exception) {
+                null
+            }
         }
+
+        return if (isReadableImage(uri)) uri else null
+    }
+
+    private fun looksLikePdf(uri: Uri): Boolean = try {
+        contentResolver.openInputStream(uri)?.use { input ->
+            val header = ByteArray(4)
+            input.read(header) == 4 && header.decodeToString() == "%PDF"
+        } ?: false
+    } catch (e: Exception) {
+        false
+    }
+
+    private fun isReadableImage(uri: Uri): Boolean = try {
+        contentResolver.openInputStream(uri)?.use { input ->
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeStream(input, null, options)
+            options.outWidth > 0 && options.outHeight > 0
+        } ?: false
+    } catch (e: Exception) {
+        false
     }
 
     private fun renderFirstPdfPage(uri: Uri): Bitmap? {
