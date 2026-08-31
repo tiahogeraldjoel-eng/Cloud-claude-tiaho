@@ -10,7 +10,7 @@
     <string name="empty_state">Aucun document pour l\'instant.\nAppuyez sur « + Ajouter Document » pour commencer.</string>
     <string name="add_document_choice_title">Ajouter un document</string>
     <string name="add_back_choice_title">Verso du document</string>
-    <string name="take_photo">📷 Prendre une photo</string>
+    <string name="take_photo">📷 Scanner (prendre une photo)</string>
     <string name="choose_from_gallery">🖼️ Depuis la galerie</string>
     <string name="export_backup">Exporter une sauvegarde</string>
     <string name="import_backup">Importer une sauvegarde</string>

@@ -13,10 +13,11 @@ mêmes fonctionnalités avec les briques natives Android correspondantes.
 
 - **Verrouillage de l'application** : empreinte digitale, visage, ou code/schéma
   de l'appareil en secours, requis à chaque ouverture ou retour au premier plan
-- **Import de documents** par photo directe (caméra) ou depuis la galerie,
-  avec catégorisation manuelle et **verso optionnel** — pensé aussi pour
-  scanner sur le vif des cartes physiques (carte bancaire, carte d'identité,
-  permis de conduire…)
+- **Import de documents** par scanner intégré (détection des bords, recadrage
+  et amélioration automatiques via ML Kit) ou depuis la galerie, avec
+  catégorisation manuelle et **verso optionnel** — pensé aussi pour scanner
+  sur le vif des cartes physiques (carte bancaire, carte d'identité, permis
+  de conduire…)
 - **Modification et suppression** d'un document existant (appui sur la carte
   puis « Modifier » ou « Supprimer »)
 - **OCR embarqué** (ML Kit Text Recognition, modèle inclus dans l'APK —
@@ -99,3 +100,6 @@ nulle part par l'application.
 - La vérification quotidienne des échéances dépend de WorkManager, donc du
   planificateur du système (Doze/optimisation de batterie) : l'heure exacte
   d'exécution n'est pas garantie à la minute près.
+- Le scanner de document (ML Kit, via Google Play Services) nécessite Google
+  Play Services sur l'appareil ; sur un appareil sans Play Services, utilisez
+  l'option « Depuis la galerie ».

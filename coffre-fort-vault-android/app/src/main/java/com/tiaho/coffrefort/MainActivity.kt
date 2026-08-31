@@ -20,6 +20,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Toast
+import androidx.activity.result.IntentSenderRequest
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -27,6 +28,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
+import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import com.tiaho.coffrefort.backup.BackupManager
 import com.tiaho.coffrefort.crypto.CryptoManager
 import com.tiaho.coffrefort.data.DocumentEntity
@@ -62,32 +66,52 @@ class MainActivity : AppCompatActivity() {
 
     private var isUnlocked = false
     private var authInProgress = false
+    // Vrai pendant qu'une Activity externe (scanner, galerie, sélecteur de fichier) est
+    // ouverte : évite de reverrouiller/re-demander une authentification à son retour.
+    private var awaitingExternalResult = false
 
     private var captureMode = CaptureMode.FRONT
-    private var pendingCameraUri: Uri? = null
     private var pendingDocument: PendingDocument? = null
 
     private var pendingExportPassword: String? = null
     private var pendingImportUri: Uri? = null
 
-    private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { handleCapturedImage(it) }
+    private val documentScanner by lazy {
+        val options = GmsDocumentScannerOptions.Builder()
+            .setGalleryImportAllowed(false)
+            .setPageLimit(1)
+            .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_JPEG)
+            .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
+            .build()
+        GmsDocumentScanning.getClient(options)
     }
 
-    private val takePicture = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-        if (success) pendingCameraUri?.let { handleCapturedImage(it) }
+    private val scannerLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+        awaitingExternalResult = false
+        if (result.resultCode == RESULT_OK) {
+            val scanningResult = GmsDocumentScanningResult.fromActivityResultIntent(result.data)
+            val pageUri = scanningResult?.pages?.firstOrNull()?.imageUri
+            if (pageUri != null) handleCapturedImage(pageUri)
+        }
+    }
+
+    private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        awaitingExternalResult = false
+        uri?.let { handleCapturedImage(it) }
     }
 
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* aucune action requise, l'utilisateur choisit */ }
 
     private val createBackupFile = registerForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        awaitingExternalResult = false
         val password = pendingExportPassword
         pendingExportPassword = null
         if (uri != null && password != null) performExport(uri, password)
     }
 
     private val pickBackupFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        awaitingExternalResult = false
         if (uri != null) {
             pendingImportUri = uri
             askImportPassword()
@@ -133,7 +157,11 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_export -> { showExportDialog(); true }
-            R.id.action_import -> { pickBackupFile.launch(arrayOf("application/zip", "application/octet-stream")); true }
+            R.id.action_import -> {
+                awaitingExternalResult = true
+                pickBackupFile.launch(arrayOf("application/zip", "application/octet-stream"))
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -145,9 +173,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        // Reverrouille le coffre-fort dès qu'on quitte l'application.
-        isUnlocked = false
-        binding.root.visibility = View.INVISIBLE
+        // Reverrouille le coffre-fort quand on quitte vraiment l'application — mais pas
+        // quand on est simplement en train d'attendre le retour d'une Activity externe
+        // (scanner, galerie, sélecteur de fichier), sinon un nouveau verrou apparaît par-dessus
+        // le résultat au retour et donne l'impression que la sélection n'a rien fait.
+        if (!awaitingExternalResult) {
+            isUnlocked = false
+            binding.root.visibility = View.INVISIBLE
+        }
     }
 
     override fun onDestroy() {
@@ -193,16 +226,31 @@ class MainActivity : AppCompatActivity() {
         val options = arrayOf(getString(R.string.take_photo), getString(R.string.choose_from_gallery))
         AlertDialog.Builder(this)
             .setTitle(if (mode == CaptureMode.FRONT) R.string.add_document_choice_title else R.string.add_back_choice_title)
-            .setItems(options) { _, which -> if (which == 0) launchCamera() else pickImage.launch("image/*") }
+            .setItems(options) { _, which ->
+                if (which == 0) {
+                    launchDocumentScanner()
+                } else {
+                    awaitingExternalResult = true
+                    pickImage.launch("image/*")
+                }
+            }
             .show()
     }
 
-    private fun launchCamera() {
-        val cameraDir = File(cacheDir, "camera").apply { mkdirs() }
-        val photoFile = File(cameraDir, "capture_${System.currentTimeMillis()}.jpg")
-        val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", photoFile)
-        pendingCameraUri = uri
-        takePicture.launch(uri)
+    private fun launchDocumentScanner() {
+        awaitingExternalResult = true
+        documentScanner.getStartScanIntent(this)
+            .addOnSuccessListener { intentSender ->
+                scannerLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
+            }
+            .addOnFailureListener {
+                awaitingExternalResult = false
+                Toast.makeText(
+                    this,
+                    "Impossible de démarrer le scanner. Réessayez ou utilisez la galerie.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
     }
 
     private fun handleCapturedImage(uri: Uri) {
@@ -487,6 +535,7 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this, "Mot de passe trop court (4 caractères minimum).", Toast.LENGTH_SHORT).show()
                 } else {
                     pendingExportPassword = password
+                    awaitingExternalResult = true
                     createBackupFile.launch("coffre-fort-backup-${System.currentTimeMillis()}.zip")
                 }
             }
