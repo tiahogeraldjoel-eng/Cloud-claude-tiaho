@@ -14,14 +14,17 @@ mêmes fonctionnalités avec les briques natives Android correspondantes.
 - **Verrouillage de l'application** : empreinte digitale, visage, ou code/schéma
   de l'appareil en secours, requis à chaque ouverture ou retour au premier plan
 - **Import de documents** par scanner intégré (détection des bords, recadrage
-  et amélioration automatiques via ML Kit) ou depuis la galerie, avec
-  catégorisation manuelle et **verso optionnel** — pensé aussi pour scanner
-  sur le vif des cartes physiques (carte bancaire, carte d'identité, permis
-  de conduire…)
+  et amélioration automatiques via ML Kit) ou depuis la galerie/un gestionnaire
+  de fichiers (images ou PDF — la première page d'un PDF est convertie en
+  image), avec catégorisation manuelle et **verso optionnel** — pensé aussi
+  pour scanner sur le vif des cartes physiques (carte bancaire, carte
+  d'identité, permis de conduire…)
 - **Modification et suppression** d'un document existant (appui sur la carte
   puis « Modifier » ou « Supprimer »)
 - **OCR embarqué** (ML Kit Text Recognition, modèle inclus dans l'APK —
-  fonctionne sans réseau) et détection automatique d'une date d'échéance
+  fonctionne sans réseau) et détection automatique d'une date d'échéance :
+  une date associée à un mot-clé d'expiration est priorisée, sinon les dates
+  de naissance/délivrance sont écartées et la date la plus tardive est retenue
 - **Chiffrement AES-256/GCM** de chaque document via une clé générée et
   conservée dans l'Android Keystore (la clé ne quitte jamais le composant
   sécurisé de l'appareil, contrairement à un fichier de clé sur disque)

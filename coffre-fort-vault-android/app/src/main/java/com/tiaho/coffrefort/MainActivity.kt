@@ -4,9 +4,12 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.ParcelFileDescriptor
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
@@ -50,6 +53,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
 
@@ -95,9 +99,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+    private val pickImage = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         awaitingExternalResult = false
-        uri?.let { handleCapturedImage(it) }
+        if (uri != null) {
+            lifecycleScope.launch {
+                val resolvedUri = withContext(Dispatchers.IO) { resolveImportedUri(uri) }
+                handleCapturedImage(resolvedUri)
+            }
+        }
     }
 
     private val requestNotificationPermission =
@@ -231,7 +240,7 @@ class MainActivity : AppCompatActivity() {
                     launchDocumentScanner()
                 } else {
                     awaitingExternalResult = true
-                    pickImage.launch("image/*")
+                    pickImage.launch(arrayOf("image/*", "application/pdf"))
                 }
             }
             .show()
@@ -251,6 +260,36 @@ class MainActivity : AppCompatActivity() {
                     Toast.LENGTH_LONG
                 ).show()
             }
+    }
+
+    /** Si l'URI importée est un PDF, rend sa première page en image ; sinon la renvoie telle quelle. */
+    private fun resolveImportedUri(uri: Uri): Uri {
+        if (contentResolver.getType(uri) != "application/pdf") return uri
+
+        return try {
+            val pdfBitmap = renderFirstPdfPage(uri) ?: return uri
+            val importDir = File(cacheDir, "pdf_import").apply { mkdirs() }
+            val tempFile = File(importDir, "page_${System.currentTimeMillis()}.jpg")
+            FileOutputStream(tempFile).use { out -> pdfBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out) }
+            FileProvider.getUriForFile(this, "$packageName.fileprovider", tempFile)
+        } catch (e: Exception) {
+            uri
+        }
+    }
+
+    private fun renderFirstPdfPage(uri: Uri): Bitmap? {
+        val fd: ParcelFileDescriptor = contentResolver.openFileDescriptor(uri, "r") ?: return null
+        return fd.use {
+            PdfRenderer(it).use { renderer ->
+                if (renderer.pageCount == 0) return null
+                renderer.openPage(0).use { page ->
+                    val bitmap = Bitmap.createBitmap(page.width * 2, page.height * 2, Bitmap.Config.ARGB_8888)
+                    bitmap.eraseColor(Color.WHITE)
+                    page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                    bitmap
+                }
+            }
+        }
     }
 
     private fun handleCapturedImage(uri: Uri) {
