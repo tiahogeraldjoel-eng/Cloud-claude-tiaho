@@ -276,17 +276,24 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * Vérifie et normalise l'URI importée : un PDF voit sa première page rendue en image ;
-     * une image est renvoyée telle quelle ; tout le reste renvoie null.
+     * une image valide est renvoyée telle quelle ; tout le reste renvoie null.
      *
-     * Le type MIME déclaré par le fournisseur (contentResolver.getType) n'est pas fiable : de
-     * nombreux gestionnaires de fichiers et stockages cloud renvoient un type générique ou nul
-     * pour des images/PDF pourtant valides, ce qui grisait ces fichiers dans le sélecteur système
-     * (visibles mais impossibles à sélectionner). On sniffe donc le contenu réel du fichier.
+     * Ni le type MIME déclaré par le fournisseur (souvent générique ou nul chez de nombreux
+     * gestionnaires de fichiers/stockages cloud) ni un flux content:// ouvert plusieurs fois
+     * (peu fiable selon le fournisseur) ne sont utilisés : le contenu est lu une seule fois en
+     * mémoire, puis sniffé/décodé directement, comme decryptToBitmap le fait déjà pour les
+     * documents stockés dans l'app.
      */
     private fun resolveImportedUri(uri: Uri): Uri? {
-        if (looksLikePdf(uri)) {
+        val bytes = try {
+            contentResolver.openInputStream(uri)?.use { it.readBytes() }
+        } catch (e: Exception) {
+            null
+        } ?: return null
+
+        if (isPdfHeader(bytes)) {
             return try {
-                val pdfBitmap = renderFirstPdfPage(uri) ?: return null
+                val pdfBitmap = renderFirstPdfPage(bytes) ?: return null
                 val importDir = File(cacheDir, "pdf_import").apply { mkdirs() }
                 val tempFile = File(importDir, "page_${System.currentTimeMillis()}.jpg")
                 FileOutputStream(tempFile).use { out -> pdfBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out) }
@@ -296,41 +303,26 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        return if (isReadableImage(uri)) uri else null
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+        return if (options.outWidth > 0 && options.outHeight > 0) uri else null
     }
 
-    private fun looksLikePdf(uri: Uri): Boolean = try {
-        contentResolver.openInputStream(uri)?.use { input ->
-            val header = ByteArray(4)
-            input.read(header) == 4 && header.decodeToString() == "%PDF"
-        } ?: false
-    } catch (e: Exception) {
-        false
-    }
-
-    private fun isReadableImage(uri: Uri): Boolean = try {
-        contentResolver.openInputStream(uri)?.use { input ->
-            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeStream(input, null, options)
-            options.outWidth > 0 && options.outHeight > 0
-        } ?: false
-    } catch (e: Exception) {
-        false
-    }
+    private fun isPdfHeader(bytes: ByteArray): Boolean =
+        bytes.size >= 4 && bytes[0] == '%'.code.toByte() && bytes[1] == 'P'.code.toByte() &&
+            bytes[2] == 'D'.code.toByte() && bytes[3] == 'F'.code.toByte()
 
     /**
-     * PdfRenderer exige un descripteur de fichier local, "mappable" en mémoire (mmap) : ouvrir
-     * directement l'URI content:// choisie échoue silencieusement (IOException) pour beaucoup de
-     * fournisseurs (Drive, WhatsApp, certains gestionnaires de fichiers) qui exposent un flux
-     * réseau/pipe plutôt qu'un vrai fichier — c'était la cause de l'échec systématique de l'import
-     * PDF. On copie donc d'abord le contenu dans un fichier local avant de le passer à PdfRenderer.
+     * PdfRenderer exige un descripteur de fichier local, "mappable" en mémoire (mmap) : l'ouvrir
+     * directement sur l'URI content:// choisie échoue silencieusement (IOException) pour beaucoup
+     * de fournisseurs (Drive, WhatsApp, certains gestionnaires de fichiers) qui exposent un flux
+     * réseau/pipe plutôt qu'un vrai fichier. On écrit donc d'abord le contenu déjà lu dans un
+     * fichier local avant de le passer à PdfRenderer.
      */
-    private fun renderFirstPdfPage(uri: Uri): Bitmap? {
+    private fun renderFirstPdfPage(pdfBytes: ByteArray): Bitmap? {
         val tempPdf = File(cacheDir, "pdf_import_src_${System.currentTimeMillis()}.pdf")
         try {
-            contentResolver.openInputStream(uri)?.use { input ->
-                FileOutputStream(tempPdf).use { output -> input.copyTo(output) }
-            } ?: return null
+            FileOutputStream(tempPdf).use { it.write(pdfBytes) }
 
             return ParcelFileDescriptor.open(tempPdf, ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
                 PdfRenderer(fd).use { renderer ->
