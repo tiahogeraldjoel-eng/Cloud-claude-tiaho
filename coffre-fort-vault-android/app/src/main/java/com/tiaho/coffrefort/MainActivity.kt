@@ -318,18 +318,33 @@ class MainActivity : AppCompatActivity() {
         false
     }
 
+    /**
+     * PdfRenderer exige un descripteur de fichier local, "mappable" en mémoire (mmap) : ouvrir
+     * directement l'URI content:// choisie échoue silencieusement (IOException) pour beaucoup de
+     * fournisseurs (Drive, WhatsApp, certains gestionnaires de fichiers) qui exposent un flux
+     * réseau/pipe plutôt qu'un vrai fichier — c'était la cause de l'échec systématique de l'import
+     * PDF. On copie donc d'abord le contenu dans un fichier local avant de le passer à PdfRenderer.
+     */
     private fun renderFirstPdfPage(uri: Uri): Bitmap? {
-        val fd: ParcelFileDescriptor = contentResolver.openFileDescriptor(uri, "r") ?: return null
-        return fd.use {
-            PdfRenderer(it).use { renderer ->
-                if (renderer.pageCount == 0) return null
-                renderer.openPage(0).use { page ->
-                    val bitmap = Bitmap.createBitmap(page.width * 2, page.height * 2, Bitmap.Config.ARGB_8888)
-                    bitmap.eraseColor(Color.WHITE)
-                    page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                    bitmap
+        val tempPdf = File(cacheDir, "pdf_import_src_${System.currentTimeMillis()}.pdf")
+        try {
+            contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(tempPdf).use { output -> input.copyTo(output) }
+            } ?: return null
+
+            return ParcelFileDescriptor.open(tempPdf, ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
+                PdfRenderer(fd).use { renderer ->
+                    if (renderer.pageCount == 0) return null
+                    renderer.openPage(0).use { page ->
+                        val bitmap = Bitmap.createBitmap(page.width * 2, page.height * 2, Bitmap.Config.ARGB_8888)
+                        bitmap.eraseColor(Color.WHITE)
+                        page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                        bitmap
+                    }
                 }
             }
+        } finally {
+            tempPdf.delete()
         }
     }
 
