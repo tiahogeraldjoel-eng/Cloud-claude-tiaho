@@ -259,6 +259,20 @@
       </div>
     </div>
 
+    <!-- Opportunités du screener -->
+    <div id="opportunities-panel" class="mb-6 hidden">
+      <div class="bg-card rounded-xl border border-border p-4">
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <h3 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Signaux d'achat détectés
+            <span id="opp-count" class="text-xs text-slate-500 font-normal"></span>
+          </h3>
+          <a onclick="switchTab('screener')" href="#" class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">Screener complet →</a>
+        </div>
+        <div id="opportunities-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"></div>
+      </div>
+    </div>
+
     <!-- Tableau de tous les titres -->
     <div class="bg-card rounded-xl border border-border">
       <div id="stocks-filters" class="p-4 border-b border-border flex items-center justify-between flex-wrap gap-2">
@@ -984,7 +998,12 @@
           </select>
         </div>
       </div>
-      <div id="screener-updated" class="text-xs text-slate-500 mt-2"></div>
+      <div class="flex items-center justify-between mt-2 flex-wrap gap-2">
+        <div id="screener-updated" class="text-xs text-slate-500"></div>
+        <button onclick="exportScreenerCSV()" class="text-xs px-3 py-1.5 rounded-lg border border-slate-600 text-slate-300 hover:border-indigo-500 hover:text-indigo-300 transition-colors flex items-center gap-1.5">
+          ⬇ Exporter CSV
+        </button>
+      </div>
     </div>
     <div class="bg-card rounded-xl border border-border p-4">
       <div id="screener-content" class="space-y-3">

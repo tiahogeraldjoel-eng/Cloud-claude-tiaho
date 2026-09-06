@@ -198,9 +198,11 @@ async function loadDashboard() {
     renderStocksTable(d.stocks||STATE.stocks);
     api('/api/news?limit=30').then(n => {
       _newsCache = n.news || [];
-      filterNewsBySource(_newsFilterSrc);  // applique le filtre actif
+      filterNewsBySource(_newsFilterSrc);
     }).catch(()=>{});
     if(statusD?.last_refresh) updateLastRefresh(statusD.last_refresh);
+    // Signaux d'achat depuis le screener (chargé en arrière-plan, non bloquant)
+    api('/api/screener/stocks').then(sc => renderOpportunities(sc.stocks||[])).catch(()=>{});
   } catch(e) { console.error(e); }
 }
 
@@ -241,6 +243,79 @@ function renderMovers(d) {
 }
 
 function setHTML(id,html){const el=document.getElementById(id);if(el)el.innerHTML=html;}
+
+// ─── Opportunités du screener (dashboard) ────────────────────────────────────
+function renderOpportunities(stocks) {
+  const panel = document.getElementById('opportunities-panel');
+  const list  = document.getElementById('opportunities-list');
+  const countEl = document.getElementById('opp-count');
+  if (!panel || !list) return;
+
+  const BUY_SIGNALS = ['ACHAT', 'ACCUMULER'];
+  const LIQUID_OK   = ['Élevée', 'Modérée', 'Faible'];  // exclut "Très faible" seulement
+  const recoColor   = { ACHAT:'text-green-400', ACCUMULER:'text-emerald-400' };
+
+  const candidates = stocks
+    .filter(s => BUY_SIGNALS.includes(s.recommendation) && LIQUID_OK.includes(s.liq_level))
+    .sort((a, b) => (b.score || 0) - (a.score || 0))
+    .slice(0, 8);
+
+  if (!candidates.length) { panel.classList.add('hidden'); return; }
+
+  panel.classList.remove('hidden');
+  if (countEl) countEl.textContent = `— ${candidates.length} titre${candidates.length>1?'s':''} retenus`;
+
+  list.innerHTML = candidates.map(s => {
+    const rColor = recoColor[s.recommendation] || 'text-green-400';
+    const liqBadge = s.liq_level === 'Élevée'  ? '<span class="text-green-400">●</span>' :
+                     s.liq_level === 'Modérée'  ? '<span class="text-blue-400">●</span>'  :
+                     '<span class="text-yellow-400">●</span>';
+    const yld = s.div_yield_net != null ? `<span class="text-yellow-300 font-medium">${fmt(s.div_yield_net,2)}%</span>` : '';
+    const per  = s.per != null ? `P/E ${fmt(s.per,1)}×` : '';
+    const pbr  = s.pbr != null ? `PBR ${fmt(s.pbr,2)}×` : '';
+    const meta = [per, pbr].filter(Boolean).join(' · ');
+    return `<div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3 cursor-pointer hover:border-indigo-500/60 hover:bg-slate-800 transition-all"
+                 onclick="openFund('${s.symbol}')">
+      <div class="flex items-center justify-between mb-1">
+        <span class="font-bold text-slate-100 text-sm">${s.symbol}</span>
+        <span class="text-xs font-semibold ${rColor}">${s.recommendation}</span>
+      </div>
+      <div class="text-xs text-slate-400 truncate mb-2">${s.name||''}</div>
+      <div class="flex items-center justify-between text-xs">
+        <span class="font-medium text-slate-200">${s.close!=null?fmt(s.close,0)+' F':'—'}</span>
+        ${yld}
+      </div>
+      ${meta ? `<div class="text-xs text-slate-500 mt-1">${meta}</div>` : ''}
+      <div class="text-xs text-slate-600 mt-1">${liqBadge} Liq. ${s.liq_level}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Export CSV screener ──────────────────────────────────────────────────────
+function exportScreenerCSV() {
+  if (!_screenerData || !_screenerData.length) return;
+  const headers = ['Ticker','Nom','Secteur','Pays','Cours','Variation%','Cap. Marché',
+                   'P/E','EPS','Valeur Comptable','PBR','Rdt Net%','Rdt Brut%','DPS Net',
+                   'Statut Div.','Liq.','Vol. Moy. 30j','Recommandation','Score','Date Reco'];
+  const rows = _screenerData.map(s => [
+    s.symbol, s.name, s.sector, s.country,
+    s.close??'', s.variation_pct??'', s.market_cap??'',
+    s.per??'', s.eps??'', s.book_value??'', s.pbr??'',
+    s.div_yield_net??'', s.div_yield_gross??'', s.dps_net??'',
+    s.div_status??'', s.liq_level??'', s.avg_vol_30d??'',
+    s.recommendation??'', s.score??'', s.reco_date??'',
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`));
+  const csv = [headers.join(','), ...rows.map(r=>r.join(','))].join('\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `brvm_screener_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 // ─── Cache news ───────────────────────────────────────────────────────────────
 let _newsCache = [];   // toutes les news (chargées une fois)
