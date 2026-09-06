@@ -1848,7 +1848,7 @@ async function loadFundamental(symbol) {
 }
 
 function renderFundamental(d, reco) {
-  const { stock, latest, fundamentals:f, high_low_52w:hw, derived:dv, notes } = d;
+  const { stock, latest, fundamentals:f, high_low_52w:hw, derived:dv, notes, data_confidence:conf } = d;
   const price=latest?.close;
 
   const perf=(v)=>v==null
@@ -1963,6 +1963,15 @@ function renderFundamental(d, reco) {
           </div>
           <p class="text-slate-300 font-medium">${stock.name||'—'}</p>
           <p class="text-xs text-slate-500 mt-1">${stock.country||''} ${stock.isin?'· ISIN: '+stock.isin:''}</p>
+          ${conf ? (() => {
+            const dot = conf.color==='green'?'🟢':conf.color==='yellow'?'🟡':'🔴';
+            const tip = conf.details.join(' | ');
+            return `<div class="mt-1.5 flex items-center gap-1.5 text-xs" title="${tip}">
+              <span>${dot}</span>
+              <span class="${conf.color==='green'?'text-green-400':conf.color==='yellow'?'text-yellow-400':'text-red-400'} font-medium">Données ${conf.label}</span>
+              <span class="text-slate-500">(${conf.score}/100)</span>
+            </div>`;
+          })() : ''}
         </div>
         <div class="text-right">
           <div class="text-3xl font-black text-slate-100">${fmt(price,0)} <span class="text-base font-normal text-slate-400">FCFA</span></div>
@@ -2171,8 +2180,10 @@ function renderScreenerTable() {
     return true;
   });
   rows.sort((a, b) => {
-    const va = a[sortCol] ?? (sortDir > 0 ? -Infinity : Infinity);
-    const vb = b[sortCol] ?? (sortDir > 0 ? -Infinity : Infinity);
+    // Pour la colonne confidence, trier par score numérique
+    const getVal = (s, col) => col === 'confidence' ? (s.confidence?.score ?? null) : s[col];
+    const va = getVal(a, sortCol) ?? (sortDir > 0 ? -Infinity : Infinity);
+    const vb = getVal(b, sortCol) ?? (sortDir > 0 ? -Infinity : Infinity);
     return (va < vb ? -1 : va > vb ? 1 : 0) * sortDir;
   });
   const recoColors = {ACHAT:'text-green-400',ACCUMULER:'text-emerald-400',NEUTRE:'text-yellow-400',ALLÉGER:'text-orange-400',VENTE:'text-red-400'};
@@ -2181,6 +2192,15 @@ function renderScreenerTable() {
     const active = sortCol === col;
     const arrow = active ? (sortDir > 0 ? ' ↑' : ' ↓') : '';
     return `<th class="py-2 px-3 text-left cursor-pointer hover:text-slate-200 select-none ${active?'text-indigo-400':'text-slate-500'}" onclick="screenerSort('${col}')">${label}${arrow}</th>`;
+  };
+  const confDot = (conf) => {
+    if (!conf) return '<span class="text-slate-600" title="Données inconnues">●</span>';
+    const dot = conf.color === 'green'
+      ? `<span class="text-green-400" title="${conf.label} (${conf.score}/100)">●</span>`
+      : conf.color === 'yellow'
+      ? `<span class="text-yellow-400" title="${conf.label} (${conf.score}/100)">●</span>`
+      : `<span class="text-red-400" title="${conf.label} (${conf.score}/100)">●</span>`;
+    return dot;
   };
   const trs = rows.map(s => {
     const rColor = recoColors[s.recommendation] || 'text-slate-400';
@@ -2199,6 +2219,7 @@ function renderScreenerTable() {
       <td class="py-2 px-3 text-slate-300">${per}</td>
       <td class="py-2 px-3 text-slate-300">${pbr} ${graham}</td>
       <td class="py-2 px-3 text-xs font-medium ${lColor}">${s.liq_level||'—'}</td>
+      <td class="py-2 px-3 text-center">${confDot(s.confidence)}</td>
       <td class="py-2 px-3 font-semibold ${rColor}">${s.recommendation||'—'}</td>
       <td class="py-2 px-3 text-xs text-slate-500">${s.reco_date||'—'}</td>
     </tr>`;
@@ -2217,11 +2238,12 @@ function renderScreenerTable() {
             ${th('per','P/E')}
             ${th('pbr','PBR')}
             ${th('liq_level','Liq.')}
+            ${th('confidence','Conf.')}
             ${th('recommendation','Reco')}
             <th class="py-2 px-3 text-left text-slate-500">Date reco</th>
           </tr>
         </thead>
-        <tbody>${trs || '<tr><td colspan="11" class="py-6 text-center text-slate-500">Aucun titre ne correspond aux filtres.</td></tr>'}</tbody>
+        <tbody>${trs || '<tr><td colspan="12" class="py-6 text-center text-slate-500">Aucun titre ne correspond aux filtres.</td></tr>'}</tbody>
       </table>
     </div>
     <div class="mt-3 text-xs text-slate-500">${rows.length} titre${rows.length>1?'s':''} sur ${_screenerData.length} · Cliquer sur un titre pour l'analyse fondamentale</div>`;
