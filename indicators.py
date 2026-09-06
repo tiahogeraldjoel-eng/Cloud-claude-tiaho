@@ -998,9 +998,10 @@ def compute_derived_fundamental(prices: List[Dict]) -> Dict:
     # Volatilité annualisée (std des rendements quotidiens * sqrt(252))
     if n >= 22:
         returns = [(closes_list[i] / closes_list[i-1] - 1) for i in range(1, min(n, 253))]
-        if returns:
-            mean_r = sum(returns) / len(returns)
-            variance = sum((r - mean_r) ** 2 for r in returns) / len(returns)
+        nr = len(returns)
+        if nr >= 2:
+            mean_r = sum(returns) / nr
+            variance = sum((r - mean_r) ** 2 for r in returns) / (nr - 1)  # std échantillon (Bessel)
             volatility = math.sqrt(variance) * math.sqrt(252) * 100
         else:
             volatility = None

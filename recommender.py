@@ -1021,12 +1021,15 @@ def compute_recommendation(
     psych_result = score_psychologie(sentiment, var_pct, fundamentals, prices)
 
     # ── Couche SEKIDE (ajustement ±8 pts) ────────────────────────────────────
+    # Taux de croissance RN : utilise div_growth_rate comme proxy (même source de données,
+    # cohérent avec Gordon-Shapiro). Laissé None si absent → SEKIDE utilise g=0.
+    growth_rate = (fundamentals.get("div_growth_rate") or None) if fundamentals else None
     sekide_result = score_sekide_brvm(
         prices=prices,
         latest_price=latest_price,
         fundamentals=fundamentals,
         symbol=symbol,
-        growth_rate=None,  # sera enrichi ultérieurement avec les taux de croissance réels
+        growth_rate=growth_rate,
     )
 
     tech_score  = tech_result["score"]

@@ -410,6 +410,18 @@ async function loadTechnical(symbol) {
       renderTechDiv2025Context(symbol, fundD, divD.dividends||[]);
     }).catch(()=>{});
 
+    // Alerte cours stale (> 5 jours calendaires sans mise à jour)
+    if(prices.length) {
+      const lastPriceDate = new Date(prices.at(-1)?.date || 0);
+      const staleDays = Math.floor((Date.now() - lastPriceDate.getTime()) / 86400000);
+      if(staleDays > 5) {
+        const staleEl = document.createElement('div');
+        staleEl.className = 'mb-3 px-4 py-2.5 rounded-xl border border-yellow-700/50 bg-yellow-900/20 text-yellow-300 text-xs flex items-center gap-2';
+        staleEl.innerHTML = `⚠️ Derniers cours datent de ${staleDays} jours (${prices.at(-1)?.date}). Les indicateurs techniques et les signaux peuvent être décalés.`;
+        document.getElementById('tech-reco-box')?.parentElement?.prepend(staleEl);
+      }
+    }
+
     // Recommandation
     if(recoD) renderRecommendationBox('tech-reco-box', {...recoD, symbol});
 
@@ -1095,7 +1107,7 @@ function renderRecommendationBox(containerId, reco) {
         <div class="flex flex-wrap gap-2">
           ${[['rentier','Rentier','💰'],['croissance','Croissance','📈'],['trader','Trader','⚡'],['mixte','Mixte','⚖️']].map(([p,label,icon])=>{
             const active = (reco.profil||'mixte') === p;
-            return `<button onclick="setProfilFor('${reco.symbol||''}','${p}');loadFundamental('${reco.symbol||''}')"
+            return `<button onclick="setProfilFor('${reco.symbol||''}','${p}');_reloadReco('${reco.symbol||''}')"
               class="text-xs px-3 py-1.5 rounded-full font-semibold transition-all ${active
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
                 : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'}">${icon} ${label}</button>`;
@@ -1614,6 +1626,11 @@ function getProfilFor(symbol) {
 }
 function setProfilFor(symbol, profil) {
   localStorage.setItem(`profil_${symbol}`, profil);
+}
+
+function _reloadReco(symbol) {
+  if(STATE.currentTab === 'technical') loadTechnical(symbol);
+  else loadFundamental(symbol);
 }
 
 function setProfilGlobal(profil) {

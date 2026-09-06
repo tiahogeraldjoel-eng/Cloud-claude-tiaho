@@ -249,6 +249,20 @@ _state = {
     "last_news_count": None,
 }
 
+# Cache in-memory pour la série BRVM Composite (TTL 1 heure)
+# Évite une requête DB sur chaque appel à /recommendation
+_brvm_cache: Dict = {"data": None, "ts": None}
+
+
+def _get_brvm_series() -> List:
+    now = datetime.now(timezone.utc)
+    if (_brvm_cache["data"] is None
+            or _brvm_cache["ts"] is None
+            or (now - _brvm_cache["ts"]).total_seconds() > 3600):
+        _brvm_cache["data"] = db.get_brvm_composite_series(400)
+        _brvm_cache["ts"]   = now
+    return _brvm_cache["data"]
+
 _sentiment_cache: Dict = {"data": None, "ts": 0.0}
 _SENTIMENT_TTL = 5 * 60  # secondes — re-calcul toutes les 5 min max
 
@@ -300,7 +314,7 @@ def _snapshot_all_recommendations():
     stocks = db.get_all_stocks()
     saved = 0
     sentiment = _get_sentiment_data()
-    brvm_series = db.get_brvm_composite_series(400)
+    brvm_series = _get_brvm_series()
     for stock in stocks:
         sym = stock["symbol"]
         try:
@@ -353,32 +367,42 @@ def _start_scheduler():
 
         sch = BackgroundScheduler(timezone="UTC")
 
+        # misfire_grace_time : si le service Render était en sommeil et rate un trigger,
+        # ne pas le relancer si le délai dépasse la grace period.
+        # coalesce=True : si plusieurs tirs ont été manqués, n'en effectuer qu'un seul.
+        GRACE = 600   # 10 min — ignorer les tirs manqués depuis plus de 10 min
+
         # Rafraîchissement toutes les 20 min, 8h30 → 15h30 (lun-ven)
         sch.add_job(_refresh_data, CronTrigger(
             day_of_week="mon-fri",
             hour="8-15",
             minute="0,20,40"),
-            id="every20min")
+            id="every20min",
+            misfire_grace_time=GRACE, coalesce=True)
 
         # Trigger post-fixing ouverture (09h50 UTC) — premiers prix officiels
         sch.add_job(_refresh_data, CronTrigger(
             day_of_week="mon-fri", hour="9", minute="50"),
-            id="post_opening_fixing")
+            id="post_opening_fixing",
+            misfire_grace_time=GRACE, coalesce=True)
 
         # Trigger post-clôture (15h10 UTC = 15h10 Abidjan) — EOD définitifs après clôture 15h00
         sch.add_job(_refresh_data, CronTrigger(
             day_of_week="mon-fri", hour="15", minute="10"),
-            id="post_close")
+            id="post_close",
+            misfire_grace_time=GRACE, coalesce=True)
 
         # Actualités toutes les 2h
         sch.add_job(_refresh_news, CronTrigger(
             day_of_week="mon-fri", hour="*/2", minute="15"),
-            id="news")
+            id="news",
+            misfire_grace_time=GRACE, coalesce=True)
 
         # Snapshot recommandations (16h00 UTC) — un enregistrement par titre par jour
         sch.add_job(_snapshot_all_recommendations, CronTrigger(
             day_of_week="mon-fri", hour="16", minute="0"),
-            id="reco_snapshot")
+            id="reco_snapshot",
+            misfire_grace_time=GRACE, coalesce=True)
 
         sch.start()
         logger.info("Planificateur démarré — rafraîchissement toutes les 20 min + triggers 09h50/15h10/16h00")
@@ -688,7 +712,7 @@ def api_recommendation(symbol: str, profil: str = "mixte"):
     fund_net   = _apply_net_dividend(fund, country)
     sentiment  = _get_sentiment_data()
 
-    brvm_series = db.get_brvm_composite_series(400)
+    brvm_series = _get_brvm_series()
     result = rec.compute_recommendation(
         prices=prices or [],
         fundamentals=fund_net,
@@ -1159,7 +1183,7 @@ def export_stock_pdf(symbol: str):
     derived = ind.compute_derived_fundamental(prices) if len(prices) >= 2 else {}
 
     sentiment   = _get_sentiment_data()
-    brvm_series = db.get_brvm_composite_series(400)
+    brvm_series = _get_brvm_series()
     reco = rec.compute_recommendation(prices, fund_net, derived, hw or {}, sentiment, latest,
                                       symbol=symbol, brvm_series=brvm_series)
 
