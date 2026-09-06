@@ -124,6 +124,26 @@ def _apply_net_dividend(fund: Optional[Dict], country: Optional[str]) -> Optiona
 
     return f
 
+
+def _sanitize_dps(fund_net: Optional[Dict], close: Optional[float]) -> Optional[Dict]:
+    """Annule le dividende quand DPS > 60% du cours — signe d'une erreur de scraping AFX.
+    À appeler APRÈS _apply_net_dividend et AVANT compute_recommendation ou tout affichage.
+    Vérifie le champ brut DB ('dividend_per_share') car _apply_net_dividend ne crée pas
+    'dividend_per_share_gross' — il laisse 'dividend_per_share' intacte dans le dict."""
+    if not fund_net or not close or close <= 0:
+        return fund_net
+    # 'dividend_per_share' = DPS brut stocké en DB (= gross avant retenue IRVM)
+    gross = fund_net.get("dividend_per_share")
+    if gross and gross > close * 0.6:
+        return {**fund_net,
+                "dividend_per_share":      None,   # brut DB
+                "dividend_per_share_net":  None,   # net calculé
+                "dividend_yield":          None,   # yield brut DB
+                "dividend_yield_gross":    None,   # alias gross
+                "dividend_yield_net":      None,   # yield net calculé
+                "_dps_error": True}
+    return fund_net
+
 # ─── Dividendes 2025 — données définitives (source : sikafinance.com) ─────────
 #
 # Source : https://www.sikafinance.com/marches/dividendes  (consulté avril 2026)
@@ -461,6 +481,7 @@ def _seed_recommendation_history_if_empty(days: int = 90) -> None:
                     bv = fund_net["book_value"]
                     if bv and bv > 0:
                         fund_net["pbr"] = round(latest["close"] / bv, 2)
+                fund_net = _sanitize_dps(fund_net, latest.get("close"))
 
                 result = rec.compute_recommendation(
                     prices=slice_prices,
@@ -504,6 +525,7 @@ def _snapshot_all_recommendations():
                 bv = fund_net["book_value"]
                 if bv and bv > 0:
                     fund_net["pbr"] = round(latest["close"] / bv, 2)
+            fund_net = _sanitize_dps(fund_net, (latest or {}).get("close"))
             result = rec.compute_recommendation(
                 prices=prices,
                 fundamentals=fund_net,
@@ -868,11 +890,7 @@ def api_fundamental(symbol: str):
         bv = fund_net["book_value"]
         if bv and bv > 0:
             fund_net["pbr"] = round(latest["close"] / bv, 2)
-    # Filtrer les rendements impossibles (DPS > 60% du cours = erreur AFX)
-    if latest and latest.get("close") and fund_net and fund_net.get("dividend_per_share_gross"):
-        if fund_net["dividend_per_share_gross"] > latest["close"] * 0.6:
-            fund_net = {**fund_net, "dividend_yield_net": None, "dividend_yield_gross": None,
-                        "dividend_per_share_net": None, "_dps_error": True}
+    fund_net = _sanitize_dps(fund_net, (latest or {}).get("close"))
     return {
         "symbol": sym, "stock": stock,
         "fundamentals": fund_net,
@@ -911,6 +929,7 @@ def api_recommendation(symbol: str, profil: str = "mixte"):
         bv = fund_net["book_value"]
         if bv and bv > 0:
             fund_net["pbr"] = round(latest["close"] / bv, 2)
+    fund_net   = _sanitize_dps(fund_net, (latest or {}).get("close"))
     sentiment  = _get_sentiment_data()
 
     brvm_series = _get_brvm_series()
@@ -1182,11 +1201,7 @@ def api_screener_stocks():
             bv = fund_n["book_value"]
             if bv and bv > 0:
                 fund_n["pbr"] = round(latest["close"] / bv, 2)
-        # Filtrer les rendements impossibles (DPS > 60% du cours = erreur AFX)
-        if latest and latest.get("close") and fund_n and fund_n.get("dividend_per_share_gross"):
-            if fund_n["dividend_per_share_gross"] > latest["close"] * 0.6:
-                fund_n = {**fund_n, "dividend_yield_net": None, "dividend_yield_gross": None,
-                          "dividend_per_share_net": None, "_dps_error": True}
+        fund_n = _sanitize_dps(fund_n, (latest or {}).get("close"))
         # Liquidité approximative depuis les prix récents
         prices_30d = db.get_prices(sym, 30)
         vols = [p.get("volume") or 0 for p in prices_30d if p.get("volume")]
@@ -1242,12 +1257,7 @@ def api_dividends():
         f = db.get_fundamental(s["symbol"])
         l = db.get_latest_price(s["symbol"])
         if f and (f.get("dividend_yield") or f.get("dividend_per_share")):
-            fn = _apply_net_dividend(f, s.get("country"))
-            # Filtrer les rendements impossibles (DPS > 60% du cours = erreur AFX)
-            if l and l.get("close") and fn.get("dividend_per_share_gross"):
-                if fn["dividend_per_share_gross"] > l["close"] * 0.6:
-                    fn = {**fn, "dividend_yield_net": None, "dividend_yield_gross": None,
-                          "dividend_per_share_net": None, "_dps_error": True}
+            fn = _sanitize_dps(_apply_net_dividend(f, s.get("country")), (l or {}).get("close"))
             results.append({
                 "symbol":               s["symbol"],
                 "name":                 s.get("name",""),
@@ -1540,7 +1550,9 @@ def export_stock_pdf(symbol: str):
     fundamentals = db.get_fundamental(symbol)
     hw           = db.get_52w_highlow(symbol)
     country      = stock_info.get("country")
-    fund_net     = _apply_net_dividend(fundamentals, country)
+    latest_p = db.get_latest_price(symbol)
+    lp_close = (latest_p or {}).get("close") or (latest.get("close") if latest else None)
+    fund_net = _sanitize_dps(_apply_net_dividend(fundamentals, country), lp_close)
 
     # Données dérivées complètes (performances, volatilité, 52-sem…)
     derived = ind.compute_derived_fundamental(prices) if len(prices) >= 2 else {}
