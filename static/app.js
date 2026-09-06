@@ -1875,6 +1875,9 @@ function renderFundamental(d, reco) {
         <div><label class="block text-xs text-slate-400 mb-1">BPA (FCFA)</label>
           <input type="number" id="in-eps" step="1" value="${f?.eps||''}" placeholder="ex: 4136"
           class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"/></div>
+        <div><label class="block text-xs text-slate-400 mb-1">Valeur comptable/action (FCFA) <span class="text-indigo-400" title="Pour calculer PBR = Cours / Valeur comptable. Source : rapport annuel, rubrique capitaux propres / nombre d'actions">ℹ️</span></label>
+          <input type="number" id="in-bv" step="1" value="${f?.book_value||''}" placeholder="ex: 8500"
+          class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"/></div>
       </div>
       <button onclick="saveFund('${stock.symbol}')" class="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition-colors">Sauvegarder</button>
       <button onclick="fetchAndRefreshFund('${stock.symbol}')" class="mt-3 ml-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors">↻ Recharger depuis AFX</button>
@@ -2063,11 +2066,13 @@ async function saveFund(sym) {
   const dps=parseFloat(document.getElementById('in-dps')?.value);
   const per=parseFloat(document.getElementById('in-per')?.value);
   const eps=parseFloat(document.getElementById('in-eps')?.value);
+  const bv=parseFloat(document.getElementById('in-bv')?.value);
   const body={};
   if(!isNaN(div)) body.dividend_yield=div;
   if(!isNaN(per)) body.per=per;
   if(!isNaN(eps)) body.eps=eps;
   if(!isNaN(dps)) body.dividend_per_share=dps;
+  if(!isNaN(bv)) body.book_value=bv;
   await fetch(`/api/stocks/${sym}/fundamental`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   toast('Fondamentaux sauvegardés ✓');
   setTimeout(()=>loadFundamental(sym),500);
