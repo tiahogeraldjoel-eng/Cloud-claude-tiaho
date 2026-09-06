@@ -920,10 +920,15 @@ def api_track_record(symbol: str):
         later  = [d for d in price_dates if d >= target]
         return price_by_date[later[0]] if later else None
 
+    # Signaux haussiers : ACHAT + ACCUMULER → on attend une hausse
+    # Signaux baissiers : VENTE + ALLÉGER → on attend une baisse
+    BULLISH = {"ACHAT", "ACCUMULER"}
+    BEARISH = {"VENTE", "ALLÉGER"}
+
     signals = []
     for row in history:
         reco = row.get("recommendation")
-        if reco not in ("ACHAT", "VENTE"):
+        if reco not in BULLISH and reco not in BEARISH:
             continue
         sig_date  = row.get("date")
         sig_price = price_by_date.get(sig_date)
@@ -933,10 +938,12 @@ def api_track_record(symbol: str):
         if p30 is None:
             continue
         ret30 = round((p30 / sig_price - 1) * 100, 2)
-        correct = (reco == "ACHAT" and ret30 > 0) or (reco == "VENTE" and ret30 < 0)
+        is_bullish = reco in BULLISH
+        correct = (is_bullish and ret30 > 0) or (not is_bullish and ret30 < 0)
         signals.append({
             "date":           sig_date,
             "recommendation": reco,
+            "direction":      "haussier" if is_bullish else "baissier",
             "score":          row.get("score"),
             "price_signal":   sig_price,
             "price_30d":      p30,
@@ -944,19 +951,19 @@ def api_track_record(symbol: str):
             "correct":        correct,
         })
 
-    achat_s = [s for s in signals if s["recommendation"] == "ACHAT"]
-    vente_s = [s for s in signals if s["recommendation"] == "VENTE"]
-    hr_a = round(sum(1 for s in achat_s if s["correct"]) / len(achat_s) * 100, 1) if achat_s else None
-    hr_v = round(sum(1 for s in vente_s if s["correct"]) / len(vente_s) * 100, 1) if vente_s else None
+    bullish_s = [s for s in signals if s["direction"] == "haussier"]
+    bearish_s = [s for s in signals if s["direction"] == "baissier"]
+    hr_b = round(sum(1 for s in bullish_s if s["correct"]) / len(bullish_s) * 100, 1) if bullish_s else None
+    hr_v = round(sum(1 for s in bearish_s if s["correct"]) / len(bearish_s) * 100, 1) if bearish_s else None
 
     return {
-        "symbol":             sym,
-        "signals":            signals[-30:],   # 30 derniers signaux
-        "hit_rate_achat_30d": hr_a,
-        "hit_rate_vente_30d": hr_v,
-        "total_achat":        len(achat_s),
-        "total_vente":        len(vente_s),
-        "total_signals":      len(signals),
+        "symbol":               sym,
+        "signals":              signals[-30:],
+        "hit_rate_haussier_30d": hr_b,
+        "hit_rate_baissier_30d": hr_v,
+        "total_haussier":       len(bullish_s),
+        "total_baissier":       len(bearish_s),
+        "total_signals":        len(signals),
     }
 
 

@@ -1531,8 +1531,8 @@ function renderTrackRecord(containerId, data) {
   if (!el) return;
   if (!data || data.total_signals < 3) { el.innerHTML = ''; return; }
 
-  const hrA = data.hit_rate_achat_30d;
-  const hrV = data.hit_rate_vente_30d;
+  const hrA = data.hit_rate_haussier_30d;
+  const hrV = data.hit_rate_baissier_30d;
   const colorHr = hr => hr == null ? '#64748b' : hr >= 60 ? '#22c55e' : hr >= 45 ? '#f97316' : '#ef4444';
   const badge = (label, hr, n) => {
     if (hr == null || n < 2) return '';
@@ -1563,8 +1563,8 @@ function renderTrackRecord(containerId, data) {
         <span class="text-xs font-semibold text-slate-300">Track record — performance des signaux à 30 jours</span>
       </div>
       <div class="grid grid-cols-2 gap-2 mb-3">
-        ${badge('ACHAT → hausse 30j', hrA, data.total_achat||0)}
-        ${badge('VENTE → baisse 30j', hrV, data.total_vente||0)}
+        ${badge('ACHAT/ACCUMULER → hausse 30j', hrA, data.total_haussier||0)}
+        ${badge('VENTE/ALLÉGER → baisse 30j', hrV, data.total_baissier||0)}
       </div>
       ${recentSignals ? `<table class="w-full">
         <thead><tr class="text-xs text-slate-500">
