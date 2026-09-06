@@ -1,0 +1,91 @@
+name: Build Coffre-Fort Vault
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, claude/vault-app-compilation-k25wje ]
+    paths: [ 'coffre-fort-vault/**' ]
+
+jobs:
+  build-windows:
+    name: Build Windows (.exe)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: coffre-fort-vault
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: Compiler l'exécutable Windows
+        run: pyinstaller --onefile --windowed --noconfirm --name CoffreFortVault vault_app.py
+
+      - name: Publier l'artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CoffreFortVault-windows
+          path: coffre-fort-vault/dist/CoffreFortVault.exe
+          retention-days: 30
+
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: coffre-fort-vault
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer les dépendances système (Tk + Tesseract OCR)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk tesseract-ocr
+
+      - name: Installer les dépendances Python
+        run: pip install -r requirements.txt
+
+      - name: Compiler l'exécutable Linux
+        run: pyinstaller --onefile --windowed --noconfirm --name CoffreFortVault vault_app.py
+
+      - name: Publier l'artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CoffreFortVault-linux
+          path: coffre-fort-vault/dist/CoffreFortVault
+          retention-days: 30
+
+  publish-release:
+    name: Publier un lien de téléchargement direct (Release GitHub)
+    needs: [ build-windows, build-linux ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Créer/mettre à jour la Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mv dist/CoffreFortVault-windows/CoffreFortVault.exe dist/CoffreFortVault-windows.exe
+          mv dist/CoffreFortVault-linux/CoffreFortVault dist/CoffreFortVault-linux.bin
+          gh release delete coffre-fort-vault-latest --yes --cleanup-tag || true
+          gh release create coffre-fort-vault-latest \
+            dist/CoffreFortVault-windows.exe dist/CoffreFortVault-linux.bin \
+            --repo "${{ github.repository }}" \
+            --title "Coffre-Fort Vault Desktop (dernier build)" \
+            --notes "Exécutables Windows/Linux générés automatiquement depuis le commit ${{ github.sha }}." \
+            --prerelease

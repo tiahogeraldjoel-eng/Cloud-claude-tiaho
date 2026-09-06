@@ -1,0 +1,48 @@
+name: Build Coffre-Fort Vault Android
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, claude/vault-app-compilation-k25wje ]
+    paths: [ 'coffre-fort-vault-android/**' ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: coffre-fort-vault-android
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Compiler l'APK Debug
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Publier l'artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CoffreFortVault-android-debug
+          path: coffre-fort-vault-android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Publier un lien de téléchargement direct (Release GitHub)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk CoffreFortVault.apk
+          gh release delete coffre-fort-vault-android-latest --yes --cleanup-tag || true
+          gh release create coffre-fort-vault-android-latest CoffreFortVault.apk \
+            --repo "${{ github.repository }}" \
+            --title "Coffre-Fort Vault Android (dernier build)" \
+            --notes "APK debug généré automatiquement depuis le commit ${{ github.sha }}." \
+            --prerelease
