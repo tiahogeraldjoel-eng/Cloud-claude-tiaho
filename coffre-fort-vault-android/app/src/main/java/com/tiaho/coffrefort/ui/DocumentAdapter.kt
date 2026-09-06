@@ -43,13 +43,19 @@ class DocumentAdapter(
             binding.category.setBackgroundResource(R.drawable.bg_chip_neutral)
             binding.category.setTextColor(Color.parseColor("#37474F"))
 
+            // Une date manquante est signalée en orange (au lieu du gris neutre) : elle mérite
+            // d'être vérifiée/complétée plutôt que d'être ignorée silencieusement.
             val hasExpiration = document.expirationDate != "Non définie"
-            binding.expiration.text = "Échéance : ${document.expirationDate}"
+            binding.expiration.text = if (hasExpiration) {
+                "Échéance : ${document.expirationDate}"
+            } else {
+                "⚠ Date non définie"
+            }
             binding.expiration.setBackgroundResource(
-                if (hasExpiration) R.drawable.bg_chip_expiration else R.drawable.bg_chip_neutral
+                if (hasExpiration) R.drawable.bg_chip_neutral else R.drawable.bg_chip_expiration
             )
             binding.expiration.setTextColor(
-                if (hasExpiration) Color.WHITE else Color.parseColor("#37474F")
+                if (hasExpiration) Color.parseColor("#37474F") else Color.WHITE
             )
 
             binding.root.setOnClickListener { onItemClick(document) }

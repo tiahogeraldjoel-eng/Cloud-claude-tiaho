@@ -1,6 +1,7 @@
 package com.tiaho.coffrefort
 
 import android.Manifest
+import android.app.DatePickerDialog
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -54,11 +55,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.time.LocalDate
 
 class MainActivity : AppCompatActivity() {
 
     private enum class CaptureMode { FRONT, BACK }
-    private data class PendingDocument(val frontUri: Uri, val category: String)
+    private data class PendingDocument(
+        val frontUri: Uri,
+        val category: String,
+        val expirationDate: String,
+        val frontOcrText: String
+    )
 
     private lateinit var binding: ActivityMainBinding
     private val adapter = DocumentAdapter(
@@ -342,47 +349,95 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleCapturedImage(uri: Uri) {
         when (captureMode) {
-            CaptureMode.FRONT -> showAddDocumentDialog(uri)
+            CaptureMode.FRONT -> lifecycleScope.launch {
+                val ocrText = OcrHelper.extractText(this@MainActivity, uri)
+                showAddDocumentDialog(uri, ocrText, DateExtractor.extract(ocrText))
+            }
             CaptureMode.BACK -> {
                 val pending = pendingDocument ?: return
                 pendingDocument = null
-                saveDocument(pending.frontUri, pending.category, uri)
+                saveDocument(pending.frontUri, pending.category, uri, pending.expirationDate, pending.frontOcrText)
             }
         }
     }
 
-    private fun showAddDocumentDialog(frontUri: Uri) {
+    private fun showAddDocumentDialog(frontUri: Uri, frontOcrText: String, suggestedDate: String) {
         val dialogBinding = DialogAddDocumentBinding.inflate(LayoutInflater.from(this))
+        val getExpirationDate = setupExpirationPicker(dialogBinding, suggestedDate.takeIf { it != "Non définie" })
+
         AlertDialog.Builder(this)
             .setTitle("Ajouter Document")
             .setView(dialogBinding.root)
             .setPositiveButton("Suivant") { _, _ ->
                 val category = dialogBinding.categoryInput.text.toString().ifBlank { "Général" }
-                askForBackSide(frontUri, category)
+                askForBackSide(frontUri, category, getExpirationDate() ?: "Non définie", frontOcrText)
             }
             .setNegativeButton("Annuler", null)
             .show()
     }
 
-    private fun askForBackSide(frontUri: Uri, category: String) {
+    private fun askForBackSide(frontUri: Uri, category: String, expirationDate: String, frontOcrText: String) {
         AlertDialog.Builder(this)
             .setTitle(R.string.add_back_choice_title)
             .setMessage("Voulez-vous aussi ajouter une photo du verso (dos de la carte) ?")
             .setPositiveButton("Oui") { _, _ ->
-                pendingDocument = PendingDocument(frontUri, category)
+                pendingDocument = PendingDocument(frontUri, category, expirationDate, frontOcrText)
                 showAddSourceDialog(CaptureMode.BACK)
             }
-            .setNegativeButton("Non, terminer") { _, _ -> saveDocument(frontUri, category, null) }
+            .setNegativeButton("Non, terminer") { _, _ -> saveDocument(frontUri, category, null, expirationDate, frontOcrText) }
             .show()
     }
 
-    private fun saveDocument(frontUri: Uri, category: String, backUri: Uri?) {
+    /**
+     * Configure le bouton de sélection de date d'échéance partagé par les dialogues d'ajout et
+     * de modification : pré-rempli (avec la suggestion OCR ou la valeur déjà enregistrée), mais
+     * l'utilisateur choisit toujours la valeur finale via le sélecteur de date ou "Effacer" —
+     * l'OCR seul ne peut pas être fiable à 100 % (format inhabituel, erreur de lecture).
+     */
+    private fun setupExpirationPicker(dialogBinding: DialogAddDocumentBinding, initialIso: String?): () -> String? {
+        var expirationDate = initialIso
+        updateExpirationButtonLabel(dialogBinding, expirationDate)
+
+        dialogBinding.expirationDateButton.setOnClickListener {
+            showDatePicker(expirationDate) { picked ->
+                expirationDate = picked
+                updateExpirationButtonLabel(dialogBinding, expirationDate)
+            }
+        }
+        dialogBinding.clearExpirationButton.setOnClickListener {
+            expirationDate = null
+            updateExpirationButtonLabel(dialogBinding, expirationDate)
+        }
+
+        return { expirationDate }
+    }
+
+    private fun updateExpirationButtonLabel(dialogBinding: DialogAddDocumentBinding, isoDate: String?) {
+        dialogBinding.expirationDateButton.text = isoDate?.let { "Échéance : ${formatDateForDisplay(it)}" }
+            ?: "Aucune date d'échéance (appuyer pour en définir une)"
+    }
+
+    private fun formatDateForDisplay(iso: String): String = try {
+        val date = LocalDate.parse(iso)
+        "%02d/%02d/%04d".format(date.dayOfMonth, date.monthValue, date.year)
+    } catch (e: Exception) {
+        iso
+    }
+
+    private fun showDatePicker(currentIso: String?, onPicked: (String) -> Unit) {
+        val base = currentIso?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: LocalDate.now()
+        DatePickerDialog(
+            this,
+            { _, year, month, day -> onPicked(LocalDate.of(year, month + 1, day).toString()) },
+            base.year, base.monthValue - 1, base.dayOfMonth
+        ).show()
+    }
+
+    private fun saveDocument(frontUri: Uri, category: String, backUri: Uri?, expirationDate: String, frontOcrText: String) {
         lifecycleScope.launch {
             val title = queryDisplayName(frontUri) ?: "document.jpg"
-            val frontOcr = OcrHelper.extractText(this@MainActivity, frontUri)
             val backOcr = backUri?.let { OcrHelper.extractText(this@MainActivity, it) } ?: ""
-            val combinedText = listOf(frontOcr, backOcr).filter { it.isNotBlank() }.joinToString("\n")
-            val expirationDate = DateExtractor.extract(combinedText)
+            val combinedText = listOf(frontOcrText, backOcr).filter { it.isNotBlank() }.joinToString("\n")
 
             withContext(Dispatchers.IO) {
                 val documentsDir = File(filesDir, "documents").apply { mkdirs() }
@@ -482,14 +537,22 @@ class MainActivity : AppCompatActivity() {
     private fun showEditCategoryDialog(document: DocumentEntity) {
         val dialogBinding = DialogAddDocumentBinding.inflate(LayoutInflater.from(this))
         dialogBinding.categoryInput.setText(document.category)
+        val getExpirationDate = setupExpirationPicker(
+            dialogBinding,
+            document.expirationDate.takeIf { it != "Non définie" }
+        )
+
         AlertDialog.Builder(this)
-            .setTitle("Modifier la catégorie")
+            .setTitle("Modifier le document")
             .setView(dialogBinding.root)
             .setPositiveButton("Enregistrer") { _, _ ->
                 val newCategory = dialogBinding.categoryInput.text.toString().ifBlank { "Général" }
+                val newExpirationDate = getExpirationDate() ?: "Non définie"
                 lifecycleScope.launch {
                     withContext(Dispatchers.IO) {
-                        database.documentDao().update(document.copy(category = newCategory))
+                        database.documentDao().update(
+                            document.copy(category = newCategory, expirationDate = newExpirationDate)
+                        )
                     }
                     refreshDocumentList()
                 }

@@ -29,7 +29,9 @@ class ExpirationCheckWorker(
     companion object {
         const val CHANNEL_ID = "vault_expiration"
         const val UNIQUE_WORK_NAME = "expiration_check"
-        private const val WARNING_WINDOW_DAYS = 30L
+        // Rappels espacés plutôt qu'une seule fenêtre de 30 jours notifiant chaque jour :
+        // un document déjà expiré continue d'alerter tant qu'il n'est pas mis à jour.
+        private val WARNING_THRESHOLDS_DAYS = setOf(60L, 30L, 7L, 1L)
     }
 
     override suspend fun doWork(): Result {
@@ -44,7 +46,7 @@ class ExpirationCheckWorker(
             } ?: return@forEach
 
             val daysUntil = ChronoUnit.DAYS.between(today, expirationDate)
-            if (daysUntil <= WARNING_WINDOW_DAYS) {
+            if (daysUntil <= 0 || daysUntil in WARNING_THRESHOLDS_DAYS) {
                 notify(document.id, document.title, daysUntil)
             }
         }

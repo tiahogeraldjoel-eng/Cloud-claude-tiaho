@@ -18,4 +18,25 @@
         android:hint="@string/category_hint"
         android:inputType="text" />
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
+        android:text="Date d'échéance (détectée automatiquement si possible, modifiable) :" />
+
+    <Button
+        android:id="@+id/expirationDateButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Aucune date d'échéance (appuyer pour en définir une)" />
+
+    <Button
+        android:id="@+id/clearExpirationButton"
+        style="?android:attr/borderlessButtonStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:text="Effacer la date" />
+
 </LinearLayout>

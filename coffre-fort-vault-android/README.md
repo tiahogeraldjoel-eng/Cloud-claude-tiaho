@@ -24,18 +24,26 @@ mêmes fonctionnalités avec les briques natives Android correspondantes.
   fichiers valides) ; le contenu réel est vérifié après sélection et un
   message s'affiche si le fichier choisi n'est ni une image ni un PDF
 - **Modification et suppression** d'un document existant (appui sur la carte
-  puis « Modifier » ou « Supprimer »)
+  puis « Modifier » ou « Supprimer ») — la catégorie et la date d'échéance
+  sont toutes les deux modifiables a posteriori
 - **OCR embarqué** (ML Kit Text Recognition, modèle inclus dans l'APK —
-  fonctionne sans réseau) et détection automatique d'une date d'échéance :
-  une date associée à un mot-clé d'expiration est priorisée, sinon les dates
-  de naissance/délivrance sont écartées et la date la plus tardive est retenue
+  fonctionne sans réseau) qui **suggère** une date d'échéance (une date
+  associée à un mot-clé d'expiration est priorisée, sinon les dates de
+  naissance/délivrance sont écartées et la date la plus tardive est retenue,
+  parmi plusieurs formats : JJ/MM/AAAA, J/M/AA, AAAA-MM-JJ, ou en toutes
+  lettres comme « 12 mars 2027 »). Cette suggestion n'est **jamais imposée** :
+  le dialogue d'ajout affiche toujours un sélecteur de date pré-rempli mais
+  modifiable (ou effaçable), car l'OCR peut confondre une date de naissance/
+  délivrance avec l'échéance, ou simplement mal lire un format inhabituel —
+  un document sans date exploitable est signalé par un badge orange dans la
+  liste plutôt que d'être ignoré silencieusement
 - **Chiffrement AES-256/GCM** de chaque document via une clé générée et
   conservée dans l'Android Keystore (la clé ne quitte jamais le composant
   sécurisé de l'appareil, contrairement à un fichier de clé sur disque)
 - **Recherche** sur titre, catégorie et texte OCR (base SQLite locale, Room)
 - **Notifications d'échéance** : une vérification quotidienne en arrière-plan
-  (WorkManager) alerte quand un document expire dans les 30 jours ou est déjà
-  expiré, même si l'application n'est pas ouverte
+  (WorkManager) alerte à J-60, J-30, J-7, J-1, puis chaque jour une fois le
+  document expiré, même si l'application n'est pas ouverte
 - **Partage P2P local** : QR code d'appairage, puis envoi réel d'un document
   vers l'IP d'un autre appareil sur le même réseau Wi-Fi/Hotspot (appui long
   sur une carte de document → « Envoyer »), sans serveur externe
