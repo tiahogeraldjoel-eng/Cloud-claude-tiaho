@@ -208,6 +208,18 @@ def seed_dividends_2025() -> None:
             "div_payment_date":    payment_date,
             "div_exercice_year":   exercice_year,
         })
+        # Sauvegarder dans l'historique des dividendes (table dividend_history)
+        net_yield_pct_val = round(net_yield_pct, 2)
+        db.save_dividend_history({
+            "symbol":       sym,
+            "year":         exercice_year,
+            "dps_gross":    gross_dps,
+            "dps_net":      round(net_dps, 2),
+            "yield_gross":  gross_yield,
+            "yield_net":    net_yield_pct_val,
+            "payment_date": payment_date,
+            "status":       div_status,
+        })
         seeded.append(sym)
         logger.info(
             f"  DIV 2025 [{div_status:8s}] {sym:6s} : "
@@ -676,10 +688,16 @@ def api_fundamental(symbol: str):
     hw      = db.get_52w_highlow(sym)
     derived = ind.compute_derived_fundamental(prices) if prices else {}
     latest  = db.get_latest_price(sym)
-    country = stock.get("country") if stock else None
+    country  = stock.get("country") if stock else None
+    fund_net = _apply_net_dividend(fund, country)
+    # Injecter le PBR si book_value disponible (per-share)
+    if fund_net and latest and latest.get("close") and fund_net.get("book_value"):
+        bv = fund_net["book_value"]
+        if bv and bv > 0:
+            fund_net["pbr"] = round(latest["close"] / bv, 2)
     return {
         "symbol": sym, "stock": stock,
-        "fundamentals": _apply_net_dividend(fund, country),
+        "fundamentals": fund_net,
         "high_low_52w": hw,
         "derived": derived, "latest": latest,
         "notes": db.get_notes(sym),
@@ -710,6 +728,11 @@ def api_recommendation(symbol: str, profil: str = "mixte"):
     stock_info = db.get_stock(sym)
     country    = stock_info.get("country") if stock_info else None
     fund_net   = _apply_net_dividend(fund, country)
+    # Injecter le PBR si book_value disponible (per-share)
+    if fund_net and latest and latest.get("close") and fund_net.get("book_value"):
+        bv = fund_net["book_value"]
+        if bv and bv > 0:
+            fund_net["pbr"] = round(latest["close"] / bv, 2)
     sentiment  = _get_sentiment_data()
 
     brvm_series = _get_brvm_series()
@@ -737,6 +760,16 @@ def api_recommendation(symbol: str, profil: str = "mixte"):
             logger.warning(f"Impossible de sauvegarder l'historique reco {sym}: {e}")
 
     return result
+
+
+@app.get("/api/stocks/{symbol}/dividend-history")
+def api_dividend_history(symbol: str):
+    """Retourne l'historique des dividendes versés par exercice fiscal."""
+    sym = symbol.upper()
+    if not db.get_stock(sym):
+        raise HTTPException(404, f"Titre '{sym}' introuvable")
+    history = db.get_dividend_history(sym, 10)
+    return {"symbol": sym, "history": history, "count": len(history)}
 
 
 @app.get("/api/stocks/{symbol}/recommendation/history")
@@ -872,6 +905,64 @@ def api_screener():
     result = {"phases": by_phase, "updated_at": datetime.now(timezone.utc).isoformat()}
     _screener_cache["data"] = result
     _screener_cache["ts"]   = now
+    return result
+
+
+_screener_stocks_cache: Dict = {"data": None, "ts": 0.0}
+_SCREENER_STOCKS_TTL = 20 * 60  # 20 minutes
+
+
+@app.get("/api/screener/stocks")
+def api_screener_stocks():
+    """
+    Screener multi-critères : retourne tous les titres avec fondamentaux + dernière reco.
+    Résultats mis en cache 20 min pour éviter 47 requêtes DB à chaque ouverture du screener.
+    """
+    now = time.time()
+    if _screener_stocks_cache["data"] is not None and (now - _screener_stocks_cache["ts"]) < _SCREENER_STOCKS_TTL:
+        return _screener_stocks_cache["data"]
+
+    stocks = db.get_all_stocks()
+    rows   = []
+    for s in stocks:
+        sym    = s["symbol"]
+        latest = db.get_latest_price(sym)
+        fund   = db.get_fundamental(sym)
+        fund_n = _apply_net_dividend(fund, s.get("country"))
+        # PBR
+        if fund_n and latest and latest.get("close") and fund_n.get("book_value"):
+            bv = fund_n["book_value"]
+            if bv and bv > 0:
+                fund_n["pbr"] = round(latest["close"] / bv, 2)
+        # Dernière recommandation (historique)
+        reco_hist = db.get_recommendation_history(sym, 3)
+        last_reco = reco_hist[-1] if reco_hist else None
+        rows.append({
+            "symbol":      sym,
+            "name":        s.get("name", ""),
+            "sector":      s.get("sector", ""),
+            "country":     s.get("country", ""),
+            "close":       latest.get("close") if latest else None,
+            "variation_pct": latest.get("variation_pct") if latest else None,
+            "market_cap":  latest.get("market_cap") if latest else None,
+            "per":         fund_n.get("per") if fund_n else None,
+            "eps":         fund_n.get("eps") if fund_n else None,
+            "book_value":  fund_n.get("book_value") if fund_n else None,
+            "pbr":         fund_n.get("pbr") if fund_n else None,
+            "div_yield_gross": fund_n.get("dividend_yield_gross") if fund_n else None,
+            "div_yield_net":   fund_n.get("dividend_yield_net") if fund_n else None,
+            "dps_net":     fund_n.get("dividend_per_share_net") if fund_n else None,
+            "div_status":  fund_n.get("div_status") if fund_n else None,
+            "recommendation": last_reco.get("recommendation") if last_reco else None,
+            "score":       last_reco.get("score") if last_reco else None,
+            "score_tech":  last_reco.get("score_technique") if last_reco else None,
+            "score_fund":  last_reco.get("score_fondamentale") if last_reco else None,
+            "reco_date":   last_reco.get("date") if last_reco else None,
+        })
+
+    result = {"stocks": rows, "count": len(rows), "updated_at": datetime.now(timezone.utc).isoformat()}
+    _screener_stocks_cache["data"] = result
+    _screener_stocks_cache["ts"]   = now
     return result
 
 
@@ -1038,6 +1129,7 @@ def api_price_manual(symbol: str, body: dict):
     })
     _sentiment_cache["data"] = None
     _screener_cache["data"] = None
+    _screener_stocks_cache["data"] = None
     return {"symbol": symbol, "date": target_date, "close": close,
             "variation_pct": variation_pct, "source": "MANUEL"}
 
@@ -1050,6 +1142,7 @@ def api_price_manual_delete(symbol: str, date: Optional[str] = None):
     db.delete_manual_price(symbol, target_date)
     _sentiment_cache["data"] = None
     _screener_cache["data"] = None
+    _screener_stocks_cache["data"] = None
     return {"ok": True, "symbol": symbol, "date": target_date}
 
 

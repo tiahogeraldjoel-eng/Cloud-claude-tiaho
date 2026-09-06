@@ -71,6 +71,7 @@ function switchTab(name) {
   }
   if(name==='calendar') loadCalendarTab();
   if(name==='trends') loadScreener();
+  if(name==='screener') loadScreenerStocks();
 }
 
 // ─── HORLOGE MARCHÉ (BRVM = UTC+0 / GMT, séance 09h00-15h30) ─────────────────
@@ -1828,7 +1829,20 @@ function renderFundamental(d, reco) {
       <div class="fund-metric"><div class="label">Volume</div><div class="value">${fmtB(latest?.volume)}</div><div class="sub">Titres</div></div>
       <div class="fund-metric"><div class="label">Plus haut 52 sem.</div><div class="value text-green-400">${fmt(hw?.high_52w,0)||'—'}</div></div>
       <div class="fund-metric"><div class="label">Plus bas 52 sem.</div><div class="value text-red-400">${fmt(hw?.low_52w,0)||'—'}</div></div>
+      ${f?.per ? `<div class="fund-metric"><div class="label">P/E Ratio</div><div class="value">${fmt(f.per,1)}×</div><div class="sub">Norme BRVM 9–12×</div></div>` : ''}
+      ${f?.eps ? `<div class="fund-metric"><div class="label">BPA (EPS)</div><div class="value">${fmt(f.eps,0)}</div><div class="sub">FCFA/action</div></div>` : ''}
+      ${f?.pbr ? `<div class="fund-metric ${f.pbr*((f.per||10))<22?'border-green-700':'border-orange-700'}" style="border-width:1px">
+        <div class="label">PBR (Prix/Valeur comptable)</div>
+        <div class="value">${fmt(f.pbr,2)}×</div>
+        <div class="sub ${f.pbr*((f.per||10))<22?'text-green-400':'text-orange-400'}">
+          Graham PBR×PER = ${fmt(f.pbr*(f.per||10),1)} ${f.pbr*(f.per||10)<22?'✓ < 22':'⚠ > 22'}
+        </div>
+      </div>` : ''}
+      ${f?.book_value ? `<div class="fund-metric"><div class="label">Valeur comptable/action</div><div class="value">${fmt(f.book_value,0)}</div><div class="sub">FCFA/action</div></div>` : ''}
     </div>
+
+    <!-- Historique des dividendes -->
+    <div id="fund-div-history" class="mb-5"></div>
 
     <!-- Performances -->
     <div class="bg-card rounded-xl border border-border p-5 mb-5">
@@ -1893,8 +1907,155 @@ function renderFundamental(d, reco) {
     .then(h => renderRecoHistory('fund-reco-history', h.history||[]))
     .catch(()=>{});
 
+  // Historique des dividendes
+  api(`/api/stocks/${stock.symbol}/dividend-history`)
+    .then(h => renderDividendHistory('fund-div-history', h.history||[], stock.symbol))
+    .catch(()=>{});
+
   // Afficher le bouton d'export PDF
   document.getElementById('pdf-export-section-fund')?.classList.remove('hidden');
+}
+
+function renderDividendHistory(containerId, history, symbol) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!history || !history.length) {
+    el.innerHTML = '';
+    return;
+  }
+  const rows = history.map(h => {
+    const yieldNet = h.yield_net != null ? `${fmt(h.yield_net,2)}%` : '—';
+    const yieldGross = h.yield_gross != null ? `${fmt(h.yield_gross,2)}%` : '—';
+    const dpsNet = h.dps_net != null ? `${fmt(h.dps_net,0)} FCFA` : '—';
+    const dpsGross = h.dps_gross != null ? `${fmt(h.dps_gross,0)} FCFA` : '—';
+    const statusColors = {officiel:'text-green-400',annoncé:'text-yellow-400',payé:'text-blue-400',historique:'text-slate-400'};
+    const stColor = statusColors[h.status] || 'text-slate-400';
+    return `<tr class="border-b border-slate-700/40 hover:bg-slate-800/30">
+      <td class="py-2 px-3 font-semibold text-slate-200">${h.year}</td>
+      <td class="py-2 px-3 text-slate-300">${dpsNet} <span class="text-slate-500 text-xs">/ brut ${dpsGross}</span></td>
+      <td class="py-2 px-3 text-green-300 font-medium">${yieldNet}</td>
+      <td class="py-2 px-3 text-slate-400 text-xs">${yieldGross}</td>
+      <td class="py-2 px-3 text-xs ${stColor}">${h.status||'—'}</td>
+      <td class="py-2 px-3 text-xs text-slate-500">${h.payment_date||'—'}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="bg-card rounded-xl border border-border p-5">
+      <h3 class="font-semibold text-slate-200 text-sm mb-4">Historique des Dividendes — ${symbol}</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-xs text-slate-500 border-b border-slate-700">
+              <th class="py-2 px-3 text-left">Exercice</th>
+              <th class="py-2 px-3 text-left">DPS net / brut</th>
+              <th class="py-2 px-3 text-left">Rdt net</th>
+              <th class="py-2 px-3 text-left">Rdt brut</th>
+              <th class="py-2 px-3 text-left">Statut</th>
+              <th class="py-2 px-3 text-left">Paiement</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <p class="text-xs text-slate-500 mt-3">Sources : sikafinance.com · BOC BRVM. Rendements calculés sur le cours du jour.</p>
+    </div>`;
+}
+
+// ─── SCREENER MULTI-CRITÈRES ──────────────────────────────────────────────────
+
+let _screenerData = null;
+let _screenerFilters = { reco: '', minYield: '', maxPER: '', sector: '', sortCol: 'div_yield_net', sortDir: -1 };
+
+async function loadScreenerStocks() {
+  const el = document.getElementById('screener-content');
+  if (!el) return;
+  el.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm">Chargement du screener...</div>`;
+  try {
+    const d = await api('/api/screener/stocks');
+    _screenerData = d.stocks || [];
+    renderScreenerTable();
+    setText('screener-updated', `Mise à jour : ${new Date(d.updated_at).toLocaleString('fr-FR')}`);
+  } catch(e) {
+    el.innerHTML = `<div class="text-center py-10 text-red-400 text-sm">Erreur : ${e.message}</div>`;
+  }
+}
+
+function applyScreenerFilters() {
+  _screenerFilters.reco      = document.getElementById('scr-reco')?.value || '';
+  _screenerFilters.minYield  = parseFloat(document.getElementById('scr-yield')?.value) || 0;
+  _screenerFilters.maxPER    = parseFloat(document.getElementById('scr-per')?.value) || 999;
+  _screenerFilters.sector    = document.getElementById('scr-sector')?.value || '';
+  renderScreenerTable();
+}
+
+function screenerSort(col) {
+  if (_screenerFilters.sortCol === col) _screenerFilters.sortDir *= -1;
+  else { _screenerFilters.sortCol = col; _screenerFilters.sortDir = -1; }
+  renderScreenerTable();
+}
+
+function renderScreenerTable() {
+  const el = document.getElementById('screener-content');
+  if (!el || !_screenerData) return;
+  const { reco, minYield, maxPER, sector, sortCol, sortDir } = _screenerFilters;
+  let rows = _screenerData.filter(s => {
+    if (reco && s.recommendation !== reco) return false;
+    if (minYield > 0 && (s.div_yield_net == null || s.div_yield_net < minYield)) return false;
+    if (maxPER < 999 && (s.per == null || s.per > maxPER)) return false;
+    if (sector && s.sector !== sector) return false;
+    return true;
+  });
+  rows.sort((a, b) => {
+    const va = a[sortCol] ?? (sortDir > 0 ? -Infinity : Infinity);
+    const vb = b[sortCol] ?? (sortDir > 0 ? -Infinity : Infinity);
+    return (va < vb ? -1 : va > vb ? 1 : 0) * sortDir;
+  });
+  const recoColors = {ACHAT:'text-green-400',ACCUMULER:'text-emerald-400',NEUTRE:'text-yellow-400',ALLÉGER:'text-orange-400',VENTE:'text-red-400'};
+  const th = (col, label) => {
+    const active = sortCol === col;
+    const arrow = active ? (sortDir > 0 ? ' ↑' : ' ↓') : '';
+    return `<th class="py-2 px-3 text-left cursor-pointer hover:text-slate-200 select-none ${active?'text-indigo-400':'text-slate-500'}" onclick="screenerSort('${col}')">${label}${arrow}</th>`;
+  };
+  const trs = rows.map(s => {
+    const rColor = recoColors[s.recommendation] || 'text-slate-400';
+    const divY = s.div_yield_net != null ? `<span class="text-green-400 font-medium">${fmt(s.div_yield_net,2)}%</span>` : '<span class="text-slate-600">—</span>';
+    const per  = s.per != null ? `${fmt(s.per,1)}×` : '—';
+    const pbr  = s.pbr != null ? `${fmt(s.pbr,2)}×` : '—';
+    const graham = (s.pbr && s.per) ? (s.pbr*s.per < 22 ? `<span class="text-green-500 text-xs">✓</span>` : `<span class="text-orange-400 text-xs">⚠</span>`) : '';
+    return `<tr class="border-b border-slate-700/30 hover:bg-slate-800/40 cursor-pointer" onclick="openFund('${s.symbol}')">
+      <td class="py-2 px-3 font-semibold text-slate-200">${s.symbol}</td>
+      <td class="py-2 px-3 text-xs text-slate-400 max-w-[140px] truncate">${s.name||''}</td>
+      <td class="py-2 px-3 text-xs text-indigo-300">${s.sector||'—'}</td>
+      <td class="py-2 px-3 font-medium text-slate-200">${s.close!=null?fmt(s.close,0)+' F':'—'}</td>
+      <td class="py-2 px-3 ${vClass(s.variation_pct)}">${fmtP(s.variation_pct)}</td>
+      <td class="py-2 px-3">${divY}</td>
+      <td class="py-2 px-3 text-slate-300">${per}</td>
+      <td class="py-2 px-3 text-slate-300">${pbr} ${graham}</td>
+      <td class="py-2 px-3 font-semibold ${rColor}">${s.recommendation||'—'}</td>
+      <td class="py-2 px-3 text-xs text-slate-500">${s.reco_date||'—'}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-xs">
+          <tr class="border-b border-slate-600">
+            ${th('symbol','Ticker')}
+            <th class="py-2 px-3 text-left text-slate-500">Nom</th>
+            <th class="py-2 px-3 text-left text-slate-500">Secteur</th>
+            ${th('close','Cours')}
+            ${th('variation_pct','Var.')}
+            ${th('div_yield_net','Rdt Net')}
+            ${th('per','P/E')}
+            ${th('pbr','PBR')}
+            ${th('recommendation','Reco')}
+            <th class="py-2 px-3 text-left text-slate-500">Date reco</th>
+          </tr>
+        </thead>
+        <tbody>${trs || '<tr><td colspan="10" class="py-6 text-center text-slate-500">Aucun titre ne correspond aux filtres.</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="mt-3 text-xs text-slate-500">${rows.length} titre${rows.length>1?'s':''} sur ${_screenerData.length} · Cliquer sur un titre pour l'analyse fondamentale</div>`;
 }
 
 async function saveFund(sym) {

@@ -1137,6 +1137,18 @@ def compute_recommendation(
             "positive": per_pos,
         })
 
+    # ── PBR + Critère Graham PBR×PER < 22 ────────────────────────────────────
+    pbr = (fundamentals.get("pbr") if fundamentals else None)
+    if pbr and pbr > 0 and per and per > 0:
+        graham_val = pbr * per
+        graham_ok  = graham_val < 22
+        graham_txt = f"✓ Graham OK (< 22)" if graham_ok else f"⚠ Graham tendu (> 22)"
+        key_factors.append({
+            "type": "valorisation",
+            "text": f"📚 PBR : {pbr:.2f}× · PBR×PER = {graham_val:.1f} — {graham_txt}",
+            "positive": graham_ok,
+        })
+
     # ── Rendement Total Annualisé ─────────────────────────────────────────────
     # Rendement Total = Perf cours 1 an + Dividende — la métrique BRVM la plus
     # pertinente pour comparer le placement vs obligations UEMOA (~6–7%)

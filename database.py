@@ -214,9 +214,25 @@ def init_db() -> None:
             FOREIGN KEY (symbol) REFERENCES stocks(symbol)
         );
 
+        CREATE TABLE IF NOT EXISTS dividend_history (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol          TEXT NOT NULL,
+            year            INTEGER NOT NULL,
+            dps_gross       REAL,
+            dps_net         REAL,
+            yield_gross     REAL,
+            yield_net       REAL,
+            payment_date    TEXT,
+            status          TEXT DEFAULT 'officiel',
+            created_at      TEXT DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(symbol, year),
+            FOREIGN KEY (symbol) REFERENCES stocks(symbol)
+        );
+
         CREATE INDEX IF NOT EXISTS idx_alerts_symbol ON price_alerts(symbol, is_active);
         CREATE INDEX IF NOT EXISTS idx_ago_date      ON ago_events(event_date);
         CREATE INDEX IF NOT EXISTS idx_reco_hist_sym ON recommendation_history(symbol, date);
+        CREATE INDEX IF NOT EXISTS idx_div_hist_sym  ON dividend_history(symbol, year);
     """)
     # ── Migration 1 : ajouter colonne dividend_per_share si absente ──────────
     try:
@@ -848,6 +864,36 @@ def save_recommendation_history(symbol: str, date_str: str, reco: Dict) -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+def save_dividend_history(data: Dict) -> None:
+    """Sauvegarde ou met à jour une entrée dans l'historique des dividendes."""
+    conn = get_connection()
+    conn.execute("""
+        INSERT INTO dividend_history (symbol, year, dps_gross, dps_net, yield_gross, yield_net, payment_date, status)
+        VALUES (:symbol, :year, :dps_gross, :dps_net, :yield_gross, :yield_net, :payment_date, :status)
+        ON CONFLICT(symbol, year) DO UPDATE SET
+            dps_gross    = excluded.dps_gross,
+            dps_net      = excluded.dps_net,
+            yield_gross  = excluded.yield_gross,
+            yield_net    = excluded.yield_net,
+            payment_date = excluded.payment_date,
+            status       = excluded.status
+    """, data)
+    conn.commit()
+    conn.close()
+
+
+def get_dividend_history(symbol: str, years: int = 10) -> List[Dict]:
+    """Retourne l'historique des dividendes par exercice fiscal, ordre décroissant."""
+    conn = get_connection()
+    rows = conn.execute(
+        """SELECT year, dps_gross, dps_net, yield_gross, yield_net, payment_date, status
+           FROM dividend_history WHERE symbol=? ORDER BY year DESC LIMIT ?""",
+        (symbol.upper(), years)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 def get_recommendation_history(symbol: str, days: int = 90) -> List[Dict]:

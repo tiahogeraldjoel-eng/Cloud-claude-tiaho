@@ -161,6 +161,13 @@
         </svg>
         <span class="tab-label">Tendances du Marché</span>
       </button>
+      <button class="tab-btn" data-tab="screener" onclick="switchTab('screener')">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
+        </svg>
+        <span class="tab-label">Screener</span>
+      </button>
     </div>
   </div>
 </nav>
@@ -924,6 +931,66 @@
       <div class="text-center py-10 text-slate-500 text-sm">Chargement…</div>
     </div>
   </div><!-- /tab-trends -->
+
+  <!-- ────────────────── SCREENER MULTI-CRITÈRES ────────────────── -->
+  <div id="tab-screener" class="tab-content hidden">
+    <div class="bg-card rounded-xl border border-border p-6 mb-5">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="text-2xl">🔍</span>
+        <div>
+          <h3 class="text-base font-semibold text-slate-200">Screener — 47 valeurs BRVM</h3>
+          <p class="text-xs text-slate-400">Filtrez et triez toutes les valeurs BRVM par recommandation, rendement, PER, PBR (critère Graham), secteur.</p>
+        </div>
+      </div>
+      <!-- Filtres -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Recommandation</label>
+          <select id="scr-reco" onchange="applyScreenerFilters()"
+            class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="">Toutes</option>
+            <option value="ACHAT">ACHAT</option>
+            <option value="ACCUMULER">ACCUMULER</option>
+            <option value="NEUTRE">NEUTRE</option>
+            <option value="ALLÉGER">ALLÉGER</option>
+            <option value="VENTE">VENTE</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Rendement net min. (%)</label>
+          <input type="number" id="scr-yield" min="0" max="20" step="0.5" placeholder="ex: 3" oninput="applyScreenerFilters()"
+            class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"/>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">P/E max</label>
+          <input type="number" id="scr-per" min="0" max="100" step="1" placeholder="ex: 12" oninput="applyScreenerFilters()"
+            class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"/>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Secteur</label>
+          <select id="scr-sector" onchange="applyScreenerFilters()"
+            class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="">Tous</option>
+            <option value="Finance">Finance</option>
+            <option value="Télécommunications">Télécommunications</option>
+            <option value="Industrie">Industrie</option>
+            <option value="Agriculture">Agriculture</option>
+            <option value="Distribution Pétrolière">Distribution Pétrolière</option>
+            <option value="Énergie">Énergie</option>
+            <option value="Services Publics">Services Publics</option>
+            <option value="Transport">Transport</option>
+            <option value="Services">Services</option>
+          </select>
+        </div>
+      </div>
+      <div id="screener-updated" class="text-xs text-slate-500 mt-2"></div>
+    </div>
+    <div class="bg-card rounded-xl border border-border p-4">
+      <div id="screener-content" class="space-y-3">
+        <div class="text-center py-10 text-slate-500 text-sm">Chargement…</div>
+      </div>
+    </div>
+  </div><!-- /tab-screener -->
 
 </main>
 
