@@ -1197,6 +1197,43 @@ function renderRecommendationBox(containerId, reco) {
           <div class="mt-2 text-xs text-slate-500 italic">${fv.interpretation||''}</div>
         </div>`;
       })() : ''}
+      <!-- Force Relative vs BRVM Composite -->
+      ${(()=>{
+        const fr = reco.force_relative;
+        if(!fr || fr.vs_1y == null) return '';
+        const v1y = fr.vs_1y, v6m = fr.vs_6m, v3m = fr.vs_3m;
+        const color1y = v1y >= 5 ? '#22c55e' : v1y >= 0 ? '#84cc16' : v1y >= -5 ? '#f97316' : '#ef4444';
+        const liq = reco.liquidity;
+        const liqColor = {'Élevée':'#22c55e','Modérée':'#84cc16','Faible':'#f97316','Très faible':'#ef4444'}[liq?.level] || '#64748b';
+        return `<div class="mt-4 rounded-lg border border-slate-700/60 bg-slate-900/40 p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-sm">📈</span>
+            <span class="text-xs font-semibold text-slate-300">Performance relative & liquidité</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <div class="bg-slate-800/60 rounded-lg p-2.5 text-center">
+              <div class="text-slate-400 mb-1">Force Relative 1 an</div>
+              <div class="text-lg font-black" style="color:${color1y}">${v1y>=0?'+':''}${v1y.toFixed(1)}%</div>
+              <div class="text-slate-500 text-xs mt-0.5">vs BRVM Composite</div>
+            </div>
+            ${v6m!=null?`<div class="bg-slate-800/60 rounded-lg p-2.5 text-center">
+              <div class="text-slate-400 mb-1">Force Relative 6 mois</div>
+              <div class="text-base font-bold ${v6m>=0?'text-green-400':'text-red-400'}">${v6m>=0?'+':''}${v6m.toFixed(1)}%</div>
+              <div class="text-slate-500 text-xs mt-0.5">vs BRVM Composite</div>
+            </div>`:''}
+            ${v3m!=null?`<div class="bg-slate-800/60 rounded-lg p-2.5 text-center">
+              <div class="text-slate-400 mb-1">Force Relative 3 mois</div>
+              <div class="text-base font-bold ${v3m>=0?'text-green-400':'text-red-400'}">${v3m>=0?'+':''}${v3m.toFixed(1)}%</div>
+              <div class="text-slate-500 text-xs mt-0.5">vs BRVM Composite</div>
+            </div>`:''}
+            ${liq?`<div class="bg-slate-800/60 rounded-lg p-2.5 text-center">
+              <div class="text-slate-400 mb-1">Liquidité</div>
+              <div class="text-base font-bold" style="color:${liqColor}">${liq.level}</div>
+              <div class="text-slate-500 text-xs mt-0.5">${liq.avg_vol_30d!=null?fmtB(liq.avg_vol_30d)+' titres/j':''}</div>
+            </div>`:''}
+          </div>
+        </div>`;
+      })()}
       <!-- Saisonnalité enrichie -->
       ${(()=>{
         const sea = reco.seasonality;
@@ -1218,9 +1255,9 @@ function renderRecommendationBox(containerId, reco) {
             <div class="h-16 bg-slate-800/40 rounded"></div>
             <div class="text-xs text-slate-600 mt-1">${m.label.slice(0,4)}</div>
           </div>`;
-          const pos  = m.pct_positive || 50;
+          const pos  = m.pct_positive ?? 50;
           const conf = m.confidence || 0;
-          const avg  = m.avg_return || 0;
+          const avg  = m.avg_return ?? 0;
           const confBadge = conf>=60?'🔵':conf>=40?'🟡':conf>=20?'⚫':'';
           const sharpeStr = m.sharpe ? ` | Sh:${m.sharpe>0?'+':''}${m.sharpe.toFixed(2)}` : '';
           return `<div class="text-center ${isCur?'ring-2 ring-indigo-400 rounded':''} cursor-default group relative">
@@ -1240,8 +1277,8 @@ function renderRecommendationBox(containerId, reco) {
           <div class="mt-4 grid grid-cols-4 gap-2">
             ${quarts.map(q=>{
               if(!q.n) return `<div class="bg-slate-800/30 rounded p-2 text-center text-xs text-slate-600">${q.label}<br>—</div>`;
-              const pos = q.pct_positive || 50;
-              const avg = q.avg_return || 0;
+              const pos = q.pct_positive ?? 50;
+              const avg = q.avg_return ?? 0;
               const conf = q.confidence || 0;
               return `<div class="rounded p-2 text-center ${conf>=40?(avg>=0?'bg-green-900/30 border border-green-700/40':'bg-red-900/30 border border-red-700/40'):'bg-slate-800/40 border border-slate-700/40'}">
                 <div class="text-xs font-semibold text-slate-300">${q.label}</div>
@@ -1253,7 +1290,8 @@ function renderRecommendationBox(containerId, reco) {
           </div>` : '';
 
         // ── Rendements annuels ──
-        const annKeys = Object.keys(annuals).map(Number).sort();
+        const annKeys    = Object.keys(annuals).map(Number).sort();
+        const partialSet = new Set(sea.partial_years || []);
         let annBars = '';
         if(annKeys.length >= 2) {
           const annVals = annKeys.map(y=>annuals[y]);
@@ -1261,21 +1299,23 @@ function renderRecommendationBox(containerId, reco) {
           const BAR_H   = 48;
           annBars = `
           <div class="mt-4">
-            <div class="text-xs text-slate-400 mb-2">Rendement annuel (cours fin décembre)</div>
-            <div class="flex items-end gap-1 overflow-x-auto pb-1" style="height:${BAR_H*2+20}px">
+            <div class="text-xs text-slate-400 mb-2">Rendement annuel (cours fin décembre) <span class="text-slate-600">· * = mesure janv.→déc. (partielle)</span></div>
+            <div class="flex items-end gap-1 overflow-x-auto pb-1" style="height:${BAR_H*2+28}px">
               ${annKeys.map((yr,i)=>{
-                const v = annuals[yr];
-                const h = Math.round(Math.abs(v)/maxAbs*BAR_H);
-                return `<div class="flex flex-col items-center shrink-0 cursor-default" title="${yr} : ${v>=0?'+':''}${v.toFixed(1)}%">
+                const v        = annuals[yr];
+                const partial  = partialSet.has(yr);
+                const h        = Math.round(Math.abs(v)/maxAbs*BAR_H);
+                const tooltip  = `${yr}${partial?' (partielle)':''} : ${v>=0?'+':''}${v.toFixed(1)}%${partial?' — mesure janv.→déc.':''}`;
+                return `<div class="flex flex-col items-center shrink-0 cursor-default" title="${tooltip}">
                   ${v>=0?`<div style="height:${BAR_H}px" class="flex flex-col justify-end w-6">
-                    <div style="height:${h}px;background:#22c55e99" class="rounded-t w-full"></div>
+                    <div style="height:${h}px;background:${partial?'#22c55e55':'#22c55e99'}" class="rounded-t w-full"></div>
                   </div>
                   <div style="height:${BAR_H}px" class="w-6"></div>`
                   :`<div style="height:${BAR_H}px" class="w-6"></div>
                   <div style="height:${BAR_H}px" class="flex flex-col justify-start w-6">
-                    <div style="height:${h}px;background:#ef444499" class="rounded-b w-full"></div>
+                    <div style="height:${h}px;background:${partial?'#ef444455':'#ef444499'}" class="rounded-b w-full"></div>
                   </div>`}
-                  <div class="text-xs text-slate-500 mt-0.5" style="font-size:9px">${yr}</div>
+                  <div class="text-xs text-slate-500 mt-0.5" style="font-size:9px">${yr}${partial?'*':''}</div>
                   <div class="text-xs font-bold ${v>=0?'text-green-400':'text-red-400'}" style="font-size:9px">${v>=0?'+':''}${v.toFixed(0)}%</div>
                 </div>`;
               }).join('')}
@@ -1290,8 +1330,8 @@ function renderRecommendationBox(containerId, reco) {
             <div class="flex gap-2">
               ${next3.map(m=>{
                 const conf = m.confidence || 0;
-                const pos  = m.pct_positive || 50;
-                const avg  = m.avg_return || 0;
+                const pos  = m.pct_positive ?? 50;
+                const avg  = m.avg_return ?? 0;
                 const color = conf>=40?(avg>=0?'#22c55e':'#ef4444'):'#64748b';
                 const bg    = conf>=40?(avg>=0?'bg-green-900/30':'bg-red-900/30'):'bg-slate-800/40';
                 return `<div class="flex-1 rounded-lg p-2.5 text-center ${bg} border border-slate-700/40">
@@ -1617,6 +1657,16 @@ async function loadFundamental(symbol) {
 
     renderFundamental(fundD, recoD);
     renderFundDiv2025Context(symbol, divD.dividends||[]);
+
+    // Alerte cours stale (> 5 jours calendaires sans mise à jour)
+    const lastDate = new Date(fundD.latest?.date || 0);
+    const staleDays = Math.floor((Date.now() - lastDate.getTime()) / 86400000);
+    if(staleDays > 5 && fundD.latest?.date) {
+      const staleEl = document.createElement('div');
+      staleEl.className = 'mb-4 px-4 py-3 rounded-xl border border-yellow-700/50 bg-yellow-900/20 text-yellow-300 text-xs flex items-center gap-2';
+      staleEl.innerHTML = `⚠️ Derniers cours datent de ${staleDays} jours (${fundD.latest.date}). Les indicateurs techniques et le sentiment peuvent être décalés.`;
+      document.getElementById('fundamental-content')?.prepend(staleEl);
+    }
   } catch(e) {
     setHTML('fundamental-content',`<div class="text-center py-10 text-red-400">Erreur: ${e.message}</div>`);
   }

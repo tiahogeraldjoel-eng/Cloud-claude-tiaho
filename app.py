@@ -300,6 +300,7 @@ def _snapshot_all_recommendations():
     stocks = db.get_all_stocks()
     saved = 0
     sentiment = _get_sentiment_data()
+    brvm_series = db.get_brvm_composite_series(400)
     for stock in stocks:
         sym = stock["symbol"]
         try:
@@ -320,6 +321,7 @@ def _snapshot_all_recommendations():
                 sentiment=sentiment,
                 latest=latest,
                 symbol=sym,
+                brvm_series=brvm_series,
             )
             db.save_recommendation_history(sym, today, result)
             saved += 1
@@ -686,6 +688,7 @@ def api_recommendation(symbol: str, profil: str = "mixte"):
     fund_net   = _apply_net_dividend(fund, country)
     sentiment  = _get_sentiment_data()
 
+    brvm_series = db.get_brvm_composite_series(400)
     result = rec.compute_recommendation(
         prices=prices or [],
         fundamentals=fund_net,
@@ -695,6 +698,7 @@ def api_recommendation(symbol: str, profil: str = "mixte"):
         latest=latest,
         symbol=sym,
         profil=profil,
+        brvm_series=brvm_series,
     )
     result["symbol"]   = sym
     result["computed"] = datetime.now(timezone.utc).isoformat()
@@ -1154,8 +1158,10 @@ def export_stock_pdf(symbol: str):
     # Données dérivées complètes (performances, volatilité, 52-sem…)
     derived = ind.compute_derived_fundamental(prices) if len(prices) >= 2 else {}
 
-    sentiment = _get_sentiment_data()
-    reco = rec.compute_recommendation(prices, fund_net, derived, hw or {}, sentiment, latest, symbol=symbol)
+    sentiment   = _get_sentiment_data()
+    brvm_series = db.get_brvm_composite_series(400)
+    reco = rec.compute_recommendation(prices, fund_net, derived, hw or {}, sentiment, latest,
+                                      symbol=symbol, brvm_series=brvm_series)
 
     # Générer le PDF
     pdf_bytes = pdf_gen.generate_stock_report(

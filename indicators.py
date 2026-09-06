@@ -1021,6 +1021,35 @@ def compute_derived_fundamental(prices: List[Dict]) -> Dict:
     }
 
 
+# ─── Score de liquidité ──────────────────────────────────────────────────────
+
+def compute_liquidity_score(prices: List[Dict]) -> Dict:
+    """
+    Classifie la liquidité d'un titre BRVM d'après le volume moyen quotidien
+    sur les 30 dernières séances.
+
+    Seuils calibrés BRVM (marché peu liquide globalement) :
+      Élevée     : vol. moy. >= 10 000 titres/j  → titre phare (Sonatel, BOA, etc.)
+      Modérée    : vol. moy. >= 2 000             → liquidité acceptable
+      Faible     : vol. moy. >= 300               → rotation lente, prix d'impact élevé
+      Très faible: vol. moy. <  300               → risque exécution fort
+    """
+    if not prices:
+        return {"level": "N/D", "score": 0, "avg_vol_30d": None}
+    recent = prices[-min(30, len(prices)):]
+    vols   = [p.get("volume") or 0 for p in recent]
+    avg    = round(sum(vols) / len(vols)) if vols else 0
+    if avg >= 10_000:
+        level, score = "Élevée", 90
+    elif avg >= 2_000:
+        level, score = "Modérée", 60
+    elif avg >= 300:
+        level, score = "Faible", 30
+    else:
+        level, score = "Très faible", 10
+    return {"level": level, "score": score, "avg_vol_30d": avg}
+
+
 # ─── Saisonnalité mensuelle ───────────────────────────────────────────────────
 
 _MONTH_LABELS = ["Janv.", "Févr.", "Mars", "Avril", "Mai", "Juin",
@@ -1161,16 +1190,18 @@ def compute_seasonality(prices: List[Dict]) -> Dict:
 
     # ── 5. Rendements annuels ─────────────────────────────────────────────────
     annual_returns: Dict[int, float] = {}
+    partial_years: list = []   # années calculées Jan→Déc (pas Déc(n-1)→Déc(n))
     all_years = set(y for (y, _) in monthly_close.keys())
     for yr in sorted(all_years):
         # Cours fin décembre de l'année précédente → fin décembre de cette année
         prev_dec = monthly_close.get((yr - 1, 12))
         this_dec = monthly_close.get((yr, 12))
-        # Fallback : cours de janvier si décembre indisponible
+        # Fallback : cours de janvier si décembre indisponible (mesure partielle)
         if prev_dec is None:
             this_jan = monthly_close.get((yr, 1))
             if this_jan and this_dec:
                 annual_returns[yr] = round((this_dec / this_jan - 1) * 100, 2)
+                partial_years.append(yr)
         elif this_dec:
             annual_returns[yr] = round((this_dec / prev_dec - 1) * 100, 2)
 
@@ -1202,6 +1233,7 @@ def compute_seasonality(prices: List[Dict]) -> Dict:
         "months":         months,
         "quarters":       quarters,
         "annual_returns": annual_returns,
+        "partial_years":  partial_years,
         "next_3m":        next_3m,
         "coverage_years": years_covered,
         "best_month":     best_month,

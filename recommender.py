@@ -17,7 +17,7 @@ Axes d'analyse :
 
 from typing import List, Dict, Optional
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 import indicators as ind
 
 
@@ -954,6 +954,44 @@ PROFIL_LABELS = {
     "mixte":      "Mixte — équilibré",
 }
 
+def _compute_force_relative(prices: List[Dict], brvm_series: List[Dict]) -> Optional[Dict]:
+    """
+    Force Relative = perf_stock - perf_BRVM_Composite sur 3m / 6m / 1y.
+    Valeur positive = surperformance vs l'indice, négative = sous-performance.
+    """
+    if not prices or not brvm_series:
+        return None
+    brvm_by_date = {r["date"]: r["brvm_composite"] for r in brvm_series
+                    if r.get("brvm_composite") and r.get("date")}
+    if not brvm_by_date:
+        return None
+    stock_by_date = {p["date"]: p["close"] for p in prices if p.get("close") and p.get("date")}
+    common = sorted(set(stock_by_date) & set(brvm_by_date))
+    if len(common) < 10:
+        return None
+    last = common[-1]
+    s_last = stock_by_date[last]
+    b_last = brvm_by_date[last]
+
+    def _fr(target_days: int) -> Optional[float]:
+        refs = [d for d in common
+                if (datetime.fromisoformat(last) - datetime.fromisoformat(d)).days >= target_days]
+        if not refs:
+            return None
+        ref = refs[-1]
+        s_ref = stock_by_date[ref]
+        b_ref = brvm_by_date[ref]
+        if not s_ref or not b_ref:
+            return None
+        return round((s_last / s_ref - 1) * 100 - (b_last / b_ref - 1) * 100, 2)
+
+    return {
+        "vs_3m": _fr(63),
+        "vs_6m": _fr(126),
+        "vs_1y": _fr(252),
+    }
+
+
 def compute_recommendation(
     prices:        List[Dict],
     fundamentals:  Optional[Dict],
@@ -963,6 +1001,7 @@ def compute_recommendation(
     latest:        Optional[Dict],
     symbol:        str = "",
     profil:        str = "mixte",
+    brvm_series:   Optional[List[Dict]] = None,
 ) -> Dict:
     """
     Calcule la recommandation finale en combinant 4 axes :
@@ -1036,7 +1075,8 @@ def compute_recommendation(
     if seasonality.get("months"):
         current_month_stats = seasonality["months"][datetime.now(timezone.utc).month - 1]
         conf    = current_month_stats.get("confidence", 0)
-        pct     = current_month_stats.get("pct_positive") or 50
+        pct     = current_month_stats.get("pct_positive")
+        pct     = 50 if pct is None else pct
         if conf >= 20:  # seuil minimal — n'agit que si confiance réelle
             direction = 1 if pct >= 50 else -1
             # Delta calibré : 8 pts max à confiance=100, ~3 pts à confiance=40
@@ -1079,11 +1119,38 @@ def compute_recommendation(
         })
 
     if per and per > 0:
-        emoji = "📉" if per < 8 else "📊" if per < 15 else "📈"
+        # Norme BRVM : PER médian ~9-11× (source : études SEKIDE / AFX / BOC BRVM)
+        if per < 7:
+            per_txt, per_emoji, per_pos = "fortement sous-évalué", "📉", True
+        elif per < 11:
+            per_txt, per_emoji, per_pos = "normal BRVM (norme 9–11×)", "📊", True
+        elif per < 18:
+            per_txt, per_emoji, per_pos = "légèrement sur-évalué", "📈", False
+        else:
+            per_txt, per_emoji, per_pos = "sur-évalué — prudence", "⚠️", False
         key_factors.append({
             "type": "valorisation",
-            "text": f"{emoji} P/E : {per:.1f}x ({'sous-évalué' if per < 8 else 'normal' if per < 15 else 'sur-évalué'})",
-            "positive": per < 12,
+            "text": f"{per_emoji} P/E : {per:.1f}× ({per_txt})",
+            "positive": per_pos,
+        })
+
+    # ── Rendement Total Annualisé ─────────────────────────────────────────────
+    # Rendement Total = Perf cours 1 an + Dividende — la métrique BRVM la plus
+    # pertinente pour comparer le placement vs obligations UEMOA (~6–7%)
+    perf_1y = derived.get("perf_1y") if derived else None
+    dy_val  = fund_result.get("dividend_yield") or 0
+    if perf_1y is not None:
+        rendement_total = round(perf_1y + dy_val, 1)
+        rt_vs_bonds = rendement_total - 6.5  # vs obligations UEMOA ~6.5%
+        if dy_val > 0:
+            rt_txt = f"Perf {perf_1y:+.1f}% + Div. {dy_val:.1f}% = {rendement_total:+.1f}% total sur 1 an"
+        else:
+            rt_txt = f"Perf cours 1 an : {perf_1y:+.1f}% (sans dividende)"
+        rt_vs_txt = f" · {rt_vs_bonds:+.1f}% vs obligations UEMOA" if dy_val > 0 else ""
+        key_factors.append({
+            "type": "rendement_total",
+            "text": f"📊 Rendement total : {rt_txt}{rt_vs_txt}",
+            "positive": rendement_total >= 6.5,
         })
 
     if tech_result["rsi_value"]:
@@ -1127,9 +1194,11 @@ def compute_recommendation(
     if current_month_stats and current_month_stats.get("n", 0) >= 3:
         cms  = current_month_stats
         conf = cms.get("confidence", 0)
-        pct  = cms.get("pct_positive") or 50
+        pct  = cms.get("pct_positive")
+        pct  = 50 if pct is None else pct
         n    = cms.get("n", 0)
-        avg  = cms.get("avg_return") or 0
+        avg  = cms.get("avg_return")
+        avg  = 0 if avg is None else avg
         sharpe = cms.get("sharpe")
         coverage = seasonality.get("coverage_years", n)
 
@@ -1228,6 +1297,33 @@ def compute_recommendation(
                 "positive": False,
             })
 
+    # ── Force Relative vs BRVM Composite ─────────────────────────────────────
+    force_relative = _compute_force_relative(prices, brvm_series)
+    if force_relative:
+        fr_1y = force_relative.get("vs_1y")
+        fr_6m = force_relative.get("vs_6m")
+        if fr_1y is not None:
+            fr_lbl = "surperforme" if fr_1y > 0 else "sous-performe"
+            emoji_fr = "🟢" if fr_1y >= 5 else "🟡" if fr_1y >= 0 else "🔴"
+            fr_6m_txt = f" · 6 mois : {fr_6m:+.1f}%" if fr_6m is not None else ""
+            key_factors.append({
+                "type": "force_relative",
+                "text": f"{emoji_fr} Force Relative : {fr_lbl} le BRVM Composite de {fr_1y:+.1f}% sur 1 an{fr_6m_txt}",
+                "positive": fr_1y >= 0,
+            })
+
+    # ── Score de liquidité ────────────────────────────────────────────────────
+    liquidity = ind.compute_liquidity_score(prices)
+    liq_level = liquidity.get("level", "N/D")
+    liq_avg   = liquidity.get("avg_vol_30d") or 0
+    liq_emoji = {"Élevée": "💧", "Modérée": "🔵", "Faible": "🟡", "Très faible": "🔴"}.get(liq_level, "ℹ️")
+    liq_pos   = liq_level in ("Élevée", "Modérée")
+    key_factors.append({
+        "type": "liquidite",
+        "text": f"{liq_emoji} Liquidité {liq_level} — vol. moy. 30j : {liq_avg:,.0f} titres/séance",
+        "positive": liq_pos,
+    })
+
     # ── Horizon & risque ──────────────────────────────────────────────────────
     horizon = "Court terme (1-3 mois)"
     if tech_result["data_points"] >= 200 and fund_score >= 60:
@@ -1318,13 +1414,16 @@ def compute_recommendation(
                 "points_neutre":    sekide_result["points_neutre"],
             },
         },
-        "sekide":      sekide_result,
-        "data_points": tech_result["data_points"],
-        "fair_value":  fv_data,
+        "sekide":         sekide_result,
+        "data_points":    tech_result["data_points"],
+        "fair_value":     fv_data,
+        "force_relative": force_relative,
+        "liquidity":      liquidity,
         "seasonality": {
             "months":         seasonality.get("months", []),
             "quarters":       seasonality.get("quarters", []),
             "annual_returns": seasonality.get("annual_returns", {}),
+            "partial_years":  seasonality.get("partial_years", []),
             "next_3m":        seasonality.get("next_3m", []),
             "coverage_years": seasonality.get("coverage_years", 0),
             "best_month":     seasonality.get("best_month"),

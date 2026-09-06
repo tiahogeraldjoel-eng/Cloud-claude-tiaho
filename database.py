@@ -501,6 +501,22 @@ def get_latest_market() -> Optional[Dict]:
     return dict(row) if row else None
 
 
+def get_brvm_composite_series(days: int = 400) -> List[Dict]:
+    """Retourne la série historique du BRVM Composite (pour calcul Force Relative)."""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """SELECT date, brvm_composite FROM market_data
+               WHERE brvm_composite IS NOT NULL
+               ORDER BY date ASC
+               LIMIT ?""",
+            (days,)
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
 # ─── Fundamentals ────────────────────────────────────────────────────────────
 
 def upsert_fundamental(data: Dict) -> None:
