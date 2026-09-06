@@ -2124,7 +2124,7 @@ function renderDividendHistory(containerId, history, symbol) {
 // ─── SCREENER MULTI-CRITÈRES ──────────────────────────────────────────────────
 
 let _screenerData = null;
-let _screenerFilters = { reco: '', minYield: '', maxPER: '', sector: '', sortCol: 'div_yield_net', sortDir: -1 };
+let _screenerFilters = { reco: '', minYield: '', maxPER: '', sector: '', liq: '', sortCol: 'div_yield_net', sortDir: -1 };
 
 async function loadScreenerStocks() {
   const el = document.getElementById('screener-content');
@@ -2145,6 +2145,7 @@ function applyScreenerFilters() {
   _screenerFilters.minYield  = parseFloat(document.getElementById('scr-yield')?.value) || 0;
   _screenerFilters.maxPER    = parseFloat(document.getElementById('scr-per')?.value) || 999;
   _screenerFilters.sector    = document.getElementById('scr-sector')?.value || '';
+  _screenerFilters.liq       = document.getElementById('scr-liq')?.value || '';
   renderScreenerTable();
 }
 
@@ -2157,12 +2158,16 @@ function screenerSort(col) {
 function renderScreenerTable() {
   const el = document.getElementById('screener-content');
   if (!el || !_screenerData) return;
-  const { reco, minYield, maxPER, sector, sortCol, sortDir } = _screenerFilters;
+  const { reco, minYield, maxPER, sector, liq, sortCol, sortDir } = _screenerFilters;
+  // Ordre de liquidité pour le filtre "minimum"
+  const LIQ_ORDER = {'Élevée':4,'Modérée':3,'Faible':2,'Très faible':1};
+  const minLiq = LIQ_ORDER[liq] || 0;
   let rows = _screenerData.filter(s => {
     if (reco && s.recommendation !== reco) return false;
     if (minYield > 0 && (s.div_yield_net == null || s.div_yield_net < minYield)) return false;
     if (maxPER < 999 && (s.per == null || s.per > maxPER)) return false;
     if (sector && s.sector !== sector) return false;
+    if (minLiq > 0 && (LIQ_ORDER[s.liq_level]||0) < minLiq) return false;
     return true;
   });
   rows.sort((a, b) => {

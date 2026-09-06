@@ -958,7 +958,7 @@
         </div>
       </div>
       <!-- Filtres -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 mt-4">
         <div>
           <label class="block text-xs text-slate-400 mb-1">Recommandation</label>
           <select id="scr-reco" onchange="applyScreenerFilters()"
@@ -995,6 +995,16 @@
             <option value="Services Publics">Services Publics</option>
             <option value="Transport">Transport</option>
             <option value="Services">Services</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Liquidité min.</label>
+          <select id="scr-liq" onchange="applyScreenerFilters()"
+            class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="">Toutes</option>
+            <option value="Faible">Faible +</option>
+            <option value="Modérée">Modérée +</option>
+            <option value="Élevée">Élevée</option>
           </select>
         </div>
       </div>
