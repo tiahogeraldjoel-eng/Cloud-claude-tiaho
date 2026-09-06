@@ -2096,6 +2096,7 @@ function renderScreenerTable() {
     return (va < vb ? -1 : va > vb ? 1 : 0) * sortDir;
   });
   const recoColors = {ACHAT:'text-green-400',ACCUMULER:'text-emerald-400',NEUTRE:'text-yellow-400',ALLÉGER:'text-orange-400',VENTE:'text-red-400'};
+  const liqColor = {'Élevée':'text-green-400','Modérée':'text-blue-400','Faible':'text-yellow-400','Très faible':'text-red-400'};
   const th = (col, label) => {
     const active = sortCol === col;
     const arrow = active ? (sortDir > 0 ? ' ↑' : ' ↓') : '';
@@ -2103,6 +2104,7 @@ function renderScreenerTable() {
   };
   const trs = rows.map(s => {
     const rColor = recoColors[s.recommendation] || 'text-slate-400';
+    const lColor = liqColor[s.liq_level] || 'text-slate-400';
     const divY = s.div_yield_net != null ? `<span class="text-green-400 font-medium">${fmt(s.div_yield_net,2)}%</span>` : '<span class="text-slate-600">—</span>';
     const per  = s.per != null ? `${fmt(s.per,1)}×` : '—';
     const pbr  = s.pbr != null ? `${fmt(s.pbr,2)}×` : '—';
@@ -2116,6 +2118,7 @@ function renderScreenerTable() {
       <td class="py-2 px-3">${divY}</td>
       <td class="py-2 px-3 text-slate-300">${per}</td>
       <td class="py-2 px-3 text-slate-300">${pbr} ${graham}</td>
+      <td class="py-2 px-3 text-xs font-medium ${lColor}">${s.liq_level||'—'}</td>
       <td class="py-2 px-3 font-semibold ${rColor}">${s.recommendation||'—'}</td>
       <td class="py-2 px-3 text-xs text-slate-500">${s.reco_date||'—'}</td>
     </tr>`;
@@ -2133,11 +2136,12 @@ function renderScreenerTable() {
             ${th('div_yield_net','Rdt Net')}
             ${th('per','P/E')}
             ${th('pbr','PBR')}
+            ${th('liq_level','Liq.')}
             ${th('recommendation','Reco')}
             <th class="py-2 px-3 text-left text-slate-500">Date reco</th>
           </tr>
         </thead>
-        <tbody>${trs || '<tr><td colspan="10" class="py-6 text-center text-slate-500">Aucun titre ne correspond aux filtres.</td></tr>'}</tbody>
+        <tbody>${trs || '<tr><td colspan="11" class="py-6 text-center text-slate-500">Aucun titre ne correspond aux filtres.</td></tr>'}</tbody>
       </table>
     </div>
     <div class="mt-3 text-xs text-slate-500">${rows.length} titre${rows.length>1?'s':''} sur ${_screenerData.length} · Cliquer sur un titre pour l'analyse fondamentale</div>`;

@@ -234,6 +234,61 @@ def seed_dividends_2025() -> None:
     )
 
 
+# Valeurs comptables 2024 estimées via ROE sectoriel × EPS ou rapports annuels publiés.
+# Sources : rapports annuels BRVM, sikafinance.com, SGI Africa, exercice 2023/2024.
+_BOOK_VALUES_2024: list[tuple[str, float]] = [
+    # (symbol, book_value_FCFA_par_action)
+    # ── Banques / Finance ──────────────────────────────────────────────────────
+    ("SGBC", 21_700),   # Société Générale BCI — capitaux propres ~120 Mrd / 5,5M actions
+    ("CBIBF", 11_400),  # Coris Bank International BF
+    ("BICC", 15_700),   # Banque Internationale pour le Commerce CI (BIC)
+    ("BOAC", 6_700),    # Bank Of Africa CI
+    ("BOAB", 4_840),    # Bank Of Africa Bénin
+    ("BOABF", 4_380),   # Bank Of Africa Burkina Faso
+    ("BOAM", 4_040),    # Bank Of Africa Mali
+    ("BOAS", 6_080),    # Bank Of Africa Sénégal
+    ("CABC", 2_430),    # Crédit Agricole Burkina (ex-BACB)
+    ("SIBC", 4_630),    # SIB — Société Ivoirienne de Banque
+    ("LNBB", 2_990),    # La Nationale de Banque Bénin
+    ("BICB", 8_200),    # BIC Bénin
+    ("BNBC", 3_100),    # Banque Nationale de Bénin
+    # ── Télécoms ──────────────────────────────────────────────────────────────
+    ("SNTS", 16_540),   # Sonatel (Orange Sénégal) — capitaux propres ~190 Mrd / 11,5M
+    ("ORAC", 7_430),    # Orange CI
+    ("ONTBF", 1_430),   # Onatel Burkina
+    # ── Agriculture / Agro ────────────────────────────────────────────────────
+    ("PALC", 10_040),   # PALM CI — palmier
+    ("SOGC", 6_070),    # SOGB — caoutchouc
+    # ── Industrie ─────────────────────────────────────────────────────────────
+    ("SMBC", 9_300),    # SMB CI (savonnerie)
+    ("STBC", 13_430),   # SITAB — tabac
+    ("NTLC", 5_480),    # FILTISAC — matériaux
+    # ── Distribution ──────────────────────────────────────────────────────────
+    ("TTLC", 1_440),    # TOTAL CI
+    ("TTLS", 2_190),    # TOTAL Sénégal
+]
+
+
+def seed_book_values_2024() -> None:
+    """
+    Charge les valeurs comptables (book_value) 2024 pour les titres majeurs de la BRVM.
+    Utilise update_book_value() qui ÉCRASE la valeur existante (pas de COALESCE).
+    Appelé au démarrage, avant _refresh_sika_fundamentals() qui tentera de les affiner.
+    """
+    seeded, skipped = [], []
+    for sym, bv in _BOOK_VALUES_2024:
+        stock = db.get_stock(sym)
+        if not stock:
+            skipped.append(sym)
+            continue
+        db.update_book_value(sym, bv)
+        seeded.append(sym)
+    logger.info(
+        f"seed_book_values_2024 terminé : {len(seeded)} titres"
+        + (f", {len(skipped)} ignorés ({', '.join(skipped)})" if skipped else "")
+    )
+
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
@@ -308,6 +363,9 @@ async def startup():
     # Charger les dividendes 2025 depuis sikafinance (données définitives, exercice 2025)
     logger.info("Chargement dividendes 2025 (sikafinance)...")
     seed_dividends_2025()
+    # Valeurs comptables 2024 — données de base avant scraping sikafinance
+    logger.info("Chargement valeurs comptables 2024...")
+    seed_book_values_2024()
     # Charger cours du jour immédiatement
     t1 = threading.Thread(target=_refresh_data, daemon=True)
     t1.start()
@@ -810,6 +868,11 @@ def api_fundamental(symbol: str):
         bv = fund_net["book_value"]
         if bv and bv > 0:
             fund_net["pbr"] = round(latest["close"] / bv, 2)
+    # Filtrer les rendements impossibles (DPS > 60% du cours = erreur AFX)
+    if latest and latest.get("close") and fund_net and fund_net.get("dividend_per_share_gross"):
+        if fund_net["dividend_per_share_gross"] > latest["close"] * 0.6:
+            fund_net = {**fund_net, "dividend_yield_net": None, "dividend_yield_gross": None,
+                        "dividend_per_share_net": None, "_dps_error": True}
     return {
         "symbol": sym, "stock": stock,
         "fundamentals": fund_net,
@@ -1119,6 +1182,21 @@ def api_screener_stocks():
             bv = fund_n["book_value"]
             if bv and bv > 0:
                 fund_n["pbr"] = round(latest["close"] / bv, 2)
+        # Filtrer les rendements impossibles (DPS > 60% du cours = erreur AFX)
+        if latest and latest.get("close") and fund_n and fund_n.get("dividend_per_share_gross"):
+            if fund_n["dividend_per_share_gross"] > latest["close"] * 0.6:
+                fund_n = {**fund_n, "dividend_yield_net": None, "dividend_yield_gross": None,
+                          "dividend_per_share_net": None, "_dps_error": True}
+        # Liquidité approximative depuis les prix récents
+        prices_30d = db.get_prices(sym, 30)
+        vols = [p.get("volume") or 0 for p in prices_30d if p.get("volume")]
+        avg_vol_30d = round(sum(vols) / len(vols)) if vols else 0
+        liq_level = (
+            "Élevée" if avg_vol_30d > 10000
+            else "Modérée" if avg_vol_30d > 2000
+            else "Faible" if avg_vol_30d > 500
+            else "Très faible"
+        )
         # Dernière recommandation (historique)
         reco_hist = db.get_recommendation_history(sym, 3)
         last_reco = reco_hist[-1] if reco_hist else None
@@ -1138,6 +1216,8 @@ def api_screener_stocks():
             "div_yield_net":   fund_n.get("dividend_yield_net") if fund_n else None,
             "dps_net":     fund_n.get("dividend_per_share_net") if fund_n else None,
             "div_status":  fund_n.get("div_status") if fund_n else None,
+            "liq_level":   liq_level,
+            "avg_vol_30d": avg_vol_30d,
             "recommendation": last_reco.get("recommendation") if last_reco else None,
             "score":       last_reco.get("score") if last_reco else None,
             "score_tech":  last_reco.get("score_technique") if last_reco else None,
@@ -1163,6 +1243,11 @@ def api_dividends():
         l = db.get_latest_price(s["symbol"])
         if f and (f.get("dividend_yield") or f.get("dividend_per_share")):
             fn = _apply_net_dividend(f, s.get("country"))
+            # Filtrer les rendements impossibles (DPS > 60% du cours = erreur AFX)
+            if l and l.get("close") and fn.get("dividend_per_share_gross"):
+                if fn["dividend_per_share_gross"] > l["close"] * 0.6:
+                    fn = {**fn, "dividend_yield_net": None, "dividend_yield_gross": None,
+                          "dividend_per_share_net": None, "_dps_error": True}
             results.append({
                 "symbol":               s["symbol"],
                 "name":                 s.get("name",""),
