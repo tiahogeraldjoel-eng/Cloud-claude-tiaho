@@ -431,6 +431,11 @@ async function loadTechnical(symbol) {
       .then(h => renderRecoHistory('tech-reco-history', h.history||[]))
       .catch(()=>{});
 
+    // Track record (taux de réussite des signaux passés)
+    api(`/api/stocks/${symbol}/track-record`)
+      .then(tr => renderTrackRecord('tech-track-record', tr))
+      .catch(()=>{});
+
     // Afficher le bouton d'export PDF
     document.getElementById('pdf-export-section')?.classList.remove('hidden');
 
@@ -1084,7 +1089,30 @@ function renderRecommendationBox(containerId, reco) {
       <span class="font-bold w-8 text-right" style="color:${scoreColor(score)}">${score}</span>
     </div>`;
 
-  el.innerHTML=`
+  // Bannière de liquidité faible — en dehors de la box principale, avant elle
+  const liqBanner = (()=>{
+    const liq = reco.liquidity;
+    if(!liq) return '';
+    if(liq.level === 'Très faible') return `
+      <div class="mb-3 flex items-start gap-3 px-4 py-3 rounded-xl border border-red-700/60 bg-red-950/40 text-red-300">
+        <span class="text-lg shrink-0">🔴</span>
+        <div>
+          <div class="font-bold text-sm">LIQUIDITÉ TRÈS FAIBLE</div>
+          <div class="text-xs text-red-400 mt-0.5">Vol. moy. 30j : ${liq.avg_vol_30d!=null?Math.round(liq.avg_vol_30d).toLocaleString('fr-FR')+' titres/séance':'—'} — Les ordres importants peuvent déplacer significativement le cours. Utiliser des ordres à cours limité et fractionner les passages.</div>
+        </div>
+      </div>`;
+    if(liq.level === 'Faible') return `
+      <div class="mb-3 flex items-start gap-3 px-4 py-2.5 rounded-xl border border-orange-700/50 bg-orange-950/30 text-orange-300">
+        <span class="text-base shrink-0">🟡</span>
+        <div>
+          <div class="font-semibold text-sm">Liquidité faible</div>
+          <div class="text-xs text-orange-400 mt-0.5">Vol. moy. 30j : ${liq.avg_vol_30d!=null?Math.round(liq.avg_vol_30d).toLocaleString('fr-FR')+' titres/séance':'—'} — Préférer les ordres à cours limité. Spread potentiellement élevé.</div>
+        </div>
+      </div>`;
+    return '';
+  })();
+
+  el.innerHTML= liqBanner + `
     <div class="rounded-xl border p-5 mt-4" style="background:${reco.bg};border-color:${reco.border}">
       <!-- En-tête recommandation -->
       <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
@@ -1495,6 +1523,60 @@ function renderRecoHistory(containerId, history) {
       </div>
       <div class="flex flex-wrap gap-1.5 items-center">${dots}</div>
       <div class="text-xs text-slate-600 mt-2">● = 1 jour ouvré — survolez pour les détails</div>
+    </div>`;
+}
+
+function renderTrackRecord(containerId, data) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!data || data.total_signals < 3) { el.innerHTML = ''; return; }
+
+  const hrA = data.hit_rate_achat_30d;
+  const hrV = data.hit_rate_vente_30d;
+  const colorHr = hr => hr == null ? '#64748b' : hr >= 60 ? '#22c55e' : hr >= 45 ? '#f97316' : '#ef4444';
+  const badge = (label, hr, n) => {
+    if (hr == null || n < 2) return '';
+    return `<div class="text-center bg-slate-800/60 rounded-lg p-3">
+      <div class="text-xs text-slate-400 mb-1">${label}</div>
+      <div class="text-xl font-black" style="color:${colorHr(hr)}">${hr.toFixed(0)}%</div>
+      <div class="text-xs text-slate-500">${n} signal${n>1?'s':''}</div>
+    </div>`;
+  };
+
+  const recentSignals = (data.signals || []).slice(-10).reverse().map(s => {
+    const positive = s.correct;
+    const rClass   = s.recommendation === 'ACHAT' ? 'text-green-400' : 'text-red-400';
+    const retClass = s.return_30d >= 0 ? 'text-green-400' : 'text-red-400';
+    return `<tr class="border-t border-slate-700/40 text-xs">
+      <td class="py-1 pr-2 text-slate-500">${(s.date||'').slice(5)}</td>
+      <td class="py-1 pr-2 font-bold ${rClass}">${s.recommendation}</td>
+      <td class="py-1 pr-2 text-slate-400">${s.price_signal != null ? Math.round(s.price_signal).toLocaleString('fr-FR') : '—'}</td>
+      <td class="py-1 pr-2 ${retClass}">${s.return_30d != null ? (s.return_30d >= 0 ? '+' : '') + s.return_30d.toFixed(1) + '%' : '—'}</td>
+      <td class="py-1 text-center">${positive ? '✅' : '❌'}</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="rounded-xl border border-slate-700 bg-slate-900/60 p-4 mt-3">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-sm">🎯</span>
+        <span class="text-xs font-semibold text-slate-300">Track record — performance des signaux à 30 jours</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        ${badge('ACHAT → hausse 30j', hrA, data.total_achat||0)}
+        ${badge('VENTE → baisse 30j', hrV, data.total_vente||0)}
+      </div>
+      ${recentSignals ? `<table class="w-full">
+        <thead><tr class="text-xs text-slate-500">
+          <th class="text-left pr-2 pb-1 font-normal">Date</th>
+          <th class="text-left pr-2 pb-1 font-normal">Signal</th>
+          <th class="text-left pr-2 pb-1 font-normal">Cours</th>
+          <th class="text-left pr-2 pb-1 font-normal">+30j</th>
+          <th class="text-center pb-1 font-normal">OK</th>
+        </tr></thead>
+        <tbody>${recentSignals}</tbody>
+      </table>` : ''}
+      <div class="text-xs text-slate-600 mt-2">Basé sur ${data.total_signals} signal${data.total_signals>1?'s':''} historiques</div>
     </div>`;
 }
 

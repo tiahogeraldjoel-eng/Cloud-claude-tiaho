@@ -591,6 +591,37 @@ def upsert_fundamental(data: Dict) -> None:
     conn.close()
 
 
+def update_book_value(symbol: str, book_value: float,
+                      eps: Optional[float] = None,
+                      net_income: Optional[float] = None) -> None:
+    """Met à jour book_value (et optionnellement eps/net_income) sans toucher aux colonnes dividende.
+    Contrairement à upsert_fundamental(), écrase la valeur existante — utile pour le scraping annuel."""
+    conn = get_connection()
+    sym = symbol.upper()
+    conn.execute("INSERT OR IGNORE INTO fundamentals (symbol) VALUES (?)", (sym,))
+    parts = ["book_value=:bv", "last_updated=:ts"]
+    params: Dict = {"bv": book_value, "sym": sym, "ts": datetime.utcnow().isoformat()}
+    if eps is not None:
+        parts.append("eps=:eps")
+        params["eps"] = eps
+    if net_income is not None:
+        parts.append("net_income=:ni")
+        params["ni"] = net_income
+    conn.execute(f"UPDATE fundamentals SET {', '.join(parts)} WHERE symbol=:sym", params)
+    conn.commit()
+    conn.close()
+
+
+def count_recommendation_history_rows() -> int:
+    """Retourne le nombre total de lignes dans recommendation_history."""
+    conn = get_connection()
+    try:
+        n = conn.execute("SELECT COUNT(*) FROM recommendation_history").fetchone()[0]
+        return n
+    finally:
+        conn.close()
+
+
 def get_fundamental(symbol: str) -> Optional[Dict]:
     conn = get_connection()
     row = conn.execute(

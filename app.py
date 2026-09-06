@@ -320,11 +320,106 @@ async def startup():
 # ─── SCHEDULER ────────────────────────────────────────────────────────────────
 
 def _load_history_then_snapshot():
-    """Charge l'historique complet puis déclenche immédiatement un snapshot de recommandations.
-    Appelé une seule fois au démarrage, en background, pour que le screener ait des données
-    dès le premier accès sans attendre le trigger 16h00 UTC."""
+    """Charge l'historique complet, scrape les fondamentaux sikafinance, seed l'historique
+    des recommandations si vide, puis déclenche un snapshot immédiat.
+    Appelé une seule fois au démarrage en background."""
     _load_all_history()
+    _refresh_sika_fundamentals()
+    _seed_recommendation_history_if_empty(days=90)
     _snapshot_all_recommendations()
+
+
+def _refresh_sika_fundamentals():
+    """Scrape sikafinance.com pour enrichir book_value, eps et net_income de chaque titre.
+    Exécuté une fois au démarrage (après _load_all_history) et quotidiennement à 7h00 UTC.
+    Politesse : 1 s entre chaque requête pour éviter de surcharger le serveur."""
+    stocks = db.get_all_stocks()
+    updated = 0
+    for s in stocks:
+        sym = s["symbol"]
+        try:
+            data = scraper.scrape_sika_company_data(sym)
+            bv = data.get("book_value")
+            eps = data.get("eps")
+            ni  = data.get("net_income")
+            if bv and bv > 0:
+                db.update_book_value(sym, bv, eps=eps, net_income=ni)
+                updated += 1
+            time.sleep(1)
+        except Exception as e:
+            logger.warning(f"sika fundamentals {sym}: {e}")
+    logger.info(f"Fondamentaux sikafinance: {updated}/{len(stocks)} titres mis à jour")
+    # Invalider le cache screener pour refléter les nouvelles valeurs comptables
+    _screener_stocks_cache["data"] = None
+
+
+def _seed_recommendation_history_if_empty(days: int = 90) -> None:
+    """Calcule et persiste l'historique des recommandations sur les N derniers jours ouvrés.
+    Exécuté uniquement si la table recommendation_history a moins de 100 entrées (= base vide
+    après redéploiement Render). Permet d'obtenir un track-record immédiat sans attendre
+    que le cron 16h00 accumule progressivement les données."""
+    total = db.count_recommendation_history_rows()
+    if total > 100:
+        logger.info(f"Historique recos déjà présent ({total} entrées) — seeding ignoré")
+        return
+
+    logger.info(f"Seeding historique des recommandations sur {days} jours ouvrés...")
+    stocks      = db.get_all_stocks()
+    sentiment   = _get_sentiment_data()
+    brvm_series = _get_brvm_series()
+
+    # Générer la liste des dates de trading passées (lun-ven)
+    from datetime import timedelta
+    today = datetime.now(timezone.utc).date()
+    past_dates: List[str] = []
+    d = today - timedelta(days=1)
+    while len(past_dates) < days:
+        if d.weekday() < 5:
+            past_dates.append(d.isoformat())
+        d -= timedelta(days=1)
+    past_dates.sort()  # ordre chronologique
+
+    saved = 0
+    for stock in stocks:
+        sym = stock["symbol"]
+        try:
+            all_prices = db.get_prices(sym, 1000)
+            if not all_prices:
+                continue
+            fund    = db.get_fundamental(sym)
+            country = stock.get("country")
+
+            for target_date in past_dates:
+                slice_prices = [p for p in all_prices if p.get("date", "") <= target_date]
+                if len(slice_prices) < 30:
+                    continue
+                latest  = slice_prices[-1]
+                derived = ind.compute_derived_fundamental(slice_prices)
+                hw_closes = [p["close"] for p in slice_prices[-252:] if p.get("close")]
+                hw = {"high52w": max(hw_closes), "low52w": min(hw_closes)} if hw_closes else {}
+
+                fund_net = _apply_net_dividend(fund, country)
+                if fund_net and latest.get("close") and fund_net.get("book_value"):
+                    bv = fund_net["book_value"]
+                    if bv and bv > 0:
+                        fund_net["pbr"] = round(latest["close"] / bv, 2)
+
+                result = rec.compute_recommendation(
+                    prices=slice_prices,
+                    fundamentals=fund_net,
+                    derived=derived,
+                    hw=hw,
+                    sentiment=sentiment,
+                    latest=latest,
+                    symbol=sym,
+                    brvm_series=brvm_series,
+                )
+                db.save_recommendation_history(sym, target_date, result)
+                saved += 1
+        except Exception as e:
+            logger.warning(f"Seed reco history {sym}: {e}")
+
+    logger.info(f"Seeding historique recommandations : {saved} entrées créées pour {len(stocks)} titres")
 
 
 def _snapshot_all_recommendations():
@@ -428,6 +523,12 @@ def _start_scheduler():
         sch.add_job(_snapshot_all_recommendations, CronTrigger(
             day_of_week="mon-fri", hour="16", minute="0"),
             id="reco_snapshot",
+            misfire_grace_time=GRACE, coalesce=True)
+
+        # Rafraîchissement fondamentaux sikafinance (7h00 UTC, lun-ven) — book_value / EPS annuels
+        sch.add_job(_refresh_sika_fundamentals, CronTrigger(
+            day_of_week="mon-fri", hour="7", minute="0"),
+            id="sika_fundamentals",
             misfire_grace_time=GRACE, coalesce=True)
 
         sch.start()
@@ -794,6 +895,69 @@ def api_recommendation_history(symbol: str, days: int = 90):
         raise HTTPException(404, f"Titre '{sym}' introuvable")
     history = db.get_recommendation_history(sym, days)
     return {"symbol": sym, "history": history, "count": len(history)}
+
+
+@app.get("/api/stocks/{symbol}/track-record")
+def api_track_record(symbol: str):
+    """Taux de réussite des recommandations passées.
+    Pour chaque signal ACHAT/VENTE, vérifie si le cours évolue dans la bonne direction
+    30 jours calendaires après le signal."""
+    from datetime import timedelta as _td
+    sym     = symbol.upper()
+    history = db.get_recommendation_history(sym, 365)
+    prices  = db.get_prices(sym, 730)
+    if not history or not prices:
+        return {"symbol": sym, "signals": [], "hit_rate_achat_30d": None,
+                "hit_rate_vente_30d": None, "total_signals": 0}
+
+    price_by_date: Dict[str, float] = {
+        p["date"]: p["close"] for p in prices if p.get("close")
+    }
+    price_dates = sorted(price_by_date)
+
+    def _price_after(from_date: str, days: int = 30) -> Optional[float]:
+        target = (_date.fromisoformat(from_date) + _td(days=days)).isoformat()
+        later  = [d for d in price_dates if d >= target]
+        return price_by_date[later[0]] if later else None
+
+    signals = []
+    for row in history:
+        reco = row.get("recommendation")
+        if reco not in ("ACHAT", "VENTE"):
+            continue
+        sig_date  = row.get("date")
+        sig_price = price_by_date.get(sig_date)
+        if not sig_price:
+            continue
+        p30 = _price_after(sig_date, 30)
+        if p30 is None:
+            continue
+        ret30 = round((p30 / sig_price - 1) * 100, 2)
+        correct = (reco == "ACHAT" and ret30 > 0) or (reco == "VENTE" and ret30 < 0)
+        signals.append({
+            "date":           sig_date,
+            "recommendation": reco,
+            "score":          row.get("score"),
+            "price_signal":   sig_price,
+            "price_30d":      p30,
+            "return_30d":     ret30,
+            "correct":        correct,
+        })
+
+    achat_s = [s for s in signals if s["recommendation"] == "ACHAT"]
+    vente_s = [s for s in signals if s["recommendation"] == "VENTE"]
+    hr_a = round(sum(1 for s in achat_s if s["correct"]) / len(achat_s) * 100, 1) if achat_s else None
+    hr_v = round(sum(1 for s in vente_s if s["correct"]) / len(vente_s) * 100, 1) if vente_s else None
+
+    return {
+        "symbol":             sym,
+        "signals":            signals[-30:],   # 30 derniers signaux
+        "hit_rate_achat_30d": hr_a,
+        "hit_rate_vente_30d": hr_v,
+        "total_achat":        len(achat_s),
+        "total_vente":        len(vente_s),
+        "total_signals":      len(signals),
+    }
 
 
 def _get_sentiment_data() -> Optional[Dict]:

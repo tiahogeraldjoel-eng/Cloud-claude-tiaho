@@ -498,6 +498,147 @@ def _norm_url(href: str, base: str) -> str:
     return base.rstrip("/") + ("" if href.startswith("/") else "/") + href
 
 
+def scrape_sika_company_data(symbol: str) -> Dict:
+    """
+    Extrait les fondamentaux financiers depuis sikafinance.com/marches/cotation/{symbol}.
+
+    Données cibles (par ordre de priorité) :
+    - VAN / Valeur d'actif net par action  → book_value
+    - BNA / Bénéfice net par action        → eps
+    - Résultat net (total, en milliers FCFA) → net_income
+
+    Stratégies de parsing (dans l'ordre) :
+    1. dl > dt/dd — structure de liste de définitions
+    2. table > tr — tableaux de données financières
+    3. div/span pairs avec classes "fond", "ratio", "kpi", "indicator"
+    4. recherche textuelle générale (label + valeur adjacente)
+
+    Retourne {} si aucune donnée fiable n'est trouvée.
+    """
+    sym  = symbol.upper()
+    base = "https://www.sikafinance.com"
+    url  = f"{base}/marches/cotation/{sym}"
+
+    soup = _get_sika(url, referer=f"{base}/marches/cotes")
+    if not soup:
+        return {}
+
+    result: Dict = {}
+
+    # Labels BRVM → champ DB
+    LABELS = {
+        "van":                      "book_value",
+        "val. actif net":           "book_value",
+        "valeur actif net":         "book_value",
+        "valeur comptable":         "book_value",
+        "actif net":                "book_value",
+        "bna":                      "eps",
+        "benef. net/act":           "eps",
+        "bénéfice net par action":  "eps",
+        "résultat net par action":  "eps",
+        "résultat net/action":      "eps",
+        "résultat net":             "net_income",
+        "bénéfice net":             "net_income",
+        "profit net":               "net_income",
+        "chiffre d'affaires":       "revenue",
+        "revenus":                  "revenue",
+    }
+
+    def _sika_val(txt: str) -> Optional[float]:
+        """Parse un nombre FCFA comme '8 250', '8,250', '1,2 Md', '14 500 000' → float."""
+        txt = txt.strip().replace("\xa0", " ").replace(" ", " ")
+        multiplier = 1.0
+        t_low = txt.lower()
+        # Suffixes Md/Mrd/M (milliards / millions)
+        if re.search(r"(?i)\bmrd?\b|\bG\b", t_low):
+            multiplier = 1_000_000_000
+            txt = re.sub(r"(?i)\s*m[rd]+\w*", "", txt)
+        elif re.search(r"(?i)\bm(?!oi|ar|ai|ie|éd)\b", t_low):
+            multiplier = 1_000_000
+            txt = re.sub(r"(?i)\s*m\b\w*", "", txt)
+        # Retirer tout sauf chiffres, virgule, point
+        clean = re.sub(r"[^\d,.]", "", txt.strip())
+        if not clean:
+            return None
+        # Normaliser séparateur décimal
+        if "," in clean and "." in clean:
+            clean = clean.replace(",", "")           # virgule = séparateur milliers
+        elif "," in clean:
+            parts = clean.split(",")
+            if len(parts) == 2 and len(parts[1]) <= 2:
+                clean = clean.replace(",", ".")      # virgule = décimale
+            else:
+                clean = clean.replace(",", "")       # virgule = milliers
+        try:
+            v = float(clean) * multiplier
+            return v if v > 0 else None
+        except ValueError:
+            return None
+
+    def _match_label(txt: str) -> Optional[str]:
+        """Retourne le champ DB si le texte correspond à un label connu."""
+        t = txt.lower().strip()
+        for key, field in LABELS.items():
+            if t == key or t.startswith(key):
+                return field
+        return None
+
+    # Stratégie 1 : dl > dt / dd
+    for dl in soup.find_all("dl"):
+        dts = dl.find_all("dt")
+        dds = dl.find_all("dd")
+        for dt, dd in zip(dts, dds):
+            field = _match_label(dt.get_text(" ", strip=True))
+            if field and field not in result:
+                v = _sika_val(dd.get_text(" ", strip=True))
+                if v:
+                    result[field] = v
+
+    # Stratégie 2 : tables
+    for table in soup.find_all("table"):
+        for row in table.find_all("tr"):
+            cells = [c.get_text(" ", strip=True) for c in row.find_all(["td", "th"])]
+            if len(cells) < 2:
+                continue
+            field = _match_label(cells[0])
+            if field and field not in result:
+                v = _sika_val(cells[1])
+                if v:
+                    result[field] = v
+
+    # Stratégie 3 : divs avec classes indicateurs
+    _cls_re = re.compile(r"fond|financ|ratio|kpi|indicator|data-row|detail", re.I)
+    for tag in soup.find_all(["div", "li", "tr"], class_=_cls_re):
+        spans = tag.find_all(["span", "td", "div", "p"])
+        for i, span in enumerate(spans[:-1]):
+            field = _match_label(span.get_text(" ", strip=True))
+            if field and field not in result:
+                v = _sika_val(spans[i+1].get_text(" ", strip=True))
+                if v:
+                    result[field] = v
+
+    # Stratégie 4 : recherche textuelle dans tout le body
+    if "book_value" not in result or "eps" not in result:
+        body_text = soup.get_text(" ", strip=True)
+        for key, field in LABELS.items():
+            if field in result:
+                continue
+            idx = body_text.lower().find(key)
+            if idx == -1:
+                continue
+            snippet = body_text[idx+len(key):idx+len(key)+30]
+            v = _sika_val(snippet)
+            if v:
+                result[field] = v
+
+    if result:
+        logger.info(f"sika_company_data {sym}: {result}")
+    else:
+        logger.debug(f"sika_company_data {sym}: aucune donnée")
+
+    return result
+
+
 def _scrape_sikafinance_news() -> List[Dict]:
     """
     Actualités BRVM depuis sikafinance.com — deux pages :
