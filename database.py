@@ -631,6 +631,18 @@ def get_fundamental(symbol: str) -> Optional[Dict]:
     return dict(row) if row else None
 
 
+def null_dividend(symbol: str) -> None:
+    """Nullifie les champs dividende corrompus (DPS > close)."""
+    conn = get_connection()
+    conn.execute("""
+        UPDATE fundamentals
+        SET dividend_per_share=NULL, dividend_yield=NULL
+        WHERE symbol=?
+    """, (symbol.upper(),))
+    conn.commit()
+    conn.close()
+
+
 def force_upsert_dividend(data: Dict) -> None:
     """
     Mise à jour autoritaire des colonnes dividende d'un titre.

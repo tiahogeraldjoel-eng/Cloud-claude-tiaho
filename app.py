@@ -309,6 +309,119 @@ def seed_book_values_2024() -> None:
     )
 
 
+def _purge_corrupted_dps() -> Dict:
+    """
+    Parcourt tous les stocks et nullifie en base les DPS corrompus (DPS > 60% du cours).
+    Appelé au démarrage APRÈS seed_dividends_2025() et seed_book_values_2024().
+    Retourne un dict résumé : {'checked': N, 'purged': N, 'symbols': [...]}
+    """
+    stocks = db.get_all_stocks()
+    purged = []
+    for s in stocks:
+        sym = s["symbol"]
+        fund = db.get_fundamental(sym)
+        if not fund:
+            continue
+        dps = fund.get("dividend_per_share")
+        if not dps:
+            continue
+        latest = db.get_latest_price(sym)
+        if not latest or not latest.get("close") or latest["close"] <= 0:
+            continue
+        close = latest["close"]
+        if dps > close * 0.6:
+            db.null_dividend(sym)
+            purged.append(sym)
+            logger.warning(
+                f"_purge_corrupted_dps: {sym} DPS={dps:.2f} > 60% cours={close:.2f} → nullifié en base"
+            )
+    result = {"checked": len(stocks), "purged": len(purged), "symbols": purged}
+    logger.info(
+        f"_purge_corrupted_dps terminé : {len(stocks)} titres vérifiés, "
+        f"{len(purged)} DPS corrompus nullifiés"
+        + (f" ({', '.join(purged)})" if purged else "")
+    )
+    return result
+
+
+def _data_confidence(fund: Optional[Dict], latest: Optional[Dict], prices: List) -> Dict:
+    """
+    Calcule un score de confiance (0-100) pour les données fondamentales d'un titre.
+    Retourne : {'score': int, 'label': str, 'color': str, 'details': [str]}
+    """
+    score = 0
+    details = []
+    close = (latest or {}).get("close") if latest else None
+
+    # 1. Cours disponible (15 pts)
+    if close and close > 0:
+        score += 15
+        details.append("Cours disponible ✓")
+    else:
+        details.append("Cours manquant ✗")
+
+    # 2. 50+ jours de prix (10 pts)
+    if prices and len(prices) >= 50:
+        score += 10
+        details.append(f"Historique suffisant ({len(prices)} jours) ✓")
+    else:
+        n = len(prices) if prices else 0
+        details.append(f"Historique insuffisant ({n} jours, min. 50) ✗")
+
+    # 3. EPS disponible ET PER implicite entre 3 et 50x (25 pts)
+    eps = (fund or {}).get("eps") if fund else None
+    if eps and eps > 0 and close and close > 0:
+        per_implicit = close / eps
+        if 3 <= per_implicit <= 50:
+            score += 25
+            details.append(f"EPS valide (PER implicite {per_implicit:.1f}×) ✓")
+        else:
+            details.append(f"EPS suspect (PER implicite {per_implicit:.1f}× hors [3-50×]) ✗")
+    else:
+        details.append("EPS manquant ou nul ✗")
+
+    # 4. book_value disponible (20 pts)
+    bv = (fund or {}).get("book_value") if fund else None
+    if bv and bv > 0:
+        score += 20
+        details.append("Valeur comptable disponible ✓")
+    else:
+        details.append("Valeur comptable manquante ✗")
+
+    # 5. DPS valide — entre 0.5% et 20% du cours (15 pts)
+    dps = (fund or {}).get("dividend_per_share") if fund else None
+    if dps and close and close > 0:
+        dps_yield = dps / close
+        if 0.005 <= dps_yield <= 0.20:
+            score += 15
+            details.append(f"DPS valide ({dps_yield*100:.1f}% du cours) ✓")
+        else:
+            details.append(f"DPS hors plage ({dps_yield*100:.1f}% du cours, attendu 0.5%-20%) ✗")
+    else:
+        details.append("DPS indisponible ou nullifié ✗")
+
+    # 6. DPS issu du seed officiel (15 pts)
+    div_status = (fund or {}).get("div_status") if fund else None
+    if div_status in ("officiel", "annoncé", "payé"):
+        score += 15
+        details.append(f"Statut dividende officiel ({div_status}) ✓")
+    else:
+        details.append(f"Statut dividende non officiel ({div_status or 'aucun'}) ✗")
+
+    # Label et couleur
+    if score >= 70:
+        label = "Fiable"
+        color = "green"
+    elif score >= 40:
+        label = "Partielle"
+        color = "yellow"
+    else:
+        label = "Incertaine"
+        color = "red"
+
+    return {"score": score, "label": label, "color": color, "details": details}
+
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
@@ -386,6 +499,9 @@ async def startup():
     # Valeurs comptables 2024 — données de base avant scraping sikafinance
     logger.info("Chargement valeurs comptables 2024...")
     seed_book_values_2024()
+    # Purger les DPS corrompus (DPS > 60% cours) — doit s'exécuter après le seed dividendes
+    logger.info("Purge des DPS corrompus en base...")
+    _purge_corrupted_dps()
     # Charger cours du jour immédiatement
     t1 = threading.Thread(target=_refresh_data, daemon=True)
     t1.start()
@@ -897,6 +1013,7 @@ def api_fundamental(symbol: str):
         "high_low_52w": hw,
         "derived": derived, "latest": latest,
         "notes": db.get_notes(sym),
+        "data_confidence": _data_confidence(fund_net, latest, prices),
     }
 
 
@@ -1202,7 +1319,7 @@ def api_screener_stocks():
             if bv and bv > 0:
                 fund_n["pbr"] = round(latest["close"] / bv, 2)
         fund_n = _sanitize_dps(fund_n, (latest or {}).get("close"))
-        # Liquidité approximative depuis les prix récents
+        # Score de confiance des données — calculé sur les fondamentaux bruts (avant sanitize)
         prices_30d = db.get_prices(sym, 30)
         vols = [p.get("volume") or 0 for p in prices_30d if p.get("volume")]
         avg_vol_30d = round(sum(vols) / len(vols)) if vols else 0
@@ -1238,6 +1355,7 @@ def api_screener_stocks():
             "score_tech":  last_reco.get("score_technique") if last_reco else None,
             "score_fund":  last_reco.get("score_fondamentale") if last_reco else None,
             "reco_date":   last_reco.get("date") if last_reco else None,
+            "confidence":  _data_confidence(fund_n, latest, prices_30d),
         })
 
     result = {"stocks": rows, "count": len(rows), "updated_at": datetime.now(timezone.utc).isoformat()}
