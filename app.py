@@ -311,13 +311,21 @@ async def startup():
     # Charger cours du jour immédiatement
     t1 = threading.Thread(target=_refresh_data, daemon=True)
     t1.start()
-    # Charger l'historique de tous les titres (10 ans)
-    t2 = threading.Thread(target=_load_all_history, daemon=True)
+    # Charger l'historique de tous les titres (10 ans), puis snapshot immédiat des recos
+    t2 = threading.Thread(target=_load_history_then_snapshot, daemon=True)
     t2.start()
     _start_scheduler()
 
 
 # ─── SCHEDULER ────────────────────────────────────────────────────────────────
+
+def _load_history_then_snapshot():
+    """Charge l'historique complet puis déclenche immédiatement un snapshot de recommandations.
+    Appelé une seule fois au démarrage, en background, pour que le screener ait des données
+    dès le premier accès sans attendre le trigger 16h00 UTC."""
+    _load_all_history()
+    _snapshot_all_recommendations()
+
 
 def _snapshot_all_recommendations():
     """Calcule et persiste la recommandation du jour pour tous les titres (16h00 UTC).
@@ -339,6 +347,10 @@ def _snapshot_all_recommendations():
             latest   = db.get_latest_price(sym)
             country  = stock.get("country")
             fund_net = _apply_net_dividend(fund, country)
+            if fund_net and latest and latest.get("close") and fund_net.get("book_value"):
+                bv = fund_net["book_value"]
+                if bv and bv > 0:
+                    fund_net["pbr"] = round(latest["close"] / bv, 2)
             result = rec.compute_recommendation(
                 prices=prices,
                 fundamentals=fund_net,
@@ -354,6 +366,8 @@ def _snapshot_all_recommendations():
         except Exception as e:
             logger.warning(f"Snapshot reco {sym}: {e}")
     logger.info(f"Snapshot recommandations {today} : {saved}/{len(stocks)} titres enregistrés")
+    # Invalider le cache screener pour que le prochain appel reflète les nouvelles recos
+    _screener_stocks_cache["data"] = None
 
 
 def _start_scheduler():
