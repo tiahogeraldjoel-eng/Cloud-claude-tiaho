@@ -1,0 +1,122 @@
+name: Téléchargement quotidien BOC BRVM
+
+on:
+  schedule:
+    # Lundi–vendredi à 19h30 UTC (19h30 Abidjan — BOC publié après 17h30)
+    - cron: '30 19 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Date du BOC (YYYY-MM-DD). Laisser vide = aujourd-hui'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-boc:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: claude/brvm-boc-114-analysis-ngt2xu
+
+      - name: Calculer la date cible
+        id: date
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            TARGET="${{ github.event.inputs.date }}"
+          else
+            TARGET=$(date +%Y-%m-%d)
+          fi
+          DS=$(echo $TARGET | tr -d '-')
+          DAY=$(date -d "$TARGET" +%u)
+          echo "target=$TARGET" >> $GITHUB_OUTPUT
+          echo "ds=$DS" >> $GITHUB_OUTPUT
+          echo "day=$DAY" >> $GITHUB_OUTPUT
+          echo "Cible : $TARGET (jour $DAY)"
+
+      - name: Vérifier si jour ouvré
+        if: steps.date.outputs.day >= '6'
+        run: |
+          echo "Samedi ou dimanche — pas de BOC."
+          exit 0
+
+      - name: Vérifier si déjà présent
+        id: check_existing
+        run: |
+          DS="${{ steps.date.outputs.ds }}"
+          if ls boc-inbox/BOC_${DS}*.pdf 2>/dev/null | head -1 | grep -q .; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "BOC_${DS} déjà dans boc-inbox/"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Télécharger le BOC
+        if: steps.check_existing.outputs.exists != 'true'
+        id: download
+        run: |
+          DS="${{ steps.date.outputs.ds }}"
+          TARGET="${{ steps.date.outputs.target }}"
+          OUTFILE="boc-inbox/BOC_${DS}_1.pdf"
+          MIN_SIZE=20000
+
+          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+          # Liste d'URLs à essayer dans l'ordre
+          URLS=(
+            "https://bfin.brvm.org/boc/BOC_JOUR/BOC_${DS}.pdf"
+            "https://bfin.brvm.org/boc/boc_jour/boc_${DS}.pdf"
+            "https://www.brvm.org/sites/default/files/boc_${DS}_1.pdf"
+            "https://www.brvm.org/sites/default/files/boc_${DS}.pdf"
+            "https://www.brvm.org/sites/default/files/boc_${DS}_2.pdf"
+          )
+
+          for URL in "${URLS[@]}"; do
+            echo "Tentative : $URL"
+            HTTP=$(curl -s -o "$OUTFILE" -w "%{http_code}" \
+              -L --max-time 30 \
+              -A "$UA" \
+              -H "Accept: application/pdf,*/*" \
+              "$URL")
+            SIZE=$(stat -c%s "$OUTFILE" 2>/dev/null || echo 0)
+            MAGIC=$(head -c 4 "$OUTFILE" 2>/dev/null || echo "")
+
+            if [ "$HTTP" = "200" ] && [ "$SIZE" -ge "$MIN_SIZE" ] && [ "$MAGIC" = "%PDF" ]; then
+              echo "SUCCESS : $URL ($SIZE octets)"
+              echo "pdf_path=$OUTFILE" >> $GITHUB_OUTPUT
+              echo "found=true" >> $GITHUB_OUTPUT
+              exit 0
+            else
+              echo "  HTTP=$HTTP, taille=$SIZE — ignoré"
+              rm -f "$OUTFILE"
+            fi
+          done
+
+          echo "found=false" >> $GITHUB_OUTPUT
+          echo "FAIL : BOC du $TARGET introuvable sur toutes les URLs."
+          exit 1
+
+      - name: Commit du BOC téléchargé
+        if: steps.check_existing.outputs.exists != 'true' && steps.download.outputs.found == 'true'
+        run: |
+          git config user.name "BRVM BOC Fetcher"
+          git config user.email "actions@github.com"
+          git add boc-inbox/
+          git diff --staged --quiet || \
+            git commit -m "auto(boc-inbox): BOC du ${{ steps.date.outputs.target }} [GitHub Actions]"
+          git push origin claude/brvm-boc-114-analysis-ngt2xu
+
+      - name: Résultat
+        run: |
+          if [ "${{ steps.check_existing.outputs.exists }}" = "true" ]; then
+            echo "BOC déjà présent dans boc-inbox/ — rien à faire."
+          elif [ "${{ steps.download.outputs.found }}" = "true" ]; then
+            echo "BOC téléchargé et committé avec succès."
+          else
+            echo "BOC introuvable — publication peut-être retardée ou jour férié."
+          fi
