@@ -2,8 +2,8 @@ name: Téléchargement quotidien BOC BRVM
 
 on:
   schedule:
-    # Lundi–vendredi à 16h30 UTC (16h30 Abidjan, heure de clôture BRVM)
-    - cron: '30 16 * * 1-5'
+    # Lundi–vendredi à 19h30 UTC (19h30 Abidjan — BOC publié après 17h30)
+    - cron: '30 19 * * 1-5'
   workflow_dispatch:
     inputs:
       date:
