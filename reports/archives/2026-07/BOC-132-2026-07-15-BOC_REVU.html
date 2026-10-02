@@ -1,0 +1,334 @@
+<meta charset="UTF-8">
+<title>BOC_REVU N°132 — Mercredi 15 Juillet 2026</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #24292f; max-width: 1100px; margin: 0 auto; padding: 20px; background: #fff; }
+  h1 { color: #fff; background: #0b3d91; padding: 16px 20px; border-radius: 6px; margin-bottom: 6px; font-size: 1.4em; }
+  h2 { color: #fff; background: #0b3d91; padding: 10px 16px; border-radius: 4px; margin-top: 28px; font-size: 1.1em; }
+  h3 { color: #0b3d91; margin-top: 18px; font-size: 1em; border-bottom: 2px solid #0b3d91; padding-bottom: 4px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 12px; }
+  th { background: #0b3d91; color: #fff; padding: 7px 10px; text-align: left; }
+  tr:nth-child(even) { background: #f6f8fa; }
+  tr:nth-child(odd) { background: #fff; }
+  td { padding: 6px 10px; border-bottom: 1px solid #e1e4e8; }
+  .pos { color: #1a7f37; font-weight: 700; }
+  .neg { color: #cf222e; font-weight: 700; }
+  .neu { color: #57606a; }
+  .kpi-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 14px 0; }
+  .kpi { background: #eef3fb; border: 1px solid #cdd9ea; border-radius: 6px; padding: 10px 16px; text-align: center; min-width: 110px; flex: 1; }
+  .kpi .val { font-size: 1.5em; font-weight: 800; color: #0b3d91; }
+  .kpi .val.pos { color: #1a7f37; }
+  .kpi .val.neg { color: #cf222e; }
+  .kpi .lbl { font-size: 10px; color: #57606a; text-transform: uppercase; letter-spacing: .04em; margin-top: 3px; }
+  .acheter { background: #1a7f37; color: #fff; padding: 2px 9px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+  .alleger { background: #e36209; color: #fff; padding: 2px 9px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+  .vendre  { background: #8b0000; color: #fff; padding: 2px 9px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+  .attendre { background: #bf8700; color: #fff; padding: 2px 9px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+  .eviter  { background: #cf222e; color: #fff; padding: 2px 9px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+  .surveiller { background: #0b3d91; color: #fff; padding: 2px 9px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+  .stock-acheter { border-left: 4px solid #1a7f37; background: #f0faf3; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .stock-vendre  { border-left: 4px solid #8b0000; background: #fff0f0; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .stock-surveiller { border-left: 4px solid #0b3d91; background: #f0f4ff; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .stock-attendre { border-left: 4px solid #bf8700; background: #fffbec; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .stock-alleger { border-left: 4px solid #e36209; background: #fff5ec; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .alert-box { background: #fdecea; border: 2px solid #cf222e; border-radius: 6px; padding: 10px 14px; margin: 10px 0; }
+  .signal-box { background: #f0f4ff; border: 2px solid #0b3d91; border-radius: 6px; padding: 10px 14px; margin: 10px 0; }
+  .warn-box { background: #fffbec; border: 2px solid #bf8700; border-radius: 6px; padding: 10px 14px; margin: 10px 0; }
+  .disclaimer { background: #f6f8fa; border: 1px solid #d1d9e0; border-radius: 6px; padding: 12px 16px; margin-top: 24px; font-size: 11px; color: #57606a; }
+  .medal-gold   { background: #ffd700; color: #333; padding: 1px 7px; border-radius: 3px; font-weight: 700; }
+  .medal-silver { background: #c0c0c0; color: #333; padding: 1px 7px; border-radius: 3px; font-weight: 700; }
+  .medal-bronze { background: #cd7f32; color: #fff; padding: 1px 7px; border-radius: 3px; font-weight: 700; }
+  .ok { color: #1a7f37; font-weight: 800; }
+  .nok { color: #cf222e; font-weight: 800; }
+  .warn { color: #bf8700; font-weight: 800; }
+</style>
+
+<h1>BOC_REVU — N°132 | Mercredi 15 Juillet 2026</h1>
+<p style="color:#57606a;font-size:12px;margin-top:4px;">Analyse du Bulletin Officiel de la Cote BRVM &mdash; BRVM | Abidjan</p>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="val pos">+0,37 %</div><div class="lbl">Composite (jour)</div></div>
+  <div class="kpi"><div class="val pos">+39,18 %</div><div class="lbl">Composite YTD</div></div>
+  <div class="kpi"><div class="val neu">481,23</div><div class="lbl">Composite (niveau)</div></div>
+  <div class="kpi"><div class="val neg">20H / 24B</div><div class="lbl">Breadth s&eacute;ance</div></div>
+  <div class="kpi"><div class="val neu">2,71 Mds</div><div class="lbl">Valeur r&eacute;elle (hors ETIT)</div></div>
+</div>
+
+<!-- ======================== ÉTAPE 1 ======================== -->
+<h2>&#201;tape 1 &mdash; Vue d&apos;ensemble du march&eacute;</h2>
+
+<h3>Performances des indices</h3>
+<table>
+  <tr><th>Indice</th><th>Niveau</th><th>Variation jour</th><th>Variation annuelle</th></tr>
+  <tr><td>BRVM Composite</td><td>481,23</td><td class="pos">+0,37 %</td><td class="pos">+39,18 %</td></tr>
+  <tr><td>BRVM 30</td><td>228,95</td><td class="pos">+0,53 %</td><td class="pos">+37,72 %</td></tr>
+  <tr><td>BRVM Prestige</td><td>174,87</td><td class="neg">-0,87 %</td><td class="pos">+21,23 %</td></tr>
+  <tr><td>BRVM Principal</td><td>367,43</td><td class="pos">+1,14 %</td><td class="pos">+68,82 %</td></tr>
+</table>
+<p><strong>PER moyen du march&eacute; :</strong> 14,08 &mdash; <strong>Taux de rendement moyen :</strong> 6,26 % &mdash; <strong>Breadth :</strong> <span class="neg">20H / 24B / 3I &rarr; NEUTRE L&Eacute;G&Egrave;REMENT VENDEUR</span></p>
+<div class="warn-box"><span class="warn">[!]</span> <strong>Divergence cl&eacute; :</strong> Composite (+0,37 %) et Principal (+1,14 %) progressent tandis que le Prestige recule (-0,87 %). Rotation visible des large caps (Prestige) vers les mid-caps (Principal), port&eacute;es par SDSC (+7,45 %), UNXC (+7,44 %) et SCRC (+5,49 %).</div>
+
+<h3>Indices sectoriels &mdash; Classement par force</h3>
+<table>
+  <tr><th>Rang</th><th>Secteur</th><th>Valeur</th><th>Variation jour</th><th>PER moyen</th><th>Appr&eacute;ciation</th></tr>
+  <tr><td><span class="medal-gold">#1</span></td><td><strong>INDUSTRIELS</strong></td><td>217,55</td><td class="pos">+4,46 %</td><td>24,39</td><td class="pos">Fort &mdash; SDSC + dynamique logistique</td></tr>
+  <tr><td><span class="medal-silver">#2</span></td><td>T&Eacute;L&Eacute;COMMUNICATIONS</td><td>112,03</td><td class="pos">+0,84 %</td><td>10,69</td><td class="pos">Solide &mdash; valorisation attractive (SNTS)</td></tr>
+  <tr><td><span class="medal-bronze">#3</span></td><td>SERVICES FINANCIERS</td><td>234,05</td><td class="pos">+0,55 %</td><td>15,08</td><td class="neu">Stable &mdash; flux institutionnels BOA</td></tr>
+  <tr><td style="background:#57606a;color:#fff;padding:1px 7px;border-radius:3px;font-weight:700;">#4</td><td>SERVICES PUBLICS</td><td>225,24</td><td class="neg">-0,20 %</td><td>20,88</td><td class="neu">Neutre</td></tr>
+  <tr><td style="background:#57606a;color:#fff;padding:1px 7px;border-radius:3px;font-weight:700;">#5</td><td>CONSOMMATION DE BASE</td><td>283,07</td><td class="neg">-0,23 %</td><td>10,41</td><td class="neu">Neutre &mdash; valorisation basse, momentum absent</td></tr>
+  <tr><td style="background:#57606a;color:#fff;padding:1px 7px;border-radius:3px;font-weight:700;">#6</td><td>CONSOMMATION DISCR&Eacute;TIONNAIRE</td><td>192,79</td><td class="neg">-0,97 %</td><td>38,56</td><td class="neg">Faible &mdash; PER prohibitif</td></tr>
+  <tr><td style="background:#57606a;color:#fff;padding:1px 7px;border-radius:3px;font-weight:700;">#7</td><td><strong>&Eacute;NERGIE</strong></td><td>161,78</td><td class="neg">-4,51 %</td><td>18,12</td><td class="neg">Tr&egrave;s faible &mdash; TTLC (-4,92 %) + TTLS ex-div (-7,43 %)</td></tr>
+</table>
+<p><strong>Biais de march&eacute; : <span class="neu">NEUTRE</span></strong> &mdash; Composite l&eacute;g&egrave;rement positif mais breadth vendeur (20H/24B), Prestige baissier, divergence sectorielle marqu&eacute;e.</p>
+
+<!-- ======================== ÉTAPE 2 ======================== -->
+<h2>&#201;tape 2 &mdash; Filtrage des actions</h2>
+
+<h3>2A. Valorisation &mdash; PER 8&ndash;15 &amp; Rendement &ge; 5 %</h3>
+<table>
+  <tr><th>Titre</th><th>Symbole</th><th>Cours</th><th>PER</th><th>Rdt Net</th><th>Statut</th></tr>
+  <tr><td>Sonatel SN</td><td>SNTS</td><td>32 500</td><td class="pos">7,86</td><td class="pos">5,35 %</td><td><span class="ok">&#10003;</span> Double crit&egrave;re &mdash; TOP</td></tr>
+  <tr><td>Palm CI</td><td>PALC</td><td>8 700</td><td class="pos">8,67</td><td class="pos">5,07 %</td><td><span class="ok">&#10003;</span> Double crit&egrave;re</td></tr>
+  <tr><td>Bank of Africa CI</td><td>BOAC</td><td>9 650</td><td>10,86</td><td class="pos">6,19 %</td><td><span class="ok">&#10003;</span> Double crit&egrave;re</td></tr>
+  <tr><td>Bank of Africa ML</td><td>BOAM</td><td>5 680</td><td>14,07</td><td class="pos">5,37 %</td><td><span class="ok">&#10003;</span> Double crit&egrave;re</td></tr>
+  <tr><td>Bank of Africa S&eacute;n&eacute;gal</td><td>BOAS</td><td>7 320</td><td>12,03</td><td class="pos">6,15 %</td><td><span class="ok">&#10003;</span> Double crit&egrave;re</td></tr>
+  <tr><td>Bank of Africa BF</td><td>BOABF</td><td>6 825</td><td>15,60</td><td class="pos">5,82 %</td><td>PER l&eacute;g&egrave;rement &eacute;lev&eacute; / Rdt <span class="ok">&#10003;</span></td></tr>
+  <tr><td>Sitab CI</td><td>STBC</td><td>23 005</td><td>11,33</td><td class="pos">9,11 %</td><td><span class="ok">&#10003;</span> Valorisation &mdash; mais catalyseur &eacute;puis&eacute;</td></tr>
+  <tr><td>ONATEL BF</td><td>ONTBF</td><td>2 745</td><td>12,86</td><td class="pos">5,29 %</td><td><span class="ok">&#10003;</span> mais mur vendeur massif</td></tr>
+  <tr><td>Africa Global Logistics</td><td>SDSC</td><td>2 525</td><td class="pos">6,52</td><td>3,64 %</td><td>PER excellent / Rdt &lt; 5 %</td></tr>
+  <tr><td>SAPH CI</td><td>SPHC</td><td>7 400</td><td class="pos">7,57</td><td>4,38 %</td><td>PER excellent / Rdt limite</td></tr>
+</table>
+
+<div class="alert-box">
+  <strong><span class="nok">&#10007;</span> Titres chers &agrave; &eacute;viter (risque de bulle) :</strong>
+  <table style="margin-top:8px;">
+    <tr><th>Titre</th><th>Symbole</th><th>PER</th><th>Risque</th></tr>
+    <tr><td>Unilever CI</td><td>UNLC</td><td class="neg">770,64</td><td>Bulle sp&eacute;culative extr&ecirc;me &mdash; <span class="eviter">&#201;VITER</span></td></tr>
+    <tr><td>Bernabe CI</td><td>BNBC</td><td class="neg">557,98</td><td>Bulle sp&eacute;culative &mdash; <span class="eviter">&#201;VITER</span></td></tr>
+    <tr><td>Bank of Africa NG</td><td>BOAN</td><td class="neg">259,70</td><td>PER 259 + carnet 14,1:1 vendeur post-spike</td></tr>
+    <tr><td>Erium CI (ex Air Liquide)</td><td>SIVC</td><td class="neg">123,25</td><td>Sur&eacute;valuation s&eacute;v&egrave;re</td></tr>
+    <tr><td>Filtisac CI</td><td>FTSC</td><td class="neg">59,78</td><td>PER disproportionn&eacute;</td></tr>
+    <tr><td>SAFCA CI</td><td>SAFC</td><td class="neg">52,59</td><td>PER prohibitif</td></tr>
+  </table>
+</div>
+
+<h3>2B. Momentum &mdash; Plus fortes variations crois&eacute;es avec volumes</h3>
+<table>
+  <tr><th>Titre</th><th>Symbole</th><th>Variation</th><th>Volume</th><th>Valeur</th><th>Signal</th></tr>
+  <tr><td>Bank of Africa BF</td><td>BOABF</td><td class="pos">+7,48 %</td><td>10 110</td><td>66,7 M</td><td class="pos">Fort &mdash; 3e hausse cons&eacute;cutive</td></tr>
+  <tr><td>Bank of Africa NG</td><td>BOAN</td><td class="pos">+7,47 %</td><td>14 419</td><td>71,6 M</td><td class="neg">Fort mais PER 259 &rarr; <span class="eviter">&#201;VITER</span></td></tr>
+  <tr><td>Africa Global Logistics</td><td>SDSC</td><td class="pos">+7,45 %</td><td>26 749</td><td>67,5 M</td><td class="pos">Fort + PER 6,52 &rarr; convaincant</td></tr>
+  <tr><td>Uniwax CI</td><td>UNXC</td><td class="pos">+7,44 %</td><td>4 612</td><td>7,7 M</td><td class="pos">Fort + AG demain + 33 315 acheteurs</td></tr>
+  <tr><td>Bernabe CI</td><td>BNBC</td><td class="pos">+7,43 %</td><td>1 869</td><td>3,4 M</td><td class="neg">Fort mais PER 558 &rarr; <span class="eviter">&#201;VITER</span></td></tr>
+  <tr><td>Ecobank Trans. TG</td><td>ETIT</td><td class="pos">+6,85 %</td><td>1 871 864*</td><td>145,9 M</td><td class="warn">[!] *Distorsion &mdash; 86,54 % du vol. brut</td></tr>
+  <tr><td>Sonatel SN</td><td>SNTS</td><td class="pos">+3,16 %</td><td>35 123</td><td>1 139 M</td><td class="pos">M&eacute;ga-flux institutionnel (42 % valeur r&eacute;elle)</td></tr>
+</table>
+
+<h3>2C. Catalyseurs d&eacute;tect&eacute;s</h3>
+<table>
+  <tr><th>Titre</th><th>&Eacute;v&eacute;nement</th><th>Date</th><th>Impact anticip&eacute;</th></tr>
+  <tr><td><strong>STBC</strong></td><td>AG Ordinaire (tenue aujourd'hui)</td><td>15/07/2026</td><td class="neg">Catalyseur &eacute;puis&eacute; &rarr; <span class="vendre">VENDRE</span></td></tr>
+  <tr><td><strong>TTLS</strong></td><td>Ex-dividende 176,65 F CFA net</td><td>15/07/2026</td><td class="neg">Drop m&eacute;canique -7,43 % confirm&eacute; &rarr; <span class="vendre">VENDRE</span></td></tr>
+  <tr><td><strong>TTLS</strong></td><td>Paiement dividende</td><td>17/07/2026</td><td class="neg">Post ex-div &mdash; sortir si encore porteur</td></tr>
+  <tr><td><strong>UNXC</strong></td><td>AG Ordinaire (DEMAIN, 09:00)</td><td>16/07/2026</td><td class="pos">Fen&ecirc;tre d'achat en cl&ocirc;ture aujourd'hui &rarr; <span class="acheter">ACHETER</span></td></tr>
+  <tr><td>CIE CI</td><td>Paiement dividende 234 F CFA</td><td>28/07/2026</td><td>Ex-div vers 23/07 &mdash; surveiller</td></tr>
+  <tr><td>BIIC</td><td>Paiement dividende 254,6 F CFA</td><td>31/07/2026</td><td>Ex-div vers 28/07 &mdash; surveiller</td></tr>
+  <tr><td>SIB</td><td>Paiement dividende 425 F CFA</td><td>31/07/2026</td><td>Ex-div vers 28/07 &mdash; surveiller</td></tr>
+  <tr><td>SOLIBRA</td><td>Paiement dividende 2 127 F CFA</td><td>30/07/2026</td><td>Ex-div vers 25/07 &mdash; surveiller</td></tr>
+  <tr><td>ORAGROUP</td><td>AG Mixte</td><td>23/07/2026</td><td><span class="surveiller">SURVEILLER</span> &mdash; dans 8 jours</td></tr>
+  <tr><td>STBC/SITAB</td><td>Rapport annuel exercice 2025</td><td>15/07/2026</td><td>Publication post-AG (renforce catalyseur &eacute;puis&eacute;)</td></tr>
+</table>
+
+<h3>2D. Recommandations de vente</h3>
+<div class="stock-vendre">
+  <strong><span class="vendre">VENDRE</span> &mdash; STBC (Sitab CI) | 23 005 FCFA</strong><br>
+  Crit&egrave;re 4 : AG tenue aujourd'hui, catalyseur &eacute;puis&eacute;. Cours -4,92 %. Carnet 65 acheteurs / 935 vendeurs (14,4:1 vendeur). Distribution institutionnelle post-AG confirm&eacute;e. Sortir totalement.
+</div>
+<div class="stock-vendre">
+  <strong><span class="vendre">VENDRE</span> &mdash; TTLS (TotalEnergies Marketing SN) | 4 110 FCFA</strong><br>
+  Crit&egrave;re 6 : ex-dividende aujourd'hui (paiement 17/07). Drop m&eacute;canique -7,43 % confirm&eacute;. Le dividende est d&eacute;tach&eacute;. Les porteurs tardifs doivent limiter la perte imm&eacute;diatement.
+</div>
+<div class="stock-alleger">
+  <strong><span class="alleger">ALL&Eacute;GER</span> &mdash; ONTBF (Onatel BF) | 2 745 FCFA</strong><br>
+  Crit&egrave;re 3 : mur vendeur institutionnel 42 597 titres (2 366:1), le plus massif de la cote. La hausse du jour (+1,67 %) est trompeuse. R&eacute;duire la position de 50 %.
+</div>
+<div class="stock-alleger">
+  <strong><span class="alleger">ALL&Eacute;GER</span> &mdash; SMBC (SMB CI) | 16 315 FCFA</strong><br>
+  Crit&egrave;re 2 : cours -4,03 %, carnet 382:11 (34,7:1 vendeur). Le mur de 19 461 titres (BOC 131) s'est partiellement r&eacute;sorb&eacute; par vente agressive ce jour. Pression r&eacute;siduelle persistante.
+</div>
+
+<!-- ======================== ÉTAPE 3 ======================== -->
+<h2>&#201;tape 3 &mdash; S&eacute;lection des actions cl&eacute;s</h2>
+
+<div class="stock-acheter">
+  <strong>SNTS &mdash; SONATEL SN | 32 500 FCFA | <span class="pos">+3,16 %</span> | PER 7,86 | Rdt 5,35 % | <span class="acheter">ACHETER</span></strong><br>
+  Pour la troisi&egrave;me s&eacute;ance cons&eacute;cutive, SONATEL g&eacute;n&egrave;re un m&eacute;ga-flux institutionnel : 35 123 titres pour 1 139 621 070 FCFA. Cette r&eacute;currence sur trois s&eacute;ances confirme une accumulation d&eacute;lib&eacute;r&eacute;e. Carnet 828:153 (5,4:1 acheteur). PER 7,86 = d&eacute;cote historique sur le secteur t&eacute;l&eacute;coms UEMOA. Rdt 5,35 % bat le march&eacute; obligataire. Signal fondamental et technique parfaitement align&eacute;s.
+</div>
+
+<div class="stock-acheter">
+  <strong>SDSC &mdash; AFRICA GLOBAL LOGISTICS CI | 2 525 FCFA | <span class="pos">+7,45 %</span> | PER 6,52 | <span class="acheter">ACHETER (surveiller)</span></strong><br>
+  PER 6,52 = d&eacute;cote structurelle sur l'actif logistique r&eacute;gional (ex-Bolloré Transport). Carnet 4 726 acheteurs / aucun vendeur. Volume significatif : 26 749 titres, 67,5 M FCFA. Progression annuelle +66,67 %. Fondamentaux et momentum convergent.
+</div>
+
+<div class="stock-acheter">
+  <strong>UNXC &mdash; UNIWAX CI | 1 660 FCFA | <span class="pos">+7,44 %</span> | AG demain 16/07 | <span class="acheter">ACHETER avant AG</span></strong><br>
+  AG Ordinaire demain &agrave; 09:00 (Espace Latrille Events, Cocody). Carnet r&eacute;siduel : 33 315 acheteurs &agrave; cours March&eacute;, aucun vendeur. La pression pr&eacute;-AG la plus forte de la cote. Opportunit&eacute; sp&eacute;culative court terme. <strong>Stop si cours post-AG passe sous 1 550 FCFA.</strong>
+</div>
+
+<div class="stock-acheter">
+  <strong>BOAC &mdash; BANK OF AFRICA CI | 9 650 FCFA | <span class="neg">-1,03 %</span> | PER 10,86 | Rdt 6,19 % | <span class="acheter">ACHETER sur faiblesse</span></strong><br>
+  Correction -1,03 % absorb&eacute;e par 3 507 acheteurs (233:1). Double crit&egrave;re valorisation valid&eacute;. Accumulation institutionnelle manifeste au support 9 650 FCFA. La correction est une opportunit&eacute; d'entr&eacute;e.
+</div>
+
+<div class="stock-surveiller">
+  <strong>BOABF &mdash; BANK OF AFRICA BF | 6 825 FCFA | <span class="pos">+7,48 %</span> | PER 15,60 | Rdt 5,82 % | <span class="surveiller">SURVEILLER</span></strong><br>
+  Troisi&egrave;me s&eacute;ance cons&eacute;cutive de forte hausse depuis l'absorption du mur (BOC 130&rarr;131&rarr;132). Carnet 869 acheteurs / aucun vendeur. Apr&egrave;s trois s&eacute;ances de hausse cumul&eacute;e, l'entr&eacute;e est risqu&eacute;e. Conserver les positions existantes, ne pas initier.
+</div>
+
+<div class="stock-surveiller">
+  <strong>SIBC &mdash; SOCI&Eacute;T&Eacute; IVOIRIENNE DE BANQUE | 8 700 FCFA | <span class="neg">-2,25 %</span> | PER 15,65 | <span class="surveiller">SURVEILLER</span></strong><br>
+  Signal contradictoire r&eacute;v&eacute;lateur : cours -2,25 % ce jour mais carnet 7 060:37 (190:1 acheteur). Retournement complet en 24h vs BOC 131 (26:1 vendeur). Un acteur institutionnel s'est massivement repositionn&eacute; &agrave; l'achat au support 8 700 FCFA. Niveau institutionnel d&eacute;sormais identifi&eacute;.
+</div>
+
+<div class="stock-attendre">
+  <strong>PALC &mdash; PALM CI | 8 700 FCFA | <span class="pos">+2,35 %</span> | PER 8,67 | Rdt 5,07 % | <span class="attendre">ATTENDRE</span></strong><br>
+  Double crit&egrave;re valorisation valid&eacute;. Carnet l&eacute;g&egrave;rement vendeur (232:360, 1,55:1) &mdash; am&eacute;lioration vs BOC 131. Secteur agro d&eacute;fensif. Entr&eacute;e progressive sur repli sous 8 500 FCFA.
+</div>
+
+<div class="stock-vendre">
+  <strong>STBC &mdash; SITAB CI | 23 005 FCFA | <span class="neg">-4,92 %</span> | PER 11,33 | Rdt 9,11 % | <span class="vendre">VENDRE</span></strong><br>
+  AG Ordinaire tenue aujourd'hui : catalyseur &eacute;puis&eacute;. Vente post-AG confirm&eacute;e (-4,92 %). Carnet 65:935 (14,4:1 vendeur). Distribution institutionnelle. Malgr&eacute; le Rdt 9,11 %, sortir imm&eacute;diatement.
+</div>
+
+<div class="stock-surveiller">
+  <strong>BICC &mdash; BICI CI | 27 800 FCFA | <span class="neg">-2,80 %</span> | PER 12,69 | Rdt 4,16 % | <span class="surveiller">SURVEILLER (prudence)</span></strong><br>
+  Troisi&egrave;me s&eacute;ance sans r&eacute;action au catalyseur BNI. Carnet 1:42 (42:1 vendeur) &mdash; d&eacute;grad&eacute;. Le march&eacute; doute de la valorisation de la cession. Passage &agrave; ALL&Eacute;GER envisag&eacute; si BOC 133 confirme le carnet vendeur.
+</div>
+
+<div class="stock-alleger">
+  <strong>ONTBF &mdash; ONATEL BF | 2 745 FCFA | <span class="pos">+1,67 %</span> | PER 12,86 | Rdt 5,29 % | <span class="alleger">ALL&Eacute;GER</span></strong><br>
+  La hausse du jour est trompeuse. Mur vendeur institutionnel : 42 597 titres (2 366:1 vendeur). PER et rendement corrects mais la pression vendeur est r&eacute;dhibitoire. R&eacute;duire de 50 % imm&eacute;diatement.
+</div>
+
+<!-- ======================== ÉTAPE 4 ======================== -->
+<h2>&#201;tape 4 &mdash; Scoring (/10)</h2>
+<table>
+  <tr><th>Titre</th><th>Symbole</th><th>Valorisation (/3)</th><th>Momentum (/3)</th><th>Catalyseur (/4)</th><th>Total</th><th>Recommandation</th></tr>
+  <tr><td><strong>Sonatel SN</strong></td><td>SNTS</td><td class="pos">3</td><td class="pos">3</td><td class="pos">3</td><td><strong class="pos">9/10</strong></td><td><span class="acheter">ACHETER</span></td></tr>
+  <tr><td>Africa Global Logistics</td><td>SDSC</td><td class="pos">3</td><td class="pos">3</td><td>2</td><td><strong class="pos">8/10</strong></td><td><span class="acheter">ACHETER</span></td></tr>
+  <tr><td>Bank of Africa CI</td><td>BOAC</td><td>2</td><td>2</td><td class="pos">3</td><td><strong>7/10</strong></td><td><span class="acheter">ACHETER</span></td></tr>
+  <tr><td>Soci&eacute;t&eacute; Ivoirienne Banque</td><td>SIBC</td><td>2</td><td>2</td><td class="pos">3</td><td><strong>7/10</strong></td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td>Uniwax CI</td><td>UNXC</td><td>1</td><td class="pos">3</td><td class="pos">3</td><td><strong>7/10</strong></td><td><span class="acheter">ACHETER (avant AG)</span></td></tr>
+  <tr><td>Bank of Africa S&eacute;n&eacute;gal</td><td>BOAS</td><td class="pos">3</td><td>1</td><td>2</td><td><strong>6/10</strong></td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td>Palm CI</td><td>PALC</td><td>2</td><td>2</td><td>2</td><td><strong>6/10</strong></td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td>Bank of Africa BF</td><td>BOABF</td><td>1</td><td class="pos">3</td><td>2</td><td><strong>6/10</strong></td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td>BICI CI</td><td>BICC</td><td>2</td><td>1</td><td>2</td><td><strong>5/10</strong></td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td>Sitab CI</td><td>STBC</td><td>2</td><td>1</td><td class="neg">0</td><td><strong class="neg">3/10</strong></td><td><span class="vendre">VENDRE</span></td></tr>
+</table>
+
+<!-- ======================== ÉTAPE 5 ======================== -->
+<h2>&#201;tape 5 &mdash; Validation par le march&eacute;</h2>
+
+<h3>Volumes et valeurs transigu&eacute;es</h3>
+<table>
+  <tr><th>Cat&eacute;gorie</th><th>Titres &eacute;chang&eacute;s</th><th>% Volume</th><th>Valeur transigu&eacute;e (FCFA)</th><th>% Valeur</th></tr>
+  <tr><td>Total march&eacute; brut</td><td>2 162 902</td><td>100 %</td><td>2 859 916 642</td><td>100 %</td></tr>
+  <tr><td class="neg"><strong>ETIT (distorsion)</strong></td><td class="neg">1 871 864</td><td class="neg"><strong>86,54 %</strong></td><td>145 963 892</td><td>5,11 %</td></tr>
+  <tr style="background:#e6f4ea;"><td><strong>March&eacute; r&eacute;el hors ETIT</strong></td><td><strong>291 038</strong></td><td><strong>13,46 %</strong></td><td><strong>2 713 952 750</strong></td><td><strong>94,89 %</strong></td></tr>
+  <tr><td>SNTS seul</td><td>35 123</td><td>1,62 %</td><td class="pos"><strong>1 139 621 070</strong></td><td class="pos"><strong>39,85 %</strong></td></tr>
+</table>
+
+<div class="signal-box">
+  <strong>Signal institutionnel :</strong> SNTS repr&eacute;sente 42 % de la valeur r&eacute;elle totale (hors ETIT). Hors SNTS et ETIT, la liquidit&eacute; des 45 autres titres s'&eacute;tablit &agrave; 1,57 Mds &mdash; niveau typique d'une s&eacute;ance de mi-semaine. L'argent intelligent est cibl&eacute; sur SNTS (m&eacute;ga-flux) et BOAC (soutien 233:1), non sur une rotation large.
+</div>
+
+<div class="warn-box">
+  <span class="warn">[!]</span> <strong>Divergence volumique :</strong> Valeur r&eacute;elle hors ETIT (2,71 Mds) en baisse de 30 % vs BOC 131 (3,90 Mds). S&eacute;ance plus calme, concentr&eacute;e sur peu de titres.
+</div>
+
+<h3>Compartiment obligataire</h3>
+<table>
+  <tr><th>Cat&eacute;gorie</th><th>Titres</th><th>Valeur (FCFA)</th></tr>
+  <tr><td>Obligations classiques</td><td>725</td><td>7 243 750</td></tr>
+  <tr><td>FCTC SENELEC (FSNLC.O1 + O2)</td><td class="pos"><strong>10 250</strong></td><td class="pos"><strong>102 372 000</strong></td></tr>
+  <tr style="background:#e6f4ea;"><td><strong>Total obligations</strong></td><td><strong>10 975</strong></td><td><strong>109 615 750</strong></td></tr>
+</table>
+<p>Activit&eacute; obligataire en forte hausse (+3 546 % en volume, +4 780 % en valeur vs BOC 131). L'essentiel provient des FCTC SENELEC : 102 M FCFA sur les &eacute;missions structur&eacute;es SENELEC. Signal d'appet&icirc;t institutionnel pour la dette structur&eacute;e s&eacute;n&eacute;galaise.</p>
+
+<!-- ======================== ÉTAPE 6 ======================== -->
+<h2>&#201;tape 6 &mdash; Quantit&eacute;s r&eacute;siduelles</h2>
+
+<table>
+  <tr><th>Symbole</th><th>Titre</th><th>Qt&eacute; Achat</th><th>Cours Achat / Vente</th><th>Qt&eacute; Vente</th><th>Ratio</th><th>Signal</th></tr>
+  <tr><td>ETIT</td><td>Ecobank Trans. TG</td><td class="pos">2 173 491</td><td>March&eacute; / &mdash;</td><td>&mdash;</td><td>&mdash;</td><td>Distorsion microcap</td></tr>
+  <tr><td><strong>UNXC</strong></td><td>Uniwax CI</td><td class="pos"><strong>33 315</strong></td><td>March&eacute; / &mdash;</td><td>&mdash;</td><td>&mdash;</td><td class="pos"><strong>AG demain &mdash; pression max</strong></td></tr>
+  <tr><td>SIBC</td><td>Soc. Ivoirienne Banque</td><td class="pos">7 060</td><td>8 700 / 8 800</td><td>37</td><td class="pos"><strong>190:1 ACH</strong></td><td class="pos">Retournement positif fort</td></tr>
+  <tr><td>BOAC</td><td>Bank of Africa CI</td><td class="pos">3 507</td><td>9 650 / 9 690</td><td>15</td><td class="pos"><strong>233:1 ACH</strong></td><td class="pos">Soutien institutionnel</td></tr>
+  <tr><td>SDSC</td><td>Africa Global Logistics</td><td class="pos">4 726</td><td>March&eacute; / &mdash;</td><td>&mdash;</td><td>&mdash;</td><td class="pos">Demande non satisfaite</td></tr>
+  <tr><td>CBIBF</td><td>Coris Bank International</td><td class="pos">269</td><td>30 005 / 30 100</td><td>25</td><td class="pos">10,8:1 ACH</td><td class="pos">Pression acheteuse solide</td></tr>
+  <tr><td>SNTS</td><td>Sonatel SN</td><td class="pos">828</td><td>32 500 / 32 800</td><td>153</td><td class="pos">5,4:1 ACH</td><td class="pos">Soutien continu</td></tr>
+  <tr><td>BOABF</td><td>Bank of Africa BF</td><td class="pos">869</td><td>March&eacute; / &mdash;</td><td>&mdash;</td><td>&mdash;</td><td class="pos">Aucun vendeur</td></tr>
+  <tr><td>PALC</td><td>Palm CI</td><td>232</td><td>8 700 / 8 775</td><td>360</td><td>1,55:1 VEN</td><td>L&eacute;g&egrave;rement vendeur</td></tr>
+  <tr><td>BOAS</td><td>Bank of Africa S&eacute;n&eacute;gal</td><td>561</td><td>7 315 / 7 320</td><td>1 161</td><td class="neg">2,1:1 VEN</td><td>Mod&eacute;r&eacute;</td></tr>
+  <tr><td>BICC</td><td>BICI CI</td><td>1</td><td>27 800 / 28 000</td><td>42</td><td class="neg"><strong>42:1 VEN</strong></td><td class="neg">Carnet tr&egrave;s d&eacute;grad&eacute;</td></tr>
+  <tr><td>BOAN</td><td>Bank of Africa NG</td><td>10</td><td>5 090 / 5 110</td><td>141</td><td class="neg"><strong>14,1:1 VEN</strong></td><td class="neg">Spike distribu&eacute; &mdash; <span class="eviter">&#201;VITER</span></td></tr>
+  <tr><td>STBC</td><td>Sitab CI</td><td>65</td><td>23 000 / 23 600</td><td>935</td><td class="neg"><strong>14,4:1 VEN</strong></td><td class="neg">Distribution post-AG</td></tr>
+  <tr><td>NTLC</td><td>Nestl&eacute; CI</td><td>12</td><td>15 930 / 16 000</td><td>644</td><td class="neg">53,7:1 VEN</td><td class="neg">Pression vendeur forte</td></tr>
+  <tr><td>ORAC</td><td>Orange CI</td><td>5</td><td>15 800 / 16 165</td><td>1 565</td><td class="neg">313:1 VEN</td><td class="neg">Mur institutionnel</td></tr>
+  <tr><td>SMBC</td><td>SMB CI</td><td>11</td><td>16 315 / 16 320</td><td>382</td><td class="neg"><strong>34,7:1 VEN</strong></td><td class="neg">Pression persistante</td></tr>
+  <tr><td><strong>ONTBF</strong></td><td>Onatel BF</td><td>18</td><td>2 710 / 2 745</td><td class="neg"><strong>42 597</strong></td><td class="neg"><strong>2 366:1 VEN</strong></td><td class="neg"><strong>MUR CRITIQUE &mdash; <span class="alleger">ALL&Eacute;GER</span></strong></td></tr>
+  <tr><td>TTLS</td><td>TotalEnergies Mktg SN</td><td>&mdash;</td><td>&mdash; / March&eacute;</td><td>497</td><td class="neg">Total VEN</td><td class="neg">Post ex-div &mdash; sortir</td></tr>
+</table>
+
+<div class="alert-box">
+  <span class="nok">&#10007;</span> <strong>ONTBF &mdash; MUR CRITIQUE :</strong> 42 597 titres c&ocirc;t&eacute; vente (2 366:1), le plus massif de la cote sur 3 s&eacute;ances. Origine institutionnelle probable. All&eacute;ger imm&eacute;diatement.
+</div>
+<div class="signal-box">
+  <strong>SIBC &mdash; RETOURNEMENT POSITIF :</strong> de 26:1 vendeur (BOC 131) &agrave; 190:1 acheteur (BOC 132) en 24h. Support institutionnel au niveau 8 700 FCFA identifi&eacute;. &Agrave; surveiller.
+</div>
+
+<!-- ======================== ÉTAPE 7 ======================== -->
+<h2>&#201;tape 7 &mdash; Conclusion strat&eacute;gique</h2>
+
+<h3>Top 3 des opportunit&eacute;s globales</h3>
+<div class="stock-acheter">
+  <span class="medal-gold">#1</span> <strong>SNTS (Sonatel SN) &mdash; 32 500 FCFA</strong><br>
+  Troisi&egrave;me m&eacute;ga-flux institutionnel cons&eacute;cutif (1,14 Mds FCFA). PER 7,86 + Rdt 5,35 %. Carnet 5,4:1 acheteur. Signal d'achat le plus convaincant et le plus durable de la cote. Score 9/10.
+</div>
+<div class="stock-acheter">
+  <span class="medal-silver">#2</span> <strong>SDSC (Africa Global Logistics) &mdash; 2 525 FCFA</strong><br>
+  PER 6,52 = d&eacute;cote structurelle sur actif logistique r&eacute;gional de premier rang. +7,45 % avec 4 726 acheteurs / aucun vendeur. Flux et valorisation parfaitement align&eacute;s.
+</div>
+<div class="stock-acheter">
+  <span class="medal-bronze">#3</span> <strong>UNXC (Uniwax CI) &mdash; 1 660 FCFA</strong><br>
+  AG demain (16/07, 09:00). Carnet 33 315 acheteurs / aucun vendeur. Fen&ecirc;tre d'entr&eacute;e en cl&ocirc;ture aujourd'hui uniquement. Stop si cours post-AG &lt; 1 550 FCFA.
+</div>
+
+<h3>Risques identifi&eacute;s &agrave; court terme</h3>
+<div class="alert-box">
+  <ol style="margin:0;padding-left:18px;">
+    <li><strong>STBC</strong> : distribution post-AG confirm&eacute;e (14,4:1 vendeur) &mdash; risque de poursuite du repli sous 22 000 FCFA.</li>
+    <li><strong>ONTBF</strong> : mur 42 597 (2 366:1) &mdash; risque de d&eacute;crochage si l'institutionnel passe ses ordres au march&eacute;.</li>
+    <li><strong>BICC</strong> : catalyseur BNI non int&eacute;gr&eacute; + carnet 42:1 vendeur &mdash; risque passage sous 27 000 FCFA.</li>
+    <li><strong>Sp&eacute;culation</strong> BOAN/BNBC/UNLC : retournement brutal possible sans pr&eacute;venir.</li>
+    <li><strong>Jeudi 16/07</strong> : AG UNXC + lendemain ex-div TTLS &rarr; volatilit&eacute; accrue attendue.</li>
+  </ol>
+</div>
+
+<h3>Plan d&apos;action imm&eacute;diat</h3>
+<table>
+  <tr><th>Titre</th><th>Action</th><th>Cours</th><th>Timing</th><th>Justification</th></tr>
+  <tr><td><strong>SNTS</strong></td><td><span class="acheter">ACHETER</span></td><td>32 500</td><td>Ouverture 16/07</td><td>M&eacute;ga-flux x3 s&eacute;ances + PER 7,86 + Rdt 5,35 % + carnet 5,4:1</td></tr>
+  <tr><td><strong>UNXC</strong></td><td><span class="acheter">ACHETER</span></td><td>1 660</td><td>Avant cl&ocirc;ture 15/07</td><td>AG demain + 33 315 acheteurs + aucun vendeur</td></tr>
+  <tr><td><strong>SDSC</strong></td><td><span class="acheter">ACHETER</span></td><td>2 525</td><td>Imm&eacute;diat</td><td>PER 6,52 + +7,45 % + 4 726 acheteurs/0 vendeur</td></tr>
+  <tr><td><strong>BOAC</strong></td><td><span class="acheter">ACHETER</span></td><td>9 650</td><td>Sur faiblesse</td><td>Carnet 233:1 ACH + PER 10,86 + Rdt 6,19 %</td></tr>
+  <tr><td><strong>STBC</strong></td><td><span class="vendre">VENDRE</span></td><td>23 005</td><td>URGENT</td><td>AG &eacute;puis&eacute;e + carnet 14,4:1 VEN + -4,92 % ce jour</td></tr>
+  <tr><td><strong>TTLS</strong></td><td><span class="vendre">VENDRE</span></td><td>4 110</td><td>URGENT</td><td>Ex-div aujourd'hui, drop -7,43 % confirm&eacute;</td></tr>
+  <tr><td><strong>ONTBF</strong></td><td><span class="alleger">ALL&Eacute;GER</span></td><td>2 745</td><td>Cette semaine</td><td>Mur 42 597 vendeurs (2 366:1) &mdash; risque de d&eacute;crochage</td></tr>
+  <tr><td><strong>SMBC</strong></td><td><span class="alleger">ALL&Eacute;GER</span></td><td>16 315</td><td>Court terme</td><td>Carnet 34,7:1 VEN persistant</td></tr>
+  <tr><td><strong>PALC</strong></td><td><span class="attendre">ATTENDRE</span></td><td>8 700</td><td>Entr&eacute;e &lt; 8 500</td><td>Double crit&egrave;re valid&eacute; mais carnet 1,55:1 vendeur</td></tr>
+  <tr><td><strong>BOAN</strong></td><td><span class="eviter">&#201;VITER</span></td><td>5 110</td><td>&mdash;</td><td>PER 259 + carnet 14,1:1 VEN post-spike</td></tr>
+</table>
+
+<div class="disclaimer">
+  <strong>Disclaimer :</strong> Ce rapport BOC_REVU est produit &agrave; titre p&eacute;dagogique et informatif. Il ne constitue pas un conseil personnalis&eacute; en investissement au sens de la r&eacute;glementation UEMOA/AMF-UMOA. Les cours et donn&eacute;es mentionn&eacute;s sont issus du Bulletin Officiel de la Cote N&deg;132 de la BRVM (15 juillet 2026). Tout investissement comporte un risque de perte en capital. L&apos;investisseur est seul responsable de ses d&eacute;cisions de placement.
+</div>

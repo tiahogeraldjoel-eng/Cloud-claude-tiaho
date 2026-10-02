@@ -1,0 +1,412 @@
+<meta charset="UTF-8">
+<title>BOC_REVU N°159 — Lundi 24 août 2026</title>
+<style>
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; color: #24292f; background: #ffffff; margin: 0; padding: 20px 32px; line-height: 1.6; }
+  h1 { color: #ffffff; background: #0b3d91; padding: 14px 20px; border-radius: 6px; font-size: 1.5em; margin-bottom: 6px; }
+  h2 { color: #ffffff; background: #0b3d91; padding: 8px 16px; border-radius: 4px; font-size: 1.15em; margin-top: 28px; margin-bottom: 10px; }
+  h3 { color: #0b3d91; font-size: 1em; margin-top: 16px; margin-bottom: 6px; border-bottom: 1px solid #d0d7de; padding-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 18px 0; font-size: 13px; }
+  th { background: #0b3d91; color: #ffffff; padding: 7px 10px; text-align: left; }
+  td { padding: 6px 10px; border-bottom: 1px solid #d0d7de; }
+  tr:nth-child(even) td { background: #f6f8fa; }
+  tr:nth-child(odd) td { background: #ffffff; }
+  blockquote { border-left: 4px solid #bf8700; background: #fffbf0; margin: 12px 0; padding: 8px 14px; border-radius: 0 4px 4px 0; font-size: 13px; }
+  p { margin: 8px 0; }
+  ul { margin: 6px 0 10px 0; padding-left: 20px; }
+  li { margin-bottom: 3px; }
+  .disclaimer { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; padding: 12px 16px; font-size: 12px; color: #57606a; margin-top: 24px; }
+  .section-divider { border: none; border-top: 2px solid #0b3d91; margin: 24px 0 10px 0; opacity: 0.2; }
+  .pos { color: #1a7f37; font-weight: 700; }
+  .neg { color: #cf222e; font-weight: 700; }
+  .neu { color: #57606a; font-weight: 700; }
+  .warn { color: #bf8700; font-weight: 700; }
+
+  /* Badges recommandation */
+  .acheter { background: #1a7f37; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .surveiller { background: #0b3d91; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .attendre { background: #bf8700; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .eviter { background: #cf222e; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .alleger { background: #e36209; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .vendre { background: #8b0000; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .maintenir { background: #57606a; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .npe { background: #5a0080; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .acheter-tactique { background: #1a7f37; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; border: 1px dashed #fff; }
+
+  /* Blocs stock colorés */
+  .stock-acheter { border-left: 4px solid #1a7f37; background: #f0faf3; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-surveiller { border-left: 4px solid #0b3d91; background: #eef3fb; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-eviter { border-left: 4px solid #cf222e; background: #fdecea; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-attendre { border-left: 4px solid #bf8700; background: #fffbf0; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-vendre { border-left: 4px solid #8b0000; background: #fff0f0; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-alleger { border-left: 4px solid #e36209; background: #fff5ec; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-maintenir { border-left: 4px solid #57606a; background: #f6f8fa; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-npe { border-left: 4px solid #5a0080; background: #faf0ff; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+
+  /* Alerte calendrier */
+  .calendrier-box { background: #fff8e1; border: 2px solid #bf8700; border-radius: 6px; padding: 12px 16px; margin: 16px 0; }
+  .calendrier-box h3 { color: #bf8700; border-bottom-color: #bf8700; }
+
+  /* KPI row */
+  .kpi-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
+  .kpi { background: #eef3fb; border: 1px solid #cdd9ea; border-radius: 6px; padding: 10px 14px; text-align: center; min-width: 110px; flex: 1; }
+  .kpi .val { font-size: 1.5em; font-weight: 800; color: #0b3d91; }
+  .kpi .val.pos { color: #1a7f37; }
+  .kpi .val.neg { color: #cf222e; }
+  .kpi .lbl { font-size: 10px; color: #57606a; text-transform: uppercase; letter-spacing: .04em; }
+
+  /* Top 3 */
+  .top3-box { background: #f0faf3; border: 2px solid #1a7f37; border-radius: 6px; padding: 12px 16px; margin: 10px 0; }
+  .risque-box { background: #fdecea; border: 2px solid #cf222e; border-radius: 6px; padding: 12px 16px; margin: 10px 0; }
+
+  /* Garde-fou */
+  .gardeFou { background: #faf0ff; border: 2px solid #5a0080; border-radius: 6px; padding: 10px 16px; margin: 10px 0; font-size: 13px; }
+</style>
+
+<h1>BOC_REVU — Bulletin Officiel de la Cote N°159 | Lundi 24 août 2026</h1>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="val pos">530,07</div><div class="lbl">Composite clôture</div></div>
+  <div class="kpi"><div class="val pos">+0,17 %</div><div class="lbl">Variation jour</div></div>
+  <div class="kpi"><div class="val pos">+53,31 %</div><div class="lbl">YTD</div></div>
+  <div class="kpi"><div class="val pos">23H / 16B</div><div class="lbl">Breadth (biais acheteur)</div></div>
+  <div class="kpi"><div class="val">1 985 426</div><div class="lbl">Volume (+38,07 %)</div></div>
+  <div class="kpi"><div class="val">2 470 M F</div><div class="lbl">Valeur (+12,64 %)</div></div>
+</div>
+
+<h2>Étape 1 — Vue d'ensemble du marché</h2>
+
+<h3>Indices généraux</h3>
+<table>
+  <tr><th>Indice</th><th>Clôture</th><th>Variation jour</th><th>YTD</th></tr>
+  <tr><td>Composite</td><td>530,07</td><td class="pos">+0,17 %</td><td class="pos">+53,31 %</td></tr>
+  <tr><td>Prestige</td><td>196,44</td><td class="neg">-0,12 %</td><td>—</td></tr>
+  <tr><td>Principal</td><td>385,35</td><td class="pos">+0,66 %</td><td>—</td></tr>
+</table>
+
+<p><strong>PER marché :</strong> 17,41 &nbsp;|&nbsp; <strong>Rendement dividende :</strong> 5,82 %</p>
+<p><strong>Volume :</strong> 1 985 426 titres (<span class="pos">+38,07 %</span>) &nbsp;|&nbsp; <strong>Valeur transigée :</strong> 2 470 204 134 F (<span class="pos">+12,64 %</span>)</p>
+
+<h3>Breadth de séance</h3>
+<p>Bilan : <strong>23 hausses / 16 baisses / 7 inchangés</strong> sur 46 titres actifs. <strong>Biais de marché : <span class="acheter" style="font-size:13px;">ACHETEUR MODÉRÉ</span></strong> (ratio 1,44:1 en faveur des hausses).</p>
+
+<blockquote>Le marché reprend calmement après le week-end. Le Composite gagne un modeste +0,17 % (consolidation du niveau 529-530 pts atteint vendredi). La progression du volume (+38,07 %) et de la valeur transigée (+12,64 %) signale un regain d'intérêt acheteur en ce début de semaine tronquée (marché fermé demain mardi 25/08 — Nuit du Mawlid). Breadth positif confirmé.</blockquote>
+
+<h3>Indices sectoriels</h3>
+<table>
+  <tr><th>Rang</th><th>Secteur</th><th>Variation</th><th>PER</th><th>Commentaire</th></tr>
+  <tr><td><strong>#1</strong></td><td>Consommation Discrétionnaire</td><td class="pos">+1,52 %</td><td>41,03</td><td>ABJC +7,46 % + NEIC +4,17 % — PER élevé mais momentum</td></tr>
+  <tr><td>#2</td><td>Services Publics</td><td class="pos">+0,53 %</td><td>27,28</td><td>CIEC +1,01 % soutient le secteur</td></tr>
+  <tr><td>#3</td><td>Services Financiers</td><td class="pos">+0,54 %</td><td>16,84</td><td>BOAS +6,25 %, BOABF +5,26 % tirent le secteur</td></tr>
+  <tr><td>#4</td><td>Énergie</td><td class="pos">+0,16 %</td><td>20,30</td><td>Progression modeste</td></tr>
+  <tr><td>#5</td><td>Consommation de Base</td><td class="pos">+0,03 %</td><td><strong style="color:#1a7f37;">10,62</strong></td><td>Stable — mieux valorisé du marché</td></tr>
+  <tr><td>#6</td><td>Télécoms</td><td class="neg">-0,28 %</td><td>13,59</td><td>Légère baisse — consolidation post-W34</td></tr>
+  <tr><td>#7</td><td>Industriels</td><td class="neg" style="color:#cf222e;"><strong>-1,61 %</strong></td><td><strong style="color:#cf222e;">114,94</strong></td><td>SDSC -2,88 % + FTSC -1,38 % — PER aberrant (bulle SDSC)</td></tr>
+</table>
+
+<p><strong>Secteur le plus solide :</strong> Services Financiers (momentum BOA + PER raisonnable 16,84) &nbsp;|&nbsp; <strong>Secteur le mieux valorisé :</strong> Consommation de Base (PER 10,62) &nbsp;|&nbsp; <strong>Secteur le plus faible :</strong> <span class="neg">Industriels (-1,61 %)</span></p>
+
+<hr class="section-divider">
+
+<h2>Étape 2 — Filtrage des actions</h2>
+
+<h3>2A. Valorisation — PER cible (8–15) et rendement ≥ 5 %</h3>
+<table>
+  <tr><th>Titre</th><th>PER</th><th>Rdt Dividende</th><th>Statut</th></tr>
+  <tr><td><strong>SPHC</strong></td><td style="color:#1a7f37;"><strong>~8,5</strong></td><td class="pos"><strong>4,65 % (net PP 430,32 F)</strong></td><td><span class="acheter">OPPORTUNITÉ CUM-DIV</span> — prix réduit (-190 F vs vendredi)</td></tr>
+  <tr><td><strong>SIBC</strong></td><td style="color:#1a7f37;"><strong>~9,0</strong></td><td>—</td><td><span class="surveiller">SURVEILLER</span> — carnet 500:1 ACHETEUR (accumulation institutionnelle)</td></tr>
+  <tr><td>BICB</td><td>13,54</td><td>3,00 %</td><td>Zone cible — carnet équilibré</td></tr>
+  <tr><td>BOAS</td><td>13,97</td><td class="pos">5,29 %</td><td><span class="acheter">ACHETER</span> — momentum fort + fondamentaux</td></tr>
+  <tr><td>SNTS</td><td>—</td><td>~4,70 %</td><td><span class="maintenir">MAINTENIR</span> — post-spike, stabilisation</td></tr>
+  <tr><td>PALC</td><td>—</td><td>~5,20 %</td><td><span class="surveiller">SURVEILLER</span> — prise de profit en cours</td></tr>
+  <tr><td>ABJC</td><td>29,51</td><td>5,73 % (net PP ~4,81 %)</td><td><span class="surveiller">SURVEILLER</span> — PER élevé mais rendement attractif, ex-div 29/09</td></tr>
+</table>
+
+<h3>Titres chers à éviter (PER disproportionné)</h3>
+<table>
+  <tr><th>Titre</th><th>PER</th><th>Risque</th></tr>
+  <tr><td><strong>SDSC (AGL CI)</strong></td><td class="neg"><strong>187,24</strong></td><td class="neg">Bulle manifeste — PER aberrant</td></tr>
+  <tr><td>SAFC</td><td class="neg">98,21</td><td class="neg">Bulle</td></tr>
+  <tr><td>Industriels (secteur)</td><td class="neg">114,94</td><td class="neg">Distorsion par SDSC</td></tr>
+  <tr><td>ABJC</td><td class="warn">29,51</td><td>Élevé mais dividende justifie partiellement</td></tr>
+</table>
+
+<hr class="section-divider">
+
+<h3>2B. Momentum — Variations du jour croisées avec volumes</h3>
+<table>
+  <tr><th>Titre</th><th>Variation</th><th>Volume</th><th>Valeur transigée</th><th>Signal</th></tr>
+  <tr><td><strong>ABJC</strong></td><td class="pos"><strong>+7,46 %</strong></td><td>5 768</td><td>20,2 M F</td><td>Spike dividende pré-ex-div 29/09 — carnet 233A/Marché</td></tr>
+  <tr><td><strong>BOAS</strong></td><td class="pos"><strong>+6,25 %</strong></td><td>5 658</td><td>47 M F</td><td>Momentum confirmé par volume — carnet 1,7:1 A</td></tr>
+  <tr><td><strong>BOABF</strong></td><td class="pos"><strong>+5,26 %</strong></td><td>10 184</td><td>80,9 M F</td><td class="warn">Spike — carnet 1:64,9 V post-hausse → prise de profit</td></tr>
+  <tr><td>NEIC</td><td class="pos">+4,17 %</td><td>4 196</td><td>10,5 M F</td><td>Momentum fort — carnet 61,3:1 A</td></tr>
+  <tr><td>BICB</td><td class="pos">+3,60 %</td><td>2 683</td><td>22,5 M F</td><td>Hausse confirmée — carnet 2,1:1 A</td></tr>
+  <tr><td>SICC</td><td class="neg">-7,46 %</td><td>353</td><td>2,9 M F</td><td class="warn">Forte baisse sur faible volume — anomalie à surveiller</td></tr>
+  <tr><td>CBIBF</td><td class="neg">-3,33 %</td><td>991</td><td>29,3 M F</td><td>Baisse mais carnet 5,5:1 A — signal paradoxal</td></tr>
+  <tr><td><strong>SDSC</strong></td><td class="neg"><strong>-2,88 %</strong></td><td>6 930</td><td>18,7 M F</td><td class="neg">Correction persistante — carnet 1:8,3 V</td></tr>
+  <tr><td>SPHC</td><td class="neg">-2,01 %</td><td>NC</td><td>~NC</td><td><span class="acheter" style="font-size:11px;">OPPORTUNITÉ</span> — baisse = meilleur prix d'achat pré-ex-div</td></tr>
+</table>
+
+<hr class="section-divider">
+
+<h3>2C. Catalyseurs détectés</h3>
+<table>
+  <tr><th>Date</th><th>Titre</th><th>Événement</th><th>Impact</th></tr>
+  <tr style="background:#f0faf3;"><td><strong>24/08 (aujourd'hui)</strong></td><td><strong>SGBC</strong></td><td><strong>Paiement dividende</strong> (brut 2 606 F / net PP 2 293,28 F)</td><td><span class="acheter" style="font-size:11px;">DIVIDENDE REÇU</span></td></tr>
+  <tr style="background:#fdecea;"><td><strong>25/08 (demain)</strong></td><td>MARCHÉ</td><td><strong>FERIÉ</strong> — Nuit du Mawlid (avis DC/BR 205-2026)</td><td><span class="eviter" style="font-size:11px;">FERMÉ</span></td></tr>
+  <tr style="background:#fff8e1;"><td><strong>26/08 (mercredi)</strong></td><td><strong>SPHC</strong></td><td><strong>DERNIER JOUR CUM-DIV</strong> (brut 489 F / net PP 430,32 F)</td><td><span class="acheter" style="font-size:11px;">ACHETER avant clôture</span></td></tr>
+  <tr style="background:#fdecea;"><td><strong>27/08 (jeudi)</strong></td><td><strong>SPHC</strong></td><td><strong>EX-DIVIDENDE</strong> — drop mécanique ~489 F (~5,3 %)</td><td><span class="eviter" style="font-size:11px;">NE PAS ACHETER</span></td></tr>
+  <tr style="background:#fff8e1;"><td><strong>27/08 (jeudi)</strong></td><td><strong>TTLC</strong></td><td>Dernier jour CUM-DIV (brut 158,83 F / net PP 139,77 F)</td><td><span class="acheter" style="font-size:11px;">ACHETER avant clôture</span></td></tr>
+  <tr style="background:#fdecea;"><td><strong>28/08 (vendredi)</strong></td><td><strong>TTLC</strong></td><td><strong>EX-DIVIDENDE</strong> TOTALENERGIES CI — paiement 31/08</td><td><span class="eviter" style="font-size:11px;">NE PAS ACHETER</span></td></tr>
+  <tr><td>07/09</td><td>NTLC</td><td>Paiement dividende (brut 420 F / net PP 369,60 F)</td><td><span class="surveiller" style="font-size:11px;">SURVEILLER</span></td></tr>
+  <tr><td>24/09</td><td>SHEC</td><td>EX-DIVIDENDE Vivo Energy (brut 96,67 F)</td><td><span class="attendre" style="font-size:11px;">ATTENDRE</span></td></tr>
+  <tr><td>29/09</td><td>ABJC</td><td>EX-DIVIDENDE Servair Abidjan (brut 229 F / net PP 201,52 F)</td><td><span class="surveiller" style="font-size:11px;">SURVEILLER</span></td></tr>
+  <tr><td>03/09</td><td>TPBF</td><td>Première cotation DIASPORA BONDS 6,75 % et 6,85 %</td><td><span class="attendre" style="font-size:11px;">ATTENDRE</span></td></tr>
+  <tr><td>27/08</td><td>EOM</td><td>Première cotation EOM.O23 et EOM.O24</td><td><span class="attendre" style="font-size:11px;">ATTENDRE</span></td></tr>
+</table>
+
+<blockquote><strong>DOUBLE EX-DIV cette semaine :</strong> SPHC (jeudi 27/08) et TTLC (vendredi 28/08). Deux opportunités de dividende en 2 jours consécutifs sur une semaine de seulement 4 séances.</blockquote>
+
+<hr class="section-divider">
+
+<h3>2D. Recommandations de vente / allègement</h3>
+
+<div class="gardeFou">
+  <strong>[GARDE-FOU ANTI-ALLER-RETOUR] SDSC (AGL CI)</strong><br>
+  Prix de vente de référence : 2 510 F. Seuil break-even : 2 510 × 0,9685 = <strong>2 431 F</strong>.<br>
+  Cours BOC N°159 : 2 700 F &gt;&gt; seuil. Carnet 1:8,3 VENDEUR persistant.<br>
+  <span class="npe">NE PAS RE-ENTRER</span> — aucun signal d'achat global justifié. Ex-vendeurs : attendre cours &lt; 2 431 F.
+</div>
+
+<div class="gardeFou">
+  <strong>[GARDE-FOU ANTI-ALLER-RETOUR] STBC (Sitab CI)</strong><br>
+  Prix de vente de référence : 22 235 F. Seuil break-even : 22 235 × 0,9685 = <strong>21 535 F</strong>.<br>
+  Cours BOC N°159 : 22 900 F &gt;&gt; seuil. Carnet 1:5 VENDEUR léger.<br>
+  <span class="npe">NE PAS RE-ENTRER</span> si vendu. Porteurs actuels : <span class="surveiller">SURVEILLER</span>.
+</div>
+
+<div class="stock-alleger">
+  <strong>BOABF (Bank of Africa Burkina Faso)</strong> — <span class="surveiller">SURVEILLER AVEC PRUDENCE</span><br>
+  Après spike +5,26 % (2e journée consécutive de hausse), le carnet résiduel est <strong>1:64,9 VENDEUR</strong> (50A / 3 243V). Prise de profit institutionnelle massive post-hausse. Porteurs récents : envisager allègement partiel.
+</div>
+
+<div class="stock-attendre">
+  <strong>BOAC (Bank of Africa Côte d'Ivoire)</strong> — <span class="attendre">SURVEILLER</span><br>
+  Carnet 1:29,4 VENDEUR (53A / 1 556V). Pression institutionnelle persistante. ATTENDRE avant tout nouveau renforcement.
+</div>
+
+<div class="stock-attendre">
+  <strong>SGBC (Société Générale de Banques CI)</strong> — <span class="attendre">POST-DIVIDENDE</span><br>
+  Dividende payé aujourd'hui (2 293,28 F net PP). Carnet 1:28,6 V (21A / 600V). Normalisation post-ex-div. Porteurs ayant atteint leur objectif peuvent alléger.
+</div>
+
+<div class="stock-surveiller">
+  <strong>NSBC (Nsia Banque CI)</strong> — <span class="surveiller">SURVEILLER</span> (amélioration)<br>
+  Carnet 1,8:1 ACHETEUR (54A / 30V) — amélioration notable vs semaines précédentes (était 3:1 VENDEUR W34). Cours 22 800 F (-0,44 %). Signal moins alarmant — SURVEILLER plutôt que VENDRE immédiat.
+</div>
+
+<hr class="section-divider">
+
+<h2>Étape 3 — Sélection des actions clés</h2>
+
+<div class="stock-acheter">
+  <strong>SPHC (Société Pharmaceutique de Côte d'Ivoire)</strong> &nbsp;<span class="acheter">ACHETER</span><br>
+  <em>Cours : 9 250 F (-2,01 %) | Dividende brut 489 F | Net PP 430,32 F | Rendement 4,65 %</em><br><br>
+  La baisse est une opportunité d'achat, pas un signal de vente. SPHC est encore <strong>CUM-DIVIDENDE</strong>. Le dernier jour pour acheter cum-div est le <strong>mercredi 26 août</strong> (marché fermé demain 25/08). L'ex-dividende tombe le jeudi 27/08. À 9 250 F, le rendement net PP monte à <strong>4,65 %</strong> (supérieur aux 4,56 % de vendredi à 9 440 F). La baisse de -190 F par rapport à vendredi rend le titre encore plus attractif. Carnet 10A/441V : prise de profit des non-dividende-seekers. Les acheteurs de dividende devraient entrer <strong>aujourd'hui ou mercredi 26/08</strong>.
+</div>
+
+<div class="stock-surveiller">
+  <strong>ABJC (Servair Abidjan CI)</strong> &nbsp;<span class="surveiller">SURVEILLER</span><br>
+  <em>Cours : 3 600 F (+7,46 %) | PER 29,51 | Dividende net PP ~201,52 F | Ex-div 29/09</em><br><br>
+  Spike important motivé par l'annonce du dividende (brut 229 F, ex-div 29/09). Carnet 233A/Marché (aucun vendeur résiduel). PER 29,51 — élevé mais rendement net PP 5,60 % sur cours actuel. À surveiller : la hausse de +7,46 % en une séance intègre peut-être déjà partiellement le dividende (encore 36 jours avant ex-div). Entrée encore possible mais pas urgente — attendre consolidation sous 3 500 F.
+</div>
+
+<div class="stock-acheter">
+  <strong>BOAS (Bank of Africa Sénégal)</strong> &nbsp;<span class="acheter">ACHETER</span><br>
+  <em>Cours : 8 500 F (+6,25 %) | PER 13,97 | Rendement 5,29 %</em><br><br>
+  Deuxième forte hausse de la semaine. Carnet 373A/220V → 1,7:1 ACHETEUR — le momentum reste en faveur des acheteurs malgré le spike. Fondamentaux solides (PER zone cible, rendement au-dessus de 5 %). Signal d'achat confirmé.
+</div>
+
+<div class="stock-alleger">
+  <strong>BOABF (Bank of Africa Burkina Faso)</strong> &nbsp;<span class="attendre">PRUDENCE</span><br>
+  <em>Cours : 8 000 F (+5,26 %) | YTD +113,33 % | Carnet 1:64,9 VENDEUR</em><br><br>
+  Performance impressionnante sur l'année. Mais carnet 50A/3 243V → 1:64,9 VENDEUR post-hausse. Signal de prise de profit institutionnelle massive. Pour les détenteurs : envisager allègement partiel. Pour les nouveaux entrants : attendre absorption du mur vendeur (ratio retour vers l'équilibre).
+</div>
+
+<div class="stock-acheter">
+  <strong>BICB (Banque Internationale Commerce et Industrie du Burkina)</strong> &nbsp;<span class="surveiller">SURVEILLER</span><br>
+  <em>Cours : 8 495 F (+3,60 %) | PER 13,54 | Rendement 3,00 %</em><br><br>
+  Troisième journée positive. Carnet 82A/39V → 2,1:1 ACHETEUR. Signal d'achat maintenu. Ex-div passé (30/07) — signal pur sur fondamentaux.
+</div>
+
+<div class="stock-surveiller">
+  <strong>SIBC (Société Ivoirienne de Banque)</strong> &nbsp;<span class="surveiller">SURVEILLER</span><br>
+  <em>Cours : NC (Non Coté ce jour) | Carnet 3 000A@9 060 / 6V@9 100 | PER ~9,0</em><br><br>
+  Carnet exceptionnel : <strong>500:1 ACHETEUR</strong>. Titre NC ce jour mais le carnet révèle une accumulation institutionnelle massive. PER ~9,0, valorisation attractive. Signal acheteur parmi les plus forts de la séance. Surveiller la première transaction (mercredi 26/08 si cotation).
+</div>
+
+<div class="stock-maintenir">
+  <strong>SNTS (Sonatel)</strong> &nbsp;<span class="maintenir">MAINTENIR</span><br>
+  <em>Cours : ~36 500–36 900 F | Carnet 9A@36 500 / 11V@36 900 | PR personnel : 34 000 F</em><br><br>
+  Carnet ~1:1,2 NEUTRE — stabilisation post-spike (+7,50 % vendredi). La pression vendeuse de vendredi (1:12,5) s'est dissipée. Position personnelle : <strong>+7,35 à +8,53 %</strong> au-dessus du prix de revient. MAINTENIR (horizon 20 ans).
+</div>
+
+<div class="stock-acheter">
+  <strong>TTLC (TotalEnergies Marketing CI)</strong> &nbsp;<span class="acheter-tactique">ACHETER TACTIQUE</span><br>
+  <em>Cours : 3 400 F | Dividende brut 158,83 F | Net PP 139,77 F | Rendement 4,11 %</em><br><br>
+  Dernier jour CUM-DIV = <strong>jeudi 27/08</strong>. Ex-div vendredi 28/08. Carnet 420A/1 344V → 1:3,2 VENDEUR — pression vendeuse à surveiller. Achat tactique possible si le cours se stabilise. Délai : 3 séances restantes (lundi en cours, mercredi 26, jeudi 27).
+</div>
+
+<div class="stock-attendre">
+  <strong>CBIBF (Coris Bank International)</strong> &nbsp;<span class="attendre">ATTENDRE</span><br>
+  <em>Cours : 29 000 F (-3,33 %) | PER 14,17 | Carnet 5,5:1 ACHETEUR</em><br><br>
+  Signal mixte : baisse journalière contrariée par un carnet acheteur (11A/2V). Les institutionnels absorbent à 29 000 F pendant que d'autres vendent au prix du marché. Signal de plancher potentiel à confirmer sur la prochaine séance.
+</div>
+
+<div class="stock-surveiller">
+  <strong>NEIC (NEI-CEDA CI)</strong> &nbsp;<span class="surveiller">SURVEILLER</span><br>
+  <em>Cours : 2 500 F (+4,17 %) | PER 15,67 | Carnet 61,3:1 ACHETEUR</em><br><br>
+  Forte dynamique de la Consommation Discrétionnaire. Carnet 736A/12V. YTD +108,33 % — performance spectaculaire. PER en limite haute (15,67) de la zone cible.
+</div>
+
+<div class="stock-eviter">
+  <strong>SDSC (AGL CI)</strong> &nbsp;<span class="eviter">ÉVITER</span>&nbsp;<span class="npe">NE PAS RE-ENTRER</span><br>
+  <em>Cours : 2 700 F (-2,88 %) | PER 187,24 | Carnet 1:8,3 VENDEUR</em><br><br>
+  Correction persistante sur un titre en bulle (PER 187,24). Carnet vendeur 1:8,3. Garde-fou anti-aller-retour actif : seuil de re-entrée 2 431 F. Ne pas acheter tant que le cours n'est pas revenu sous ce seuil.
+</div>
+
+<hr class="section-divider">
+
+<h2>Étape 4 — Scoring (/10)</h2>
+
+<table>
+  <tr><th>Titre</th><th style="text-align:center;">Valorisation /3</th><th style="text-align:center;">Momentum /3</th><th style="text-align:center;">Catalyseur /4</th><th style="text-align:center;">Total /10</th><th>Recommandation</th></tr>
+  <tr><td><strong>SPHC</strong></td><td style="text-align:center;">3</td><td style="text-align:center;">2</td><td style="text-align:center;">4</td><td style="text-align:center;"><strong>9</strong></td><td><span class="acheter">ACHETER</span> (cum-div jusqu'au 26/08)</td></tr>
+  <tr><td><strong>BOAS</strong></td><td style="text-align:center;">2</td><td style="text-align:center;">3</td><td style="text-align:center;">2</td><td style="text-align:center;"><strong>7</strong></td><td><span class="acheter">ACHETER</span></td></tr>
+  <tr><td><strong>SIBC</strong></td><td style="text-align:center;">3</td><td style="text-align:center;">0</td><td style="text-align:center;">4</td><td style="text-align:center;"><strong>7</strong></td><td><span class="surveiller">SURVEILLER</span> (accumulation 500:1)</td></tr>
+  <tr><td>ABJC</td><td style="text-align:center;">1</td><td style="text-align:center;">3</td><td style="text-align:center;">3</td><td style="text-align:center;"><strong>7</strong></td><td><span class="surveiller">SURVEILLER</span> (ex-div 29/09)</td></tr>
+  <tr><td>BICB</td><td style="text-align:center;">3</td><td style="text-align:center;">2</td><td style="text-align:center;">2</td><td style="text-align:center;"><strong>7</strong></td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td>TTLC</td><td style="text-align:center;">2</td><td style="text-align:center;">1</td><td style="text-align:center;">3</td><td style="text-align:center;"><strong>6</strong></td><td><span class="acheter-tactique">ACHETER TACTIQUE</span> (cum-div ≤ 27/08)</td></tr>
+  <tr><td>SNTS</td><td style="text-align:center;">3</td><td style="text-align:center;">1</td><td style="text-align:center;">2</td><td style="text-align:center;"><strong>6</strong></td><td><span class="maintenir">MAINTENIR</span></td></tr>
+  <tr><td>BOABF</td><td style="text-align:center;">2</td><td style="text-align:center;">2</td><td style="text-align:center;">2</td><td style="text-align:center;"><strong>6</strong></td><td><span class="attendre">ATTENDRE</span> (carnet 1:65 V)</td></tr>
+  <tr><td>NEIC</td><td style="text-align:center;">1</td><td style="text-align:center;">3</td><td style="text-align:center;">2</td><td style="text-align:center;"><strong>6</strong></td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td>ORAC</td><td style="text-align:center;">2</td><td style="text-align:center;">1</td><td style="text-align:center;">2</td><td style="text-align:center;"><strong>5</strong></td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td>PALC</td><td style="text-align:center;">3</td><td style="text-align:center;">0</td><td style="text-align:center;">1</td><td style="text-align:center;"><strong>4</strong></td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td>CBIBF</td><td style="text-align:center;">2</td><td style="text-align:center;">0</td><td style="text-align:center;">2</td><td style="text-align:center;"><strong>4</strong></td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td>STBC</td><td style="text-align:center;">3</td><td style="text-align:center;">0</td><td style="text-align:center;">0</td><td style="text-align:center;"><strong>3</strong></td><td><span class="surveiller">SURVEILLER</span> (CT)</td></tr>
+  <tr><td><strong>SDSC</strong></td><td style="text-align:center;color:#cf222e;">0</td><td style="text-align:center;color:#cf222e;">0</td><td style="text-align:center;color:#cf222e;">0</td><td style="text-align:center;color:#cf222e;"><strong>0</strong></td><td><span class="eviter">ÉVITER</span> / <span class="npe">NE PAS RE-ENTRER</span></td></tr>
+</table>
+
+<blockquote>
+  <strong>Note SPHC :</strong> Score Momentum = 2 (baisse -2,01 % aujourd'hui) mais la baisse est FAVORABLE pour l'acheteur de dividende (prix plus bas = meilleur rendement). Le catalyseur (4/4) compense largement.<br>
+  <strong>Note SIBC :</strong> Titre NC ce jour (pas de cours de clôture officiel). Carnet 500:1 A = signal exceptionnel. Catalyseur = accumulation institutionnelle = 4/4. Momentum = 0 (non coté).
+</blockquote>
+
+<hr class="section-divider">
+
+<h2>Étape 5 — Validation par le marché</h2>
+
+<h3>Volumes et valeurs transigées</h3>
+<p>Le volume total de 1 985 426 titres (+38,07 %) est encore dominé par <strong>ETIT</strong> (1 710 674 titres à 67 F = 112,5 M F). Hors distorsion ETIT, le volume effectif est de ~275 000 titres, avec la valeur transigée réelle concentrée sur :</p>
+<ul>
+  <li><strong>BOAC :</strong> 139,8 M F (10 825 titres à 12 985 F) — valeur la plus élevée</li>
+  <li><strong>BOAB :</strong> 91,2 M F (9 260 titres à 9 990 F)</li>
+  <li><strong>BOAS :</strong> 47 M F (5 658 titres à 8 500 F)</li>
+  <li><strong>UNXC :</strong> 112,8 M F — distorsion secondaire (47 040 titres à 2 495 F)</li>
+</ul>
+
+<blockquote>
+  <strong>Observation :</strong> La valeur transigée de 2 470 M F (+12,64 %) est portée par les valeurs bancaires (BOAC, BOAB, BOAS, BOABF). Le secteur Finance représente <strong>1 262 M F sur 2 470 M F, soit 51 % de la valeur totale transigée</strong>. Signal de rotation sectorielle vers la Finance.
+</blockquote>
+
+<h3>Compartiment obligataire</h3>
+<p>Volume obligataire : 1 072 titres (<span class="neg">-69,44 %</span>), valeur 9,97 M F (<span class="neg">-70,07 %</span>). Journée atone sur le marché obligataire. À noter : première cotation imminente de deux nouvelles obligations TPBF DIASPORA BONDS (3 septembre 2026) et deux obligations ETAT DU MALI (27 août 2026) — flux entrants attendus sur le secondaire.</p>
+
+<hr class="section-divider">
+
+<h2>Étape 6 — Quantités résiduelles (Carnet d'ordres)</h2>
+
+<table>
+  <tr><th>Titre</th><th style="text-align:center;">Achat (qtés)</th><th style="text-align:center;">Vente (qtés)</th><th style="text-align:center;">Ratio A:V</th><th>Signal</th></tr>
+  <tr><td><strong>SIBC</strong></td><td style="text-align:center;">3 000</td><td style="text-align:center;">6</td><td style="text-align:center;color:#1a7f37;"><strong>500:1</strong></td><td><span class="acheter" style="font-size:11px;">ACHETEUR ABSOLU</span> — accumulation institutionnelle</td></tr>
+  <tr><td>NEIC</td><td style="text-align:center;">736</td><td style="text-align:center;">12</td><td style="text-align:center;color:#1a7f37;"><strong>61,3:1</strong></td><td><span class="acheter" style="font-size:11px;">ACHETEUR</span> — momentum post-spike</td></tr>
+  <tr><td>BOAB</td><td style="text-align:center;">2 738</td><td style="text-align:center;">60</td><td style="text-align:center;color:#1a7f37;"><strong>45,6:1</strong></td><td><span class="acheter" style="font-size:11px;">ACHETEUR</span> fort</td></tr>
+  <tr><td>FTSC</td><td style="text-align:center;">843</td><td style="text-align:center;">200</td><td style="text-align:center;color:#1a7f37;">4,2:1</td><td>ACHETEUR — rebond potentiel</td></tr>
+  <tr><td>CBIBF</td><td style="text-align:center;">11</td><td style="text-align:center;">2</td><td style="text-align:center;color:#1a7f37;">5,5:1</td><td>ACHETEUR — paradoxal (cours -3,33 %)</td></tr>
+  <tr><td>ORAC</td><td style="text-align:center;">709</td><td style="text-align:center;">304</td><td style="text-align:center;color:#1a7f37;">2,3:1</td><td>ACHETEUR</td></tr>
+  <tr><td>BOAS</td><td style="text-align:center;">373</td><td style="text-align:center;">220</td><td style="text-align:center;color:#1a7f37;">1,7:1</td><td>ACHETEUR — normalisé post-spike</td></tr>
+  <tr><td>BICB</td><td style="text-align:center;">82</td><td style="text-align:center;">39</td><td style="text-align:center;color:#1a7f37;">2,1:1</td><td>ACHETEUR modéré</td></tr>
+  <tr><td>NSBC</td><td style="text-align:center;">54</td><td style="text-align:center;">30</td><td style="text-align:center;color:#1a7f37;">1,8:1</td><td>ACHETEUR — amélioration vs W34</td></tr>
+  <tr><td>SNTS</td><td style="text-align:center;">9</td><td style="text-align:center;">11</td><td style="text-align:center;color:#57606a;">~1:1,2</td><td>NEUTRE — stabilisation post-spike</td></tr>
+  <tr><td>SPHC</td><td style="text-align:center;">10</td><td style="text-align:center;">441</td><td style="text-align:center;color:#bf8700;">1:44,1</td><td>Apparent VENDEUR — mais CUM-DIV = non-dividende prennent profit</td></tr>
+  <tr><td>SGBC</td><td style="text-align:center;">21</td><td style="text-align:center;">600</td><td style="text-align:center;color:#cf222e;">1:28,6</td><td>VENDEUR — normalisation post-dividende reçu</td></tr>
+  <tr><td>BOAC</td><td style="text-align:center;">53</td><td style="text-align:center;">1 556</td><td style="text-align:center;color:#cf222e;">1:29,4</td><td>VENDEUR institutionnel</td></tr>
+  <tr><td>SDSC</td><td style="text-align:center;">84</td><td style="text-align:center;">695</td><td style="text-align:center;color:#cf222e;">1:8,3</td><td>VENDEUR persistant — correction continue</td></tr>
+  <tr><td><strong>BOABF</strong></td><td style="text-align:center;">50</td><td style="text-align:center;">3 243</td><td style="text-align:center;color:#cf222e;"><strong>1:64,9</strong></td><td>VENDEUR massif post-spike</td></tr>
+  <tr><td><strong>SHEC</strong></td><td style="text-align:center;">21</td><td style="text-align:center;">4 410</td><td style="text-align:center;color:#cf222e;"><strong>1:210</strong></td><td><span class="eviter" style="font-size:11px;">VENDEUR ABSOLU</span> — mur massif</td></tr>
+  <tr><td>ETIT</td><td style="text-align:center;">10 492</td><td style="text-align:center;">135 213</td><td style="text-align:center;color:#57606a;">1:12,9</td><td class="warn">Distorsion systémique — à ignorer (67 F/titre)</td></tr>
+</table>
+
+<blockquote>
+  <strong>SIBC (500:1 A) :</strong> Signal le plus fort de la séance. NC ce jour mais 3 000 titres en attente d'achat vs 6 en vente. Accumulation institutionnelle silencieuse.<br>
+  <strong>BOABF (1:64,9 V) :</strong> Après +5,26 % + 2e journée consécutive, les institutionnels prennent massivement leurs profits. Ne pas acheter dans ce contexte.<br>
+  <strong>SPHC (1:44,1 V) :</strong> Apparence trompeuse. Les vendeurs ne veulent pas du dividende. Pour les acheteurs de dividende : OPPORTUNITÉ.<br>
+  <strong>SHEC (1:210 V) :</strong> Mur vendeur colossal. Aucun catalyseur court terme. ÉVITER.
+</blockquote>
+
+<hr class="section-divider">
+
+<h2>Étape 7 — Conclusion stratégique</h2>
+
+<div class="top3-box">
+  <h3 style="color:#1a7f37;border-bottom-color:#1a7f37;">Top 3 des opportunités</h3>
+  <p><span style="background:#ffd700;color:#333;padding:1px 8px;border-radius:3px;font-weight:700;">#1</span> <strong>SPHC</strong> — Achat cum-dividende sur cours réduit (-190 F vs vendredi). Dernier jour cum-div : <strong>mercredi 26/08</strong>. Score 9/10. Dividende net PP 430,32 F (4,65 % sur cours 9 250 F).</p>
+  <p><span style="background:#c0c0c0;color:#333;padding:1px 8px;border-radius:3px;font-weight:700;">#2</span> <strong>BOAS (Bank of Africa Sénégal)</strong> — +6,25 % sur fondamentaux. Carnet 1,7:1 A. PER 13,97, rendement 5,29 %. Signal d'achat sur momentum positif.</p>
+  <p><span style="background:#cd7f32;color:#fff;padding:1px 8px;border-radius:3px;font-weight:700;">#3</span> <strong>TTLC (TotalEnergies Marketing CI)</strong> — Dividende tactique à saisir. Ex-div vendredi 28/08 (3 sessions restantes). Rendement net PP 4,11 %. Entrée à surveiller.</p>
+</div>
+
+<div class="risque-box">
+  <h3 style="color:#cf222e;border-bottom-color:#cf222e;">Risques identifiés à court terme</h3>
+  <ul>
+    <li><strong>Semaine tronquée (4 séances) :</strong> Marché fermé mardi 25/08 — liquidité réduite et volatilité potentiellement amplifiée.</li>
+    <li><strong>Double ex-div (SPHC jeudi + TTLC vendredi) :</strong> Drop mécanique sur deux lignes pouvant peser sur les indices.</li>
+    <li><strong>BOABF prise de profit (1:64,9 V) :</strong> Potentiel de correction significative post-spike.</li>
+    <li><strong>BOAC carnet vendeur (1:29,4 V) :</strong> Pression institutionnelle persistante.</li>
+    <li><strong>SHEC mur vendeur (1:210 V) :</strong> Titre à éviter — aucun catalyseur visible.</li>
+    <li><strong>SDSC correction persistante :</strong> -2,88 % avec carnet 1:8,3 V. Garde-fou actif (seuil 2 431 F).</li>
+  </ul>
+</div>
+
+<h3>Plan d'action immédiat</h3>
+<table>
+  <tr><th>Titre</th><th>Action</th><th>Cours</th><th>Timing</th><th>Justification</th></tr>
+  <tr><td><strong>SPHC</strong></td><td><span class="acheter">ACHETER</span></td><td>9 250 F (max 9 400 F)</td><td>Aujourd'hui ou mercredi 26/08 avant clôture</td><td>Cum-div, prix réduit vs vendredi, dernier jour = 26/08</td></tr>
+  <tr><td><strong>TTLC</strong></td><td><span class="acheter-tactique">ACHETER TACTIQUE</span></td><td>3 400 F (max 3 450 F)</td><td>Avant clôture jeudi 27/08</td><td>Ex-div vendredi 28/08 — rendement net PP 4,11 %</td></tr>
+  <tr><td><strong>BOAS</strong></td><td><span class="acheter">ACHETER</span></td><td>8 500 F</td><td>Dès maintenant</td><td>Momentum confirmé, PER 13,97, rendement 5,29 %</td></tr>
+  <tr><td>SIBC</td><td><span class="surveiller">SURVEILLER</span></td><td>~9 100 F</td><td>Mercredi 26/08 si cotation</td><td>Carnet 500:1 A — surveiller la première transaction</td></tr>
+  <tr><td>BICB</td><td><span class="surveiller">SURVEILLER</span></td><td>8 495 F</td><td>Semaine en cours</td><td>Momentum maintenu, carnet 2,1:1 A</td></tr>
+  <tr><td>ABJC</td><td><span class="surveiller">SURVEILLER</span></td><td>&lt; 3 500 F</td><td>Attendre consolidation</td><td>Ex-div 29/09 — prix du jour intègre déjà le dividende</td></tr>
+  <tr><td>BOABF</td><td><span class="attendre">ATTENDRE</span></td><td>—</td><td>Attendre absorption mur V</td><td>Mur vendeur 1:64,9 — ne pas acheter dans le spike</td></tr>
+  <tr><td>SNTS</td><td><span class="maintenir">MAINTENIR</span></td><td>36 500–36 980 F</td><td>LT 20 ans</td><td>PR 34 000 F (+7-9 %) — MAINTENIR</td></tr>
+  <tr><td>SGBC</td><td><span class="surveiller">SURVEILLER</span></td><td>~38 985 F</td><td>Semaine prochaine</td><td>Post-dividende — cours ex-div en cours de stabilisation</td></tr>
+  <tr><td>PALC</td><td><span class="surveiller">SURVEILLER</span></td><td>9 430–9 500 F</td><td>Confirmation carnet</td><td>Prise de profit en cours — attendre normalisation</td></tr>
+  <tr><td>SDSC</td><td><span class="npe">NE PAS RE-ENTRER</span></td><td>2 700 F</td><td>—</td><td>Seuil anti-aller-retour : 2 431 F</td></tr>
+  <tr><td>STBC</td><td><span class="surveiller">SURVEILLER</span></td><td>22 900 F</td><td>—</td><td>Seuil anti-aller-retour ex-vendeurs : 21 535 F</td></tr>
+  <tr><td>SHEC</td><td><span class="eviter">ÉVITER</span></td><td>—</td><td>—</td><td>Mur vendeur 1:210</td></tr>
+  <tr><td>BOAC</td><td><span class="eviter">ÉVITER</span></td><td>—</td><td>—</td><td>Carnet vendeur institutionnel 1:29,4</td></tr>
+</table>
+
+<div class="calendrier-box">
+  <h3>Calendrier semaine 24-28 août 2026</h3>
+  <table>
+    <tr><th>Date</th><th>Événement</th></tr>
+    <tr><td>Lundi 24/08 (aujourd'hui)</td><td>SGBC dividende payé (net PP 2 293,28 F)</td></tr>
+    <tr><td><strong>Mardi 25/08</strong></td><td><strong>FERIÉ — Nuit du Mawlid</strong> (avis DC/BR 205-2026)</td></tr>
+    <tr style="background:#fff8e1;"><td><strong>Mercredi 26/08</strong></td><td><strong>DERNIER JOUR CUM-DIV SPHC</strong> (brut 489 F / net PP 430,32 F)</td></tr>
+    <tr><td>Jeudi 27/08</td><td>Ex-dividende SPHC + <strong>DERNIER JOUR CUM-DIV TTLC</strong> (brut 158,83 F / net PP 139,77 F)</td></tr>
+    <tr><td>Vendredi 28/08</td><td>Ex-dividende TTLC — paiement SPHC 28/08</td></tr>
+  </table>
+</div>
+
+<div class="disclaimer">
+  <strong>Disclaimer :</strong> Ce document est produit à titre pédagogique et informatif. Il ne constitue pas un conseil personnalisé en investissement au sens réglementaire. Toute décision d'investissement reste sous la responsabilité exclusive de l'investisseur. Les données proviennent du Bulletin Officiel de la Cote N°159 du 24 août 2026 publié par la BRVM.
+</div>
