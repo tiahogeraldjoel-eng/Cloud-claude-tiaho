@@ -50,6 +50,17 @@ def _num(tok: Optional[str]) -> Optional[float]:
         return None
 
 
+_MOIS = {"janv": 1, "févr": 2, "mars": 3, "avr": 4, "mai": 5, "juin": 6, "juil": 7, "août": 8,
+         "sept": 9, "oct": 10, "nov": 11, "déc": 12}
+
+
+def _date_fr(tok: str) -> Optional[str]:
+    """'13-août-26' / '7-sept.-26' -> '2026-08-13'."""
+    m = re.match(r"(\d{1,2})-([^\d-]+?)\.?-(\d{2})$", tok)
+    mois = m and next((v for k, v in _MOIS.items() if m.group(2).startswith(k[:4])), None)
+    return f"20{m.group(3)}-{mois:02d}-{int(m.group(1)):02d}" if mois else None
+
+
 def _join_thousands(s: str) -> str:
     """'21 970     1 378' -> '21970     1378' (un seul espace = séparateur de milliers)."""
     prev = None
@@ -115,6 +126,7 @@ def parse_actions(text: str) -> dict:
         price = _num(ref)
         div = _num(toks[i_date - 1]) if i_date else None
         annee_div = 2000 + int(toks[i_date][-2:]) if i_date else None
+        date_div = _date_fr(toks[i_date]) if i_date else None
         rows[ticker] = {
             "ticker": ticker, "name": name, "price": price, "dividend": div,
             "per_boc": per, "eps": round(price / per, 2) if price and per else None,
@@ -123,6 +135,7 @@ def parse_actions(text: str) -> dict:
             "volume": _num(toks[i_var + 1]) if toks[1] != "SP" and len(toks) > i_var + 1 else 0,
             "suspendu": "oui" if toks[1] == "SP" else "",
             "dividende_annee": annee_div,
+            "dividende_date": date_div,
             "secteur": next((mm.group(1) for l in lines[n + 1:n + 3] if (mm := _SECT_CODE.match(l))), ""),
         }
     # Ne garder que les titres présents dans le carnet d'ordres du BOC (liste de toutes les actions cotées),

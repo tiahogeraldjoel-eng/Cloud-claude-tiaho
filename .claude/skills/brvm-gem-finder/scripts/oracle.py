@@ -52,6 +52,18 @@ def pick(rows: list, top: int = 3) -> list:
     return [(a, by[a.ticker]) for a in res if a.verdict in PEPITES][:top]
 
 
+def panier(rows: list) -> list:
+    """Tout le quintile de PER le moins cher de la cote (hors suspendus et bulles post-IPO).
+    Backtest 2025-2026 : ce panier à poids égaux a battu la cote (≈ +12,5 pts vs Composite à 3 mois
+    dans chaque semestre), mais grâce à quelques grands gagnants : il faut le détenir en entier."""
+    by = {r["ticker"]: r for r in rows}
+    res = screen([t for r in rows if (t := row_to_input(r))])
+    # Un PER calculé sur un bénéfice annuel qui s'est depuis effondré (≥ 50 % connu) n'est pas « bas ».
+    return [(a, by[a.ticker]) for a in res
+            if a.pillars.get("valorisation", 0) >= 2 and not a.verdict.startswith("ÉVITER")
+            and not (a.eps_growth is not None and a.eps_growth <= -0.5)]
+
+
 def plan(a, row: dict) -> dict:
     prix, eps, per_s = row["price"], row.get("eps"), row.get("per_secteur")
     objectif = None
@@ -82,11 +94,22 @@ def fmt(x) -> str:
     return "n.d." if x is None else f"{x:,.0f}".replace(",", " ")
 
 
-def report(date: str, composite, picks: list, cal: dict, bilan: str) -> str:
+def report(date: str, composite, picks: list, cal: dict, bilan: str, basket: list = ()) -> str:
     out = [f"🔮 ORACLE BRVM — séance du {date} (Composite {composite})", ""]
+    if basket:
+        out += [f"🧺 PANIER DE L'ORACLE ({len(basket)} titres à poids égaux) — la stratégie qui a battu la cote au backtest :"]
+        for a, row in sorted(basket, key=lambda x: x[0].metrics["per"] or 99):
+            rdt = a.metrics["rendement_pct"]
+            out.append(f"   {a.ticker:<6} {row['name'][:26]:<26} {fmt(row['price']):>8} FCFA | PER {a.metrics['per']}x"
+                       f" | rdt {'n.d.' if rdt is None else f'{rdt} %'} | {a.verdict}")
+        out += ["   Détenir le panier entier et le revoir chaque mois : la moitié des titres fera moins bien que le "
+                "marché, la performance vient de quelques grands gagnants qu'on ne sait pas désigner à l'avance.", ""]
     if not picks:
         out.append("Aucune pépite aujourd'hui : aucun titre ne passe tous les filtres. Rester en liquidités "
                    "ou conserver les positions existantes est une réponse valable.")
+    if picks:
+        out.append("🎯 Pépites individuelles (pari concentré : environ une chance sur deux de battre le marché "
+                   "titre par titre au backtest) :")
     for i, (a, row) in enumerate(picks, 1):
         pl = plan(a, row)
         titre = "LA PÉPITE DU MOMENT" if i == 1 else f"Pépite n°{i}"
@@ -116,14 +139,16 @@ def backtest(bocs: list, enrich: Optional[str], horizons=(5, 20, 60)) -> str:
         rows = build_rows(bocs[i], bocs[:i][-20:], enrich)
         for rang, (a, row) in enumerate(pick(rows), 1):
             entries.append(entry(a, row, rang, "backtest"))
+        for rang, (a, row) in enumerate(panier(rows), 1):
+            entries.append(dict(entry(a, row, rang, "backtest-panier"), verdict="PANIER"))
         d = journal.boc_date(bocs[i])
         for h in horizons:   # référence : tous les titres, à poids égal
             if i + h < len(dates) and comp[d] and comp[dates[i + h]]:
                 c = (comp[dates[i + h]] / comp[d] - 1) * 100
-                for t, p0 in prices[d].items():
-                    p1 = prices[dates[i + h]].get(t)
-                    if p0 and p1:
-                        univers[h].append((p1 / p0 - 1) * 100 - c)
+                for t in prices[d]:
+                    x = journal.total_return(prices, d, dates[i + h], t)
+                    if x is not None:
+                        univers[h].append(x - c)
     if os.path.exists(path_bt):
         os.remove(path_bt)
     journal.record(path_bt, entries)
@@ -142,7 +167,7 @@ def backtest(bocs: list, enrich: Optional[str], horizons=(5, 20, 60)) -> str:
         for fam, c in journal.calibration(ev, nom).items():
             lignes.append(f"   oracle {fam:<19} n={c['n']:<4} battent le Composite : {c['reussite_pct']} % | "
                           f"excès moyen {c['exces_moyen']:+.2f} pts")
-    lignes += ["", "Hors dividendes. " + ("⚠ Biais : fondamentaux connus aujourd'hui appliqués au passé."
+    lignes += ["", "Dividendes détachés inclus. " + ("⚠ Biais : fondamentaux connus aujourd'hui appliqués au passé."
                                           if enrich else "Sans biais d'anticipation : seules les données du BOC de chaque date.")]
     return "\n".join(lignes)
 
@@ -185,13 +210,14 @@ def main() -> None:
         return
 
     rows = build_rows(bocs[-1], bocs[:-1][-20:], args.enrich)
-    picks = pick(rows, args.top)
+    picks, basket = pick(rows, args.top), panier(rows)
     if not args.no_journal:
-        journal.record(args.journal, [entry(a, r, i, "oracle") for i, (a, r) in enumerate(picks, 1)])
+        journal.record(args.journal, [entry(a, r, i, "oracle") for i, (a, r) in enumerate(picks, 1)]
+                       + [dict(entry(a, r, i, "oracle-panier"), verdict="PANIER") for i, (a, r) in enumerate(basket, 1)])
     dates, prices, comp = journal.load_series(args.boc_dir)
     ev = journal.evaluate(journal.read(args.journal), dates, prices, comp)
     print(report(journal.boc_date(bocs[-1]), rows[0].get("composite") if rows else None,
-                 picks, journal.calibration(ev), journal.bilan(ev)))
+                 picks, journal.calibration(ev), journal.bilan(ev), basket))
 
 
 if __name__ == "__main__":

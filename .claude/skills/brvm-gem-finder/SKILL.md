@@ -58,10 +58,16 @@ Garde-fous :
 4. **Relire à la main** les 3 premiers : vérifier le dernier résultat trimestriel, les risques spécifiques, la liquidité. Écarter ce qui ne résiste pas.
 5. **Restituer 1 à 3 pépites au maximum**, chacune avec son catalyseur, son risque principal, son niveau de conviction et la taille de position conseillée. Dire clairement quand le marché n'offre pas de vraie pépite.
 
+## Ce que dit le backtest (252 BOC, oct. 2025 – oct. 2026, dividendes inclus)
+- **Seul signal robuste : le PER relatif.** Le quintile de PER le moins cher de la cote a battu le Composite d'environ +12,5 pts à 3 mois dans chaque semestre (contre +6,2 et +1,1 pour la moyenne de tous les titres).
+- **Mais la performance vient de quelques grands gagnants** (Ecobank Transnational, Erium, Sucrivoire, Coris) ; la médiane des titres du panier est légèrement négative. Choisir 1 à 3 titres revient à environ une chance sur deux : **la recommandation principale est le panier entier**, à poids égaux, revu chaque mois.
+- **Sans pouvoir prédictif mesuré** : retard sur le Composite (nuisible d'avril à octobre 2026), déséquilibre du carnet à la clôture, filtre de rendement élevé (les titres bon marché à fort rendement ont sous-performé, dividendes inclus). Ils sont affichés, pas comptés.
+- Un an de données, une seule phase de marché (forte hausse) : refaire le backtest chaque trimestre et laisser le journal juger hors échantillon.
+
 ## L'oracle (`scripts/oracle.py`) et le journal de prédictions
 Pour « quelle est la pépite du moment ? », lancer d'abord l'oracle, qui enchaîne récupération des BOC, lecture de la cote, classement des 48 titres et plan d'action :
 `python scripts/oracle.py` (ou `--no-fetch` si les BOC sont déjà dans `boc/`).
-- Il désigne 1 à 3 pépites avec zone d'entrée (meilleures limites du carnet), objectif (BPA x PER du secteur publié au BOC, plafonné à +50 %), potentiel dividende inclus et seuil de sortie (-10 %).
+- Il présente d'abord le **panier de l'oracle** (quintile de PER le moins cher, hors suspendus, bulles post-IPO et bénéfices effondrés connus), puis 1 à 3 pépites individuelles avec zone d'entrée (meilleures limites du carnet), objectif (BPA x PER du secteur publié au BOC, plafonné à +50 %), potentiel dividende inclus et seuil de sortie (-10 %).
 - Il inscrit chaque pépite dans `data/journal_predictions.csv` (date, cours, Composite, verdict, objectif) ; ce fichier est versionné et ne doit jamais être réécrit à la main.
 - `python scripts/journal.py --detail` mesure chaque prédiction à 1 semaine, 1 mois, 3 mois et 6 mois de séances contre le BRVM Composite (hors dividendes).
 - **Conviction** : qualitative (score) tant que le journal compte moins de 10 prédictions mûres à 1 mois ; ensuite, taux réel de pépites ayant battu le Composite. Toujours restituer cette conviction telle quelle, sans l'embellir.

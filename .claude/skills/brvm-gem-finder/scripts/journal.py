@@ -5,7 +5,7 @@ Journal de prédictions de l'oracle BRVM.
 Chaque scan enregistre ses pépites (date, cours, niveau du Composite, verdict…) dans
 `data/journal_predictions.csv`. L'évaluation compare ensuite, à 1 semaine / 1 mois /
 3 mois / 6 mois de séances, la performance de chaque prédiction à celle du BRVM
-Composite, à partir des BOC archivés. Les dividendes ne sont pas comptés.
+Composite, à partir des BOC archivés, dividende détaché pendant la période inclus.
 
 Usage :
     python journal.py --boc-dir ../boc                       # bilan du journal
@@ -28,7 +28,7 @@ MIN_CALIBRATION = 10      # prédictions mûres nécessaires avant d'afficher un
 COLS = ["date", "ticker", "verdict", "rang", "score", "cours", "composite", "objectif",
         "seuil_sortie", "rendement_pct", "source"]
 FAMILLES = {"PÉPITE (ACHAT PRÉCOCE)": "PÉPITE", "PÉPITE SPÉCULATIVE (position réduite)": "PÉPITE SPÉCULATIVE",
-            "ACHAT": "ACHAT"}
+            "ACHAT": "ACHAT", "PANIER": "PANIER"}
 
 
 def boc_date(path: str) -> str:
@@ -37,13 +37,23 @@ def boc_date(path: str) -> str:
 
 
 def load_series(boc_dir: str) -> tuple:
-    """(dates triées, {date: {ticker: cours}}, {date: niveau Composite}) depuis les BOC."""
+    """(dates triées, {date: {ticker: (cours, dividende net, date du dividende)}}, {date: Composite})."""
     prices, composite = {}, {}
     for path in glob.glob(os.path.join(boc_dir, "*.pdf")):
         d, text = boc_date(path), pdf_to_text(path)
-        prices[d] = {t: r["price"] for t, r in parse_actions(text).items() if r["price"]}
+        prices[d] = {t: (r["price"], r["dividend"], r["dividende_date"])
+                     for t, r in parse_actions(text).items() if r["price"]}
         composite[d] = parse_composite(text)
     return sorted(prices), prices, composite
+
+
+def total_return(prices: dict, d0: str, d1: str, ticker: str) -> Optional[float]:
+    """Performance en % entre deux séances, dividende détaché entre les deux inclus."""
+    a, b = prices[d0].get(ticker), prices[d1].get(ticker)
+    if not a or not b or not a[0] or not b[0]:
+        return None
+    div = b[1] if b[2] and d0 < b[2] <= d1 and b[1] else 0.0
+    return ((b[0] + div) / a[0] - 1) * 100
 
 
 def read(path: str) -> list:
@@ -74,14 +84,14 @@ def evaluate(rows: list, dates: list, prices: dict, composite: dict) -> list:
         if r["date"] not in dates:
             continue
         i, res = dates.index(r["date"]), dict(r)
-        p0, c0 = float(r["cours"]), composite[r["date"]]
+        c0 = composite[r["date"]]
         for nom, h in HORIZONS.items():
             if i + h >= len(dates):
                 continue
             d = dates[i + h]
-            p1, c1 = prices[d].get(r["ticker"]), composite[d]
-            if p1 and c0 and c1:
-                perf = (p1 / p0 - 1) * 100
+            c1 = composite[d]
+            perf = total_return(prices, r["date"], d, r["ticker"])
+            if perf is not None and c0 and c1:
                 res[f"perf {nom}"] = round(perf, 2)
                 res[f"excès {nom}"] = round(perf - (c1 / c0 - 1) * 100, 2)
         out.append(res)
