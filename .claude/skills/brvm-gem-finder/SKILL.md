@@ -65,7 +65,7 @@ Pour « quelle est la pépite du moment ? », lancer d'abord l'oracle, qui encha
 - Il inscrit chaque pépite dans `data/journal_predictions.csv` (date, cours, Composite, verdict, objectif) ; ce fichier est versionné et ne doit jamais être réécrit à la main.
 - `python scripts/journal.py --detail` mesure chaque prédiction à 1 semaine, 1 mois, 3 mois et 6 mois de séances contre le BRVM Composite (hors dividendes).
 - **Conviction** : qualitative (score) tant que le journal compte moins de 10 prédictions mûres à 1 mois ; ensuite, taux réel de pépites ayant battu le Composite. Toujours restituer cette conviction telle quelle, sans l'embellir.
-- `python scripts/oracle.py --no-fetch --backtest 5` rejoue l'oracle sur l'historique de BOC disponible (`data/backtest.csv`). Signaler les biais : fondamentaux connus aujourd'hui, historique court.
+- `python scripts/oracle.py --no-fetch --backtest` rejoue l'oracle sur tout l'historique de BOC de `boc/` (`data/backtest.csv`) à 1 semaine, 1 mois et 3 mois, en le comparant au Composite et à la moyenne de tous les titres. `--sans-fondamentaux` donne la version sans biais d'anticipation (seules les données du BOC de chaque date) : c'est elle qui fait foi. Pour constituer l'historique : `python scripts/fetch_boc.py --since 2025-10-01 -o boc`.
 - Si les résultats du journal montrent qu'un verdict ou un seuil ne bat pas le Composite sur un échantillon suffisant, proposer d'ajuster les seuils de `brvm_analyst.py` en citant les chiffres.
 
 ## Modèle de Restitution / Recommandation

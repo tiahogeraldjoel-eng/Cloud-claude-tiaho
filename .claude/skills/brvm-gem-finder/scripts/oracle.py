@@ -14,13 +14,16 @@ La conviction n'est exprimée en pourcentage qu'une fois calibrée sur au moins
 Usage :
     python oracle.py                 # séance la plus récente
     python oracle.py --no-fetch      # sans téléchargement (BOC déjà dans boc/)
-    python oracle.py --backtest 5    # rejoue l'oracle sur l'historique, horizon 5 séances
+    python oracle.py --no-fetch --backtest [--sans-fondamentaux]   # rejoue l'historique
 """
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import glob
 import os
+from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
 
 import fetch_boc
 import journal
@@ -34,12 +37,12 @@ SEUIL_SORTIE = 0.90          # revoir la position sous -10 % du cours d'entrée
 OBJECTIF_MAX = 1.5           # objectif plafonné à +50 %
 
 
-def build_rows(boc_path: str, history: list, enrich: str) -> list:
+def build_rows(boc_path: str, history: list, enrich: Optional[str]) -> list:
     rows = parse_boc(boc_path, journal.boc_date(boc_path))
     hist = compute_history(history + [boc_path]) if history else {}
     for r in rows:
         r.update(hist.get(r["ticker"], {}))
-    return merge_enrich(rows, enrich) if os.path.exists(enrich) else rows
+    return merge_enrich(rows, enrich) if enrich and os.path.exists(enrich) else rows
 
 
 def pick(rows: list, top: int = 3) -> list:
@@ -103,27 +106,44 @@ def report(date: str, composite, picks: list, cal: dict, bilan: str) -> str:
     return "\n".join(out)
 
 
-def backtest(bocs: list, enrich: str, horizon: int, window: int = 5) -> str:
-    """Rejoue l'oracle séance par séance et mesure les pépites `horizon` séances plus tard."""
+def backtest(bocs: list, enrich: Optional[str], horizons=(5, 20, 60)) -> str:
+    """Rejoue l'oracle séance par séance et compare ses pépites, à chaque horizon (en séances),
+    au BRVM Composite et à la moyenne de tous les titres cotés (choix « au hasard »)."""
     path_bt = os.path.join(ROOT, "data", "backtest.csv")
-    entries = []
-    for i in range(1, len(bocs) - horizon):  # l'accumulation n'est calculée que si l'historique suffit
-        rows = build_rows(bocs[i], bocs[:i], enrich)
+    dates, prices, comp = journal.load_series(os.path.dirname(bocs[0]))
+    entries, univers = [], {h: [] for h in horizons}
+    for i in range(1, len(bocs) - min(horizons)):
+        rows = build_rows(bocs[i], bocs[:i][-20:], enrich)
         for rang, (a, row) in enumerate(pick(rows), 1):
             entries.append(entry(a, row, rang, "backtest"))
+        d = journal.boc_date(bocs[i])
+        for h in horizons:   # référence : tous les titres, à poids égal
+            if i + h < len(dates) and comp[d] and comp[dates[i + h]]:
+                c = (comp[dates[i + h]] / comp[d] - 1) * 100
+                for t, p0 in prices[d].items():
+                    p1 = prices[dates[i + h]].get(t)
+                    if p0 and p1:
+                        univers[h].append((p1 / p0 - 1) * 100 - c)
     if os.path.exists(path_bt):
         os.remove(path_bt)
     journal.record(path_bt, entries)
-    dates, prices, comp = journal.load_series(os.path.dirname(bocs[0]))
     ev = journal.evaluate(journal.read(path_bt), dates, prices, comp)
-    lignes = [f"Backtest sur {len(bocs)} BOC ({dates[0]} → {dates[-1]}), horizon {horizon} séances :",
-              f"{len(ev)} pépites rejouées sur {len(bocs) - horizon - 1} séances."]
-    for r in ev:
-        lignes.append(f"  {r['date']} {r['ticker']:<6} {r['verdict']:<38} "
-                      f"perf {r.get('perf 1 sem', 'n.d.')} % | excès vs Composite {r.get('excès 1 sem', 'n.d.')} pts")
-    lignes += ["", journal.bilan(ev),
-               "⚠ Biais : data/fondamentaux.csv contient des informations connues aujourd'hui, pas à chaque date "
-               "rejouée ; historique trop court pour conclure."]
+    noms = {v: k for k, v in journal.HORIZONS.items()}
+    lignes = [f"Backtest sur {len(bocs)} BOC ({dates[0]} → {dates[-1]}) — "
+              f"{'avec' if enrich else 'SANS'} data/fondamentaux.csv ; {len(ev)} pépites désignées.", ""]
+    for h in horizons:
+        nom = noms.get(h)
+        if not nom:
+            continue
+        ref = univers[h]
+        lignes.append(f"Horizon {nom} ({h} séances) — référence tous titres : "
+                      + (f"{100 * sum(x > 0 for x in ref) / len(ref):.0f} % battent le Composite, "
+                         f"excès moyen {sum(ref) / len(ref):+.2f} pts (n={len(ref)})" if ref else "n.d."))
+        for fam, c in journal.calibration(ev, nom).items():
+            lignes.append(f"   oracle {fam:<19} n={c['n']:<4} battent le Composite : {c['reussite_pct']} % | "
+                          f"excès moyen {c['exces_moyen']:+.2f} pts")
+    lignes += ["", "Hors dividendes. " + ("⚠ Biais : fondamentaux connus aujourd'hui appliqués au passé."
+                                          if enrich else "Sans biais d'anticipation : seules les données du BOC de chaque date.")]
     return "\n".join(lignes)
 
 
@@ -143,17 +163,25 @@ def main() -> None:
     p.add_argument("--top", type=int, default=3)
     p.add_argument("--no-fetch", action="store_true")
     p.add_argument("--no-journal", action="store_true", help="ne pas inscrire les prédictions")
-    p.add_argument("--backtest", type=int, metavar="HORIZON", help="rejoue l'historique (horizon en séances)")
+    p.add_argument("--backtest", action="store_true", help="rejoue l'historique (1 semaine, 1 mois, 3 mois)")
+    p.add_argument("--sans-fondamentaux", action="store_true",
+                   help="backtest sans data/fondamentaux.csv (aucun biais d'anticipation)")
     args = p.parse_args()
 
     if not args.no_fetch:
-        for d in fetch_boc.archive_list()[-130:]:   # ~6 mois de séances pour évaluer le journal
-            fetch_boc.fetch(d, args.boc_dir)
+        # ~9 mois de séances : historique d'accumulation + évaluation du journal à 6 mois.
+        # Site BRVM d'abord, archive git en repli ; les BOC déjà présents ne sont pas retéléchargés.
+        today = dt.date.today()
+        jours = [(today - dt.timedelta(n)).strftime("%Y%m%d") for n in range(270)
+                 if (today - dt.timedelta(n)).weekday() < 5]
+        archive = set(fetch_boc.archive_list())
+        with ThreadPoolExecutor(6) as ex:
+            list(ex.map(lambda d: fetch_boc.fetch(d, args.boc_dir, archive=d in archive), jours))
     bocs = sorted(glob.glob(os.path.join(args.boc_dir, "*.pdf")), key=journal.boc_date)
     if not bocs:
         raise SystemExit("Aucun BOC disponible : lancer fetch_boc.py ou fournir un PDF dans boc/.")
     if args.backtest:
-        print(backtest(bocs, args.enrich, args.backtest))
+        print(backtest(bocs, None if args.sans_fondamentaux else args.enrich))
         return
 
     rows = build_rows(bocs[-1], bocs[:-1][-20:], args.enrich)

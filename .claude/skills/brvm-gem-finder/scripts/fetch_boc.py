@@ -11,6 +11,7 @@ Récupère les Bulletins Officiels de la Cote (BOC) de la BRVM.
 Usage :
     python fetch_boc.py --date 2026-10-02 -o ../boc        # un BOC
     python fetch_boc.py --last 20 -o ../boc                # les 20 derniers disponibles
+    python fetch_boc.py --since 2025-10-01 -o ../boc       # tout l'historique depuis une date
 """
 from __future__ import annotations
 
@@ -20,6 +21,7 @@ import os
 import re
 import subprocess
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 URLS = (
     "https://bfin.brvm.org/boc/BOC_JOUR/BOC_{ds}.pdf",
@@ -68,12 +70,12 @@ def from_archive(ds: str) -> bytes | None:
     return None
 
 
-def fetch(ds: str, out_dir: str) -> str | None:
+def fetch(ds: str, out_dir: str, archive: bool = True) -> str | None:
     path = os.path.join(out_dir, f"BOC_{ds}.pdf")
     if os.path.exists(path):
         return path
     data, origine = from_site(ds), "site BRVM"
-    if data is None:
+    if data is None and archive:
         data, origine = from_archive(ds), "archive git"
     if data is None:
         return None
@@ -88,9 +90,18 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Télécharge les BOC de la BRVM")
     p.add_argument("--date", help="AAAA-MM-JJ (défaut : dernier BOC disponible)")
     p.add_argument("--last", type=int, help="récupère les N derniers BOC disponibles")
+    p.add_argument("--since", help="AAAA-MM-JJ : récupère tous les BOC depuis cette date (site BRVM)")
     p.add_argument("-o", "--out", default="boc")
     args = p.parse_args()
 
+    if args.since:
+        d0, d1 = dt.date.fromisoformat(args.since), dt.date.today()
+        dates = [(d0 + dt.timedelta(n)).strftime("%Y%m%d") for n in range((d1 - d0).days + 1)
+                 if (d0 + dt.timedelta(n)).weekday() < 5]
+        with ThreadPoolExecutor(6) as ex:   # jours fériés : absents, ignorés
+            ok = [d for d, p in zip(dates, ex.map(lambda d: fetch(d, args.out, archive=False), dates)) if p]
+        print(f"{len(ok)} BOC disponibles dans {args.out}/ ({len(dates) - len(ok)} jours sans BOC)")
+        return
     if args.last:
         dates = archive_list()[-args.last:]
         today = dt.date.today().strftime("%Y%m%d")
