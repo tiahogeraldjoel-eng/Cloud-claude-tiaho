@@ -47,8 +47,11 @@ Garde-fous :
 - **Pépite spéculative** (dividende suspendu, solvabilité fragile, recapitalisation) : position réduite, au plus 5 % du portefeuille.
 
 ## Scan de la cote (« quelle est la pépite du moment ? »)
-1. **Lire le BOC du jour** (PDF fourni par l'utilisateur ou téléchargé sur brvm.org) avec le lecteur intégré, qui extrait pour les 48 titres le cours, la variation depuis janvier, le dernier dividende net, le rendement, le PER publié et la meilleure limite du carnet (quantités achat / vente) :
-   `python scripts/boc_parser.py BOC_AAAAMMJJ.pdf -o data/cote_brvm.csv --enrich data/fondamentaux.csv`
+1. **Récupérer les BOC** (le jour + les séances précédentes pour l'historique) :
+   `python scripts/fetch_boc.py --last 20 -o boc`
+   Source officielle : `https://bfin.brvm.org/boc/BOC_JOUR/BOC_AAAAMMJJ.pdf`. Si le site est inaccessible (réseau filtré), le script lit l'archive tenue chaque soir par le workflow GitHub Actions `fetch-boc.yml` (`boc-inbox/` de la branche `claude/brvm-boc-114-analysis-ngt2xu`). Le dossier `boc/` n'est pas versionné.
+   **Lire le BOC du jour** avec le lecteur intégré, qui extrait pour les 48 titres le cours, la variation depuis janvier, le dernier dividende net, le rendement, le PER publié et la meilleure limite du carnet (quantités achat / vente). Avec `--history`, il calcule aussi sur 5 séances le ratio de volume et la variation de cours (signal d'accumulation) :
+   `python scripts/boc_parser.py boc/BOC_AAAAMMJJ.pdf -o data/cote_brvm.csv --enrich data/fondamentaux.csv --history boc`
    Les titres suspendus sont écartés ; un dividende payé avant l'exercice précédent compte pour zéro.
 2. **Tenir `data/fondamentaux.csv` à jour** avec ce que le BOC ne donne pas : croissance du dernier résultat publié (`eps_growth`), dividende suspendu, prix d'introduction, risques spécifiques et source. Dater et sourcer chaque chiffre ; ne jamais inventer une valeur manquante : laisser la case vide.
 3. **Classer** : `python scripts/brvm_analyst.py --screen data/cote_brvm.csv --top 3` (la performance du Composite est reprise du BOC).

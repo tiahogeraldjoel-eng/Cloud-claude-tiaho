@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 import re
 import subprocess
 from typing import Optional
@@ -126,6 +127,30 @@ def parse_boc(path: str, date: str = "") -> list:
     return rows
 
 
+def compute_history(paths: list, window: int = 5) -> dict:
+    """Signaux d'accumulation à partir de plusieurs BOC (triés par date) :
+    volume moyen des `window` dernières séances / volume moyen des séances précédentes,
+    et variation du cours sur ces mêmes séances."""
+    series = {}
+    for path in sorted(paths):
+        for t, r in parse_actions(pdf_to_text(path)).items():
+            series.setdefault(t, []).append((r["price"], r["volume"] or 0.0))
+    out = {}
+    for t, pts in series.items():
+        if len(pts) <= window:
+            continue
+        recent, avant = pts[-window:], pts[:-window][-15:]
+        vol_avant = sum(v for _, v in avant) / len(avant)
+        vol_recent = sum(v for _, v in recent) / window
+        p0, p1 = pts[-window - 1][0], pts[-1][0]
+        out[t] = {
+            "volume_ratio": round(vol_recent / vol_avant, 2) if vol_avant else None,
+            "price_change_pct": round((p1 / p0 - 1) * 100, 2) if p0 and p1 else None,
+            "seances_historique": len(pts),
+        }
+    return out
+
+
 def merge_enrich(rows: list, enrich_path: str) -> list:
     """Ajoute les colonnes d'un CSV manuel (eps_growth, dividend_suspended, risk_notes…)."""
     with open(enrich_path, newline="", encoding="utf-8") as f:
@@ -143,12 +168,20 @@ def main() -> None:
     p.add_argument("-o", "--output", required=True)
     p.add_argument("--enrich", help="CSV manuel de fondamentaux à fusionner (clé : ticker)")
     p.add_argument("--date", default="", help="date de la séance (AAAA-MM-JJ)")
+    p.add_argument("--history", help="dossier de BOC antérieurs (signaux d'accumulation sur 5 séances)")
     args = p.parse_args()
 
     date = args.date or (re.search(r"(\d{8})", args.pdf) or [None, ""])[1]
     if len(date) == 8:
         date = f"{date[:4]}-{date[4:6]}-{date[6:]}"
     rows = parse_boc(args.pdf, date)
+    if args.history:
+        import glob
+        paths = sorted({os.path.abspath(x) for x in glob.glob(os.path.join(args.history, "*.pdf")) + [args.pdf]},
+                       key=lambda x: re.search(r"(\d{8})", os.path.basename(x)).group(1))
+        hist = compute_history(paths)
+        for r in rows:
+            r.update(hist.get(r["ticker"], {}))
     if args.enrich:
         rows = merge_enrich(rows, args.enrich)
     cols = FIELDS + sorted({k for r in rows for k in r} - set(FIELDS))
