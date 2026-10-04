@@ -25,9 +25,7 @@ from typing import Optional
 _PCT = re.compile(r"^-?\d+(?:,\d+)?%$")
 _DATE = re.compile(r"^\d{1,2}-[^\s-]+-\d{2}$")
 _ACTION = re.compile(r"^\s*([A-Z]{3,6})\s{2,}(.+?)\s{2,}((?:\d|SP\b).*%.*)$")
-_QTE = r"\d{1,3}(?: \d{3})*"   # quantité : espace simple comme séparateur de milliers
-_CARNET = re.compile(
-    rf"^([A-Z]{{3,6}})\s{{2,}}(.+?)\s{{2,}}({_QTE})?\s*([\d,]+)?\s*/\s*([\d,]+)?\s+({_QTE})?\s{{2,}}({_QTE})\s*$")
+_NON_TITRES = {"TOTAL", "TITRE", "TITRES", "INDICE", "VALEUR", "SOCIETE"}
 _INDICE = re.compile(r"BRVM COMPOSITE.*?Variation annuelle\s+(-?\d+,\d+) %", re.S)
 _NIVEAU = re.compile(r"BRVM COMPOSITE\s+(\d[\d ]*,\d+)")
 _SECT_CODE = re.compile(r"^\s*(TEL|FIN|CD|CB|IND|ENE|SPU)\b")
@@ -95,9 +93,11 @@ def parse_actions(text: str) -> dict:
         if not m:
             continue
         ticker, name, rest = m.group(1), m.group(2).strip(), m.group(3)
+        if ticker in _NON_TITRES:
+            continue
         toks = _join_thousands(rest).replace(" %", "%").split()
         pcts = [i for i, t in enumerate(toks) if _PCT.match(t)]
-        if not pcts:
+        if not pcts or len(toks) < 4:  # ligne de total ou de tableau annexe, pas une cotation
             continue
         i_var = pcts[0]
         i_ytd = pcts[1] if len(pcts) > 1 else None
@@ -125,17 +125,39 @@ def parse_actions(text: str) -> dict:
             "dividende_annee": annee_div,
             "secteur": next((mm.group(1) for l in lines[n + 1:n + 3] if (mm := _SECT_CODE.match(l))), ""),
         }
-    return rows
+    # Ne garder que les titres présents dans le carnet d'ordres du BOC (liste de toutes les actions cotées),
+    # pour écarter les lignes d'autres tableaux qui ressemblent à une cotation (« BRVM 30 », ratios…).
+    cotes = set(parse_carnet(text))
+    return {t: r for t, r in rows.items() if t in cotes} if cotes else rows
 
 
 def parse_carnet(text: str) -> dict:
+    """Meilleures limites du carnet : « SYM  Titre  qté_achat  cours_achat / cours_vente  qté_vente  réf ».
+    Les cours utilisent la virgule comme séparateur de milliers, les quantités l'espace."""
     out = {}
     for line in text.splitlines():
-        m = _CARNET.match(line)
-        if m and "/" in line:
-            out[m.group(1)] = {"bid_qty": _num(m.group(3)), "ask_qty": _num(m.group(6)),
-                               "bid": _num((m.group(4) or "").replace(",", "")),
-                               "ask": _num((m.group(5) or "").replace(",", ""))}
+        if "/" not in line or not re.match(r"[A-Z]{3,6}\s{2,}", line):
+            continue
+        parts = re.split(r"\s{2,}", line.strip())
+        if len(parts) < 3:
+            continue
+        j = next((k for k, x in enumerate(parts) if "/" in x), None)
+        if j is None or j < 2:
+            continue
+        gauche, droite = parts[2:j], parts[j + 1:]
+        if parts[j] != "/":  # « 2,860 / 2,900 » collés dans une seule colonne
+            g, d = [x.strip() for x in parts[j].split("/", 1)]
+            gauche, droite = gauche + ([g] if g else []), ([d] if d else []) + droite
+        bid_qty = _num(gauche[0]) if len(gauche) >= 2 else None
+        bid = _num(gauche[-1].replace(",", "")) if gauche else None
+        ask = ask_qty = None
+        if len(droite) >= 3:
+            ask, ask_qty = _num(droite[0].replace(",", "")), _num(droite[1])
+        elif len(droite) == 2 and "," in droite[0]:
+            ask = _num(droite[0].replace(",", ""))
+        elif len(droite) == 2:
+            ask_qty = _num(droite[0])
+        out[parts[0]] = {"bid_qty": bid_qty, "ask_qty": ask_qty, "bid": bid, "ask": ask}
     return out
 
 
