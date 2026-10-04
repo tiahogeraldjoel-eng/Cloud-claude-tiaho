@@ -29,10 +29,15 @@ _QTE = r"\d{1,3}(?: \d{3})*"   # quantité : espace simple comme séparateur de 
 _CARNET = re.compile(
     rf"^([A-Z]{{3,6}})\s{{2,}}(.+?)\s{{2,}}({_QTE})?\s*([\d,]+)?\s*/\s*([\d,]+)?\s+({_QTE})?\s{{2,}}({_QTE})\s*$")
 _INDICE = re.compile(r"BRVM COMPOSITE.*?Variation annuelle\s+(-?\d+,\d+) %", re.S)
+_NIVEAU = re.compile(r"BRVM COMPOSITE\s+(\d[\d ]*,\d+)")
+_SECT_CODE = re.compile(r"^\s*(TEL|FIN|CD|CB|IND|ENE|SPU)\b")
+_SECTEURS = {"TEL": "TELECOMMUNICATIONS", "FIN": "SERVICES FINANCIERS",
+             "CD": "CONSOMMATION DISCRETIONNAIRE", "CB": "CONSOMMATION DE BASE",
+             "IND": "INDUSTRIELS", "ENE": "ENERGIE", "SPU": "SERVICES PUBLICS"}
 
 FIELDS = ["ticker", "name", "price", "dividend", "eps", "per_boc", "rendement_boc_pct",
           "perf_ytd_pct", "index_perf_ytd_pct", "bid_qty", "ask_qty", "volume", "suspendu",
-          "dividende_annee", "date_cours"]
+          "dividende_annee", "secteur", "per_secteur", "bid", "ask", "composite", "date_cours"]
 
 
 def _num(tok: Optional[str]) -> Optional[float]:
@@ -55,14 +60,37 @@ def _join_thousands(s: str) -> str:
     return s
 
 
+_CACHE: dict = {}
+
+
 def pdf_to_text(path: str) -> str:
-    return subprocess.run(["pdftotext", "-layout", path, "-"], check=True,
-                          capture_output=True, text=True).stdout
+    path = os.path.abspath(path)
+    if path not in _CACHE:
+        _CACHE[path] = subprocess.run(["pdftotext", "-layout", path, "-"], check=True,
+                                      capture_output=True, text=True).stdout
+    return _CACHE[path]
+
+
+def parse_composite(text: str) -> Optional[float]:
+    """Niveau du BRVM Composite à la clôture."""
+    m = _NIVEAU.search(text)
+    return _num(m.group(1)) if m else None
+
+
+def parse_secteurs(text: str) -> dict:
+    """PER moyen publié pour chaque indice sectoriel (code -> PER)."""
+    out = {}
+    for code, nom in _SECTEURS.items():
+        m = re.search(rf"BRVM - {nom}\b.*?(\d+,\d+)\s*$", text, re.M)
+        if m:
+            out[code] = _num(m.group(1))
+    return out
 
 
 def parse_actions(text: str) -> dict:
     rows = {}
-    for line in text.splitlines():
+    lines = text.splitlines()
+    for n, line in enumerate(lines):
         m = _ACTION.match(line)
         if not m:
             continue
@@ -95,6 +123,7 @@ def parse_actions(text: str) -> dict:
             "volume": _num(toks[i_var + 1]) if toks[1] != "SP" and len(toks) > i_var + 1 else 0,
             "suspendu": "oui" if toks[1] == "SP" else "",
             "dividende_annee": annee_div,
+            "secteur": next((mm.group(1) for l in lines[n + 1:n + 3] if (mm := _SECT_CODE.match(l))), ""),
         }
     return rows
 
@@ -104,7 +133,9 @@ def parse_carnet(text: str) -> dict:
     for line in text.splitlines():
         m = _CARNET.match(line)
         if m and "/" in line:
-            out[m.group(1)] = {"bid_qty": _num(m.group(3)), "ask_qty": _num(m.group(6))}
+            out[m.group(1)] = {"bid_qty": _num(m.group(3)), "ask_qty": _num(m.group(6)),
+                               "bid": _num((m.group(4) or "").replace(",", "")),
+                               "ask": _num((m.group(5) or "").replace(",", ""))}
     return out
 
 
@@ -113,6 +144,7 @@ def parse_boc(path: str, date: str = "") -> list:
     m = _INDICE.search(text)
     idx = _num(m.group(1)) if m else None
     actions, carnet = parse_actions(text), parse_carnet(text)
+    secteurs, niveau = parse_secteurs(text), parse_composite(text)
     annee = int(date[:4]) if date[:4].isdigit() else None
     rows = []
     for t, r in actions.items():
@@ -122,6 +154,8 @@ def parse_boc(path: str, date: str = "") -> list:
             r["dividend"] = 0.0
             r["rendement_boc_pct"] = 0.0
         r["index_perf_ytd_pct"] = idx
+        r["per_secteur"] = secteurs.get(r["secteur"])
+        r["composite"] = niveau
         r["date_cours"] = date
         rows.append(r)
     return rows

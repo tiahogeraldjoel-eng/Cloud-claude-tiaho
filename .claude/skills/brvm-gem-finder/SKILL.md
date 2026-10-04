@@ -58,6 +58,16 @@ Garde-fous :
 4. **Relire à la main** les 3 premiers : vérifier le dernier résultat trimestriel, les risques spécifiques, la liquidité. Écarter ce qui ne résiste pas.
 5. **Restituer 1 à 3 pépites au maximum**, chacune avec son catalyseur, son risque principal, son niveau de conviction et la taille de position conseillée. Dire clairement quand le marché n'offre pas de vraie pépite.
 
+## L'oracle (`scripts/oracle.py`) et le journal de prédictions
+Pour « quelle est la pépite du moment ? », lancer d'abord l'oracle, qui enchaîne récupération des BOC, lecture de la cote, classement des 48 titres et plan d'action :
+`python scripts/oracle.py` (ou `--no-fetch` si les BOC sont déjà dans `boc/`).
+- Il désigne 1 à 3 pépites avec zone d'entrée (meilleures limites du carnet), objectif (BPA x PER du secteur publié au BOC, plafonné à +50 %), potentiel dividende inclus et seuil de sortie (-10 %).
+- Il inscrit chaque pépite dans `data/journal_predictions.csv` (date, cours, Composite, verdict, objectif) ; ce fichier est versionné et ne doit jamais être réécrit à la main.
+- `python scripts/journal.py --detail` mesure chaque prédiction à 1 semaine, 1 mois, 3 mois et 6 mois de séances contre le BRVM Composite (hors dividendes).
+- **Conviction** : qualitative (score) tant que le journal compte moins de 10 prédictions mûres à 1 mois ; ensuite, taux réel de pépites ayant battu le Composite. Toujours restituer cette conviction telle quelle, sans l'embellir.
+- `python scripts/oracle.py --no-fetch --backtest 5` rejoue l'oracle sur l'historique de BOC disponible (`data/backtest.csv`). Signaler les biais : fondamentaux connus aujourd'hui, historique court.
+- Si les résultats du journal montrent qu'un verdict ou un seuil ne bat pas le Composite sur un échantillon suffisant, proposer d'ajuster les seuils de `brvm_analyst.py` en citant les chiffres.
+
 ## Modèle de Restitution / Recommandation
 Pour chaque analyse, présenter :
 1. **Synthèse des métriques fondamentales** (PER, ROE, Rendement Dividende, PRU).

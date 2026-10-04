@@ -307,25 +307,26 @@ _FLOAT_FIELDS = ("price", "dividend", "eps", "book_value", "roe", "sector_per", 
                  "index_perf_ytd_pct", "volume_ratio", "price_change_pct", "bid_qty", "ask_qty")
 
 
+def row_to_input(row: dict, index_perf_ytd_pct: Optional[float] = None) -> Optional[TickerInput]:
+    """Convertit une ligne de la cote (CSV ou lecteur de BOC) en TickerInput ; None si inexploitable."""
+    get = lambda k: "" if row.get(k) is None else str(row.get(k)).strip()
+    if not get("ticker") or not get("price") or get("suspendu").lower() == "oui":
+        return None  # cotation suspendue : pas d'entrée possible
+    kw = {k: float(get(k)) for k in _FLOAT_FIELDS if get(k)}
+    if index_perf_ytd_pct is not None and "index_perf_ytd_pct" not in kw:
+        kw["index_perf_ytd_pct"] = index_perf_ytd_pct
+    kw.setdefault("dividend", None)
+    if get("sessions_since_ipo"):
+        kw["sessions_since_ipo"] = int(float(get("sessions_since_ipo")))
+    kw["dividend_suspended"] = get("dividend_suspended").lower() in ("1", "true", "oui")
+    kw["risk_notes"] = get("risk_notes")
+    return TickerInput(ticker=get("ticker"), **kw)
+
+
 def load_universe(path: str, index_perf_ytd_pct: Optional[float] = None) -> list:
     """Lit un CSV de la cote (une ligne par titre) et renvoie des TickerInput."""
-    out = []
     with open(path, newline="", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            if not row.get("ticker") or not row.get("price"):
-                continue
-            if row.get("suspendu", "").strip().lower() == "oui":
-                continue  # cotation suspendue : pas d'entrée possible
-            kw = {k: float(row[k]) for k in _FLOAT_FIELDS if row.get(k, "").strip()}
-            if index_perf_ytd_pct is not None and "index_perf_ytd_pct" not in kw:
-                kw["index_perf_ytd_pct"] = index_perf_ytd_pct
-            kw.setdefault("dividend", None)
-            if row.get("sessions_since_ipo", "").strip():
-                kw["sessions_since_ipo"] = int(row["sessions_since_ipo"])
-            kw["dividend_suspended"] = row.get("dividend_suspended", "").strip().lower() in ("1", "true", "oui")
-            kw["risk_notes"] = row.get("risk_notes", "").strip()
-            out.append(TickerInput(ticker=row["ticker"].strip(), **kw))
-    return out
+        return [t for row in csv.DictReader(f) if (t := row_to_input(row, index_perf_ytd_pct))]
 
 
 _VERDICT_RANG = {"PÉPITE (ACHAT PRÉCOCE)": 0, "PÉPITE SPÉCULATIVE (position réduite)": 1, "ACHAT": 1, "CONSERVATION (WATCHLIST)": 2,
