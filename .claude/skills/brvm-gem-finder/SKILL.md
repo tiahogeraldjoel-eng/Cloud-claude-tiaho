@@ -47,9 +47,11 @@ Garde-fous :
 - **Pépite spéculative** (dividende suspendu, solvabilité fragile, recapitalisation) : position réduite, au plus 5 % du portefeuille.
 
 ## Scan de la cote (« quelle est la pépite du moment ? »)
-1. **Collecter** pour chaque titre coté (≈ 48) : cours, dividende net, bénéfice par action, croissance du dernier résultat publié, performance depuis janvier, et celle du BRVM Composite. Sources : bulletin officiel de la cote (BOC), publications BRVM, presse financière (Lejecos, Sika Finance, Agence Ecofin, Financial Afrik, Richbourse).
-2. **Dater et sourcer chaque chiffre** dans `data/cote_brvm.csv` (colonnes `date_cours`, `source`). Si un BPA est un semestre annualisé, l'écrire dans `risk_notes`. Ne jamais inventer un chiffre manquant : laisser la case vide.
-3. **Classer** : `python scripts/brvm_analyst.py --screen data/cote_brvm.csv --index-perf-ytd <perf Composite> --top 3`.
+1. **Lire le BOC du jour** (PDF fourni par l'utilisateur ou téléchargé sur brvm.org) avec le lecteur intégré, qui extrait pour les 48 titres le cours, la variation depuis janvier, le dernier dividende net, le rendement, le PER publié et la meilleure limite du carnet (quantités achat / vente) :
+   `python scripts/boc_parser.py BOC_AAAAMMJJ.pdf -o data/cote_brvm.csv --enrich data/fondamentaux.csv`
+   Les titres suspendus sont écartés ; un dividende payé avant l'exercice précédent compte pour zéro.
+2. **Tenir `data/fondamentaux.csv` à jour** avec ce que le BOC ne donne pas : croissance du dernier résultat publié (`eps_growth`), dividende suspendu, prix d'introduction, risques spécifiques et source. Dater et sourcer chaque chiffre ; ne jamais inventer une valeur manquante : laisser la case vide.
+3. **Classer** : `python scripts/brvm_analyst.py --screen data/cote_brvm.csv --top 3` (la performance du Composite est reprise du BOC).
 4. **Relire à la main** les 3 premiers : vérifier le dernier résultat trimestriel, les risques spécifiques, la liquidité. Écarter ce qui ne résiste pas.
 5. **Restituer 1 à 3 pépites au maximum**, chacune avec son catalyseur, son risque principal, son niveau de conviction et la taille de position conseillée. Dire clairement quand le marché n'offre pas de vraie pépite.
 
@@ -72,6 +74,7 @@ python .claude/skills/brvm-gem-finder/scripts/brvm_analyst.py STBC \
 
 - **Entrées** : `--price` obligatoire, `--dividend` (net) recommandé ; `--eps-growth`, `--perf-ytd`, `--index-perf-ytd`, `--volume-ratio`, `--price-change`, `--dividend-suspended`, `--risk` alimentent la détection précoce ; `--eps`, `--book-value`, `--roe`, `--sector-per` affinent la valorisation ; `--pru` le calcul de plus-value ; `--ipo-price` + `--sessions-since-ipo` déclenchent le filtre anti-FOMO ; `--pre-detachment-price` mesure le gap post-détachement restant à combler.
 - **Sorties** : rendement, PER, P/BV, ROE, taux de distribution, PEG, écart vs Composite, note de chaque pilier (+1 / 0 / -1), alertes et verdict.
+- **Lecteur de BOC** : `scripts/boc_parser.py` (nécessite `pdftotext`, paquet poppler-utils) produit le CSV de la cote.
 - **Mode scan** : `--screen data/cote_brvm.csv` classe toute la cote (verdict, puis score, puis PEG) et détaille les `--top` premiers. `--json` pour un résultat exploitable par programme.
 - **LLM local optionnel** : si `ollama` est installé (`pip install ollama`) et le modèle disponible (par défaut `gemma4:4b`, modifiable avec `--model`), le script ajoute un commentaire de stratégie. Le LLM commente les chiffres du moteur, il ne les recalcule pas. `--no-llm` pour s'en passer.
 - Le pilier microstructure reste neutre tant qu'aucun carnet d'ordres n'a été lu : compléter l'analyse avec une capture Coris Bourse.

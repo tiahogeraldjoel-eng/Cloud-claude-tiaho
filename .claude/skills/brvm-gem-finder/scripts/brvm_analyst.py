@@ -36,6 +36,7 @@ DEJA_DECOUVERTE = 30.0    # perf. ≥ 30 pts au-dessus du Composite : déjà dé
 PEG_CIBLE = 1.0           # PER / croissance du bénéfice (%) < 1
 ACCUMULATION_VOLUME = 2.0 # volume récent ≥ 2x la moyenne 20 séances...
 ACCUMULATION_PRIX = 3.0   # ...avec un cours qui bouge de moins de 3 %
+CARNET_DESEQUILIBRE = 3.0 # quantité achat / vente à la meilleure limite ≥ 3 (ou ≤ 1/3)
 
 
 @dataclass
@@ -56,6 +57,8 @@ class TickerInput:
     index_perf_ytd_pct: Optional[float] = None  # performance du BRVM Composite (%)
     volume_ratio: Optional[float] = None  # volume récent / volume moyen 20 séances
     price_change_pct: Optional[float] = None  # variation du cours sur la même période (%)
+    bid_qty: Optional[float] = None       # quantité résiduelle à l'achat (meilleure limite)
+    ask_qty: Optional[float] = None       # quantité résiduelle à la vente (meilleure limite)
     dividend_suspended: bool = False      # dividende suspendu (redressement en cours)
     risk_notes: str = ""                  # risques spécifiques (solvabilité, pays, dilution…)
     news_context: str = ""
@@ -153,6 +156,20 @@ def score_pillars(t: TickerInput, m: dict) -> Analysis:
         pillars["microstructure"] = -1
         flags.append(f"Anti-FOMO : +{hausse_ipo:.0f} % en {t.sessions_since_ipo} séances "
                      "depuis l'IPO, risque de dégonflement")
+    elif t.bid_qty and t.ask_qty:
+        ratio = t.bid_qty / t.ask_qty
+        m["ratio_achat_vente"] = round(ratio, 2)
+        if ratio >= CARNET_DESEQUILIBRE:
+            pillars["microstructure"] = 1
+            flags.append(f"Carnet : {t.bid_qty:.0f} titres à l'achat pour {t.ask_qty:.0f} à la vente "
+                         "(demande dominante, offre rare)")
+        elif ratio <= 1 / CARNET_DESEQUILIBRE:
+            pillars["microstructure"] = -1
+            flags.append(f"Carnet : {t.ask_qty:.0f} titres à la vente pour {t.bid_qty:.0f} à l'achat "
+                         "(offre abondante, entrer par tranches sous le cours)")
+        else:
+            pillars["microstructure"] = 0
+        flags.append("Carnet = meilleure limite à la clôture seulement : confirmer avec 5 limites Coris Bourse")
     else:
         pillars["microstructure"] = 0
         flags.append("Carnet d'ordres non analysé : joindre une capture Coris Bourse")
@@ -198,7 +215,7 @@ def score_pillars(t: TickerInput, m: dict) -> Analysis:
 
 def _verdict(a: Analysis, m: dict) -> str:
     p = a.pillars
-    if p["microstructure"] < 0:
+    if p["microstructure"] < 0 and (m["hausse_depuis_ipo_pct"] or 0) >= FOMO_HAUSSE_IPO:
         return "PRISE DE BÉNÉFICES" if m["plus_value_pru_pct"] else "ÉVITER (bulle post-IPO)"
     if p["valorisation"] < 0 and (m["rendement_pct"] or 0) < RENDEMENT_FAIBLE:
         return "PRISE DE BÉNÉFICES" if (m["plus_value_pru_pct"] or 0) > 0 else "CONSERVATION (WATCHLIST)"
@@ -287,7 +304,7 @@ def format_report(a: Analysis) -> str:
 # Colonnes CSV acceptées par --screen (les autres sont ignorées)
 _FLOAT_FIELDS = ("price", "dividend", "eps", "book_value", "roe", "sector_per", "pru",
                  "ipo_price", "pre_detachment_price", "eps_growth", "perf_ytd_pct",
-                 "index_perf_ytd_pct", "volume_ratio", "price_change_pct")
+                 "index_perf_ytd_pct", "volume_ratio", "price_change_pct", "bid_qty", "ask_qty")
 
 
 def load_universe(path: str, index_perf_ytd_pct: Optional[float] = None) -> list:
@@ -297,6 +314,8 @@ def load_universe(path: str, index_perf_ytd_pct: Optional[float] = None) -> list
         for row in csv.DictReader(f):
             if not row.get("ticker") or not row.get("price"):
                 continue
+            if row.get("suspendu", "").strip().lower() == "oui":
+                continue  # cotation suspendue : pas d'entrée possible
             kw = {k: float(row[k]) for k in _FLOAT_FIELDS if row.get(k, "").strip()}
             if index_perf_ytd_pct is not None and "index_perf_ytd_pct" not in kw:
                 kw["index_perf_ytd_pct"] = index_perf_ytd_pct
