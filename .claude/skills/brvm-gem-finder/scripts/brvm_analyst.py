@@ -11,10 +11,12 @@ Usage CLI :
     python brvm_analyst.py BBGC --price 8950 --dividend 0 --ipo-price 6750 \
         --sessions-since-ipo 7 --no-llm
     python brvm_analyst.py STBC --price 21995 --dividend 1707 --json
+    python brvm_analyst.py --screen ../data/cote_brvm.csv --index-perf-ytd 58.6 --top 3
 """
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 from dataclasses import asdict, dataclass, field
 from typing import Optional
@@ -28,13 +30,19 @@ RENDEMENT_CIBLE = 7.0     # rendement net > 7 %
 RENDEMENT_FAIBLE = 5.0
 FOMO_HAUSSE_IPO = 25.0    # +25 % depuis l'introduction...
 FOMO_SEANCES = 30         # ...en moins de 30 séances
+# Pilier 5 — détection précoce (entrer avant les institutionnels)
+RETARD_RELATIF = -20.0    # perf. depuis janvier ≥ 20 pts sous le BRVM Composite
+DEJA_DECOUVERTE = 30.0    # perf. ≥ 30 pts au-dessus du Composite : déjà découverte
+PEG_CIBLE = 1.0           # PER / croissance du bénéfice (%) < 1
+ACCUMULATION_VOLUME = 2.0 # volume récent ≥ 2x la moyenne 20 séances...
+ACCUMULATION_PRIX = 3.0   # ...avec un cours qui bouge de moins de 3 %
 
 
 @dataclass
 class TickerInput:
     ticker: str
     price: float                          # cours actuel (FCFA)
-    dividend: float                       # dividende net par action (FCFA)
+    dividend: Optional[float]             # dividende net par action (FCFA), None si inconnu
     eps: Optional[float] = None           # bénéfice net par action (FCFA)
     book_value: Optional[float] = None    # fonds propres par action (FCFA)
     roe: Optional[float] = None           # ROE en fraction (0.18 = 18 %)
@@ -43,6 +51,13 @@ class TickerInput:
     ipo_price: Optional[float] = None     # prix d'introduction (post-IPO)
     sessions_since_ipo: Optional[int] = None
     pre_detachment_price: Optional[float] = None  # cours veille de détachement
+    eps_growth: Optional[float] = None    # croissance du bénéfice en fraction (0.25 = +25 %)
+    perf_ytd_pct: Optional[float] = None  # performance du titre depuis le 1er janvier (%)
+    index_perf_ytd_pct: Optional[float] = None  # performance du BRVM Composite (%)
+    volume_ratio: Optional[float] = None  # volume récent / volume moyen 20 séances
+    price_change_pct: Optional[float] = None  # variation du cours sur la même période (%)
+    dividend_suspended: bool = False      # dividende suspendu (redressement en cours)
+    risk_notes: str = ""                  # risques spécifiques (solvabilité, pays, dilution…)
     news_context: str = ""
 
 
@@ -55,6 +70,8 @@ class Analysis:
     score: int = 0
     verdict: str = "CONSERVATION (WATCHLIST)"
     llm_comment: Optional[str] = None
+    eps_growth: Optional[float] = None
+    dividend_suspended: bool = False
 
 
 def _ratio(num: Optional[float], den: Optional[float]) -> Optional[float]:
@@ -68,14 +85,16 @@ def compute_metrics(t: TickerInput) -> dict:
         raise ValueError(f"{t.ticker} : le cours doit être strictement positif")
     roe = t.roe if t.roe is not None else _ratio(t.eps, t.book_value)
     m = {
-        "rendement_pct": round(t.dividend / t.price * 100, 2),
+        "rendement_pct": round(t.dividend / t.price * 100, 2) if t.dividend is not None else None,
         "per": _ratio(t.price, t.eps),
         "pbv": _ratio(t.price, t.book_value),
         "roe_pct": round(roe * 100, 1) if roe is not None else None,
-        "payout_pct": _ratio(t.dividend * 100, t.eps),
+        "payout_pct": _ratio(t.dividend * 100, t.eps) if t.dividend is not None else None,
         "plus_value_pru_pct": None,
         "hausse_depuis_ipo_pct": None,
         "gap_detachement_restant_pct": None,
+        "peg": None,
+        "ecart_vs_composite_pts": None,
     }
     if t.pru:
         m["plus_value_pru_pct"] = (t.price / t.pru - 1) * 100
@@ -83,6 +102,10 @@ def compute_metrics(t: TickerInput) -> dict:
         m["hausse_depuis_ipo_pct"] = (t.price / t.ipo_price - 1) * 100
     if t.pre_detachment_price:
         m["gap_detachement_restant_pct"] = max(0.0, (t.pre_detachment_price / t.price - 1) * 100)
+    if m["per"] is not None and t.eps_growth is not None and t.eps_growth > 0:
+        m["peg"] = m["per"] / (t.eps_growth * 100)
+    if t.perf_ytd_pct is not None and t.index_perf_ytd_pct is not None:
+        m["ecart_vs_composite_pts"] = t.perf_ytd_pct - t.index_perf_ytd_pct
     return {k: (round(v, 2) if isinstance(v, float) else v) for k, v in m.items()}
 
 
@@ -107,9 +130,12 @@ def score_pillars(t: TickerInput, m: dict) -> Analysis:
     # 2. Rentabilité & dividende
     rdt, roe = m["rendement_pct"], m["roe_pct"]
     note = 0
-    if rdt >= RENDEMENT_CIBLE:
+    croissance = (t.eps_growth or 0) > 0
+    if rdt is None:
+        flags.append("Dividende inconnu : fournir --dividend")
+    elif rdt >= RENDEMENT_CIBLE:
         note += 1
-    elif rdt < RENDEMENT_FAIBLE:
+    elif rdt < RENDEMENT_FAIBLE and not (t.dividend_suspended and croissance):
         note -= 1
     if roe is not None:
         note += 1 if roe >= ROE_CIBLE * 100 else 0
@@ -134,9 +160,38 @@ def score_pillars(t: TickerInput, m: dict) -> Analysis:
     # 4. Catalyseurs & timing
     gap = m["gap_detachement_restant_pct"]
     pillars["catalyseurs"] = 1 if gap and gap >= 3 and pillars["rentabilite"] >= 0 else 0
+    if t.dividend_suspended and (t.eps_growth or 0) > 0:
+        pillars["catalyseurs"] = 1
+        flags.append("Dividende suspendu malgré des bénéfices en hausse : reprise = catalyseur, "
+                     "mais les fonds de rendement restent à l'écart")
+    if t.eps_growth is not None and t.eps_growth < 0:
+        flags.append(f"Bénéfice en baisse ({t.eps_growth * 100:+.0f} %) : risque de piège à valeur")
+
+    # 5. Détection précoce : le marché n'a pas encore intégré l'histoire
+    signaux, note = [], 0
+    ecart, peg = m["ecart_vs_composite_pts"], m["peg"]
+    if ecart is not None and ecart <= RETARD_RELATIF:
+        note += 1
+        signaux.append(f"retard de {ecart:.0f} pts sur le Composite")
+    if ecart is not None and ecart >= DEJA_DECOUVERTE:
+        note -= 1
+        flags.append(f"Déjà découverte : {ecart:+.0f} pts au-dessus du Composite")
+    if peg is not None and peg < PEG_CIBLE:
+        note += 1
+        signaux.append(f"PEG {peg} < 1 (croissance non payée)")
+    if (t.volume_ratio is not None and t.volume_ratio >= ACCUMULATION_VOLUME
+            and t.price_change_pct is not None and abs(t.price_change_pct) < ACCUMULATION_PRIX):
+        note += 1
+        signaux.append(f"volume x{t.volume_ratio} sans mouvement de cours (accumulation discrète)")
+    pillars["detection_precoce"] = max(-1, min(1, note))
+    if signaux:
+        flags.append("Signaux précoces : " + " ; ".join(signaux))
+    if t.risk_notes:
+        flags.append(f"Risque spécifique : {t.risk_notes}")
 
     a = Analysis(ticker=t.ticker, metrics=m, pillars=pillars, flags=flags,
-                 score=sum(pillars.values()))
+                 score=sum(pillars.values()), eps_growth=t.eps_growth,
+                 dividend_suspended=t.dividend_suspended)
     a.verdict = _verdict(a, m)
     return a
 
@@ -145,8 +200,13 @@ def _verdict(a: Analysis, m: dict) -> str:
     p = a.pillars
     if p["microstructure"] < 0:
         return "PRISE DE BÉNÉFICES" if m["plus_value_pru_pct"] else "ÉVITER (bulle post-IPO)"
-    if p["valorisation"] < 0 and m["rendement_pct"] < RENDEMENT_FAIBLE:
+    if p["valorisation"] < 0 and (m["rendement_pct"] or 0) < RENDEMENT_FAIBLE:
         return "PRISE DE BÉNÉFICES" if (m["plus_value_pru_pct"] or 0) > 0 else "CONSERVATION (WATCHLIST)"
+    bpa_en_baisse = (a.eps_growth or 0) < 0
+    if (p["detection_precoce"] > 0 and p["valorisation"] >= 0 and p["rentabilite"] >= 0
+            and a.score >= 2 and not bpa_en_baisse):
+        return ("PÉPITE SPÉCULATIVE (position réduite)" if a.dividend_suspended
+                else "PÉPITE (ACHAT PRÉCOCE)")
     if p["valorisation"] > 0 and p["rentabilite"] > 0 and a.score >= 2:
         return "ACHAT"
     return "CONSERVATION (WATCHLIST)"
@@ -164,7 +224,7 @@ class BRVMAnalystSkill:
             "par un moteur déterministe : ne les recalcule pas et ne les contredis pas sans "
             "raison chiffrée. Explique en français, en 5 à 8 lignes, la stratégie d'entrée "
             "ou de sortie (tranches, niveaux de cours, risques) en t'appuyant sur la matrice "
-            "à 4 piliers : valorisation, rentabilité, microstructure, catalyseurs."
+            "à 5 piliers : valorisation, rentabilité, microstructure, catalyseurs, détection précoce."
         )
 
     def analyze(self, t: TickerInput) -> Analysis:
@@ -184,7 +244,7 @@ class BRVMAnalystSkill:
         except ImportError:
             return "(LLM indisponible : installer la bibliothèque avec `pip install ollama`)"
         prompt = (
-            f"Titre : {t.ticker} | Cours : {t.price:.0f} FCFA | Dividende net : {t.dividend:.0f} FCFA\n"
+            f"Titre : {t.ticker} | Cours : {t.price:.0f} FCFA | Dividende net : {t.dividend if t.dividend is not None else 'n.d.'} FCFA\n"
             f"Métriques : {json.dumps(a.metrics, ensure_ascii=False)}\n"
             f"Piliers (+1/0/-1) : {json.dumps(a.pillars, ensure_ascii=False)} | Score : {a.score}\n"
             f"Alertes : {'; '.join(a.flags) or 'aucune'}\n"
@@ -210,23 +270,79 @@ def format_report(a: Analysis) -> str:
         f"Rendement net : {fmt(m['rendement_pct'], ' %')} | PER : {fmt(m['per'], 'x')} | "
         f"P/BV : {fmt(m['pbv'], 'x')} | ROE : {fmt(m['roe_pct'], ' %')} | "
         f"Payout : {fmt(m['payout_pct'], ' %')}",
+        f"PEG : {fmt(m['peg'])} | Écart vs Composite : {fmt(m['ecart_vs_composite_pts'], ' pts')}",
         "Piliers : " + ", ".join(f"{k} {v:+d}" for k, v in a.pillars.items()) + f" | score {a.score:+d}",
     ]
     if m["plus_value_pru_pct"] is not None:
         lines.append(f"Plus-value vs PRU : {m['plus_value_pru_pct']:+.1f} %")
     lines += [f"⚠ {f}" for f in a.flags]
+    if a.verdict == "ACHAT" and (a.eps_growth or 0) < 0:
+        lines.append("Note : achat de rendement/valeur, pas une pépite tant que le bénéfice recule")
     lines.append(f"VERDICT : {a.verdict}")
     if a.llm_comment:
         lines += ["", "Avis LLM :", a.llm_comment]
     return "\n".join(lines)
 
 
+# Colonnes CSV acceptées par --screen (les autres sont ignorées)
+_FLOAT_FIELDS = ("price", "dividend", "eps", "book_value", "roe", "sector_per", "pru",
+                 "ipo_price", "pre_detachment_price", "eps_growth", "perf_ytd_pct",
+                 "index_perf_ytd_pct", "volume_ratio", "price_change_pct")
+
+
+def load_universe(path: str, index_perf_ytd_pct: Optional[float] = None) -> list:
+    """Lit un CSV de la cote (une ligne par titre) et renvoie des TickerInput."""
+    out = []
+    with open(path, newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            if not row.get("ticker") or not row.get("price"):
+                continue
+            kw = {k: float(row[k]) for k in _FLOAT_FIELDS if row.get(k, "").strip()}
+            if index_perf_ytd_pct is not None and "index_perf_ytd_pct" not in kw:
+                kw["index_perf_ytd_pct"] = index_perf_ytd_pct
+            kw.setdefault("dividend", None)
+            if row.get("sessions_since_ipo", "").strip():
+                kw["sessions_since_ipo"] = int(row["sessions_since_ipo"])
+            kw["dividend_suspended"] = row.get("dividend_suspended", "").strip().lower() in ("1", "true", "oui")
+            kw["risk_notes"] = row.get("risk_notes", "").strip()
+            out.append(TickerInput(ticker=row["ticker"].strip(), **kw))
+    return out
+
+
+_VERDICT_RANG = {"PÉPITE (ACHAT PRÉCOCE)": 0, "PÉPITE SPÉCULATIVE (position réduite)": 1, "ACHAT": 1, "CONSERVATION (WATCHLIST)": 2,
+                 "PRISE DE BÉNÉFICES": 3, "ÉVITER (bulle post-IPO)": 4}
+
+
+def screen(inputs: list, top: int = 3) -> list:
+    """Classe toute la cote : verdict d'abord, puis score, puis PEG le plus bas."""
+    res = [score_pillars(t, compute_metrics(t)) for t in inputs]
+    res.sort(key=lambda a: (_VERDICT_RANG.get(a.verdict, 9), -a.score,
+                            a.metrics["peg"] if a.metrics["peg"] is not None else 99))
+    return res
+
+
+def format_screen(res: list, top: int) -> str:
+    head = f"{'Rang':<5}{'Titre':<7}{'Score':>6}{'PER':>7}{'PEG':>6}{'Rdt %':>7}{'Écart':>7}  Verdict"
+    lines = [head, "-" * len(head)]
+    for i, a in enumerate(res, 1):
+        m = a.metrics
+        f = lambda v: "-" if v is None else f"{v:.1f}" if isinstance(v, float) else str(v)
+        lines.append(f"{i:<5}{a.ticker:<7}{a.score:>+6d}{f(m['per']):>7}{f(m['peg']):>6}"
+                     f"{f(m['rendement_pct']):>7}{f(m['ecart_vs_composite_pts']):>7}  {a.verdict}")
+    lines += ["", f"=== Détail des {min(top, len(res))} premiers ==="]
+    lines += [format_report(a) + "\n" for a in res[:top]]
+    return "\n".join(lines)
+
+
 def main() -> None:
-    p = argparse.ArgumentParser(description="Scoring brvm-gem-finder d'un titre BRVM")
-    p.add_argument("ticker")
-    p.add_argument("--price", type=float, required=True)
-    p.add_argument("--dividend", type=float, required=True, help="dividende net par action")
+    p = argparse.ArgumentParser(description="Scoring brvm-gem-finder d'un titre ou de toute la cote BRVM")
+    p.add_argument("ticker", nargs="?", help="titre à analyser (omis avec --screen)")
+    p.add_argument("--screen", metavar="CSV", help="classe tous les titres d'un CSV de la cote")
+    p.add_argument("--top", type=int, default=3, help="nombre de pépites détaillées (défaut 3)")
+    p.add_argument("--price", type=float)
+    p.add_argument("--dividend", type=float, default=0.0, help="dividende net par action")
     p.add_argument("--eps", type=float)
+    p.add_argument("--eps-growth", type=float, help="fraction, ex. 0.25")
     p.add_argument("--book-value", type=float)
     p.add_argument("--roe", type=float, help="fraction, ex. 0.18")
     p.add_argument("--sector-per", type=float)
@@ -234,17 +350,36 @@ def main() -> None:
     p.add_argument("--ipo-price", type=float)
     p.add_argument("--sessions-since-ipo", type=int)
     p.add_argument("--pre-detachment-price", type=float)
+    p.add_argument("--perf-ytd", type=float, help="perf. du titre depuis janvier (%%)")
+    p.add_argument("--index-perf-ytd", type=float, help="perf. du BRVM Composite depuis janvier (%%)")
+    p.add_argument("--volume-ratio", type=float, help="volume récent / moyenne 20 séances")
+    p.add_argument("--price-change", type=float, help="variation du cours sur la même période (%%)")
+    p.add_argument("--dividend-suspended", action="store_true")
+    p.add_argument("--risk", default="", help="risques spécifiques")
     p.add_argument("--news", default="")
     p.add_argument("--model", default="gemma4:4b")
     p.add_argument("--no-llm", action="store_true")
     p.add_argument("--json", action="store_true")
     args = p.parse_args()
 
+    if args.screen:
+        res = screen(load_universe(args.screen, args.index_perf_ytd), args.top)
+        if args.json:
+            print(json.dumps([asdict(a) for a in res], ensure_ascii=False, indent=2))
+        else:
+            print(format_screen(res, args.top))
+        return
+    if not args.ticker or args.price is None:
+        p.error("indiquer un titre et --price, ou utiliser --screen <csv>")
+
     t = TickerInput(
         ticker=args.ticker, price=args.price, dividend=args.dividend, eps=args.eps,
         book_value=args.book_value, roe=args.roe, sector_per=args.sector_per, pru=args.pru,
         ipo_price=args.ipo_price, sessions_since_ipo=args.sessions_since_ipo,
-        pre_detachment_price=args.pre_detachment_price, news_context=args.news,
+        pre_detachment_price=args.pre_detachment_price, eps_growth=args.eps_growth,
+        perf_ytd_pct=args.perf_ytd, index_perf_ytd_pct=args.index_perf_ytd,
+        volume_ratio=args.volume_ratio, price_change_pct=args.price_change,
+        dividend_suspended=args.dividend_suspended, risk_notes=args.risk, news_context=args.news,
     )
     a = BRVMAnalystSkill(model_name=args.model, use_llm=not args.no_llm).analyze(t)
     print(json.dumps(asdict(a), ensure_ascii=False, indent=2) if args.json else format_report(a))
