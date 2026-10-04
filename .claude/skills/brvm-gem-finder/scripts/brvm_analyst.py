@@ -23,6 +23,10 @@ from typing import Optional
 
 # Seuils de la matrice brvm-gem-finder (SKILL.md)
 PER_CIBLE = 12.0          # PER < 10x–12x
+# Calibré sur 252 BOC (oct. 2025 – oct. 2026) : seul le PER relatif a battu le Composite de façon
+# stable (≈ +12 pts à 3 mois pour le quintile le moins cher, dans chaque semestre).
+PER_QUINTILE_PEPITE = 20.0  # PER parmi les 20 % les moins chers de la cote du jour
+PER_QUINTILE_BON = 40.0
 PER_CHER = 15.0           # au-delà : titre déjà réévalué
 PBV_DECOTE = 1.0          # P/BV < 1 : décote sur fonds propres
 ROE_CIBLE = 0.15          # ROE > 15 %
@@ -59,6 +63,7 @@ class TickerInput:
     price_change_pct: Optional[float] = None  # variation du cours sur la même période (%)
     bid_qty: Optional[float] = None       # quantité résiduelle à l'achat (meilleure limite)
     ask_qty: Optional[float] = None       # quantité résiduelle à la vente (meilleure limite)
+    per_percentile: Optional[float] = None  # rang du PER dans la cote du jour (0 = le moins cher)
     dividend_suspended: bool = False      # dividende suspendu (redressement en cours)
     risk_notes: str = ""                  # risques spécifiques (solvabilité, pays, dilution…)
     news_context: str = ""
@@ -119,10 +124,16 @@ def score_pillars(t: TickerInput, m: dict) -> Analysis:
     # 1. Valorisation
     per, pbv = m["per"], m["pbv"]
     per_cible = min(PER_CIBLE, t.sector_per) if t.sector_per else PER_CIBLE
+    pct = t.per_percentile
     if per is None:
         pillars["valorisation"] = 0
         flags.append("PER inconnu : fournir --eps")
-    elif per <= per_cible or (pbv is not None and pbv < PBV_DECOTE):
+    elif pct is not None and pct <= PER_QUINTILE_PEPITE:
+        pillars["valorisation"] = 2
+        flags.append(f"PER {per}x parmi les {PER_QUINTILE_PEPITE:.0f} % les moins chers de la cote "
+                     "(signal le plus robuste du backtest)")
+    elif per <= per_cible or (pct is not None and pct <= PER_QUINTILE_BON) \
+            or (pbv is not None and pbv < PBV_DECOTE):
         pillars["valorisation"] = 1
     elif per > PER_CHER:
         pillars["valorisation"] = -1
@@ -159,16 +170,13 @@ def score_pillars(t: TickerInput, m: dict) -> Analysis:
     elif t.bid_qty and t.ask_qty:
         ratio = t.bid_qty / t.ask_qty
         m["ratio_achat_vente"] = round(ratio, 2)
+        pillars["microstructure"] = 0   # informatif : aucun pouvoir prédictif mesuré au backtest
         if ratio >= CARNET_DESEQUILIBRE:
-            pillars["microstructure"] = 1
             flags.append(f"Carnet : {t.bid_qty:.0f} titres à l'achat pour {t.ask_qty:.0f} à la vente "
                          "(demande dominante, offre rare)")
         elif ratio <= 1 / CARNET_DESEQUILIBRE:
-            pillars["microstructure"] = -1
             flags.append(f"Carnet : {t.ask_qty:.0f} titres à la vente pour {t.bid_qty:.0f} à l'achat "
                          "(offre abondante, entrer par tranches sous le cours)")
-        else:
-            pillars["microstructure"] = 0
         flags.append("Carnet = meilleure limite à la clôture seulement : confirmer avec 5 limites Coris Bourse")
     else:
         pillars["microstructure"] = 0
@@ -187,12 +195,12 @@ def score_pillars(t: TickerInput, m: dict) -> Analysis:
     # 5. Détection précoce : le marché n'a pas encore intégré l'histoire
     signaux, note = [], 0
     ecart, peg = m["ecart_vs_composite_pts"], m["peg"]
+    # Retard / avance sur le Composite : affichés seulement. Au backtest, les retardataires n'ont pas
+    # battu le marché (et l'ont nettement sous-performé d'avril à octobre 2026).
     if ecart is not None and ecart <= RETARD_RELATIF:
-        note += 1
-        signaux.append(f"retard de {ecart:.0f} pts sur le Composite")
+        flags.append(f"Retard de {ecart:.0f} pts sur le Composite (informatif, non compté)")
     if ecart is not None and ecart >= DEJA_DECOUVERTE:
-        note -= 1
-        flags.append(f"Déjà découverte : {ecart:+.0f} pts au-dessus du Composite")
+        flags.append(f"Déjà très remontée : {ecart:+.0f} pts au-dessus du Composite (informatif)")
     if peg is not None and peg < PEG_CIBLE:
         note += 1
         signaux.append(f"PEG {peg} < 1 (croissance non payée)")
@@ -220,8 +228,7 @@ def _verdict(a: Analysis, m: dict) -> str:
     if p["valorisation"] < 0 and (m["rendement_pct"] or 0) < RENDEMENT_FAIBLE:
         return "PRISE DE BÉNÉFICES" if (m["plus_value_pru_pct"] or 0) > 0 else "CONSERVATION (WATCHLIST)"
     bpa_en_baisse = (a.eps_growth or 0) < 0
-    if (p["detection_precoce"] > 0 and p["valorisation"] >= 0 and p["rentabilite"] >= 0
-            and a.score >= 2 and not bpa_en_baisse):
+    if (p["valorisation"] >= 2 and p["rentabilite"] >= 0 and a.score >= 2 and not bpa_en_baisse):
         return ("PÉPITE SPÉCULATIVE (position réduite)" if a.dividend_suspended
                 else "PÉPITE (ACHAT PRÉCOCE)")
     if p["valorisation"] > 0 and p["rentabilite"] > 0 and a.score >= 2:
@@ -335,6 +342,11 @@ _VERDICT_RANG = {"PÉPITE (ACHAT PRÉCOCE)": 0, "PÉPITE SPÉCULATIVE (position 
 
 def screen(inputs: list, top: int = 3) -> list:
     """Classe toute la cote : verdict d'abord, puis score, puis PEG le plus bas."""
+    pers = sorted(t.price / t.eps for t in inputs if t.eps and t.eps > 0)
+    for t in inputs:
+        if t.eps and t.eps > 0 and pers and t.per_percentile is None:
+            per = t.price / t.eps
+            t.per_percentile = 100 * sum(x < per for x in pers) / len(pers)
     res = [score_pillars(t, compute_metrics(t)) for t in inputs]
     res.sort(key=lambda a: (_VERDICT_RANG.get(a.verdict, 9), -a.score,
                             a.metrics["peg"] if a.metrics["peg"] is not None else 99))
