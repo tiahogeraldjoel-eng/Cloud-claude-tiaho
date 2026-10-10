@@ -9,6 +9,25 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('studio-joe-') && k !== VERSION).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
+// partage depuis une autre application du téléphone (« Partager → Studio Joe ») : les fichiers sont gardés
+// puis Mes fichiers propose de les ouvrir dans la bonne application
+self.addEventListener('fetch', (e) => {
+  const u = new URL(e.request.url);
+  if (e.request.method !== 'POST' || u.origin !== location.origin || !/fichiers\.html$/.test(u.pathname)) return;
+  e.respondWith((async () => {
+    try {
+      const fd = await e.request.formData();
+      const list = fd.getAll('files').filter((f) => f && typeof f === 'object' && 'size' in f).map((f) => ({ name: f.name || 'fichier', type: f.type, blob: f }));
+      const text = ['title', 'text', 'url'].map((k) => fd.get(k)).filter((v) => v && typeof v === 'string').join('\n').trim();
+      if (text && !list.length) list.push({ name: 'Texte partagé.txt', type: 'text/plain', blob: new Blob([text], { type: 'text/plain' }) });
+      const db = await new Promise((res, rej) => { const r = indexedDB.open('studio-handoff', 1); r.onupgradeneeded = () => r.result.createObjectStore('files'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+      const old = await new Promise((res) => { const q = db.transaction('files').objectStore('files').get('shared'); q.onsuccess = () => res(q.result || []); q.onerror = () => res([]); });
+      await new Promise((res, rej) => { const t = db.transaction('files', 'readwrite'); t.objectStore('files').put([...(Array.isArray(old) ? old : []), ...list], 'shared'); t.oncomplete = res; t.onerror = () => rej(t.error); });
+      db.close();
+    } catch (err) { /* la page affichera ce qui a pu être gardé */ }
+    return Response.redirect('fichiers.html?partage=1', 303);
+  })());
+});
 self.addEventListener('fetch', (e) => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET' || u.origin !== location.origin) return; // modèles, API : réseau direct

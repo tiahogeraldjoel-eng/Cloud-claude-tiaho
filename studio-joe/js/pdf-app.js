@@ -1361,6 +1361,7 @@
 
   /* ---------------- Liaisons UI ---------------- */
   const open = async () => addFiles(await pickFiles('application/pdf,image/*'));
+  Studio.onImport('pdf', addFiles);
   $('#openBtn').onclick = open; $('#openBtn2').onclick = open;
   $('#blankBtn').onclick = addBlank;
   $('#undoBtn').onclick = undo; $('#redoBtn').onclick = redo;

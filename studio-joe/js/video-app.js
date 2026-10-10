@@ -923,6 +923,7 @@
     else if (k === 'l') act('loop');
   });
   onDropFiles($('#drop'), importFiles);
+  Studio.onImport('video', importFiles);
   window.addEventListener('resize', () => renderTimeline());
   initMenus();
 

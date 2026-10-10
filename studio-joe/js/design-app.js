@@ -1872,6 +1872,7 @@
     const item = Array.from(e.clipboardData?.items || []).find((i) => i.type.startsWith('image/'));
     if (item) { e.preventDefault(); await addImageFromFile(item.getAsFile()); }
   });
+  Studio.onImport('design', async (fs) => { for (const f of fs) if (f.type.startsWith('image/')) await addImageFromFile(f); });
   onDropFiles($('#stage'), async (files) => {
     for (const f of files) {
       if (/\.joedesign$/i.test(f.name)) { const data = JSON.parse(await f.text()); pushUndo(); delete data.app; delete data.v; state = link(data); idSeq = maxId(); fit(); renderSide(); renderPages(); }

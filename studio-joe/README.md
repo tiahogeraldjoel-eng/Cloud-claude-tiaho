@@ -8,6 +8,7 @@ l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA C
 
 | Application | Équivalent Adobe | Fichier |
 |---|---|---|
+| **Mes fichiers** | OneDrive / Fichiers | `fichiers.html` |
 | **PDF Joe** | Acrobat | `pdf.html` |
 | **Scan Joe** | Adobe Scan | `scan.html` |
 | **Texte Joe** | Word | `texte.html` |
@@ -355,6 +356,23 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Aussi : « Lire le document à voix haute » dans PDF Joe, « Relire » dans Dictée Joe,
   « Voix off à partir d'un texte » dans Video Joe (son placé sur une piste audio,
   sous-titres en option)
+
+## Mes fichiers et recherche (`fichiers.html`)
+- Tous les documents des applications au même endroit, les plus récents en tête :
+  documents de Texte Joe, notes, bases, formulaires et réponses, rendez-vous et tâches,
+  classeur et présentation en cours, scans, son
+- Recherche dans le contenu de tout (accents ignorés, mots surlignés), jusque dans les
+  enregistrements des bases (« Base › Table : 3 enregistrements trouvés ») ; barre de
+  recherche aussi sur l'accueil
+- « Ouvrir » : n'importe quel fichier (PDF, Word, Excel, PowerPoint, Access, .ics,
+  images, sons, vidéos, sauvegardes…) est envoyé dans la bonne application, avec un
+  choix quand plusieurs conviennent (un PDF : le lire, le convertir en document ou en
+  tableau…)
+- Application installée sur Android : Studio Joe apparaît dans le menu **Partager** des
+  autres applications (WhatsApp, Gmail, Fichiers) ; le fichier reçu s'ouvre dans la
+  bonne application
+- Place utilisée et bouton « Protéger mes données » (stockage persistant : le navigateur
+  ne les efface pas quand le téléphone manque de place)
 
 ## Sauvegarde et transfert entre appareils (`sauvegarde.html`)
 - Toutes les données locales (documents de Texte Joe, présentations, notes, formulaires

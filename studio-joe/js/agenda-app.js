@@ -401,8 +401,8 @@
     evs.forEach((e) => { if (!e.end) e.end = e.allDay ? dkey(addDays(parse(e.start), 1)) : tkey(new Date(+parse(e.start) + 3600e3)); });
     return { evs, tds };
   }
-  async function importIcs() {
-    const fs = await pickFiles('.ics,text/calendar', true); if (!fs.length) return;
+  async function importIcs(given) {
+    const fs = given && given.length ? given : await pickFiles('.ics,text/calendar', true); if (!fs.length) return;
     let ne = 0, nt = 0;
     const cal = await modal({ title: 'Importer dans quel agenda ?', body: `<div class="field"><label for="iC">Agenda</label><select id="iC">${cals.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}<option value="__new">＋ Nouvel agenda « Importé »</option></select></div>`, buttons: [{ label: 'Annuler', value: null }, { label: 'Importer', primary: true, value: (b) => b.querySelector('#iC').value }] });
     if (!cal) return;
@@ -431,7 +431,7 @@
     today: () => { cur = new Date(); miniMonth = new Date(cur); render(); },
     prev: () => step(-1), next: () => step(1),
     new: () => (view === 'tasks' ? $('#newTask') && $('#newTask').focus() : editEvent(null, null)),
-    importIcs, exportIcs, notif: () => notifDialog(false), print: () => window.print(),
+    importIcs: () => importIcs(), exportIcs, notif: () => notifDialog(false), print: () => window.print(),
   };
   function step(k) { if (view === 'month') cur = new Date(cur.getFullYear(), cur.getMonth() + k, 1); else if (view === 'week') cur = addDays(cur, 7 * k); else if (view === 'day') cur = addDays(cur, k); else return; miniMonth = new Date(cur); render(); }
   document.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) { const f = ACT[b.dataset.act]; if (f) Promise.resolve(f()).catch((er) => toast('Erreur : ' + er.message)); } });
@@ -452,7 +452,9 @@
     if (!cals.length) { cals = [{ id: 'travail', name: 'Travail', color: '#1565c0', visible: true }, { id: 'perso', name: 'Personnel', color: '#2e7d32', visible: true }, { id: 'echeances', name: 'Échéances', color: '#c62828', visible: true }]; saveCals(); }
     try { const v = localStorage.getItem('agenda-view'); if (v) view = v; } catch (e) { /* ignore */ }
     await loadNoteTasks();
+    const deep = /^#date=(\d{4}-\d\d-\d\d)$/.exec(location.hash); if (deep) { cur = parse(deep[1]); view = 'day'; history.replaceState(null, '', location.pathname); }
     render();
+    Studio.onImport('agenda', (fs) => importIcs(fs));
     await checkReminders(true); setInterval(() => checkReminders(false), 30000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkReminders(false); loadNoteTasks().then(renderView); } });
   })();

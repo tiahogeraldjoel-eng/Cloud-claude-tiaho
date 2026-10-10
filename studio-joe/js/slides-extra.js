@@ -461,6 +461,7 @@
       toast(`« ${f.name} » ouvert : ${d.slides.length} diapositive${d.slides.length > 1 ? 's' : ''}`);
     } catch (e) { console.error(e); toast('Ouverture impossible : ' + e.message, 8000); }
   }
+  Studio.onImport('presentation', (fs) => { const f = fs.find((x) => /\.(pptx|joeslides|json)$/i.test(x.name)); if (f) openFile(f); else P.addImages(fs); });
   onDropFiles(P.stage, (files) => { const f = files[0]; if (!f) return; if (/\.(pptx|joeslides)$/i.test(f.name)) openFile(f); else P.addImages(files); });
 
   /* ---------- lecteur PPTX (texte, formes, images, tableaux, graphiques, notes) ---------- */

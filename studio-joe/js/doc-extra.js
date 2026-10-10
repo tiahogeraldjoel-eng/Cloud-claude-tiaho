@@ -234,6 +234,7 @@
       T.loadDoc(d); T.autosave(); toast(`« ${f.name} » ouvert`);
     } catch (e) { console.error(e); toast('Ouverture impossible : ' + e.message, 8000); }
   }
+  Studio.onImport('texte', (fs) => openFile(fs[0]));
   Studio.onDropFiles(document.getElementById('desk'), (files) => { const f = files[0]; if (!f) return; if (/^image\//.test(f.type)) { T.focusBody(); Promise.all(files.map((x) => Studio.readAsDataURL(x))).then((urls) => urls.forEach((u) => T.exec('insertHTML', `<img src="${u}" style="max-width:100%">`, false))); } else openFile(f); });
 
   /* ================= PDF et impression ================= */

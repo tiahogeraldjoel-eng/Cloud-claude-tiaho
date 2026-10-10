@@ -610,11 +610,8 @@
     } catch (e) { console.error(e); toast('Ouverture impossible : ' + e.message, 7000); }
   }
   onDropFiles($('#gridwrap'), (files) => files[0] && openFile(files[0]));
-  // fichier envoyé par PDF Joe (PDF → Excel → « Ouvrir dans Tableur Joe »)
-  if (location.hash === '#import' && Studio.pdfConvert) {
-    history.replaceState(null, '', location.pathname + location.search);
-    window.addEventListener('load', async () => { try { const h = await Studio.pdfConvert.handoff.take('tableur'); if (h) await openFile(new File([h.blob], h.name)); } catch (e) { console.error(e); } });
-  }
+  // fichier envoyé par une autre application (PDF Joe, Formulaires Joe, Mes fichiers)
+  Studio.onImport('tableur', (fs) => openFile(fs[0]));
 
   async function readCsv(f) {
     const buf = await f.arrayBuffer();

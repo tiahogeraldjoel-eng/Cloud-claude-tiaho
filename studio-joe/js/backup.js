@@ -227,6 +227,7 @@
   }
   $('#restoreBtn').onclick = async () => { const [f] = await pickFiles('.joebak,.zip,application/zip,application/octet-stream', false); if (f) restore(f); };
   Studio.onDropFiles(document.body, (files) => files[0] && restore(files[0]));
+  Studio.onImport('sauvegarde', (fs) => restore(fs[0]));
 
   showLast(); scan();
   window.BackupJoe = { createBackup, restore, scan, ser, deser };
