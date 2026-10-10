@@ -100,7 +100,7 @@
           <button class="primary" id="openBtn2">Choisir des fichiers</button>
           <div class="feature-list">
             <span>Fusionner</span><span>Réorganiser</span><span>Pivoter</span><span>Supprimer des pages</span>
-            <span>Signer</span><span>Annoter</span><span>Remplir les formulaires</span><span>Filigrane</span>
+            <span>Signer</span><span>Modifier le texte</span><span>Annoter</span><span>Caviarder</span><span>Protéger par mot de passe</span><span>Remplir les formulaires</span><span>Filigrane</span>
             <span>Numéroter</span><span>Diviser</span><span>Compresser</span><span>PDF ↔ images</span><span>Extraire le texte</span>
           </div>
           <p class="hint">Tout reste sur votre appareil : aucun fichier n'est envoyé sur internet.</p>
@@ -148,6 +148,13 @@
         <h3>En-tête et pied de page <input type="checkbox" id="hfOn" aria-label="Activer en-tête et pied"></h3>
         <div class="field"><label for="hdrText">En-tête</label><input type="text" id="hdrText" placeholder="Ex. Commune de …"></div>
         <div class="field"><label for="ftrText">Pied de page ({date} = date du jour)</label><input type="text" id="ftrText" placeholder="Ex. Édité le {date}"></div>
+      </div>
+      <div class="section">
+        <h3>Protection par mot de passe <input type="checkbox" id="pwOn" aria-label="Protéger le PDF"></h3>
+        <div class="field"><label for="pwUser">Mot de passe d'ouverture</label><input type="text" id="pwUser" autocomplete="off"></div>
+        <div class="field"><label for="pwOwner">Mot de passe propriétaire (facultatif)</label><input type="text" id="pwOwner" autocomplete="off"></div>
+        <div class="row"><label><input type="checkbox" id="pwPrint" checked> Impression</label><label><input type="checkbox" id="pwCopy"> Copie du texte</label><label><input type="checkbox" id="pwModify"> Modification</label></div>
+        <p class="hint">Chiffrement AES-256. Notez bien le mot de passe : il ne peut pas être récupéré.</p>
       </div>
       <div class="section">
         <h3>Import d'images</h3>

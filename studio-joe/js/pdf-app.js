@@ -44,11 +44,13 @@
     render();
   }
 
+  let lastPassword;
   async function openPjs(bytes, name) {
     let password;
     for (;;) {
       try {
-        return await pdfjsLib.getDocument({ data: bytes.slice(), password }).promise;
+        const d = await pdfjsLib.getDocument({ data: bytes.slice(), password }).promise;
+        lastPassword = password; return d;
       } catch (e) {
         if (e && e.name === 'PasswordException') {
           password = await modal({
@@ -64,12 +66,19 @@
 
   async function addPdf(bytes, name) {
     let pjs = await openPjs(bytes, name);
-    // pdf-lib ne sait pas déchiffrer : un PDF chiffré est converti en images pour rester éditable.
-    let encrypted = false;
-    try { await PDFDocument.load(bytes); } catch (e) { if (/encrypt/i.test(e.message)) encrypted = true; else throw e; }
-    if (encrypted) {
-      toast('PDF protégé : converti en pages images pour pouvoir le modifier.', 5000);
-      bytes = await rasterize(pjs, 150, 0.85);
+    // PDF protégé : on le déchiffre avec le mot de passe fourni pour le garder vectoriel et modifiable
+    let probe = null;
+    try { probe = await PDFDocument.load(bytes, { ignoreEncryption: true }); } catch (e) { throw e; }
+    if (probe.isEncrypted) {
+      try {
+        const dec = await PDFDocument.load(bytes, { password: lastPassword ?? '' });
+        bytes = new Uint8Array(await dec.save());
+        toast('PDF protégé déverrouillé', 3000);
+      } catch (e) {
+        console.warn(e);
+        toast('Chiffrement non pris en charge : PDF converti en pages images pour rester modifiable.', 5000);
+        bytes = await rasterize(pjs, 150, 0.85);
+      }
       pjs = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
     }
     const id = srcSeq++;
@@ -380,6 +389,7 @@
       num: $('#numOn').checked ? { fmt: $('#numFmt').value, pos: $('#numPos').value, start: +$('#numStart').value || 0, size: +$('#numSize').value || 10, skip: +$('#numSkip').value || 0 } : null,
       hf: $('#hfOn').checked ? { header: $('#hdrText').value, footer: $('#ftrText').value } : null,
       title: $('#metaTitle').value.trim(), author: $('#metaAuthor').value.trim(),
+      protect: $('#pwOn').checked ? { user: $('#pwUser').value, owner: $('#pwOwner').value, print: $('#pwPrint').checked, copy: $('#pwCopy').checked, modify: $('#pwModify').checked } : null,
     };
   }
 
@@ -456,10 +466,33 @@
         if (opts.hf.footer.trim()) await putText(sub(opts.hf.footer), opts.num && opts.num.pos === 'bc' ? 'bl' : 'bc', 9);
       }
     }
-    if (opts.title) out.setTitle(opts.title);
-    if (opts.author) out.setAuthor(opts.author);
-    out.setProducer('PDF Joe'); out.setCreator('Studio Joe');
-    return out.save();
+    let final = out;
+    // caviardage définitif : les pages concernées sont converties en image, le texte masqué disparaît du fichier
+    const redactIdx = list.map((p, i) => (p.overlays.some((o) => o.type === 'redact') ? i : -1)).filter((i) => i >= 0);
+    if (redactIdx.length) {
+      const tmp = await out.save();
+      const pjs = await pdfjsLib.getDocument({ data: tmp.slice() }).promise;
+      final = await PDFDocument.load(tmp);
+      for (const i of redactIdx) {
+        const pg = await pjs.getPage(i + 1); const vp1 = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: 200 / 72 });
+        const c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+        const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+        await pg.render({ canvasContext: x, viewport: vp }).promise;
+        const img = await final.embedJpg(await (await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.9))).arrayBuffer());
+        final.removePage(i);
+        final.insertPage(i, [vp1.width, vp1.height]).drawImage(img, { x: 0, y: 0, width: vp1.width, height: vp1.height });
+      }
+    }
+    if (opts.title) final.setTitle(opts.title);
+    if (opts.author) final.setAuthor(opts.author);
+    final.setProducer('PDF Joe'); final.setCreator('Studio Joe');
+    if (opts.protect && opts.protect.user) {
+      final.encrypt({
+        userPassword: opts.protect.user, ownerPassword: opts.protect.owner || opts.protect.user + '#joe',
+        permissions: { printing: opts.protect.print ? 'highResolution' : false, copying: opts.protect.copy, modifying: opts.protect.modify, annotating: opts.protect.modify, fillingForms: true, contentAccessibility: true, documentAssembly: opts.protect.modify },
+      });
+    }
+    return final.save();
   }
 
   async function drawOverlayPdf(pg, b, R, o, font, image) {
@@ -482,6 +515,7 @@
       }
       case 'rect': pg.drawRectangle({ ...rect(), borderColor: col, borderWidth: o.stroke || 2, borderOpacity: op }); break;
       case 'fill': pg.drawRectangle({ ...rect(), color: col, opacity: op }); break;
+      case 'redact': pg.drawRectangle({ ...rect(), color: rgb(0, 0, 0), opacity: 1 }); break;
       case 'highlight': pg.drawRectangle({ ...rect(), color: col, opacity: 0.35 }); break;
       case 'whiteout': pg.drawRectangle({ ...rect(), color: rgb(1, 1, 1), opacity: 1 }); break;
       case 'line': line(o.x, o.y, o.x + o.w, o.y + o.h, o.stroke || 2); break;
@@ -555,11 +589,13 @@
       else if (res.mode === 'every') { const n = Math.max(1, res.n | 0); groups = []; for (let i = 0; i < N; i += n) groups.push(Array.from({ length: Math.min(n, N - i) }, (_, k) => i + k)); }
       else groups = parseRanges(res.ranges, N);
       if (!groups.length) throw new Error('aucune plage');
-      const full = await PDFDocument.load(await buildPdf(pages));
+      const opts = exportOptions(); const protect = opts.protect; opts.protect = null;
+      const full = await PDFDocument.load(await buildPdf(pages, opts));
       const zip = new JSZip();
       for (const g of groups) {
         const d = await PDFDocument.create();
         (await d.copyPages(full, g)).forEach((pg) => d.addPage(pg));
+        if (protect && protect.user) d.encrypt({ userPassword: protect.user, ownerPassword: protect.owner || protect.user + '#joe' });
         const label = g.length === 1 ? `p${g[0] + 1}` : `p${g[0] + 1}-${g[g.length - 1] + 1}`;
         zip.file(`${outName()}_${label}.pdf`, await d.save());
       }
@@ -603,9 +639,12 @@
     if (!res) return;
     const [dpi, q] = res.split('|').map(Number);
     await busy(flatten ? 'Aplatissement' : 'Compression', async () => {
-      const orig = await buildPdf(pages);
+      const opts = exportOptions(); opts.protect = null;
+      const orig = await buildPdf(pages, opts);
       const pjs = await pdfjsLib.getDocument({ data: orig.slice() }).promise;
-      const bytes = await rasterize(pjs, dpi, q);
+      let bytes = await rasterize(pjs, dpi, q);
+      const prot = exportOptions().protect;
+      if (prot && prot.user) { const d = await PDFDocument.load(bytes); d.encrypt({ userPassword: prot.user, ownerPassword: prot.owner || prot.user + '#joe' }); bytes = await d.save(); }
       download(new Blob([bytes], { type: 'application/pdf' }), outName() + (flatten ? '-image.pdf' : '-compresse.pdf'));
       const gain = Math.round((1 - bytes.length / orig.length) * 100);
       toast(`${fmtSize(orig.length)} → ${fmtSize(bytes.length)}${gain > 0 ? ` (−${gain} %)` : ''}`, 5000);
@@ -623,7 +662,8 @@
     });
     if (!res) return;
     await busy('Conversion', async () => {
-      const bytes = await buildPdf(pages);
+      const opts = exportOptions(); opts.protect = null;
+      const bytes = await buildPdf(pages, opts);
       const pjs = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
       const idx = res.sel ? pages.map((p, i) => (selected.has(p.uid) ? i : -1)).filter((i) => i >= 0) : pages.map((_, i) => i);
       const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[res.fmt];
@@ -645,7 +685,7 @@
     if (!pages.length) return;
     let text = '';
     await busy('Extraction du texte', async () => {
-      const bytes = await buildPdf(pages, { wm: null, num: null, hf: null });
+      const bytes = await buildPdf(pages, { wm: null, num: null, hf: null, protect: null });
       const pjs = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
       for (let i = 1; i <= pjs.numPages; i++) {
         const tc = await (await pjs.getPage(i)).getTextContent();
@@ -680,6 +720,7 @@
           break;
         case 'rect': ctx.lineWidth = o.stroke || 2; ctx.strokeRect(o.x, o.y, o.w, o.h); break;
         case 'fill': ctx.fillRect(o.x, o.y, o.w, o.h); break;
+        case 'redact': ctx.globalAlpha = 1; ctx.fillStyle = '#000'; ctx.fillRect(o.x, o.y, o.w, o.h); break;
         case 'highlight': ctx.globalAlpha = 0.35; ctx.globalCompositeOperation = 'multiply'; ctx.fillRect(o.x, o.y, o.w, o.h); break;
         case 'whiteout': ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.fillRect(o.x, o.y, o.w, o.h); break;
         case 'line': ctx.lineWidth = o.stroke || 2; ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x + o.w, o.y + o.h); ctx.stroke(); break;
@@ -729,6 +770,8 @@
         ${T('rect', 'Cadre', '<rect x="4" y="6" width="16" height="12"/>')}
         ${T('fill', 'Rectangle plein (caviarder)', '<rect x="4" y="6" width="16" height="12" fill="currentColor"/>')}
         ${T('whiteout', 'Effaceur blanc (masquer)', '<path d="M7 20h10M5 14l7-9 7 9-4 4H9z"/>')}
+        ${T('edittext', 'Modifier un texte existant : cliquez sur un mot ou une ligne du PDF', '<path d="M4 7V5h10v2M9 5v12M7 17h4M14 19l6-6-2-2-6 6v2z"/>')}
+        ${T('redact', 'Caviarder (définitif) : le contenu caché est supprimé du fichier', '<rect x="3" y="8" width="18" height="8" fill="currentColor"/><path d="M3 4h18M3 20h18"/>')}
         ${T('line', 'Trait', '<path d="M4 20 20 4"/>')}
       </div>
       <div class="area"><div class="paper"><canvas class="pc"></canvas><canvas class="oc" style="touch-action:none"></canvas></div></div>
@@ -808,7 +851,7 @@
       }
       draw();
     }
-    const labelOf = (t) => ({ text: 'Texte', date: 'Date', image: 'Image', rect: 'Cadre', fill: 'Rectangle plein', highlight: 'Surlignage', whiteout: 'Masque blanc', line: 'Trait', check: 'Coche', cross: 'Croix' }[t] || t);
+    const labelOf = (t) => ({ redact: 'Caviardage définitif', text: 'Texte', date: 'Date', image: 'Image', rect: 'Cadre', fill: 'Rectangle plein', highlight: 'Surlignage', whiteout: 'Masque blanc', line: 'Trait', check: 'Coche', cross: 'Croix' }[t] || t);
     const style = () => ({ color: q('#edColor').value, opacity: (+q('#edOpacity').value || 100) / 100 });
 
     async function addImage(src, x, y, maxW = 180) {
@@ -819,6 +862,32 @@
       objs.push(o); setTool('select'); select(o);
     }
 
+    // remplace un texte du PDF : masque de la couleur du fond + nouveau texte modifiable au même endroit
+    let textItems = null;
+    async function editExistingText(x, y) {
+      if (!textItems) {
+        const pg = await sources.get(p.src).pjs.getPage(p.index + 1); const vp = pg.getViewport({ scale: 1 });
+        const tc = await pg.getTextContent();
+        textItems = tc.items.filter((it) => it.str.trim()).map((it) => {
+          const t = pdfjsLib.Util.transform(vp.transform, it.transform);
+          const fh = Math.hypot(t[2], t[3]), st = tc.styles[it.fontName] || {};
+          const fam = /serif/i.test(st.fontFamily || '') && !/sans/i.test(st.fontFamily || '') ? 'times' : /mono/i.test(st.fontFamily || '') ? 'courier' : 'helv';
+          const bold = /bold|black|heavy|semibold/i.test(it.fontName + ' ' + (st.fontFamily || ''));
+          return { str: it.str, x: t[4], base: t[5], h: fh, w: it.width, font: fam === 'courier' ? 'courier' : fam + (bold && fam !== 'courier' ? 'B' : '') };
+        });
+      }
+      const it = textItems.find((t) => x >= t.x - 2 && x <= t.x + t.w + 2 && y >= t.base - t.h && y <= t.base + t.h * 0.3);
+      if (!it) { toast('Aucun texte ici. Cliquez exactement sur un mot du document (les PDF scannés n\'ont pas de texte).'); return; }
+      // couleur du fond prélevée juste à gauche du texte
+      const px = pc.getContext('2d').getImageData(Math.max(0, Math.round((it.x - 2) * scale * (pc.width / (p.w * scale)))), Math.round((it.base - it.h * 0.5) * scale * (pc.width / (p.w * scale))), 1, 1).data;
+      const bg = '#' + [px[0], px[1], px[2]].map((v) => v.toString(16).padStart(2, '0')).join('');
+      const mask = { type: 'fill', x: it.x - 1, y: it.base - it.h * 1.0, w: it.w + 3, h: it.h * 1.3, color: bg, opacity: 1 };
+      const txt = { type: 'text', text: it.str, x: it.x, y: it.base - it.h * 0.85, size: Math.round(it.h * 10) / 10, font: FONT_MAP[it.font] ? it.font : 'helv', color: '#000000', opacity: 1 };
+      measureText(txt);
+      objs.push(mask, txt); setTool('select'); select(txt);
+      q('#edText').focus(); q('#edText').select();
+      toast('Modifiez le texte à droite. Pour qu\'il disparaisse vraiment du fichier, ajoutez un caviardage.', 4500);
+    }
     oc.addEventListener('pointerdown', async (e) => {
       oc.setPointerCapture(e.pointerId);
       const [x, y] = pos(e);
@@ -841,6 +910,7 @@
         objs.push(o); select(o); return;
       }
       if (tool === 'sign') { const src = await signatureDialog(); if (src) addImage(src, x - 90, y - 30); return; }
+      if (tool === 'edittext') { await editExistingText(x, y); return; }
       if (tool === 'image') {
         const [f] = await pickFiles('image/*', false); if (!f) return;
         const im = await loadImage(await readAsDataURL(f));
