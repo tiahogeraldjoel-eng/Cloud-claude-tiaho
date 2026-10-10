@@ -13,6 +13,7 @@ l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA C
 | **Texte Joe** | Word | `texte.html` |
 | **Notes Joe** | OneNote / Keep | `notes.html` |
 | **Formulaires Joe** | Google Forms | `formulaires.html` |
+| **Base Joe** | Access | `base.html` |
 | **Tableur Joe** | Excel | `tableur.html` |
 | **Présentation Joe** | PowerPoint | `presentation.html` |
 | **Photo Joe** | Photoshop / Lightroom | `photo.html` |
@@ -114,6 +115,29 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - **Réponses** : import des fichiers, codes et PDF remplis (doublons ignorés),
   statistiques (répartition des choix, total / moyenne des montants), tableau,
   export Excel (totaux, feuille de statistiques) ou CSV, ouverture dans Tableur Joe
+
+### Base Joe (équivalent Microsoft Access)
+- **Ouvre les fichiers Access** `.accdb` et `.mdb` (mot de passe accepté) : tables, types
+  de champs, données, relations (et intégrité référentielle), requêtes sélection
+  enregistrées ; les pièces jointes et objets OLE ne sont pas repris
+- Tables : types NuméroAuto, Texte court, Texte long, Nombre, Monétaire, Date/Heure,
+  Oui/Non ; clé primaire, champ obligatoire, sans doublons, valeur par défaut
+  (`Date()`), listes de choix (valeurs ou table liée)
+- Feuille de données modifiable (Entrée / Tab), tri, recherche, filtre par sélection
+- Relations 1 → plusieurs avec intégrité référentielle et suppression en cascade
+- Requêtes : grille de création comme Access (totaux, tris, critères en français :
+  `>1000`, `Comme "B*"`, `Entre 01/01/2026 Et 31/03/2026`, `[Quelle année ?]`) ou
+  **SQL d'Access** (`[crochets]`, `"textes"`, `#dates#`, `&`, `Like "*…*"`, `IIf`, `Nz`,
+  `Format`, `DateDiff`, `DateAdd`, `Year`, `Left`…), jointures, sous-requêtes, requêtes
+  paramétrées, requêtes enregistrées utilisées comme tables, requêtes action
+  (`UPDATE`, `DELETE`, `INSERT`) avec confirmation et contrôle de l'intégrité
+- Formulaires fiche par fiche avec sous-formulaires (ex. un contribuable et ses
+  paiements, avec total) ; états groupés avec sous-totaux, impression et PDF
+- **Retour vers Access** : export XML « structure et données » (types, tailles, clés)
+  à importer dans Access (Données externes → Fichier XML) ; export Excel (une feuille
+  par table), CSV ; requêtes exportées en texte SQL
+- Modèles : contribuables et paiements, courrier arrivée / départ, inventaire du
+  matériel, contacts ; import d'un classeur Excel ou d'un CSV en tables
 
 ### Texte Joe (équivalent Word)
 - **Ouvrir un PDF** (même scanné) : il est converti en document modifiable
@@ -327,6 +351,11 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   l'appareil que dans le fichier que vous envoyez vous-même
 
 ## Limites connues
+- Base Joe : ne peut pas enregistrer directement un fichier `.accdb` (aucune bibliothèque
+  libre ne le permet dans un navigateur) : le retour vers Access passe par l'export XML,
+  après quoi les relations sont à recréer dans Access. Les formulaires, états, macros et
+  modules VBA d'un fichier Access ne sont pas lus ; les requêtes analyse croisée
+  (TRANSFORM) ne sont pas prises en charge.
 - Formulaires Joe : pas de collecte automatique en ligne (aucun serveur) : les réponses
   reviennent par fichier, code ou PDF, à importer. La signature n'est pas reprise depuis un
   PDF rempli.
@@ -399,4 +428,6 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - [ExcelJS](https://github.com/exceljs/exceljs) 4.4.0 — MIT
 - [Formula.js](https://github.com/formulajs/formulajs) 4.6.1 — MIT
 - [lamejs](https://github.com/zhuker/lamejs) 1.2.1 (encodage MP3) — LGPL-3.0
+- [mdb-reader](https://github.com/andipaetzold/mdb-reader) 3.2.0 (lecture des fichiers Access), empaqueté avec [buffer](https://github.com/feross/buffer) 6.0.3 et ses dépendances — MIT
+- [AlaSQL](https://github.com/AlaSQL/alasql) 4.19.0 (moteur SQL) — MIT
 - [tesseract.js-core](https://github.com/naptha/tesseract.js-core) 5.1.1 et données `fra` et `eng` (tessdata best_int) — Apache 2.0
