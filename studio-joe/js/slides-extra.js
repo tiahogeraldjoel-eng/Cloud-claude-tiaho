@@ -341,12 +341,12 @@
       for (const el of s.els) {
         const st = el.style || {}; const pos = { x: IN(el.x), y: IN(el.y), w: IN(el.w), h: IN(el.h) }; if (el.rot) pos.rotate = el.rot;
         const fill = P.accColor(st.fill, th), stroke = P.accColor(st.stroke, th);
-        const common = { ...pos, valign: st.valign || (el.type === 'shape' ? 'middle' : 'top'), margin: 6, fit: 'none' };
+        const common = { ...pos, objectName: 'sj-' + el.id, valign: st.valign || (el.type === 'shape' ? 'middle' : 'top'), margin: 6, fit: 'none' };
         if (st.opacity !== undefined && st.opacity < 1 && fill) common.fill = { color: hex(fill), transparency: Math.round((1 - st.opacity) * 100) };
         if (el.field === 'num') { sl.slideNumber = { x: pos.x, y: pos.y, w: pos.w, h: pos.h, fontSize: st.size || 12, color: hex(P.accColor(st.color, th) || th.text), align: 'right' }; continue; }
         if (el.type === 'text' || el.type === 'shape') {
           const sh = el.type === 'shape' ? st.shape || 'rect' : 'rect';
-          if (sh === 'line' || sh === 'lineArrow') { sl.addShape('line', { ...pos, h: 0, y: IN(el.y + el.h / 2), line: { color: hex(stroke || th.text), width: PTS(st.strokeW || 3), endArrowType: sh === 'lineArrow' ? 'triangle' : undefined } }); continue; }
+          if (sh === 'line' || sh === 'lineArrow') { sl.addShape('line', { ...pos, objectName: 'sj-' + el.id, h: 0, y: IN(el.y + el.h / 2), line: { color: hex(stroke || th.text), width: PTS(st.strokeW || 3), endArrowType: sh === 'lineArrow' ? 'triangle' : undefined } }); continue; }
           const opts = { ...common };
           if (el.type === 'shape' || fill || stroke) {
             opts.shape = PPT_SHAPE[sh] || 'rect';
@@ -359,7 +359,7 @@
           sl.addText(textObjs(el, th), opts);
         } else if (el.type === 'image' && el.src && d.media[el.src]) {
           const data = d.media[el.src];
-          const img = await Studio.loadImage(data); const io = { data: data.replace(/^data:/, ''), ...pos };
+          const img = await Studio.loadImage(data); const io = { data: data.replace(/^data:/, ''), ...pos, objectName: 'sj-' + el.id };
           if (st.fit === 'cover') io.sizing = { type: 'cover', w: pos.w, h: pos.h };
           else { const k = Math.min(el.w / img.naturalWidth, el.h / img.naturalHeight); const w = img.naturalWidth * k, h = img.naturalHeight * k; io.x = IN(el.x + (el.w - w) / 2); io.y = IN(el.y + (el.h - h) / 2); io.w = IN(w); io.h = IN(h); }
           if (st.opacity !== undefined && st.opacity < 1) io.transparency = Math.round((1 - st.opacity) * 100);
@@ -368,19 +368,78 @@
           const t = el.table; const hdr = P.accColor(t.hdr || 'acc0', th);
           const rows = t.rows.map((row, i2) => row.map((c, j) => { const head = t.header && i2 === 0; const band = t.band && !head && i2 % 2 === (t.header ? 0 : 1); const o = { align: (t.align && t.align[j]) || (head ? 'center' : 'left'), valign: 'middle' }; if (head) Object.assign(o, { bold: true, color: 'FFFFFF', fill: { color: hex(hdr) } }); else if (band) o.fill = { color: hex(hdr), transparency: 88 }; return { text: P.plainText(c), options: o }; }));
           const cw = t.colW || t.rows[0].map(() => 1); const tot = cw.reduce((a, b2) => a + b2, 0);
-          sl.addTable(rows, { ...pos, colW: cw.map((w) => (w / tot) * pos.w), fontSize: st.size || 16, fontFace: firstFont(st.font || th.bFont), color: hex(P.accColor(st.color, th) || th.text), border: { type: 'solid', pt: 0.75, color: 'BFBFBF' }, rowH: pos.h / t.rows.length, margin: 4 });
+          sl.addTable(rows, { ...pos, objectName: 'sj-' + el.id, colW: cw.map((w) => (w / tot) * pos.w), fontSize: st.size || 16, fontFace: firstFont(st.font || th.bFont), color: hex(P.accColor(st.color, th) || th.text), border: { type: 'solid', pt: 0.75, color: 'BFBFBF' }, rowH: pos.h / t.rows.length, margin: 4 });
         } else if (el.type === 'chart') {
           const c = el.chart; const map = { col: 'bar', bar: 'bar', line: 'line', area: 'area', pie: 'pie', donut: 'doughnut' };
           const data = (c.type === 'pie' || c.type === 'donut' ? c.series.slice(0, 1) : c.series).map((sr) => ({ name: sr.name, labels: c.labels, values: sr.values.map((v) => +v || 0) }));
           const fg = hex(P.accColor(st.color, th) || th.text);
-          sl.addChart(map[c.type] || 'bar', data, { ...pos, barDir: c.type === 'bar' ? 'bar' : 'col', barGrouping: 'clustered', showLegend: c.legend !== false && (c.type === 'pie' || c.type === 'donut' || c.series.length > 1), legendPos: 'b', showTitle: !!c.title, title: c.title || undefined, titleColor: fg, chartColors: th.acc.map(hex), showValue: !!c.values, showPercent: c.type === 'pie' || c.type === 'donut', catAxisLabelColor: fg, valAxisLabelColor: fg, legendColor: fg, legendFontSize: (st.size || 14) * 0.85, catAxisLabelFontSize: (st.size || 14) * 0.85, valAxisLabelFontSize: (st.size || 14) * 0.8, dataLabelColor: c.type === 'pie' || c.type === 'donut' ? 'FFFFFF' : fg, holeSize: 55 });
+          sl.addChart(map[c.type] || 'bar', data, { ...pos, objectName: 'sj-' + el.id, barDir: c.type === 'bar' ? 'bar' : 'col', barGrouping: 'clustered', showLegend: c.legend !== false && (c.type === 'pie' || c.type === 'donut' || c.series.length > 1), legendPos: 'b', showTitle: !!c.title, title: c.title || undefined, titleColor: fg, chartColors: th.acc.map(hex), showValue: !!c.values, showPercent: c.type === 'pie' || c.type === 'donut', catAxisLabelColor: fg, valAxisLabelColor: fg, legendColor: fg, legendFontSize: (st.size || 14) * 0.85, catAxisLabelFontSize: (st.size || 14) * 0.85, valAxisLabelFontSize: (st.size || 14) * 0.8, dataLabelColor: c.type === 'pie' || c.type === 'donut' ? 'FFFFFF' : fg, holeSize: 55 });
         }
       }
       if (s.notes) sl.addNotes(s.notes);
     }
-    const blob = await pptx.write({ outputType: 'blob' });
+    let blob = await pptx.write({ outputType: 'blob' });
+    try { blob = await pptxMotion(blob); } catch (e) { console.warn('animations non exportées', e); }
     download(blob, fileBase() + '.pptx'); P.markSaved();
-    toast('Présentation enregistrée en .pptx (les animations ne sont pas exportées)', 5000);
+    toast('Présentation enregistrée en .pptx (transitions et animations comprises)', 5000);
+  }
+  // transitions et animations d'entrée : XML PowerPoint ajouté dans chaque diapositive (objets repérés par leur nom « sj-… »)
+  const PPT_TRANS = { fade: '<p:fade/>', push: '<p:push dir="l"/>', cover: '<p:cover dir="l"/>', zoom: '<p:zoom dir="in"/>', flip: '<p:fade/>' };
+  const PPT_FX = { appear: [1, 0], fade: [10, 0], up: [2, 4], left: [2, 8], zoom: [53, 16], wipe: [22, 8] };
+  function timingXml(s, i, ids) {
+    const dom = P.renderSlide(s, { index: i }); const steps = stepsOf(s, dom); if (!steps.length) return '';
+    let n = 2; const nid = () => ++n; const bld = new Map();
+    const paraRange = (u) => { // paragraphe (diapo) → plage de paragraphes PowerPoint (les retours à la ligne en créent d'autres)
+      const tx = dom.querySelector(`[data-id="${u.el.id}"] .sj-tx`); const list = tx ? [...tx.children].flatMap((c) => (c.tagName === 'UL' || c.tagName === 'OL' ? [...c.children] : [c])) : [];
+      const k = list.indexOf(u.node); if (k < 0) return null; let st = 0;
+      for (let j = 0; j < k; j++) st += 1 + list[j].querySelectorAll('br').length - (list[j].lastElementChild && list[j].lastElementChild.tagName === 'BR' ? 1 : 0);
+      const brs = u.node.querySelectorAll('br').length - (u.node.lastElementChild && u.node.lastElementChild.tagName === 'BR' ? 1 : 0);
+      return [st, st + Math.max(0, brs)];
+    };
+    const effect = (u, nodeType) => {
+      const spid = ids[u.el.id]; const pr = u.para ? paraRange(u) : null; const type = PPT_FX[u.el.anim.type] ? u.el.anim.type : 'appear';
+      if (/^(text|shape)$/.test(u.el.type)) bld.set(spid, u.para && pr ? 'build="p"' : 'animBg="1"');
+      const tgt = `<p:tgtEl><p:spTgt spid="${spid}">${pr ? `<p:txEl><p:pRg st="${pr[0]}" end="${pr[1]}"/></p:txEl>` : ''}</p:spTgt></p:tgtEl>`;
+      const id = nid();
+      const set = () => `<p:set><p:cBhvr><p:cTn id="${nid()}" dur="1" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst></p:cTn>${tgt}<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst></p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>`;
+      const anim = (attr, from, to) => `<p:anim calcmode="lin" valueType="num"><p:cBhvr additive="base"><p:cTn id="${nid()}" dur="${ANIM_MS}" fill="hold"/>${tgt}<p:attrNameLst><p:attrName>${attr}</p:attrName></p:attrNameLst></p:cBhvr><p:tavLst><p:tav tm="0"><p:val><p:strVal val="${from}"/></p:val></p:tav><p:tav tm="100000"><p:val><p:strVal val="${to}"/></p:val></p:tav></p:tavLst></p:anim>`;
+      const fx = (f) => `<p:animEffect transition="in" filter="${f}"><p:cBhvr><p:cTn id="${nid()}" dur="${ANIM_MS}"/>${tgt}</p:cBhvr></p:animEffect>`;
+      let kids = set();
+      if (type === 'fade') kids += fx('fade');
+      if (type === 'up') kids += anim('ppt_x', '#ppt_x', '#ppt_x') + anim('ppt_y', '1+#ppt_h/2', '#ppt_y');
+      if (type === 'left') kids += anim('ppt_x', '0-#ppt_w/2', '#ppt_x') + anim('ppt_y', '#ppt_y', '#ppt_y');
+      if (type === 'zoom') kids += anim('ppt_w', '0', '#ppt_w') + anim('ppt_h', '0', '#ppt_h') + fx('fade');
+      if (type === 'wipe') kids += fx('wipe(left)');
+      return `<p:par><p:cTn id="${id}" presetID="${PPT_FX[type][0]}" presetClass="entr" presetSubtype="${PPT_FX[type][1]}" fill="hold" grpId="0" nodeType="${nodeType}"><p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst>${kids}</p:childTnLst></p:cTn></p:par>`;
+    };
+    let main = '';
+    for (const g of steps) {
+      const units = g.filter((u) => ids[u.el.id]); if (!units.length) continue;
+      const subs = []; for (const u of units) { const last = subs[subs.length - 1]; if (last && last.delay === (u.delay || 0)) last.units.push(u); else subs.push({ delay: u.delay || 0, units: [u] }); }
+      const gid = nid(); let inner = '';
+      subs.forEach((sub, si) => { const sid = nid(); const eff = sub.units.map((u, ui) => effect(u, ui ? 'withEffect' : si ? 'afterEffect' : 'clickEffect')).join(''); inner += `<p:par><p:cTn id="${sid}" fill="hold"><p:stCondLst><p:cond delay="${sub.delay}"/></p:stCondLst><p:childTnLst>${eff}</p:childTnLst></p:cTn></p:par>`; });
+      main += `<p:par><p:cTn id="${gid}" fill="hold"><p:stCondLst><p:cond delay="indefinite"/></p:stCondLst><p:childTnLst>${inner}</p:childTnLst></p:cTn></p:par>`;
+    }
+    if (!main) return '';
+    return `<p:timing><p:tnLst><p:par><p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"><p:childTnLst><p:seq concurrent="1" nextAc="seek"><p:cTn id="2" dur="indefinite" nodeType="mainSeq"><p:childTnLst>${main}</p:childTnLst></p:cTn><p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst><p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst></p:seq></p:childTnLst></p:cTn></p:par></p:tnLst>${bld.size ? `<p:bldLst>${[...bld].map(([id, a]) => `<p:bldP spid="${id}" grpId="0" ${a}/>`).join('')}</p:bldLst>` : ''}</p:timing>`;
+  }
+  async function pptxMotion(blob) {
+    const d = P.deck; const has = d.slides.some((s) => (s.transition && PPT_TRANS[s.transition.type]) || s.els.some((e) => e.anim && e.anim.type)); if (!has) return blob;
+    await loadScript('lib/jszip.min.js');
+    const zip = await window.JSZip.loadAsync(blob);
+    for (let i = 0; i < d.slides.length; i++) {
+      const f = zip.file(`ppt/slides/slide${i + 1}.xml`); if (!f) continue;
+      let x = await f.async('string'); const s = d.slides[i];
+      const ids = {}; x.replace(/<p:cNvPr id="(\d+)" name="sj-([^"]+)"/g, (m, id, el) => { ids[el] = id; return m; });
+      const t = s.transition || {}; const dur = t.dur || 0.5;
+      const tr = PPT_TRANS[t.type] ? `<p:transition spd="${dur <= 0.4 ? 'fast' : dur <= 0.8 ? 'med' : 'slow'}">${PPT_TRANS[t.type]}</p:transition>` : '';
+      const tm = timingXml(s, i, ids);
+      if (!tr && !tm) continue;
+      x = x.replace(/<p:transition[\s\S]*?<\/p:transition>|<p:timing[\s\S]*?<\/p:timing>/g, '');
+      x = /<\/p:clrMapOvr>/.test(x) ? x.replace('</p:clrMapOvr>', '</p:clrMapOvr>' + tr + tm) : x.replace('</p:cSld>', '</p:cSld>' + tr + tm);
+      zip.file(`ppt/slides/slide${i + 1}.xml`, x);
+    }
+    return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', compression: 'DEFLATE' });
   }
 
   /* ================= Rendu en image (PDF, PNG, arrière-plans) ================= */

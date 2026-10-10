@@ -477,6 +477,116 @@
     for (let i = 0; i < g.r2 - r1 + 1; i++) { const row = rows[i]; for (let j = 0; j <= g.c2 - g.c1; j++) { const cl = row ? row.cells[j] : null; T.setCell(r1 + i, g.c1 + j, cl ? { ...cl, f: cl.f != null ? F.shiftFormula(cl.f, r1 + i - row.r, 0) : undefined } : null); } }
     T.commit(); toast(`${removed} ligne(s) en double supprimée(s), ${keep.length} conservée(s)`);
   }
+  /* ================= Tableau croisé dynamique ================= */
+  const MOIS_C = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  const AGG = { sum: 'Somme', count: 'Nombre', avg: 'Moyenne', min: 'Min', max: 'Max' };
+  function pivotSource(def) {
+    const s = T.wb.sheets.findIndex((x) => x.name === def.sheet); if (s < 0) throw new Error(`la feuille source « ${def.sheet} » n'existe plus`);
+    const S = T.wb.sheets[s]; let r2 = def.r1;
+    // la source s'agrandit si des lignes ont été ajoutées en dessous
+    for (let r = def.r1 + 1; r < S.maxR + 1; r++) { let any = false; for (let c = def.c1; c <= def.c2; c++) { const x = S.cells.get(T.K(r, c)); if (x && (x.f != null || (x.v != null && x.v !== ''))) { any = true; break; } } if (any) r2 = r; else if (r - r2 > 1) break; }
+    const head = []; for (let c = def.c1; c <= def.c2; c++) { const v = T.val(def.r1, c, s); head.push(v == null || v === '' ? `Colonne ${F.colName(c)}` : String(v)); }
+    const fmts = head.map((_, j) => { for (let r = def.r1 + 1; r <= Math.min(r2, def.r1 + 50); r++) { const x = S.cells.get(T.K(r, def.c1 + j)); if (x && x.s && x.s.fmt) return x.s.fmt; } return null; });
+    const rows = []; for (let r = def.r1 + 1; r <= r2; r++) { const o = []; let any = false; for (let c = def.c1; c <= def.c2; c++) { let v = T.val(r, c, s); if (F.isErr && F.isErr(v)) v = null; if (v !== null && v !== '') any = true; o.push(v); } if (any) rows.push(o); }
+    return { head, fmts, rows, s };
+  }
+  function pivotKey(v, fmt, group) {
+    if (v === null || v === undefined || v === '') return { k: '￿', label: '(vide)' };
+    if (typeof v === 'number' && group && group !== 'none' && F.isDateFormat(fmt)) {
+      const d = new Date(Date.UTC(1899, 11, 30) + Math.round(v * 864e5));
+      if (group === 'year') return { k: String(d.getUTCFullYear()), label: d.getUTCFullYear() };
+      if (group === 'quarter') { const q = Math.floor(d.getUTCMonth() / 3) + 1; return { k: `${d.getUTCFullYear()}-${q}`, label: `${q}${q === 1 ? 'er' : 'e'} trim. ${d.getUTCFullYear()}` }; }
+      return { k: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`, label: `${MOIS_C[d.getUTCMonth()]} ${d.getUTCFullYear()}` };
+    }
+    if (typeof v === 'number') return { k: 'n' + String(v + 1e15).padStart(25, '0'), label: v, num: true, fmt };
+    return { k: 's' + String(v).toLowerCase(), label: String(v) };
+  }
+  function aggregate(fn, list) {
+    const nums = list.filter((x) => typeof x === 'number');
+    if (fn === 'count') return list.filter((x) => x !== null && x !== '').length;
+    if (!nums.length) return null;
+    if (fn === 'sum') return Math.round(nums.reduce((a, b) => a + b, 0) * 1e9) / 1e9;
+    if (fn === 'avg') return nums.reduce((a, b) => a + b, 0) / nums.length;
+    if (fn === 'min') return Math.min(...nums); return Math.max(...nums);
+  }
+  // calcule la grille du tableau croisé : [[{v, s}…]…]
+  function pivotGrid(def) {
+    const src = pivotSource(def); const H = src.head;
+    const ix = (n) => H.indexOf(n);
+    const rf = def.rows.filter((n) => ix(n) >= 0), cf = def.col && ix(def.col) >= 0 ? def.col : null, vals = def.vals.filter((v) => ix(v.f) >= 0);
+    if (!rf.length && !cf) throw new Error('choisissez au moins un champ en ligne');
+    if (!vals.length) throw new Error('choisissez au moins une valeur à calculer');
+    let data = src.rows;
+    if (def.filter && def.filter.f && ix(def.filter.f) >= 0 && def.filter.v != null) data = data.filter((r) => String(r[ix(def.filter.f)] ?? '') === def.filter.v);
+    const keyOf = (r, name) => pivotKey(r[ix(name)], src.fmts[ix(name)], (def.groups || {})[name]);
+    const sortKeys = (m) => [...m.values()].sort((a, b) => (a.k < b.k ? -1 : a.k > b.k ? 1 : 0));
+    const colKeys = cf ? sortKeys(new Map(data.map((r) => { const k = keyOf(r, cf); return [k.k, k]; }))) : [null];
+    const head = { b: true, bg: '#d9e2f3' };
+    const out = [];
+    const valLabel = (v) => `${AGG[v.fn]} de ${v.f}`;
+    // en-têtes
+    if (cf) { out.push([...rf.map(() => ({ v: '', s: head })), { v: `${valLabel(vals[0])} — ${cf}`, s: head }, ...colKeys.slice(1).map(() => ({ v: '', s: head })), { v: '', s: head }]); out.push([...rf.map((n) => ({ v: n, s: head })), ...colKeys.map((k) => ({ v: k.label, s: { ...head, fmt: k.num ? k.fmt : undefined, ha: 'right' } })), { v: 'Total', s: { ...head, ha: 'right' } }]); }
+    else out.push([...rf.map((n) => ({ v: n, s: head })), ...vals.map((v) => ({ v: valLabel(v), s: { ...head, ha: 'right' } }))]);
+    const vfmt = (v) => (v.fn === 'count' ? '0' : src.fmts[ix(v.f)] || (v.fn === 'avg' ? '#,##0.00' : '#,##0'));
+    const cellsFor = (list, bold) => {
+      const st = bold ? { b: true } : {};
+      if (cf) { const v = vals[0]; const per = colKeys.map((ck) => aggregate(v.fn, list.filter((r) => keyOf(r, cf).k === ck.k).map((r) => r[ix(v.f)]))); return [...per.map((x) => ({ v: x, s: { ...st, fmt: vfmt(v) } })), { v: aggregate(v.fn, list.map((r) => r[ix(v.f)])), s: { b: true, fmt: vfmt(v) } }]; }
+      return vals.map((v) => ({ v: aggregate(v.fn, list.map((r) => r[ix(v.f)])), s: { ...st, fmt: vfmt(v) } }));
+    };
+    const groupBy = (list, name) => { const m = new Map(); list.forEach((r) => { const k = keyOf(r, name); if (!m.has(k.k)) m.set(k.k, { key: k, rows: [] }); m.get(k.k).rows.push(r); }); let g = [...m.values()]; g.sort((a, b) => (a.key.k < b.key.k ? -1 : a.key.k > b.key.k ? 1 : 0)); if (def.sortBy === 'value' && vals.length) { const v = vals[0]; g.sort((a, b) => (aggregate(v.fn, b.rows.map((r) => r[ix(v.f)])) || 0) - (aggregate(v.fn, a.rows.map((r) => r[ix(v.f)])) || 0)); } return g; };
+    const lab = (k) => ({ v: k.label, s: k.num ? { fmt: k.fmt, ha: 'left' } : { ha: 'left' } });
+    if (!rf.length) out.push([...cellsFor(data, false)]);
+    else if (rf.length === 1) groupBy(data, rf[0]).forEach((g) => out.push([lab(g.key), ...cellsFor(g.rows, false)]));
+    else groupBy(data, rf[0]).forEach((g) => {
+      const subs = groupBy(g.rows, rf[1]);
+      subs.forEach((sg, i) => out.push([i ? { v: '' } : { ...lab(g.key), s: { ...lab(g.key).s, b: true } }, lab(sg.key), ...cellsFor(sg.rows, false)]));
+      if (def.totals !== false) out.push([{ v: `Total ${g.key.label}`, s: { b: true, bg: '#f2f2f2' } }, { v: '', s: { bg: '#f2f2f2' } }, ...cellsFor(g.rows, true).map((c) => ({ ...c, s: { ...c.s, b: true, bg: '#f2f2f2' } }))]);
+    });
+    if (def.totals !== false && rf.length) out.push([{ v: 'Total général', s: { b: true, bd: { t: { w: 2, c: '#000000' } } } }, ...rf.slice(1).map(() => ({ v: '', s: { bd: { t: { w: 2, c: '#000000' } } } })), ...cellsFor(data, true).map((c) => ({ ...c, s: { ...c.s, b: true, bd: { t: { w: 2, c: '#000000' } } } }))]);
+    return { grid: out, n: data.length };
+  }
+  function writePivot(si, def) {
+    const { grid, n } = pivotGrid(def);
+    const S = T.wb.sheets[si];
+    [...S.cells.keys()].forEach((k) => T.setCellIn(si, T.KR(k), T.KC(k), null));
+    grid.forEach((row, r) => row.forEach((c, j) => { if (c && (c.v !== '' && c.v != null || c.s)) T.setCellIn(si, r + 2, j, { v: c.v === '' ? null : c.v, s: c.s }); }));
+    T.setCellIn(si, 0, 0, { v: `Tableau croisé de « ${def.sheet} » (${n} ligne(s)) — Données → Actualiser le tableau croisé`, s: { i: true, fc: '#666666' } });
+    const w = Math.max(...grid.map((r) => r.length));
+    for (let j = 0; j < w; j++) { let m = 8; grid.forEach((row) => { const c = row[j]; if (c && c.v != null) m = Math.max(m, F.format(c.v, c.s && c.s.fmt).text.length); }); S.colW[j] = Math.min(320, Math.round(m * 7.5 + 16)); }
+    S.freeze = { r: 3 + (def.col ? 1 : 0), c: 0 };
+  }
+  async function pivotDialog() {
+    const g = currentRegion(); if (g.r2 <= g.r1) return toast('Sélectionnez un tableau avec une ligne de titres (ou placez-vous dedans)');
+    const S = T.sh(); const def0 = { sheet: S.name, r1: g.r1, c1: g.c1, c2: g.c2 };
+    let src; try { src = pivotSource(def0); } catch (e) { return toast(e.message); }
+    const H = src.head; const numeric = H.filter((_, j) => src.rows.some((r) => typeof r[j] === 'number') && !F.isDateFormat(src.fmts[j]));
+    const dates = H.filter((_, j) => F.isDateFormat(src.fmts[j]));
+    const opt = (sel, list = H, empty = '') => `${empty !== null ? `<option value="">${empty || '(aucun)'}</option>` : ''}${list.map((h) => `<option${h === sel ? ' selected' : ''}>${esc(h)}</option>`).join('')}`;
+    const textCol = H.find((h, j) => src.rows.some((r) => typeof r[j] === 'string'));
+    const res = await modal({ title: 'Tableau croisé dynamique — ' + F.rangeName(g), wide: true,
+      body: `<p class="hint">${src.rows.length} ligne(s), ${H.length} colonne(s). Le résultat est créé dans une nouvelle feuille.</p>
+        <div class="grid2"><div class="field"><label for="pvR1">Lignes</label><select id="pvR1">${opt(textCol, H, null)}</select></div><div class="field"><label for="pvR2">Puis par (facultatif)</label><select id="pvR2">${opt('')}</select></div>
+        <div class="field"><label for="pvC">Colonnes (facultatif)</label><select id="pvC">${opt('')}</select></div><div class="field"><label for="pvG">Regrouper les dates</label><select id="pvG"><option value="month">par mois</option><option value="quarter">par trimestre</option><option value="year">par année</option><option value="none">jour par jour</option></select></div>
+        <div class="field"><label for="pvV1">Valeur</label><select id="pvV1">${opt(numeric[0] || H[0], H, null)}</select></div><div class="field"><label for="pvF1">Calcul</label><select id="pvF1">${Object.entries(AGG).map(([k, l]) => `<option value="${k}"${(numeric.length ? 'sum' : 'count') === k ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+        <div class="field"><label for="pvV2">2e valeur (sans « Colonnes »)</label><select id="pvV2">${opt('')}</select></div><div class="field"><label for="pvF2">Calcul</label><select id="pvF2">${Object.entries(AGG).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></div>
+        <div class="field"><label for="pvFF">Filtrer sur (facultatif)</label><select id="pvFF">${opt('')}</select></div><div class="field"><label for="pvFV">Valeur du filtre</label><select id="pvFV"></select></div>
+        <div class="field"><label for="pvS">Ordre des lignes</label><select id="pvS"><option value="label">Alphabétique / chronologique</option><option value="value">Par valeur décroissante</option></select></div><div class="field"><label class="row" style="margin-top:22px"><input type="checkbox" id="pvT" checked> Totaux et sous-totaux</label></div></div>
+        ${dates.length ? '' : '<style>#pvG{opacity:.5}</style>'}`,
+      onOpen: (b) => { const ff = b.querySelector('#pvFF'), fv = b.querySelector('#pvFV'); const fill = () => { const j = H.indexOf(ff.value); fv.innerHTML = j < 0 ? '' : [...new Set(src.rows.map((r) => String(r[j] ?? '')))].sort().slice(0, 300).map((x) => `<option>${esc(x)}</option>`).join(''); }; ff.onchange = fill; },
+      buttons: [{ label: 'Annuler', value: null }, { label: 'Créer', primary: true, value: (b) => { const q = (s) => b.querySelector(s).value; const rows = [q('#pvR1'), q('#pvR2')].filter(Boolean); const vals = [{ f: q('#pvV1'), fn: q('#pvF1') }]; if (q('#pvV2') && !q('#pvC')) vals.push({ f: q('#pvV2'), fn: q('#pvF2') }); const groups = {}; [...rows, q('#pvC')].filter(Boolean).forEach((n) => { if (dates.includes(n)) groups[n] = q('#pvG'); }); return { ...def0, rows, col: q('#pvC') || null, vals, groups, sortBy: q('#pvS'), totals: b.querySelector('#pvT').checked, filter: q('#pvFF') ? { f: q('#pvFF'), v: q('#pvFV') } : null }; } }] });
+    if (!res) return;
+    try { pivotGrid(res); } catch (e) { return toast('Tableau croisé impossible : ' + e.message, 6000); }
+    T.begin('tableau croisé'); T.touchAll();
+    const name = T.uniqueName('TCD ' + (res.rows[0] || res.col)).slice(0, 31);
+    const NS = T.newSheet(name); NS.pivot = res; T.wb.sheets.push(NS); const si = T.wb.sheets.length - 1;
+    writePivot(si, res);
+    T.commit(); T.switchSheet(si); toast('Tableau croisé créé. Après une modification des données : Données → Actualiser le tableau croisé.', 6000);
+  }
+  function pivotRefresh() {
+    const si = T.wb.active; const S = T.sh(); if (!S.pivot) return toast('Cette feuille ne contient pas de tableau croisé : ouvrez la feuille « TCD … »');
+    try { T.begin('actualiser le tableau croisé'); T.touchMeta(si); writePivot(si, S.pivot); T.commit(); toast('Tableau croisé actualisé'); } catch (e) { T.commit(); toast('Actualisation impossible : ' + e.message, 6000); }
+  }
+
   async function splitTextDialog() {
     const g = T.boundSel(T.selRect()); if (g.c1 !== g.c2) return toast('Sélectionnez une seule colonne');
     const res = await modal({
@@ -1007,7 +1117,7 @@
     actions: {
       new: newWorkbook, open: openDialog, saveXlsx, saveCsv, saveJoe, pdf: pdfDialog, rename: renameWorkbook, templates: templatesDialog,
       formatCells: formatCellsDialog, condFormat: condFormatDialog, clearCF, chart: () => chartDialog(null),
-      sortAsc: () => quickSort(false), sortDesc: () => quickSort(true), sort: sortDialog, filter: toggleFilter, clearFilter, dedupe: dedupeDialog, splitText: splitTextDialog, fillSeries: fillSeriesDialog,
+      sortAsc: () => quickSort(false), sortDesc: () => quickSort(true), sort: sortDialog, filter: toggleFilter, clearFilter, dedupe: dedupeDialog, pivot: pivotDialog, pivotRefresh, splitText: splitTextDialog, fillSeries: fillSeriesDialog,
       find: findDialog, insFn: insertFunctionDialog, colWidth: colWidthDialog, rowHeight: rowHeightDialog, aiFormula, aiExplain,
     },
     openFile, chartSVG, readXlsx, TEMPLATES,

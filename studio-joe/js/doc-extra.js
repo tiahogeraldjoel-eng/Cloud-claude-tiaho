@@ -29,6 +29,10 @@
     const D = window.docx; const doc = T.doc; const dm = T.dims();
     const contentPx = dm.pw - dm.ml - dm.mr; const contentTw = Math.round(contentPx * 15);
     let olInstance = 0;
+    // révisions et commentaires (doc-review.js) → vraies révisions / vrais commentaires Word
+    let revId = 1; const cmIds = new Map();
+    (doc.comments || []).forEach((c) => { if (T.body.querySelector(`span.cm[data-cid="${CSS.escape(c.id)}"]`)) cmIds.set(c.id, cmIds.size); });
+    const revRun = (text, f) => { const o = { text, id: revId++, author: f.rev.a, date: f.rev.t || new Date().toISOString(), ...runOpts(f) }; return f.rev.k === 'INS' ? new D.InsertedTextRun(o) : new D.DeletedTextRun(o); };
     const runOpts = (f) => { const o = {}; if (f.b) o.bold = true; if (f.i) o.italics = true; if (f.u) o.underline = {}; if (f.s) o.strike = true; if (f.color) o.color = f.color; if (f.hi) o.shading = { type: D.ShadingType.CLEAR, fill: f.hi, color: 'auto' }; if (f.size) o.size = Math.round(f.size * 2); if (f.font) o.font = f.font; if (f.sup) o.superScript = true; if (f.sub) o.subScript = true; return o; };
     const fmtFrom = (el, f0) => {
       const f = { ...f0 }; const t = el.tagName; const s = el.style;
@@ -44,7 +48,7 @@
     };
     async function inlines(node, f, out) {
       for (const n of node.childNodes) {
-        if (n.nodeType === 3) { const t = n.nodeValue.replace(/\u200b/g, ''); if (t) out.push(new D.TextRun({ text: t, ...runOpts(f) })); continue; }
+        if (n.nodeType === 3) { const t = n.nodeValue.replace(/\u200b/g, ''); if (t) out.push(f.rev ? revRun(t, f) : new D.TextRun({ text: t, ...runOpts(f) })); continue; }
         if (n.nodeType !== 1) continue;
         const tag = n.tagName;
         if (tag === 'BR') { let nx = n.nextSibling; while (nx && nx.nodeType === 3 && !nx.nodeValue.replace(/\u200b/g, '').trim()) nx = nx.nextSibling; if (!nx) continue; out.push(new D.TextRun({ break: 1 })); continue; } // <br> final d'un bloc : ignoré
@@ -53,6 +57,14 @@
         if (tag === 'IMG') { const ib = await imageBytes(n); if (ib) { const w = Math.min(contentPx, parseFloat(n.style.width) || n.naturalWidth || 300); const h = n.naturalWidth ? (w * n.naturalHeight) / n.naturalWidth : w * 0.75; out.push(new D.ImageRun({ type: ib.type, data: ib.data, transformation: { width: Math.round(w), height: Math.round(h) } })); } continue; }
         if (tag === 'A' && n.getAttribute('href')) { const kids = []; await inlines(n, { ...fmtFrom(n, f), color: '0563C1', u: true }, kids); out.push(new D.ExternalHyperlink({ link: n.getAttribute('href'), children: kids.length ? kids : [new D.TextRun({ text: n.getAttribute('href'), style: 'Hyperlink' })] })); continue; }
         if (/^(UL|OL|TABLE|P|DIV|H\d|BLOCKQUOTE|PRE)$/.test(tag)) continue; // blocs imbriqués traités à part
+        if ((tag === 'INS' || tag === 'DEL') && n.classList.contains('rv')) { await inlines(n, { ...f, rev: { k: tag, a: n.dataset.a || 'Auteur', t: n.dataset.t } }, out); continue; }
+        if (tag === 'SPAN' && n.classList.contains('cm') && cmIds.has(n.dataset.cid)) {
+          const id = cmIds.get(n.dataset.cid); const all = T.body.querySelectorAll(`span.cm[data-cid="${CSS.escape(n.dataset.cid)}"]`);
+          if (all[0] === n) out.push(new D.CommentRangeStart(id));
+          await inlines(n, fmtFrom(n, f), out);
+          if (all[all.length - 1] === n) out.push(new D.CommentRangeEnd(id), new D.TextRun({ children: [new D.CommentReference(id)] }));
+          continue;
+        }
         await inlines(n, fmtFrom(n, f), out);
       }
       return out;
@@ -156,6 +168,9 @@
     const numLevels = Array.from({ length: 9 }, (_, l) => ({ level: l, format: [D.LevelFormat.DECIMAL, D.LevelFormat.LOWER_LETTER, D.LevelFormat.LOWER_ROMAN][l % 3], text: `%${l + 1}.`, alignment: D.AlignmentType.LEFT, style: { paragraph: { indent: { left: 720 + l * 360, hanging: 360 } } } }));
     const docx = new D.Document({
       creator: 'Texte Joe', title: doc.title,
+      ...(doc.track ? { features: { trackRevisions: true } } : {}),
+      comments: { children: (doc.comments || []).filter((c) => cmIds.has(c.id)).map((c) => ({ id: cmIds.get(c.id), author: c.a || 'Auteur', initials: (c.a || 'A').split(/\s+/).map((w) => w[0]).join('').slice(0, 3).toUpperCase(), date: new Date(c.t || Date.now()),
+        children: [new D.Paragraph({ children: [new D.TextRun(c.text)] }), ...(c.replies || []).map((rp) => new D.Paragraph({ children: [new D.TextRun({ text: `${rp.a} : `, bold: true }), new D.TextRun(rp.text)] })), ...(c.done ? [new D.Paragraph({ children: [new D.TextRun({ text: '(résolu)', italics: true })] })] : [])] })) },
       styles: { default: { document: { run: { font: 'Calibri', size: 22 }, paragraph: { spacing: { after: 160, line: 276 } } } } },
       numbering: { config: [{ reference: 'bul', levels: bulLevels }, { reference: 'num', levels: numLevels }] },
       sections: [{
@@ -173,14 +188,47 @@
   }
 
   /* ================= Import DOCX et autres formats ================= */
+  // révisions et commentaires Word : remplacés par des repères texte avant mammoth (qui ignore les suppressions et les commentaires)
+  async function prepRevisions(buf) {
+    const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+    const zip = await window.JSZip.loadAsync(buf); const f = zip.file('word/document.xml'); if (!f) return null;
+    const xml = await f.async('string');
+    if (!/<w:(ins|del|commentRangeStart)\b/.test(xml)) return null;
+    const x = new DOMParser().parseFromString(xml, 'application/xml');
+    const marks = {}; let n = 0;
+    const run = (text) => { const r = x.createElementNS(W, 'w:r'); const t = x.createElementNS(W, 'w:t'); t.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:space', 'preserve'); t.textContent = text; r.appendChild(t); return r; };
+    for (const tag of ['del', 'ins']) {
+      for (const e of [...x.getElementsByTagNameNS(W, tag)]) {
+        if (!e.parentNode || e.parentNode.localName === 'rPr' || e.parentNode.localName === 'pPr' || !e.getElementsByTagNameNS(W, 'r').length) continue;
+        const id = 'R' + n++; marks[id] = { k: tag === 'ins' ? 'INS' : 'DEL', a: e.getAttributeNS(W, 'author') || 'Auteur', t: e.getAttributeNS(W, 'date') || '' };
+        if (tag === 'del') for (const dt of [...e.getElementsByTagNameNS(W, 'delText')]) { const t = x.createElementNS(W, 'w:t'); t.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:space', 'preserve'); t.textContent = dt.textContent; dt.replaceWith(t); }
+        e.before(run(`\uE000${id}\uE001`)); e.after(run(`\uE000/${id}\uE001`));
+        while (e.firstChild) e.before(e.firstChild); e.remove();
+      }
+    }
+    for (const [tag, close] of [['commentRangeStart', ''], ['commentRangeEnd', '/']]) {
+      for (const e of [...x.getElementsByTagNameNS(W, tag)]) { if (e.parentNode.localName === 'p' || e.parentNode.localName === 'hyperlink') e.replaceWith(run(`\uE000${close}C${e.getAttributeNS(W, 'id')}\uE001`)); }
+    }
+    const comments = {};
+    const cf = zip.file('word/comments.xml');
+    if (cf) {
+      const cx = new DOMParser().parseFromString(await cf.async('string'), 'application/xml');
+      for (const c of cx.getElementsByTagNameNS(W, 'comment')) comments[c.getAttributeNS(W, 'id')] = { a: c.getAttributeNS(W, 'author') || 'Auteur', t: c.getAttributeNS(W, 'date') || '', text: [...c.getElementsByTagNameNS(W, 'p')].map((p) => [...p.getElementsByTagNameNS(W, 't')].map((t) => t.textContent).join('')).join('\n').trim() };
+    }
+    const sf = zip.file('word/settings.xml'); const track = sf ? /<w:trackRevisions\b(?![^>]*w:val="(false|0)")/.test(await sf.async('string')) : false;
+    zip.file('word/document.xml', new XMLSerializer().serializeToString(x));
+    return { buf: await zip.generateAsync({ type: 'arraybuffer' }), marks, comments, track };
+  }
   async function readDocx(file) {
     await loadScript('lib/mammoth.min.js');
     const M = window.mammoth; const buf = await file.arrayBuffer();
-    const res = await M.convertToHtml({ arrayBuffer: buf }, {
+    let rv = null; try { rv = await prepRevisions(buf); } catch (e) { console.warn('révisions non lues', e); }
+    const res = await M.convertToHtml({ arrayBuffer: rv ? rv.buf : buf }, {
       styleMap: ["p[style-name='Title'] => h1.doc-title:fresh", "p[style-name='Titre'] => h1.doc-title:fresh", "p[style-name='Subtitle'] => p.doc-subtitle:fresh", "p[style-name='Sous-titre'] => p.doc-subtitle:fresh", "p[style-name='Quote'] => blockquote:fresh", "p[style-name='Citation'] => blockquote:fresh", "p[style-name='al-center'] => p.al-center:fresh", "p[style-name='al-right'] => p.al-right:fresh", "p[style-name='al-justify'] => p.al-justify:fresh", 'u => u', 'strike => s'],
       transformDocument: M.transforms.paragraph((p) => (!p.styleName || /^(normal|body text|corps de texte|standard)/i.test(p.styleName)) && p.alignment && p.alignment !== 'left' ? { ...p, styleName: 'al-' + (p.alignment === 'both' ? 'justify' : p.alignment) } : p),
     });
     const d = T.newDocModel(); d.title = baseName(file.name); d.html = res.value || '<p><br></p>';
+    if (rv && T.review) { const o = T.review.applyMarkers(d.html, rv); d.html = o.html; d.comments = o.comments; d.track = rv.track; }
     // format de page, en-tête et pied de page lus dans le XML
     try {
       const zip = await window.JSZip.loadAsync(buf); const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main', R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
