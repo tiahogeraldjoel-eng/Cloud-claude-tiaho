@@ -314,6 +314,18 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   « Voix off à partir d'un texte » dans Video Joe (son placé sur une piste audio,
   sous-titres en option)
 
+## Sauvegarde et transfert entre appareils (`sauvegarde.html`)
+- Toutes les données locales (documents de Texte Joe, présentations, notes, formulaires
+  et réponses, scans, son en cours d'Audio Joe, classeur de Tableur Joe, réglages) dans
+  un seul fichier `.joebak`
+- Mot de passe facultatif : chiffrement AES-256-GCM, clé dérivée par PBKDF2 (200 000
+  itérations) ; la clé API Claude n'est pas incluse sauf demande explicite
+- Partage direct (Partage à proximité, WhatsApp, e-mail, Drive) ou téléchargement
+- Restauration sur un autre appareil : choix des applications, **fusionner** (ajoute
+  et met à jour) ou **remplacer** ; rappel de la date de la dernière sauvegarde
+- Pas de synchronisation automatique en ligne : aucun serveur, vos données ne quittent
+  l'appareil que dans le fichier que vous envoyez vous-même
+
 ## Limites connues
 - Formulaires Joe : pas de collecte automatique en ligne (aucun serveur) : les réponses
   reviennent par fichier, code ou PDF, à importer. La signature n'est pas reprise depuis un
