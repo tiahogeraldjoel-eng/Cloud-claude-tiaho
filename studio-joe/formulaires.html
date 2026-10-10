@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Formulaires Joe</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#d9861c">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-180.png">
+<link rel="stylesheet" href="css/studio.css">
+<style>
+  html, body { height: 100%; }
+  body { overflow-y: auto; }
+  .topbar .logo { background: #00796b !important; color: #fff !important; }
+  .topbar select { width: auto; max-width: 260px; }
+  .tabs { display: flex; gap: 4px; padding: 8px 16px 0; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 10; overflow-x: auto; }
+  .tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; padding: 8px 14px; font-weight: 600; color: var(--muted); flex: none; }
+  .tabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 16px 16px 100px; display: grid; gap: 12px; }
+  .q { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
+  .q.sec { border-left: 4px solid #00796b; }
+  .q .row1 { display: grid; grid-template-columns: 1fr 190px; gap: 8px; }
+  .q .row2 { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .q .row2 .sp { flex: 1; }
+  .q .row2 button { padding: 4px 8px; }
+  .q textarea { min-height: 70px; }
+  .q .num { font: 12px var(--font-mono); color: var(--muted); }
+  .head-card { background: var(--panel); border: 1px solid var(--line); border-top: 6px solid #00796b; border-radius: 12px; padding: 14px; display: grid; gap: 8px; }
+  .head-card input { font-size: 20px; font-weight: 600; }
+  .addbar { display: flex; gap: 6px; flex-wrap: wrap; }
+  .addbar button { flex: 1 1 140px; }
+  .cards3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .cards3 .c { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 8px; align-content: start; }
+  .cards3 .c h3 { margin: 0; font-size: 16px; }
+  .cards3 .c p { margin: 0; color: var(--muted); font-size: 13px; }
+  .stats { display: grid; gap: 12px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .stat h4 { margin: 0 0 8px; font-size: 14px; }
+  .bar { display: grid; grid-template-columns: minmax(80px, 34%) 1fr auto; gap: 8px; align-items: center; font-size: 13px; margin: 3px 0; }
+  .bar .b { height: 14px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .bar .b div { height: 100%; background: #00796b; }
+  .kv { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; } .kv b { font-size: 16px; display: block; }
+  .tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+  table.resp { border-collapse: collapse; font-size: 13px; min-width: 100%; }
+  table.resp th, table.resp td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; max-width: 260px; }
+  table.resp th { background: var(--panel-2); position: sticky; top: 0; white-space: nowrap; }
+  table.resp td img { max-height: 40px; background: #fff; }
+  .muted { color: var(--muted); }
+  .tpl { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .tpl button { flex-direction: column; align-items: flex-start; text-align: left; white-space: normal; padding: 12px; gap: 4px; height: 100%; }
+  .tpl button span { font-size: 12px; color: var(--muted); }
+  .q input, .q select, .q textarea, .head-card input, .head-card textarea { width: 100%; box-sizing: border-box; min-width: 0; }
+  @media (max-width: 600px) { .q .row1 { grid-template-columns: 1fr; } .tabs button { padding: 8px 10px; } }
+  .fillbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="brand" href="index.html"><span class="logo">Fo</span><span>Formulaires Joe</span></a>
+  <select id="formSel" aria-label="Formulaire"></select>
+  <button id="newBtn" title="Nouveau formulaire">＋ Nouveau</button>
+  <span class="spacer"></span>
+  <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+</div>
+<div class="tabs" id="tabs">
+  <button data-t="design" class="on">✎ Concevoir</button>
+  <button data-t="fill">✍ Remplir</button>
+  <button data-t="resp">📊 Réponses <span id="respCount"></span></button>
+  <button data-t="share">↗ Diffuser</button>
+</div>
+<div class="wrap" id="main"></div>
+<div id="toast" hidden></div>
+<script src="js/common.js"></script>
+<script src="js/forms-app.js"></script>
+</body>
+</html>
