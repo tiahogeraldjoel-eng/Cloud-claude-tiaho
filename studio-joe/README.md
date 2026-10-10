@@ -15,6 +15,7 @@ l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA C
 | **Présentation Joe** | PowerPoint | `presentation.html` |
 | **Photo Joe** | Photoshop / Lightroom | `photo.html` |
 | **Design Joe** | Illustrator / Canva / Express | `design.html` |
+| **Audio Joe** | Audition | `audio.html` |
 | **Video Joe** | Premiere Pro | `video.html` |
 | **Dictée Joe** | Dictée / Dragon | `dictee.html` |
 | **Voix Joe** | Lecture audio / synthèse vocale | `voix.html` |
@@ -215,6 +216,25 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   en copie de page ou sur place, avec ajustement de la taille du texte
 - Export PNG, JPG (une page ou toutes en ZIP), SVG, PDF multipage ; projet `.joedesign`
 
+### Audio Joe (équivalent Audition / Audacity)
+- Ouvrir MP3, M4A, WAV, OGG, Opus, FLAC, la piste son d'une vidéo MP4 ; ou enregistrer
+  au micro (pause, niveau affiché, écran gardé allumé, sauvegarde au fur et à mesure :
+  un enregistrement interrompu est proposé à la récupération)
+- Forme d'onde avec vue d'ensemble, zoom (pincer, Ctrl + molette), sélection au doigt,
+  double-clic pour une phrase, sélection précise par minutes et secondes
+- Couper, copier, coller, supprimer, rogner, dupliquer, insérer un silence ; annuler
+  et rétablir
+- Effets : volume, normalisation, niveau régulier (compresseur), fondus, réduction du
+  bruit de fond (profil automatique ou choisi), raccourcir les silences, voix plus
+  claire, graves / médiums / aigus, coupe-bas, vitesse sans changer la voix, muet,
+  inverser, mono
+- Export MP3 (voix 64 kbit/s, standard 128, haute 192) ou WAV, de tout ou de la
+  sélection ; partage direct depuis le téléphone
+- Transcription en texte (Whisper, sur l'appareil), phrases cliquables, export
+  .txt / .srt ou ouverture dans Texte Joe
+- Les longs fichiers (plus de 20 min) sont ouverts en mono à fréquence réduite pour
+  tenir en mémoire sur un téléphone
+
 ### Video Joe
 - Import de vidéos, sons et images ; formes d'onde des pistes audio
 - Timeline : 3 pistes vidéo (V1-V3) et 2 pistes audio (A1-A2), zoom, magnétisme,
@@ -266,6 +286,9 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   sous-titres en option)
 
 ## Limites connues
+- Audio Joe : une seule piste (pas de mixage multipiste : utiliser Video Joe) ; au-delà
+  d'environ 2 heures, le téléphone peut manquer de mémoire. La sauvegarde automatique
+  peut échouer pour un son très long : exporter le travail.
 - Conversion PDF → Word / Excel : les images, logos, cachets et dessins ne sont pas
   repris ; les mises en page en plusieurs colonnes (journaux) peuvent devenir des
   tableaux ; un tableau sans aucun trait ni espacement net entre colonnes peut être lu
@@ -329,4 +352,5 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - [PptxGenJS](https://github.com/gitbrent/PptxGenJS) 4.0.1 — MIT
 - [ExcelJS](https://github.com/exceljs/exceljs) 4.4.0 — MIT
 - [Formula.js](https://github.com/formulajs/formulajs) 4.6.1 — MIT
+- [lamejs](https://github.com/zhuker/lamejs) 1.2.1 (encodage MP3) — LGPL-3.0
 - [tesseract.js-core](https://github.com/naptha/tesseract.js-core) 5.1.1 et données `fra` et `eng` (tessdata best_int) — Apache 2.0
