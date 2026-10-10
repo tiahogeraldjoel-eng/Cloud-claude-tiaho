@@ -45,8 +45,8 @@
       <span class="brand"><span class="logo">SJ</span><span style="font-size:18px">Studio Joe</span></span>
       <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
     </div>
-    <h1>Vos outils PDF, photo et graphisme, sans abonnement</h1>
-    <p>Trois logiciels qui tournent dans votre navigateur, sur ordinateur comme sur téléphone. Vos fichiers ne quittent jamais votre appareil, et tout fonctionne sans connexion internet.</p>
+    <h1>Vos outils PDF, photo, graphisme et vidéo, sans abonnement</h1>
+    <p>Quatre logiciels qui tournent dans votre navigateur, sur ordinateur comme sur téléphone. Vos fichiers ne quittent jamais votre appareil, et tout fonctionne sans connexion internet.</p>
   </header>
 
   <section class="apps" aria-label="Applications">
@@ -59,7 +59,8 @@
         <li>Annoter : texte, date, coches, surlignage, masquage</li>
         <li>Remplir les formulaires PDF</li>
         <li>Filigrane, numéros de page, en-tête et pied de page</li>
-        <li>Diviser, compresser, PDF ↔ images, extraire le texte</li>
+        <li>Modifier le texte existant, caviarder définitivement</li>
+        <li>Protéger par mot de passe (AES-256), diviser, compresser, convertir</li>
       </ul>
       <span class="go">Ouvrir PDF Joe →</span>
     </a>
@@ -85,16 +86,33 @@
         <li>Éléments : formes, 40 icônes, autocollants, cadres photo</li>
         <li>Graphiques, tableaux et QR codes modifiables</li>
         <li>Texte courbé, néon, surlignage ; filtres photo, suppression du fond</li>
-        <li>Redimensionnement magique, kit de marque, export PNG, JPG, SVG, PDF</li>
+        <li>Animations, export vidéo MP4 et GIF animé</li>
+        <li>Plume Bézier, Pathfinder, PDF vectoriel, redimensionnement magique</li>
       </ul>
       <span class="go">Ouvrir Design Joe →</span>
+    </a>
+  </section>
+
+  <section class="apps" aria-label="Vidéo">
+    <a class="app-card" href="video.html">
+      <div class="top"><span class="ico" style="background:#7b3fa0">Vd</span><div><h2>Video Joe</h2><span class="like">équivalent Premiere Pro</span></div></div>
+      <p>Monter des vidéos avec titres, musique et transitions.</p>
+      <ul>
+        <li>Timeline 3 pistes vidéo + 2 pistes audio, magnétisme</li>
+        <li>Couper, raccourcir, déplacer, supprimer et combler le vide</li>
+        <li>Titres animés : bandeau bas, sous-titres, générique</li>
+        <li>Transitions : fondu enchaîné, fondu au noir, volet, iris…</li>
+        <li>Images clés (position, échelle, rotation, opacité, volume)</li>
+        <li>Étalonnage, Ken Burns, vitesse, export MP4 avec le son</li>
+      </ul>
+      <span class="go">Ouvrir Video Joe →</span>
     </a>
   </section>
 
   <section class="notes" aria-label="Bon à savoir">
     <div class="note"><h3>Confidentiel</h3><p>Aucun envoi sur internet : vos bulletins, contrats et pièces comptables restent sur votre appareil.</p></div>
     <div class="note"><h3>Hors ligne</h3><p>Copiez le dossier <code>studio-joe</code> sur votre ordinateur ou une clé USB et ouvrez <code>index.html</code>.</p></div>
-    <div class="note"><h3>Projets modifiables</h3><p>Photo Joe enregistre des fichiers <code>.joeimg</code> et Design Joe des <code>.joedesign</code>, rouvrables pour continuer le travail.</p></div>
+    <div class="note"><h3>Projets modifiables</h3><p>Photo Joe enregistre des <code>.joeimg</code>, Design Joe des <code>.joedesign</code> et Video Joe des <code>.joevideo</code>, rouvrables pour continuer le travail.</p></div>
   </section>
 
   <section aria-label="Comparaison">
@@ -110,13 +128,16 @@
           <tr><td>Photo d'identité 35 × 45</td><td>Photoshop — Recadrage</td><td>Photo Joe → Recadrage → Photo d'identité</td></tr>
           <tr><td>Affiche ou avis à la population</td><td>Canva / Express</td><td>Design Joe → Modèle « Affiche / avis A4 »</td></tr>
           <tr><td>Présentation de réunion</td><td>Canva Présentations</td><td>Design Joe → Modèle « Présentation 16:9 » → Présenter</td></tr>
+          <tr><td>Monter une vidéo de cérémonie avec titres et musique</td><td>Premiere Pro</td><td>Video Joe → Importer → glisser sur la timeline → Exporter</td></tr>
+          <tr><td>Animer une affiche pour WhatsApp</td><td>Canva — Animer</td><td>Design Joe → Animer la page → Exporter en vidéo MP4</td></tr>
+          <tr><td>Envoyer un PDF confidentiel</td><td>Acrobat — Protéger</td><td>PDF Joe → Protection par mot de passe → Enregistrer</td></tr>
           <tr><td>Décliner un visuel en story et en affiche</td><td>Canva — Redimensionnement magique</td><td>Design Joe → Fichier → Redimensionner</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
-  <footer><span>Studio Joe — usage personnel</span><span>Bibliothèques : pdf.js (Mozilla), pdf-lib, JSZip, qrcode-generator</span></footer>
+  <footer><span>Studio Joe — usage personnel</span><span>Bibliothèques : pdf.js, pdf-lib, JSZip, jsPDF, svg2pdf, Paper.js, mp4-muxer, gifenc, qrcode-generator</span></footer>
 </div>
 <script src="js/common.js"></script>
 </body>

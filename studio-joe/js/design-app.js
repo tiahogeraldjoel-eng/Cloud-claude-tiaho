@@ -61,7 +61,11 @@
     const b = getBox(o);
     const sx = b.w ? nb.w / b.w : 1, sy = b.h ? nb.h / b.h : 1;
     const map = (x, y) => [nb.x + (x - b.x) * sx, nb.y + (y - b.y) * sy];
-    if (isPathy(o)) { o.pts = o.pts.map(([x, y]) => map(x, y)); return; }
+    if (isPathy(o)) {
+      o.pts = o.pts.map(([x, y]) => map(x, y));
+      if (o.handles) o.handles = o.handles.map((h) => (h ? [...map(h[0], h[1]), ...map(h[2], h[3])] : null));
+      return;
+    }
     if (o.type === 'group') {
       o.children.forEach((c) => {
         const cb = getBox(c); const [x, y] = map(cb.x, cb.y);
@@ -104,6 +108,23 @@
     }
     return d + (closed ? ' Z' : '');
   }
+  // tracé : segments droits, lissage automatique, ou courbes de Bézier avec poignées (plume)
+  function pathD(o) {
+    const P = o.pts, H = o.handles;
+    if (H && H.some(Boolean)) {
+      const f = (v) => v.toFixed(2);
+      let d = `M${f(P[0][0])} ${f(P[0][1])}`;
+      const seg = (a, b) => {
+        const ha = H[a], hb = H[b];
+        const c1 = ha ? [ha[2], ha[3]] : P[a], c2 = hb ? [hb[0], hb[1]] : P[b];
+        d += ` C${f(c1[0])} ${f(c1[1])} ${f(c2[0])} ${f(c2[1])} ${f(P[b][0])} ${f(P[b][1])}`;
+      };
+      for (let i = 1; i < P.length; i++) seg(i - 1, i);
+      if (o.closed) { seg(P.length - 1, 0); d += ' Z'; }
+      return d;
+    }
+    return o.smooth ? smoothPath(P, o.closed) : 'M' + P.map((p) => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join(' L') + (o.closed ? ' Z' : '');
+  }
   function polyPoints(o) {
     const cx = o.x + o.w / 2, cy = o.y + o.h / 2, rx = o.w / 2, ry = o.h / 2, pts = [];
     const n = o.type === 'star' ? (o.points || 5) * 2 : (o.sides || 6);
@@ -145,7 +166,7 @@
       case 'ellipse': inner = `<ellipse cx="${c.x}" cy="${c.y}" rx="${Math.max(0, o.w / 2)}" ry="${Math.max(0, o.h / 2)}" ${common}/>`; break;
       case 'polygon': case 'star': inner = `<polygon points="${polyPoints(o)}" ${common}/>`; break;
       case 'line': case 'path': {
-        const d = o.smooth ? smoothPath(o.pts, o.closed) : 'M' + o.pts.map((p) => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join(' L') + (o.closed ? ' Z' : '');
+        const d = pathD(o);
         const markers = o.type === 'line' && o.arrow ? arrowHead(o) : '';
         inner = `<path d="${d}" ${o.closed ? common : `fill="none" stroke="${o.stroke || '#000'}" stroke-width="${o.sw || 2}"${o.dash ? ` stroke-dasharray="${o.dash}"` : ''} stroke-linecap="round" stroke-linejoin="round"`}/>${markers}`;
         if (!forExport) inner += `<path d="${d}" fill="none" stroke="transparent" stroke-width="${Math.max(12, (o.sw || 2) + 8) / zoom}" pointer-events="stroke"/>`;
@@ -172,6 +193,7 @@
       case 'image': inner = imageSvg(o, defs, st); break;
       case 'icon': inner = iconSvg(o, fill); break;
       case 'qr': inner = qrSvg(o); break;
+      case 'vpath': inner = `<path d="${o.d}" transform="translate(${o.x} ${o.y}) scale(${o.w / o.ob.w} ${o.h / o.ob.h}) translate(${-o.ob.x} ${-o.ob.y})" ${common.replace(/stroke-width="([\d.]+)"/, 'stroke-width="$1" vector-effect="non-scaling-stroke"')}/>`; break;
       case 'chart': inner = chartSvg(o); break;
       case 'table': inner = tableSvg(o); break;
       case 'group': inner = o.children.map((ch) => objSvg(ch, defs, forExport)).join(''); break;
@@ -209,7 +231,12 @@
     const sel = selected();
     if (sel.length === 1 && sel[0].id !== nodeEdit) ui += handlesSvg(getBox(sel[0]), sel[0].rot || 0, k);
     else if (sel.length > 1) { sel.forEach((o) => { const b = getBox(o); ui += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="none" stroke="#d9861c" stroke-width="${k}" stroke-dasharray="${3 * k}" transform="rotate(${o.rot || 0} ${center(b).x} ${center(b).y})"/>`; }); ui += handlesSvg(unionBox(sel.map(getBox)), 0, k); }
-    if (nodeEdit) { const o = byId(nodeEdit); if (o) o.pts.forEach((p, i) => { ui += `<rect data-node="${i}" x="${p[0] - 5 * k}" y="${p[1] - 5 * k}" width="${10 * k}" height="${10 * k}" fill="#fff" stroke="#d9861c" stroke-width="${1.5 * k}" style="cursor:move"/>`; }); }
+    const nodeObj = nodeEdit ? byId(nodeEdit) : (draft && draft.type === 'path' && draft.handles ? draft : null);
+    if (nodeObj) nodeObj.pts.forEach((p, i) => {
+      const h = nodeObj.handles && nodeObj.handles[i];
+      if (h) ui += `<line x1="${h[0]}" y1="${h[1]}" x2="${h[2]}" y2="${h[3]}" stroke="#1a3d8f" stroke-width="${k}"/><circle data-hnode="${i},0" cx="${h[0]}" cy="${h[1]}" r="${4.5 * k}" fill="#1a3d8f" style="cursor:pointer"/><circle data-hnode="${i},1" cx="${h[2]}" cy="${h[3]}" r="${4.5 * k}" fill="#1a3d8f" style="cursor:pointer"/>`;
+      ui += `<rect data-node="${i}" x="${p[0] - 5 * k}" y="${p[1] - 5 * k}" width="${10 * k}" height="${10 * k}" fill="#fff" stroke="#d9861c" stroke-width="${1.5 * k}" style="cursor:move"/>`;
+    });
     guides.forEach((g) => { ui += g.v != null ? `<line x1="${g.v}" y1="-10000" x2="${g.v}" y2="10000" stroke="#e0368c" stroke-width="${k}"/>` : `<line x1="-10000" y1="${g.h}" x2="10000" y2="${g.h}" stroke="#e0368c" stroke-width="${k}"/>`; });
     if (marquee) ui += `<rect x="${marquee.x}" y="${marquee.y}" width="${marquee.w}" height="${marquee.h}" fill="rgba(217,134,28,.1)" stroke="#d9861c" stroke-width="${k}"/>`;
     board.innerHTML = `<defs>${defs}</defs>${body}<g id="ui">${ui}</g>`;
@@ -492,6 +519,8 @@
     const handle = e.target.closest('[data-handle]');
     const node = e.target.closest('[data-node]');
     if (node && nodeEdit) { pushUndo(); drag = { mode: 'node', o: byId(nodeEdit), i: +node.dataset.node }; return; }
+    const hn = e.target.closest('[data-hnode]');
+    if (hn && nodeEdit) { pushUndo(); const [i, side] = hn.dataset.hnode.split(',').map(Number); drag = { mode: 'hnode', o: byId(nodeEdit), i, side }; return; }
     if (tool === 'select' || tool === 'node') {
       if (handle) { startHandle(handle.dataset.handle, p, e); return; }
       const g = e.target.closest('[data-id]');
@@ -511,12 +540,14 @@
     }
     if (tool === 'text') { pushUndo(); const o = addObject(newText(p.x, p.y - defaults.fontSize / 2)); setTool('select'); focusText(o); return; }
     if (tool === 'pen') {
-      if (!draft) draft = baseObj('path', { pts: [[p.x, p.y]], closed: false, smooth: false, fill: 'none', stroke: defaults.stroke, sw: Math.max(2, defaults.sw) });
+      // clic : point d'angle ; cliquer-glisser : point de courbe avec poignées
+      if (!draft) draft = baseObj('path', { pts: [[p.x, p.y]], handles: [null], closed: false, smooth: false, fill: 'none', stroke: defaults.stroke, sw: Math.max(2, defaults.sw) });
       else {
         const f = draft.pts[0];
         if (draft.pts.length > 2 && Math.hypot(p.x - f[0], p.y - f[1]) < 10 / zoom) { draft.closed = true; draft.fill = defaults.fill; finishPen(); return; }
-        draft.pts.push([p.x, p.y]);
+        draft.pts.push([p.x, p.y]); draft.handles.push(null);
       }
+      drag = { mode: 'penHandle', i: draft.pts.length - 1 };
       render(); return;
     }
     if (tool === 'pencil') { draft = baseObj('path', { pts: [[p.x, p.y]], smooth: true, closed: false, fill: 'none', stroke: defaults.stroke, sw: Math.max(3, defaults.sw) }); drag = { mode: 'pencil' }; return; }
@@ -549,7 +580,23 @@
       }
       case 'marquee': marquee = { x: Math.min(drag.start.x, p.x), y: Math.min(drag.start.y, p.y), w: Math.abs(p.x - drag.start.x), h: Math.abs(p.y - drag.start.y) }; render(); break;
       case 'pencil': { const l = draft.pts[draft.pts.length - 1]; if (Math.hypot(p.x - l[0], p.y - l[1]) > 2 / zoom) draft.pts.push([p.x, p.y]); render(); break; }
-      case 'node': { drag.o.pts[drag.i] = [p.x, p.y]; render(); break; }
+      case 'node': {
+        const o = drag.o, i = drag.i, [ox, oy] = o.pts[i], dx = p.x - ox, dy = p.y - oy;
+        o.pts[i] = [p.x, p.y];
+        if (o.handles && o.handles[i]) { const h = o.handles[i]; o.handles[i] = [h[0] + dx, h[1] + dy, h[2] + dx, h[3] + dy]; }
+        render(); break;
+      }
+      case 'hnode': {
+        const o = drag.o, i = drag.i, a = o.pts[i], h = o.handles[i];
+        if (drag.side === 1) { h[2] = p.x; h[3] = p.y; if (!e.altKey) { h[0] = 2 * a[0] - p.x; h[1] = 2 * a[1] - p.y; } }
+        else { h[0] = p.x; h[1] = p.y; if (!e.altKey) { h[2] = 2 * a[0] - p.x; h[3] = 2 * a[1] - p.y; } }
+        render(); break;
+      }
+      case 'penHandle': {
+        const a = draft.pts[drag.i];
+        if (Math.hypot(p.x - a[0], p.y - a[1]) > 3 / zoom) draft.handles[drag.i] = [2 * a[0] - p.x, 2 * a[1] - p.y, p.x, p.y];
+        render(); break;
+      }
       case 'create': {
         const s = drag.start;
         if (draft.type === 'line') {
@@ -589,6 +636,18 @@
   });
   board.addEventListener('dblclick', (e) => {
     if (tool === 'pen') { finishPen(); return; }
+    const nd = e.target.closest('[data-node]');
+    if (nd && nodeEdit) { // double-clic sur un point : angle <-> courbe
+      const o = byId(nodeEdit), i = +nd.dataset.node, n = o.pts.length; pushUndo();
+      o.handles = o.handles || o.pts.map(() => null);
+      if (o.handles[i]) o.handles[i] = null;
+      else {
+        const pv = o.pts[(i - 1 + n) % n], nx = o.pts[(i + 1) % n], a = o.pts[i];
+        const dx = (nx[0] - pv[0]) / 4, dy = (nx[1] - pv[1]) / 4;
+        o.handles[i] = [a[0] - dx, a[1] - dy, a[0] + dx, a[1] + dy];
+      }
+      render(); return;
+    }
     const g = e.target.closest('[data-id]'); const o = g && byId(+g.dataset.id);
     if (!o) return;
     if (o.type === 'text') focusText(o);
@@ -598,6 +657,7 @@
   function finishPen() {
     if (!draft) return;
     delete draft.penPreview;
+    if (draft.handles && !draft.handles.some(Boolean)) delete draft.handles;
     if (draft.pts.length > 1) { pushUndo(); state.objects.push(draft); selIds = [draft.id]; }
     draft = null; render(); renderSide();
   }
@@ -686,6 +746,10 @@
         <div class="row"><label for="docBg">Fond</label><input type="color" id="docBg" value="${state.bg === 'transparent' ? '#ffffff' : state.bg}"><label><input type="checkbox" id="docTr" ${state.bg === 'transparent' ? 'checked' : ''}> Transparent</label></div>
         <label class="row"><input type="checkbox" id="snapOn" ${snapOn ? 'checked' : ''}> Repères magnétiques</label>
         <div class="row"><button data-act="templates">Modèles…</button><button data-act="library">Éléments…</button><button data-act="magicResize">Redimensionner…</button></div></div>
+        <div class="section"><h3>Page ${state.cur + 1} : animation</h3>
+        <div class="grid2">${field('Durée de la page (s)', num('pgDur', pageDur(state.pages[state.cur]), 0.5, 0.5, 120), 'pgDur')}${field('Transition d\'entrée', `<select id="pgTrans">${Object.entries(PAGE_TRANS).map(([k, l]) => `<option value="${k}" ${(state.pages[state.cur].transition || 'none') === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`, 'pgTrans')}</div>
+        <div class="row"><select id="magicStyle" style="width:auto" aria-label="Style d'animation"><option value="douce">Douce</option><option value="dynamique">Dynamique</option><option value="elegante">Élégante</option><option value="rebond">Rebond</option></select><button id="magicAnimBtn">Animer la page</button><button data-act="previewAnim">▶ Aperçu</button></div>
+        <button data-act="exportVideo">Exporter en vidéo MP4 / GIF…</button></div>
         <div class="section"><h3>Kit de marque</h3>
         <div class="row">${state.brand.colors.map((c, i) => `<button data-brand-del="${i}" title="Retirer ${c}" style="width:26px;height:26px;padding:0;background:${c}" aria-label="Retirer la couleur ${c}"></button>`).join('')}
           <input type="color" id="brandNew" value="#7b3fa0" aria-label="Nouvelle couleur de marque"><button id="brandAdd">+ Couleur</button></div>
@@ -721,6 +785,19 @@
       if (sel.length === 1) h += `<div class="section"><h3>Effets</h3><label class="row"><input type="checkbox" id="pShadow" ${o.shadow ? 'checked' : ''}> Ombre portée</label>
         ${o.shadow ? `<div class="grid3">${field('Flou', num('pShB', o.shadowBlur ?? 8, 1, 0), 'pShB')}${field('Déc. X', num('pShX', o.shadowX ?? 6), 'pShX')}${field('Déc. Y', num('pShY', o.shadowY ?? 8), 'pShY')}</div><div class="row"><input type="color" id="pShC" value="${o.shadowColor || '#000000'}" aria-label="Couleur de l'ombre">${field('Opacité %', num('pShO', (o.shadowOpacity ?? 0.35) * 100, 5, 0, 100), 'pShO')}</div>` : ''}
         ${field('Mode de fusion', `<select id="pBlend">${['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'difference'].map((m) => `<option ${o.blend === m ? 'selected' : ''}>${m}</option>`).join('')}</select>`, 'pBlend')}</div>`;
+      if (sel.length === 1) {
+        const an = o.anim || { in: 'none', delay: 0, dur: 0.8, loop: 'none', out: 'none' };
+        const opt = (obj, v) => Object.entries(obj).map(([k, l]) => `<option value="${k}" ${v === k ? 'selected' : ''}>${l}</option>`).join('');
+        h += `<div class="section"><h3>Animation</h3>
+          ${field('Entrée', `<select id="anIn">${opt(ANIM_IN, an.in)}</select>`, 'anIn')}
+          <div class="grid2">${field('Délai (s)', num('anDelay', an.delay || 0, 0.1, 0, 60), 'anDelay')}${field('Durée (s)', num('anDur', an.dur ?? 0.8, 0.1, 0.1, 10), 'anDur')}</div>
+          <div class="grid2">${field('En boucle', `<select id="anLoop">${opt(ANIM_LOOP, an.loop)}</select>`, 'anLoop')}${field('Sortie', `<select id="anOut">${opt(ANIM_OUT, an.out)}</select>`, 'anOut')}</div>
+          <button data-act="previewAnim">▶ Aperçu</button></div>`;
+      }
+      if (sel.some((x) => ['rect', 'ellipse', 'polygon', 'star', 'path', 'vpath'].includes(x.type) || (x.type === 'icon' && x.shape))) h += `<div class="section"><h3>Pathfinder</h3><div class="icon-row row">
+        <button data-act="unite" title="Réunir les formes sélectionnées">Réunir</button><button data-act="subtract" title="Retirer les formes du dessus de celle du dessous">Soustraire</button>
+        <button data-act="intersect" title="Garder la zone commune">Intersection</button><button data-act="exclude" title="Retirer la zone commune">Exclure</button>
+        <button data-act="outline" title="Convertir en tracé vectoriel modifiable">Vectoriser</button></div><p class="hint">Sélectionnez plusieurs formes avec Maj+clic. Double-cliquez sur un point d'un tracé (outil A) pour passer d'angle à courbe.</p></div>`;
       h += `<div class="section"><h3>Disposition</h3><div class="icon-row row"><button data-act="front">Premier plan</button><button data-act="back">Arrière-plan</button><button data-act="duplicate">Dupliquer</button>${sel.length > 1 ? '<button data-act="group">Grouper</button>' : ''}${o.type === 'group' ? '<button data-act="ungroup">Dissocier</button>' : ''}<button data-act="flipH">Miroir H</button><button data-act="flipV">Miroir V</button><button data-act="delete" class="danger">Supprimer</button></div></div>`;
     }
     h += `<div class="section"><h3>Calques</h3><div class="objlist">${[...state.objects].reverse().map((o) => `<button data-pick="${o.id}" class="${selIds.includes(o.id) ? 'active' : ''}"><span data-vis="${o.id}" title="Afficher/masquer">${o.hidden ? '◌' : '●'}</span> <span data-lock="${o.id}" title="Verrouiller">${o.locked ? '🔒' : '·'}</span> ${esc(o.name || labelOf(o))}</button>`).join('') || '<p class="hint">Aucun objet. Choisissez un outil à gauche ou un modèle.</p>'}</div></div>`;
@@ -728,7 +805,7 @@
     side.innerHTML = h;
     bindSide();
   }
-  const typeName = (o) => ({ rect: 'Rectangle', ellipse: 'Ellipse', polygon: 'Polygone', star: 'Étoile', line: 'Ligne', path: 'Tracé', text: 'Texte', image: o.href ? 'Image' : 'Cadre photo', group: 'Groupe', icon: o.shape || `Icône ${o.icon}`, qr: 'QR code', chart: 'Graphique', table: 'Tableau' }[o.type]);
+  const typeName = (o) => ({ rect: 'Rectangle', ellipse: 'Ellipse', polygon: 'Polygone', star: 'Étoile', line: 'Ligne', path: 'Tracé', text: 'Texte', image: o.href ? 'Image' : 'Cadre photo', group: 'Groupe', icon: o.shape || `Icône ${o.icon}`, qr: 'QR code', chart: 'Graphique', table: 'Tableau', vpath: 'Tracé vectoriel' }[o.type]);
   const labelOf = (o) => (o.type === 'text' ? `« ${String(o.text).slice(0, 24)} »` : typeName(o));
   const alignBtn = (a, t, svg) => `<button data-align="${a}" title="${t}" aria-label="${t}"><svg viewBox="0 0 24 24">${svg}</svg></button>`;
   function fillStrokeSection(o) {
@@ -801,6 +878,15 @@
     on('docBg', 'input', (t) => { state.bg = t.value; $('#docTr').checked = false; });
     on('docTr', 'change', (t) => { state.bg = t.checked ? 'transparent' : $('#docBg').value; });
     const sn = $('#snapOn'); if (sn) sn.onchange = () => { snapOn = sn.checked; store('designjoe-snap', snapOn); };
+    on('pgDur', 'change', (t) => { state.pages[state.cur].duration = clamp(+t.value || 5, 0.5, 120); });
+    on('pgTrans', 'change', (t) => { state.pages[state.cur].transition = t.value; });
+    const mab = $('#magicAnimBtn'); if (mab) mab.onclick = () => magicAnimate($('#magicStyle').value);
+    const anim = () => (o.anim = o.anim || { in: 'none', delay: 0, dur: 0.8, loop: 'none', out: 'none' });
+    on('anIn', 'change', (t) => { anim().in = t.value; });
+    on('anDelay', 'change', (t) => { anim().delay = Math.max(0, +t.value); });
+    on('anDur', 'change', (t) => { anim().dur = clamp(+t.value, 0.1, 10); });
+    on('anLoop', 'change', (t) => { anim().loop = t.value; });
+    on('anOut', 'change', (t) => { anim().out = t.value; });
     // géométrie
     const geo = (k) => (t) => {
       const b = sel.length === 1 ? getBox(o) : unionBox(sel.map(getBox)); const nb = { ...b, [k]: +t.value };
@@ -931,7 +1017,7 @@
     return modal({
       title, body: `<div class="field"><label for="xs">Résolution</label><select id="xs"><option value="1">1× (${state.w} × ${state.h})</option><option value="2" selected>2× (${state.w * 2} × ${state.h * 2})</option><option value="3">3×</option><option value="0.5">0,5×</option></select></div>
         ${multi ? `<div class="field"><label for="xp">Pages</label><select id="xp"><option value="all">Toutes les pages (${state.pages.length})</option><option value="cur">Page courante seulement (${state.cur + 1})</option></select></div>` : ''}${extra}`,
-      buttons: [{ label: 'Annuler', value: null }, { label: 'Exporter', primary: true, value: (b) => ({ s: +b.querySelector('#xs').value, all: multi && b.querySelector('#xp').value === 'all' }) }],
+      buttons: [{ label: 'Annuler', value: null }, { label: 'Exporter', primary: true, value: (b) => ({ s: +b.querySelector('#xs').value, all: multi && b.querySelector('#xp').value === 'all', vector: b.querySelector('#xv')?.value === 'vector' }) }],
     });
   }
   async function exportRaster(type) {
@@ -945,7 +1031,15 @@
     toast(blobs.length > 1 ? `${blobs.length} images exportées` : 'Image exportée');
   }
   async function exportPdf() {
-    const r = await askScale('Exporter en PDF', '<p class="hint">Chaque page devient une page du PDF, en haute résolution.</p>', true); if (!r) return;
+    const r = await askScale('Exporter en PDF', `<div class="field"><label for="xv">Type de PDF</label><select id="xv"><option value="vector">Vectoriel : texte net et sélectionnable, fichier léger, idéal pour l'imprimeur</option><option value="raster">Image haute résolution : rendu identique à l'écran (ombres, néon, émojis)</option></select></div>`, true); if (!r) return;
+    if (r.vector) {
+      const idx = r.all ? state.pages.map((_, i) => i) : [state.cur];
+      const pr = progressOverlay('Création du PDF vectoriel');
+      try { const blob = await exportVectorPdf(idx); download(blob, `${fname()}.pdf`); toast(`PDF vectoriel exporté (${idx.length} page${idx.length > 1 ? 's' : ''})`); }
+      catch (e) { console.error(e); toast('Erreur PDF vectoriel : ' + (e.message || e)); }
+      finally { pr.close(); }
+      return;
+    }
     const d = await PDFLib.PDFDocument.create();
     const W = state.w * 0.75, H = state.h * 0.75;
     const idx = r.all ? state.pages.map((_, i) => i) : [state.cur];
@@ -1246,30 +1340,6 @@
     else { undoStack.pop(); updateHist(); }
   }
 
-  /* ---------------- Mode présentation ---------------- */
-  function present() {
-    let i = state.cur;
-    const ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;z-index:300;background:#000;display:grid;place-items:center;cursor:none';
-    const show = () => {
-      const { defs, body } = docSvg(true, i);
-      ov.innerHTML = `<svg viewBox="0 0 ${state.w} ${state.h}" style="width:100vw;height:100vh" preserveAspectRatio="xMidYMid meet"><defs>${defs}</defs>${body}</svg>
-        <div style="position:fixed;bottom:12px;right:16px;color:#fff;opacity:.6;font:13px system-ui">${i + 1} / ${state.pages.length} · Échap pour quitter</div>`;
-    };
-    const close = () => { ov.remove(); document.removeEventListener('keydown', key, true); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); };
-    const key = (e) => {
-      e.stopPropagation();
-      if (e.key === 'Escape') close();
-      else if (['ArrowRight', 'ArrowDown', ' ', 'PageDown', 'Enter'].includes(e.key)) { i = Math.min(state.pages.length - 1, i + 1); show(); }
-      else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(e.key)) { i = Math.max(0, i - 1); show(); }
-      e.preventDefault();
-    };
-    ov.addEventListener('click', (e) => { if (e.clientX < innerWidth / 3) i = Math.max(0, i - 1); else if (i === state.pages.length - 1) return close(); else i++; show(); });
-    document.addEventListener('keydown', key, true);
-    document.body.appendChild(ov); show();
-    if (ov.requestFullscreen) ov.requestFullscreen().catch(() => {});
-  }
-
   /* ---------------- Redimensionnement magique ---------------- */
   const FORMATS = [
     ['Publication carrée', 1080, 1080], ['Instagram portrait 4:5', 1080, 1350], ['Story / statut', 1080, 1920], ['Facebook couverture', 1640, 624],
@@ -1318,6 +1388,340 @@
     }
   });
 
+  /* ---------------- Animations (façon Canva) : entrée, boucle, sortie, transitions de page ---------------- */
+  const ANIM_IN = { none: 'Aucune', fade: 'Fondu', slideL: 'Glisser depuis la gauche', slideR: 'Glisser depuis la droite', slideU: 'Monter', slideD: 'Descendre', zoom: 'Zoom', pop: 'Pop', spin: 'Tourbillon', wipe: 'Révéler', bounce: 'Rebond', typewriter: 'Machine à écrire (texte)' };
+  const ANIM_LOOP = { none: 'Aucune', pulse: 'Pulsation', float: 'Flottement', spin: 'Rotation continue', blink: 'Clignotement', swing: 'Balancement' };
+  const ANIM_OUT = { none: 'Aucune', fade: 'Fondu', zoom: 'Zoom arrière', slideU: 'Sortir par le haut', slideD: 'Sortir par le bas' };
+  const PAGE_TRANS = { none: 'Aucune', fade: 'Fondu', slide: 'Glissement', zoom: 'Zoom', wipe: 'Volet', rise: 'Montée' };
+  const easeOut = (u) => 1 - Math.pow(1 - u, 3);
+  const backOut = (u) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(u - 1, 3) + c1 * Math.pow(u - 1, 2); };
+  const bounceOut = (u) => { const n = 7.5625, d = 2.75; if (u < 1 / d) return n * u * u; if (u < 2 / d) return n * (u -= 1.5 / d) * u + 0.75; if (u < 2.5 / d) return n * (u -= 2.25 / d) * u + 0.9375; return n * (u -= 2.625 / d) * u + 0.984375; };
+  const pageDur = (pg) => pg.duration || 5;
+  const hasAnim = (o) => o.anim && (o.anim.in !== 'none' || o.anim.loop !== 'none' || o.anim.out !== 'none');
+  function animState(o, t, pd) {
+    const a = o.anim, W = state.w, H = state.h, s = { alpha: 1, dx: 0, dy: 0, sc: 1, rot: 0, reveal: 1 };
+    if (!a) return s;
+    if (a.in && a.in !== 'none') {
+      const d = Math.max(0.05, a.dur ?? 0.8), p = clamp((t - (a.delay || 0)) / d, 0, 1), e = easeOut(p);
+      switch (a.in) {
+        case 'fade': s.alpha = e; break;
+        case 'slideL': s.dx = -(1 - e) * W * 0.35; s.alpha = Math.min(1, p * 2); break;
+        case 'slideR': s.dx = (1 - e) * W * 0.35; s.alpha = Math.min(1, p * 2); break;
+        case 'slideU': s.dy = (1 - e) * H * 0.25; s.alpha = e; break;
+        case 'slideD': s.dy = -(1 - e) * H * 0.25; s.alpha = e; break;
+        case 'zoom': s.sc = 0.2 + 0.8 * e; s.alpha = e; break;
+        case 'pop': s.sc = p ? Math.max(0, backOut(p)) : 0; s.alpha = Math.min(1, p * 3); break;
+        case 'spin': s.rot = -(1 - e) * 270; s.sc = e; s.alpha = e; break;
+        case 'wipe': case 'typewriter': s.reveal = a.in === 'typewriter' ? p : e; break;
+        case 'bounce': s.dy = -(1 - bounceOut(p)) * H * 0.4; s.alpha = Math.min(1, p * 4); break;
+      }
+    }
+    const lt = t - (a.delay || 0) - (a.in !== 'none' ? (a.dur ?? 0.8) : 0);
+    if (a.loop && a.loop !== 'none' && lt > 0) {
+      if (a.loop === 'pulse') s.sc *= 1 + 0.06 * Math.sin(lt * Math.PI * 2 / 1.2);
+      if (a.loop === 'float') s.dy += Math.sin(lt * Math.PI * 2 / 2.4) * H * 0.012;
+      if (a.loop === 'spin') s.rot += lt * 90;
+      if (a.loop === 'blink') s.alpha *= 0.55 + 0.45 * Math.cos(lt * Math.PI * 2);
+      if (a.loop === 'swing') s.rot += Math.sin(lt * Math.PI * 2 / 1.6) * 8;
+    }
+    if (a.out && a.out !== 'none') {
+      const od = 0.6, q = clamp((t - (pd - od)) / od, 0, 1), e = easeOut(q);
+      if (a.out === 'fade') s.alpha *= 1 - e;
+      if (a.out === 'zoom') { s.sc *= 1 - 0.8 * e; s.alpha *= 1 - e; }
+      if (a.out === 'slideU') { s.dy -= e * H * 0.3; s.alpha *= 1 - e; }
+      if (a.out === 'slideD') { s.dy += e * H * 0.3; s.alpha *= 1 - e; }
+    }
+    return s;
+  }
+  // chaque page devient des calques bitmap : fonds fixes regroupés, objets animés isolés
+  async function svgToBitmap(inner, defs, scale) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${state.w * scale}" height="${state.h * scale}" viewBox="0 0 ${state.w} ${state.h}"><defs>${defs}</defs>${inner}</svg>`;
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    try {
+      const im = await loadImage(url);
+      const c = document.createElement('canvas'); c.width = Math.round(state.w * scale); c.height = Math.round(state.h * scale);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); return c;
+    } finally { URL.revokeObjectURL(url); }
+  }
+  async function preparePage(i, scale) {
+    const pg = state.pages[i]; const layers = []; let group = [];
+    const bg = pg.bg && pg.bg !== 'transparent' ? `<rect width="${state.w}" height="${state.h}" fill="${pg.bg}"/>` : '';
+    const flush = async () => {
+      if (!group.length) return;
+      const defs = []; const body = group.map((o) => (o.type === 'rawbg' ? o.svg : objSvg(o, defs, true))).join('');
+      layers.push({ bmp: await svgToBitmap(body, defs.join(''), scale) }); group = [];
+    };
+    if (bg) group.push({ type: 'rawbg', svg: bg });
+    for (const o of pg.objects) {
+      if (o.hidden) continue;
+      if (!hasAnim(o)) { group.push(o); continue; }
+      await flush();
+      const defs = []; const b = getBox(o);
+      layers.push({ o, box: b, bmp: await svgToBitmap(objSvg(o, defs, true), defs.join(''), scale) });
+    }
+    await flush();
+    return { layers, dur: pageDur(pg), trans: pg.transition || 'none', scale };
+  }
+  function drawPageAt(ctx, P, t) {
+    const W = ctx.canvas.width, H = ctx.canvas.height, k = P.scale;
+    for (const L of P.layers) {
+      if (!L.o) { ctx.drawImage(L.bmp, 0, 0, W, H); continue; }
+      const s = animState(L.o, t, P.dur); if (s.alpha <= 0.002 || s.sc <= 0.001) continue;
+      const cx = (L.box.x + L.box.w / 2) * k, cy = (L.box.y + L.box.h / 2) * k;
+      ctx.save(); ctx.globalAlpha = clamp(s.alpha, 0, 1);
+      if (s.reveal < 1) { ctx.beginPath(); ctx.rect(L.box.x * k - 4, -H, (L.box.w * s.reveal) * k + 4, H * 3); ctx.clip(); }
+      ctx.translate(cx + s.dx * k, cy + s.dy * k); ctx.rotate(s.rot * Math.PI / 180); ctx.scale(s.sc, s.sc); ctx.translate(-cx, -cy);
+      ctx.drawImage(L.bmp, 0, 0, W, H); ctx.restore();
+    }
+  }
+  // image du document entier au temps global t (pages enchaînées avec transitions)
+  function frameAt(ctx, P, t) {
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    let acc = 0, i = 0; while (i < P.length - 1 && t >= acc + P[i].dur) { acc += P[i].dur; i++; }
+    const lt = t - acc, cur = P[i], TD = 0.6;
+    ctx.save(); ctx.globalAlpha = 1; ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+    if (i > 0 && cur.trans !== 'none' && lt < TD) {
+      const e = easeOut(lt / TD), prev = P[i - 1];
+      drawPageAt(ctx, prev, prev.dur);
+      ctx.save();
+      if (cur.trans === 'fade') ctx.globalAlpha = e;
+      if (cur.trans === 'slide') ctx.translate((1 - e) * W, 0);
+      if (cur.trans === 'rise') ctx.translate(0, (1 - e) * H);
+      if (cur.trans === 'zoom') { ctx.globalAlpha = e; ctx.translate(W / 2, H / 2); ctx.scale(0.7 + 0.3 * e, 0.7 + 0.3 * e); ctx.translate(-W / 2, -H / 2); }
+      if (cur.trans === 'wipe') { ctx.beginPath(); ctx.rect(0, 0, W * e, H); ctx.clip(); }
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+      drawPageAt(ctx, cur, lt); ctx.restore();
+    } else drawPageAt(ctx, cur, lt);
+    ctx.restore();
+    return i;
+  }
+  async function prepareAll(scale, onProgress) {
+    const P = [];
+    for (let i = 0; i < state.pages.length; i++) { P.push(await preparePage(i, scale)); onProgress && onProgress((i + 1) / state.pages.length); }
+    return P;
+  }
+  function progressOverlay(label) {
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:400;background:rgba(10,12,18,.7);display:grid;place-items:center';
+    ov.innerHTML = `<div style="background:var(--panel);color:var(--fg);padding:22px;border-radius:12px;width:min(420px,90vw);display:grid;gap:10px"><strong>${label}</strong><div style="height:10px;border-radius:5px;background:var(--panel-2);overflow:hidden"><div class="pb" style="height:100%;width:0;background:var(--accent)"></div></div><span class="hint pt">Préparation…</span></div>`;
+    document.body.appendChild(ov);
+    return { set: (u, txt) => { ov.querySelector('.pb').style.width = Math.round(u * 100) + '%'; if (txt) ov.querySelector('.pt').textContent = txt; }, close: () => ov.remove() };
+  }
+
+  /* ---------------- Lecteur : présentation et aperçu animé ---------------- */
+  async function present(autoplay = false) {
+    const pr = progressOverlay('Préparation de la présentation'); let P;
+    try { P = await prepareAll(Math.min(2, Math.max(1, 1600 / Math.max(state.w, state.h))), (u) => pr.set(u)); } finally { pr.close(); }
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:300;background:#000;display:grid;place-items:center';
+    const cv = document.createElement('canvas'); cv.width = Math.round(state.w * P[0].scale); cv.height = Math.round(state.h * P[0].scale);
+    cv.style.cssText = 'max-width:100vw;max-height:100vh;width:auto;height:auto;display:block';
+    const info = document.createElement('div'); info.style.cssText = 'position:fixed;bottom:12px;right:16px;color:#fff;opacity:.65;font:13px system-ui';
+    ov.append(cv, info); document.body.appendChild(ov);
+    const c2 = cv.getContext('2d');
+    const starts = []; let acc = 0; P.forEach((p) => { starts.push(acc); acc += p.dur; });
+    const totalDur = acc;
+    let page = state.cur, t0 = performance.now(), auto = autoplay, raf = 0, last = -1;
+    const loop = (now) => {
+      let lt = (now - t0) / 1000;
+      if (auto) {
+        const g = starts[page] + lt;
+        if (g >= totalDur) { if (autoplay) { page = 0; t0 = now; lt = 0; } else lt = P[page].dur; }
+        else { frameAt(c2, P, g); const pi = starts.findLastIndex((s) => s <= g); if (pi !== page) { page = pi; t0 = now - (g - starts[pi]) * 1000; } }
+      }
+      if (!auto) { c2.fillStyle = '#fff'; c2.fillRect(0, 0, cv.width, cv.height); drawPageAt(c2, P[page], Math.min(lt, P[page].dur)); }
+      if (page !== last) { info.textContent = `${page + 1} / ${P.length} · ${auto ? 'lecture automatique' : 'clic ou → pour avancer'} · A : auto · Échap : quitter`; last = page; }
+      raf = requestAnimationFrame(loop);
+    };
+    const go = (d) => { page = clamp(page + d, 0, P.length - 1); t0 = performance.now(); last = -1; };
+    const close = () => { cancelAnimationFrame(raf); ov.remove(); document.removeEventListener('keydown', key, true); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); };
+    const key = (e) => {
+      e.stopPropagation(); e.preventDefault();
+      if (e.key === 'Escape') close();
+      else if (['ArrowRight', 'ArrowDown', ' ', 'PageDown', 'Enter'].includes(e.key)) { if (page === P.length - 1 && !auto) close(); else go(1); }
+      else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(e.key)) go(-1);
+      else if (e.key.toLowerCase() === 'a') { auto = !auto; t0 = performance.now(); last = -1; }
+    };
+    ov.addEventListener('click', (e) => { if (e.clientX < innerWidth / 3) go(-1); else if (page === P.length - 1 && !auto) close(); else go(1); });
+    document.addEventListener('keydown', key, true);
+    raf = requestAnimationFrame(loop);
+    if (ov.requestFullscreen) ov.requestFullscreen().catch(() => {});
+  }
+
+  /* ---------------- Export vidéo (MP4/WebM) et GIF animé ---------------- */
+  const even = (v) => Math.max(2, Math.round(v / 2) * 2);
+  async function exportVideoDialog() {
+    const total = state.pages.reduce((a, p) => a + pageDur(p), 0);
+    const res = await modal({
+      title: 'Exporter en vidéo ou GIF animé',
+      body: `<div class="grid2"><div class="field"><label for="avF">Format</label><select id="avF"><option value="mp4">Vidéo MP4</option><option value="webm">Vidéo WebM</option><option value="gif">GIF animé</option></select></div>
+        <div class="field"><label for="avR">Taille</label><select id="avR"><option value="1">${even(state.w)} × ${even(state.h)}</option><option value="0.5">${even(state.w / 2)} × ${even(state.h / 2)}</option><option value="2">${even(state.w * 2)} × ${even(state.h * 2)}</option></select></div></div>
+        <div class="grid2"><div class="field"><label for="avFps">Images/s</label><select id="avFps"><option>30</option><option>25</option><option>24</option><option>60</option><option>15</option></select></div>
+        <div class="field"><label for="avLoop">Répétitions</label><select id="avLoop"><option value="1">1 fois</option><option value="2">2 fois</option><option value="3">3 fois</option></select></div></div>
+        <p class="hint">Durée : ${total.toLocaleString('fr-FR')} s (${state.pages.length} page${state.pages.length > 1 ? 's' : ''}). Réglez la durée de chaque page et les animations dans le panneau de droite. Pour ajouter une musique, ouvrez ensuite la vidéo dans Video Joe.</p>`,
+      buttons: [{ label: 'Annuler', value: null }, { label: 'Exporter', primary: true, value: (b) => ({ f: b.querySelector('#avF').value, r: +b.querySelector('#avR').value, fps: +b.querySelector('#avFps').value, rep: +b.querySelector('#avLoop').value }) }],
+    });
+    if (!res) return;
+    const pr = progressOverlay(res.f === 'gif' ? 'Création du GIF animé' : 'Création de la vidéo');
+    try {
+      let scale = res.r;
+      if (res.f === 'gif') scale = Math.min(scale, 720 / Math.max(state.w, state.h));
+      const P = await prepareAll(scale, (u) => pr.set(u * 0.15, 'Préparation des pages…'));
+      const W = even(state.w * scale), H = even(state.h * scale);
+      const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c2 = cv.getContext('2d', { willReadFrequently: res.f === 'gif' });
+      const total = P.reduce((a, p) => a + p.dur, 0) * res.rep;
+      const fps = res.f === 'gif' ? Math.min(res.fps, 15) : res.fps, n = Math.ceil(total * fps);
+      const one = P.reduce((a, p) => a + p.dur, 0);
+      const draw = (i) => frameAt(c2, P, (i / fps) % one);
+      let blob;
+      if (res.f === 'gif') blob = await encodeGif(cv, c2, n, fps, draw, (u) => pr.set(0.15 + u * 0.85, `Image ${Math.round(u * n)} / ${n}`));
+      else blob = await encodeVideo(cv, n, fps, draw, res.f, (u) => pr.set(0.15 + u * 0.85, `Image ${Math.round(u * n)} / ${n}`));
+      download(blob, `${fname()}.${res.f === 'gif' ? 'gif' : blob.type.includes('mp4') ? 'mp4' : 'webm'}`);
+      toast(`Export terminé (${(blob.size / 1048576).toFixed(1).replace('.', ',')} Mo)`, 5000);
+    } catch (e) { console.error(e); toast('Erreur d\'export : ' + (e.message || e), 6000); }
+    finally { pr.close(); }
+  }
+  async function encodeGif(cv, c2, n, fps, draw, onP) {
+    const { GIFEncoder, quantize, applyPalette } = window.gifenc;
+    const gif = GIFEncoder(); const delay = Math.round(1000 / fps);
+    let palette = null;
+    for (let i = 0; i < n; i++) {
+      draw(i);
+      const { data } = c2.getImageData(0, 0, cv.width, cv.height);
+      if (!palette || i % 15 === 0) palette = quantize(data, 256);
+      gif.writeFrame(applyPalette(data, palette), cv.width, cv.height, { palette, delay });
+      if (i % 5 === 0) { onP(i / n); await new Promise((r) => setTimeout(r)); }
+    }
+    gif.finish(); return new Blob([gif.bytes()], { type: 'image/gif' });
+  }
+  async function encodeVideo(cv, n, fps, draw, fmt, onP) {
+    // WebCodecs : encodage image par image, plus rapide que le temps réel et sans saccade
+    if (fmt === 'mp4' && window.VideoEncoder && window.Mp4Muxer) {
+      const cands = [['avc', 'avc1.640034'], ['avc', 'avc1.4d0034'], ['avc', 'avc1.42003e'], ['vp9', 'vp09.00.40.08']];
+      let pick = null;
+      for (const [mc, codec] of cands) {
+        const cfg = { codec, width: cv.width, height: cv.height, bitrate: Math.round(cv.width * cv.height * fps * 0.12), framerate: fps };
+        try { if ((await VideoEncoder.isConfigSupported(cfg)).supported) { pick = [mc, cfg]; break; } } catch (e) { /* suivant */ }
+      }
+      if (pick) {
+        const muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), video: { codec: pick[0], width: cv.width, height: cv.height, frameRate: fps }, fastStart: 'in-memory' });
+        let err = null;
+        const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => { err = e; } });
+        enc.configure(pick[1]);
+        for (let i = 0; i < n; i++) {
+          if (err) throw err;
+          draw(i);
+          const fr = new VideoFrame(cv, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) });
+          enc.encode(fr, { keyFrame: i % (fps * 2) === 0 }); fr.close();
+          if (enc.encodeQueueSize > 8) await new Promise((r) => setTimeout(r, 5));
+          if (i % 10 === 0) { onP(i / n); await new Promise((r) => setTimeout(r)); }
+        }
+        await enc.flush(); muxer.finalize();
+        return new Blob([muxer.target.buffer], { type: 'video/mp4' });
+      }
+    }
+    // repli : enregistrement en temps réel du canevas
+    const mimes = (fmt === 'mp4' ? ['video/mp4;codecs=avc1', 'video/mp4'] : []).concat(['video/webm;codecs=vp9', 'video/webm']).filter((m) => window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+    if (!mimes.length) throw new Error('ce navigateur ne sait pas créer de vidéo');
+    const stream = cv.captureStream(fps); const rec = new MediaRecorder(stream, { mimeType: mimes[0], videoBitsPerSecond: 8e6 });
+    const chunks = []; rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    const done = new Promise((r) => { rec.onstop = r; });
+    rec.start(200);
+    const t0 = performance.now();
+    await new Promise((resolve) => {
+      const step = () => {
+        const i = Math.floor((performance.now() - t0) / 1000 * fps);
+        if (i >= n) return resolve();
+        draw(i); onP(i / n); requestAnimationFrame(step);
+      };
+      step();
+    });
+    rec.stop(); await done;
+    return new Blob(chunks, { type: mimes[0].split(';')[0] });
+  }
+
+  // « Animation magique » : entrées décalées sur tous les éléments de la page
+  function magicAnimate(style) {
+    pushUndo();
+    const presets = { douce: ['fade', 'slideU'], dynamique: ['pop', 'slideL', 'zoom'], elegante: ['wipe', 'fade'], rebond: ['bounce', 'pop'] }[style];
+    const objs = state.objects.filter((o) => !o.hidden);
+    objs.forEach((o, i) => {
+      const full = (() => { const b = getBox(o); return b.w >= state.w * 0.95 && b.h >= state.h * 0.95; })();
+      o.anim = full ? { in: 'fade', delay: 0, dur: 0.6, loop: 'none', out: 'none' }
+        : { in: o.type === 'text' && style === 'elegante' ? 'wipe' : presets[i % presets.length], delay: Math.round(i * 0.25 * 100) / 100, dur: 0.8, loop: 'none', out: 'none' };
+    });
+    render(); renderSide(); toast('Animations appliquées : ▶ Aperçu pour les voir');
+  }
+
+  /* ---------------- PDF vectoriel (jsPDF + svg2pdf) ---------------- */
+  async function exportVectorPdf(idx) {
+    const { jsPDF } = window.jspdf;
+    const W = state.w * 0.75, H = state.h * 0.75;
+    const pdf = new jsPDF({ unit: 'pt', format: [W, H], orientation: W > H ? 'landscape' : 'portrait', compress: true });
+    for (let n = 0; n < idx.length; n++) {
+      if (n) pdf.addPage([W, H], W > H ? 'landscape' : 'portrait');
+      // polices PDF standard : graisse normale ou grasse, famille sans empattement, à empattement ou fixe
+      const svgStr = exportSvgString(idx[n]).replace(/^<\?xml[^>]*>\s*/, '')
+        .replace(/font-weight="(\d+)"/g, (m, w) => `font-weight="${+w >= 600 ? 'bold' : 'normal'}"`)
+        .replace(/font-family="([^"]*)"/g, (m, f) => { const f0 = f.split(',')[0]; return `font-family="${/georgia|times|garamond|palatino|book|serif/i.test(f0) ? 'times' : /courier|mono/i.test(f0) ? 'courier' : 'helvetica'}"`; });
+      const el = new DOMParser().parseFromString(svgStr, 'image/svg+xml').documentElement;
+      // svg2pdf a besoin d'un élément rattaché au document pour calculer les styles
+      const host = document.createElement('div'); host.style.cssText = 'position:fixed;left:-99999px;top:0;width:10px;height:10px;overflow:hidden';
+      host.appendChild(el); document.body.appendChild(host);
+      try { await pdf.svg(el, { x: 0, y: 0, width: W, height: H }); } finally { host.remove(); }
+    }
+    pdf.setProperties({ title: state.name, creator: 'Design Joe' });
+    return pdf.output('blob');
+  }
+
+  /* ---------------- Tracés vectoriels : Pathfinder (opérations booléennes) ---------------- */
+  let paperReady = false;
+  function ensurePaper() { if (!paperReady) { paper.setup(document.createElement('canvas')); paperReady = true; } }
+  function toPaper(o) {
+    const defs = [];
+    const plain = { ...o, shadow: false, opacity: 1, fillType: 'solid', fill: '#000', stroke: '', sw: 0 };
+    if (o.type === 'path' || o.type === 'line') plain.closed = true;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg">${objSvg(plain, defs, true)}</svg>`;
+    const item = paper.project.importSVG(svg, { expandShapes: true, insert: false });
+    const paths = item.getItems({ class: paper.PathItem }).filter((p) => !(p.parent instanceof paper.CompoundPath));
+    let res = null;
+    for (const p of paths) { const c = p.clone({ insert: false }); c.transform(p.parent.globalMatrix || new paper.Matrix()); res = res ? res.unite(c, { insert: false }) : c; }
+    return res;
+  }
+  function fromPaper(item, like) {
+    const b = item.bounds;
+    const d = item.pathData;
+    return baseObj('vpath', { d, ob: { x: b.x, y: b.y, w: b.width || 1, h: b.height || 1 }, x: b.x, y: b.y, w: b.width || 1, h: b.height || 1, fill: like.fill && like.fill !== 'none' ? like.fill : '#1b1f2a', fill2: like.fill2, fillType: like.fillType, gradAngle: like.gradAngle, gradKind: like.gradKind, stroke: like.stroke, sw: like.sw, rot: 0, opacity: like.opacity ?? 1, name: like.name });
+  }
+  function pathfinder(op) {
+    const sel = state.objects.filter((o) => selIds.includes(o.id));
+    const shapes = sel.filter((o) => ['rect', 'ellipse', 'polygon', 'star', 'path', 'vpath', 'icon'].includes(o.type) && !(o.type === 'icon' && o.icon));
+    if ((op === 'outline' && !shapes.length) || (op !== 'outline' && shapes.length < 2)) return toast(op === 'outline' ? 'Sélectionnez une forme.' : 'Sélectionnez au moins deux formes (Maj+clic).');
+    ensurePaper(); pushUndo();
+    try {
+      let out = [];
+      if (op === 'outline') out = shapes.map((o) => { const it = toPaper(o); return it ? fromPaper(it, o) : null; }).filter(Boolean);
+      else {
+        // ordre de superposition : le premier objet (le plus bas) sert de base
+        const items = shapes.map(toPaper);
+        let r = items[0];
+        for (let i = 1; i < items.length; i++) {
+          if (op === 'unite') r = r.unite(items[i], { insert: false });
+          if (op === 'subtract') r = r.subtract(items[i], { insert: false });
+          if (op === 'intersect') r = r.intersect(items[i], { insert: false });
+          if (op === 'exclude') r = r.exclude(items[i], { insert: false });
+        }
+        if (!r || !r.pathData) throw new Error('le résultat est vide');
+        out = [fromPaper(r, shapes[0])];
+      }
+      const ids = new Set(shapes.map((o) => o.id));
+      const at = state.objects.findIndex((o) => ids.has(o.id));
+      state.objects = state.objects.filter((o) => !ids.has(o.id)); state.objects.splice(at, 0, ...out);
+      selIds = out.map((o) => o.id); render(); renderSide();
+      toast({ unite: 'Formes réunies', subtract: 'Forme soustraite', intersect: 'Intersection créée', exclude: 'Zones communes exclues', outline: 'Converti en tracé vectoriel' }[op]);
+    } catch (e) { undoStack.pop(); updateHist(); console.error(e); toast('Opération impossible : ' + (e.message || e)); }
+  }
+
   /* ---------------- Actions ---------------- */
   function zorder(kind) {
     const sel = new Set(selIds); if (!sel.size) return; pushUndo();
@@ -1334,7 +1738,11 @@
       switch (a) {
         case 'templates': return templatesDialog();
         case 'library': return libraryDialog();
-        case 'present': return present();
+        case 'present': return present(false);
+        case 'previewAnim': return present(true);
+        case 'exportVideo': return exportVideoDialog();
+        case 'unite': case 'subtract': case 'intersect': case 'exclude': case 'outline': return pathfinder(a);
+        case 'magicAnim': return magicAnimate('douce');
         case 'magicResize': return magicResizeDialog();
         case 'addPage': case 'dupPage': case 'delPage': case 'pageLeft': case 'pageRight': return pageAction(a);
         case 'newDoc': return newDocDialog();
@@ -1427,5 +1835,5 @@
   setTool('select');
   requestAnimationFrame(fit);
 
-  window.DesignJoe = { get state() { return state; }, act, addLibraryItem, gotoPage, setTool, exportSvgString, rasterize, TEMPLATES, applyTemplate, get selIds() { return selIds; } };
+  window.DesignJoe = { get state() { return state; }, act, addLibraryItem, gotoPage, prepareAll, frameAt, pathfinder, exportVectorPdf, setTool, exportSvgString, rasterize, TEMPLATES, applyTemplate, get selIds() { return selIds; } };
 })();

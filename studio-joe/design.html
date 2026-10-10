@@ -45,7 +45,8 @@
         <button data-act="exportPNG">Exporter en PNG <span class="kbd">Ctrl+S</span></button>
         <button data-act="exportJPG">Exporter en JPG</button>
         <button data-act="exportSVG">Exporter en SVG (vectoriel)</button>
-        <button data-act="exportPDF">Exporter en PDF</button>
+        <button data-act="exportPDF">Exporter en PDF (vectoriel ou image)</button>
+        <button data-act="exportVideo">Exporter en vidéo MP4 / GIF animé</button>
       </div>
     </div>
     <div class="menu"><button data-menu>Édition ▾</button>
@@ -75,6 +76,14 @@
         <button data-act="lock">Verrouiller / déverrouiller</button>
         <hr>
         <button data-act="library">Éléments (formes, icônes, cadres, graphiques, QR)… <span class="kbd">K</span></button>
+        <hr>
+        <button data-act="unite">Pathfinder : réunir</button>
+        <button data-act="subtract">Pathfinder : soustraire</button>
+        <button data-act="intersect">Pathfinder : intersection</button>
+        <button data-act="exclude">Pathfinder : exclure</button>
+        <button data-act="outline">Vectoriser (convertir en tracé)</button>
+        <hr>
+        <button data-act="magicAnim">Animer la page</button>
       </div>
     </div>
     <button data-act="undo" id="undoBtn" title="Annuler (Ctrl+Z)">↶</button>
@@ -85,10 +94,11 @@
     <button data-act="fit" id="zoomLbl" title="Ajuster (Ctrl+0)">100 %</button>
     <button data-act="zoomIn" title="Zoom avant">+</button>
     <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+    <button data-act="previewAnim" title="Voir les animations en lecture automatique">✦ Aperçu</button>
     <button data-act="present" title="Présenter en plein écran (F5)">▶ Présenter</button>
     <div class="menu"><button class="primary" data-menu>Exporter ▾</button>
       <div class="menu-list" hidden style="left:auto; right:0">
-        <button data-act="exportPNG">PNG</button><button data-act="exportJPG">JPG</button><button data-act="exportSVG">SVG</button><button data-act="exportPDF">PDF</button>
+        <button data-act="exportPNG">PNG</button><button data-act="exportJPG">JPG</button><button data-act="exportSVG">SVG</button><button data-act="exportPDF">PDF</button><button data-act="exportVideo">Vidéo MP4 / GIF animé</button>
       </div>
     </div>
   </div>
@@ -105,6 +115,11 @@
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/jszip.min.js"></script>
 <script src="lib/qrcode.js"></script>
+<script src="lib/jspdf.umd.min.js"></script>
+<script src="lib/svg2pdf.umd.min.js"></script>
+<script src="lib/paper-core.min.js"></script>
+<script src="lib/mp4-muxer.js"></script>
+<script src="lib/gifenc.js"></script>
 <script src="js/common.js"></script>
 <script src="js/design-app.js"></script>
 </body>
