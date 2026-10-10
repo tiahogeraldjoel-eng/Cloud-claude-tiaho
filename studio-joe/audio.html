@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Audio Joe</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#d9861c">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-180.png">
+<link rel="stylesheet" href="css/studio.css">
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  .au-app { display: grid; grid-template-rows: auto auto auto 1fr auto; height: 100%; height: 100dvh; }
+  .topbar .logo { background: #7b3fa0 !important; color: #fff !important; }
+  .menu-list hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  .menu-list kbd { font: 11px var(--font-mono); color: var(--muted); }
+  .menu-list { max-height: 75vh; overflow-y: auto; }
+  .tools { display: flex; gap: 4px; align-items: center; padding: 6px 10px; background: var(--panel); border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: thin; }
+  .tools button { padding: 5px 9px; min-width: 34px; justify-content: center; flex: none; }
+  .tools button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .tools .sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 3px; flex: none; }
+  .tools .rec { color: #c62828; font-weight: 700; }
+  .tools .play { min-width: 46px; font-size: 16px; }
+  .times { display: flex; gap: 14px; align-items: center; padding: 6px 12px; background: var(--panel-2); border-bottom: 1px solid var(--line); font: 13px var(--font-mono); flex-wrap: wrap; }
+  .times .big { font-size: 22px; font-weight: 600; letter-spacing: .5px; }
+  .times button { font: 12px var(--font-ui); padding: 3px 8px; }
+  .times .lbl { color: var(--muted); font-family: var(--font-ui); font-size: 12px; margin-right: 4px; }
+  .stage { position: relative; display: grid; grid-template-rows: 44px 1fr; min-height: 0; background: var(--canvas-bg); }
+  .stage canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+  #overview { border-bottom: 1px solid var(--line); cursor: pointer; }
+  #wave { cursor: text; }
+  .empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 20px; }
+  .empty .box { max-width: 520px; display: grid; gap: 14px; justify-items: center; }
+  .empty h2 { margin: 0; font-size: 20px; }
+  .empty p { margin: 0; color: var(--muted); }
+  .empty .row { justify-content: center; }
+  .empty .row button { padding: 12px 18px; font-size: 15px; }
+  .statusbar { display: flex; gap: 12px; align-items: center; padding: 4px 10px; background: var(--panel); border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)); flex-wrap: wrap; }
+  .statusbar .spacer { flex: 1; }
+  .statusbar input[type=range] { width: 110px; }
+  .recbox { display: grid; gap: 14px; justify-items: center; text-align: center; }
+  .recbox .clock { font: 600 44px var(--font-mono); }
+  .recbox .meter { width: 100%; height: 14px; background: var(--panel-2); border-radius: 7px; overflow: hidden; }
+  .recbox .meter div { height: 100%; width: 0; background: linear-gradient(90deg, #2e7d32 0%, #2e7d32 70%, #f9a825 85%, #c62828 100%); background-size: 100vw 100%; transition: width .06s; }
+  .recbox .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #c62828; margin-right: 6px; animation: blink 1s infinite; }
+  .recbox.paused .dot { animation: none; background: var(--muted); }
+  @keyframes blink { 50% { opacity: .2; } }
+  .prog { height: 10px; background: var(--panel-2); border-radius: 5px; overflow: hidden; }
+  .prog > div { height: 100%; width: 0; background: var(--accent); transition: width .15s; }
+  .fxgrid { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 10px; align-items: center; }
+  .fxgrid output { font: 12px var(--font-mono); min-width: 56px; text-align: right; }
+  .seg-list { max-height: 50vh; overflow-y: auto; display: grid; gap: 4px; font-size: 14px; }
+  .seg-list .s { display: grid; grid-template-columns: auto 1fr; gap: 8px; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
+  .seg-list .s:hover { background: var(--panel-2); }
+  .seg-list .s span:first-child { font: 12px var(--font-mono); color: var(--muted); padding-top: 2px; }
+  @media (max-width: 700px) {
+    .topbar .brand span:last-child, #fileName { display: none; }
+    .topbar .menu > button { padding: 5px 7px; font-size: 13px; }
+    .times .big { font-size: 18px; }
+    .stage { grid-template-rows: 36px 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="au-app">
+  <div class="topbar">
+    <a class="brand" href="index.html"><span class="logo">Au</span><span>Audio Joe</span></a>
+    <div class="menu">
+      <button data-menu>Fichier ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="new">Nouveau (vide)</button>
+        <button data-act="open">Ouvrir un son ou une vidéo… <kbd>Ctrl+O</kbd></button>
+        <button data-act="record">Enregistrer avec le micro… <kbd>R</kbd></button>
+        <hr>
+        <button data-act="export">Exporter (MP3, WAV)… <kbd>Ctrl+S</kbd></button>
+        <button data-act="share">Partager…</button>
+        <button data-act="exportSel">Exporter la sélection seule…</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Édition ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="undo">Annuler <kbd>Ctrl+Z</kbd></button>
+        <button data-act="redo">Rétablir <kbd>Ctrl+Y</kbd></button>
+        <hr>
+        <button data-act="cut">Couper <kbd>Ctrl+X</kbd></button>
+        <button data-act="copy">Copier <kbd>Ctrl+C</kbd></button>
+        <button data-act="paste">Coller <kbd>Ctrl+V</kbd></button>
+        <button data-act="del">Supprimer la sélection <kbd>Suppr</kbd></button>
+        <button data-act="trim">Garder seulement la sélection (rogner) <kbd>Ctrl+T</kbd></button>
+        <button data-act="dup">Dupliquer la sélection <kbd>Ctrl+D</kbd></button>
+        <button data-act="silenceIns">Insérer un silence…</button>
+        <hr>
+        <button data-act="selAll">Tout sélectionner <kbd>Ctrl+A</kbd></button>
+        <button data-act="selRange">Sélectionner de… à…</button>
+        <button data-act="selNone">Désélectionner <kbd>Échap</kbd></button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Effets ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="gain">Volume (amplifier, baisser)…</button>
+        <button data-act="normalize">Normaliser (niveau maximal)</button>
+        <button data-act="compress">Niveau régulier (compresseur)…</button>
+        <button data-act="fadeIn">Fondu en ouverture</button>
+        <button data-act="fadeOut">Fondu en fermeture</button>
+        <hr>
+        <button data-act="denoise">Réduire le bruit de fond…</button>
+        <button data-act="noiseProfile">Prendre la sélection comme profil de bruit</button>
+        <button data-act="desilence">Raccourcir les silences…</button>
+        <button data-act="voice">Voix plus claire</button>
+        <button data-act="eq">Graves et aigus…</button>
+        <button data-act="highpass">Couper les basses (ronflement, vent)</button>
+        <hr>
+        <button data-act="speed">Vitesse (sans changer la voix)…</button>
+        <button data-act="mute">Rendre muet</button>
+        <button data-act="reverse">Inverser</button>
+        <button data-act="mono">Convertir en mono</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Outils ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="transcribe">Transcrire en texte…</button>
+        <button data-act="help">Aide et raccourcis</button>
+      </div>
+    </div>
+    <span class="spacer"></span>
+    <span id="fileName" class="hint"></span>
+    <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+  </div>
+  <div class="tools">
+    <button class="rec" data-act="record" title="Enregistrer avec le micro (R)">⏺ Enreg.</button>
+    <span class="sep"></span>
+    <button data-act="home" title="Aller au début (Début)">⏮</button>
+    <button class="play primary" data-act="play" id="playBtn" title="Lecture / pause (Espace)">▶</button>
+    <button data-act="stop" title="Arrêt">⏹</button>
+    <button data-act="loop" id="loopBtn" title="Lire la sélection en boucle">🔁</button>
+    <span class="sep"></span>
+    <button data-act="undo" id="undoBtn" title="Annuler (Ctrl+Z)">↶</button>
+    <button data-act="redo" id="redoBtn" title="Rétablir (Ctrl+Y)">↷</button>
+    <span class="sep"></span>
+    <button data-act="cut" title="Couper (Ctrl+X)">✂ Couper</button>
+    <button data-act="copy" title="Copier (Ctrl+C)">Copier</button>
+    <button data-act="paste" title="Coller (Ctrl+V)">Coller</button>
+    <button data-act="del" title="Supprimer la sélection (Suppr)">🗑</button>
+    <button data-act="trim" title="Garder seulement la sélection">Rogner</button>
+    <span class="sep"></span>
+    <button data-act="zoomIn" title="Zoom avant (+)">＋</button>
+    <button data-act="zoomOut" title="Zoom arrière (−)">－</button>
+    <button data-act="zoomSel" title="Zoom sur la sélection">⤢</button>
+    <button data-act="zoomFit" title="Tout afficher">⇔</button>
+    <span class="sep"></span>
+    <button data-act="export" class="primary" title="Exporter en MP3 ou WAV">⬇ Exporter</button>
+  </div>
+  <div class="times">
+    <span class="big" id="posLbl">0:00.00</span>
+    <span><span class="lbl">Sélection</span><span id="selLbl">—</span></span>
+    <span class="spacer" style="flex:1"></span>
+    <button data-act="selRange">Précis…</button>
+  </div>
+  <div class="stage" id="stage">
+    <canvas id="overview" aria-label="Vue d'ensemble"></canvas>
+    <canvas id="wave" aria-label="Forme d'onde : glisser pour sélectionner, toucher pour placer le curseur"></canvas>
+    <div class="empty" id="empty">
+      <div class="box">
+        <h2>Aucun son ouvert</h2>
+        <p>Ouvrez un enregistrement (MP3, M4A, WAV, OGG, Opus, la piste son d'une vidéo MP4…) ou enregistrez directement avec le micro : réunion, conseil municipal, message vocal, interview.</p>
+        <div class="row"><button class="primary" data-act="open">📂 Ouvrir un fichier</button><button data-act="record">⏺ Enregistrer</button></div>
+        <p class="hint">Tout reste sur votre appareil.</p>
+      </div>
+    </div>
+  </div>
+  <div class="statusbar">
+    <span id="infoLbl">—</span>
+    <span class="spacer"></span>
+    <span>Zoom</span><input type="range" id="zoomRange" min="0" max="1000" value="0" aria-label="Zoom">
+  </div>
+</div>
+<div id="toast" hidden></div>
+<script src="js/common.js"></script>
+<script src="js/audio-app.js"></script>
+</body>
+</html>
