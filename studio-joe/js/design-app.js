@@ -863,6 +863,7 @@
   }
 
   function bindSide() {
+    if ($('#pText')) Studio.speech.attachMic($('#pText'), { onChange: () => {} });
     const side = $('#side');
     let armed = false;
     const edit = (fn, rerenderSide) => (e) => {

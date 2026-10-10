@@ -61,7 +61,8 @@
       if (language) opts.language = language;
       const out = await asr(slice, opts);
       const winEnd = Math.min(t1, t + WIN) - t;
-      for (const c of out.chunks || [{ timestamp: [0, winEnd], text: out.text }]) {
+      const chunks = out.chunks && out.chunks.length ? out.chunks : [{ timestamp: [0, winEnd], text: out.text }];
+      for (const c of chunks) {
         const txt = String(c.text || '').trim();
         if (!txt || /^\[.*\]$|^\(.*\)$/.test(txt)) continue; // [Musique], (applaudissements)…
         const s = c.timestamp[0] ?? 0, e = c.timestamp[1] ?? winEnd;

@@ -587,6 +587,7 @@
     h += `<div class="section"><div class="row"><button data-act="split">✂ Couper ici</button><button data-act="duplicate">Dupliquer</button><button data-act="delete" class="danger">Supprimer</button></div></div>`;
     box.innerHTML = h;
     bindFx(c); renderFxValues();
+    if ($('#fx_text')) Studio.speech.attachMic($('#fx_text'));
   }
   const LOOKS = {
     'Neutre': { bright: 100, contrast: 100, sat: 100, hue: 0, gray: 0, sepia: 0, blur: 0 },

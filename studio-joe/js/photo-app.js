@@ -511,6 +511,7 @@
         <div class="row"><label><input type="checkbox" id="tb" checked> Gras</label><label><input type="checkbox" id="ti"> Italique</label>
         <label><input type="checkbox" id="tsh"> Ombre portée</label><label><input type="checkbox" id="tol"> Contour (couleur d'arrière-plan)</label></div>
         <div class="field"><label for="ta">Alignement</label><select id="ta"><option value="left">Gauche</option><option value="center">Centre</option><option value="right">Droite</option></select></div>`,
+      onOpen: (b) => Studio.speech.attachMic(b.querySelector('#tx')),
       buttons: [{ label: 'Annuler', value: null }, { label: 'Ajouter', primary: true, value: (b) => ({ t: b.querySelector('#tx').value, f: b.querySelector('#tf').value, s: +b.querySelector('#ts').value, b: b.querySelector('#tb').checked, i: b.querySelector('#ti').checked, sh: b.querySelector('#tsh').checked, ol: b.querySelector('#tol').checked, a: b.querySelector('#ta').value }) }],
     });
     if (!res || !res.t.trim()) return;

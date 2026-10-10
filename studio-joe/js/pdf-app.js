@@ -1006,6 +1006,7 @@
     const ctx = oc.getContext('2d');
     const q = (s) => body.querySelector(s);
     q('#edFont').value = prefs.font;
+    Studio.speech.attachMic(q('#edText'));
 
     let renderTask = 0;
     async function drawPage() {

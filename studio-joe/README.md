@@ -12,6 +12,7 @@ l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA C
 | **Photo Joe** | Photoshop / Lightroom | `photo.html` |
 | **Design Joe** | Illustrator / Canva / Express | `design.html` |
 | **Video Joe** | Premiere Pro | `video.html` |
+| **Dictée Joe** | Dictée / Dragon | `dictee.html` |
 
 ## Utilisation
 
@@ -124,9 +125,24 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
 - Export MP4 (ou WebM selon le navigateur) avec le son, capture d'image PNG,
   projet `.joevideo` (les médias sont reliés à la réouverture)
 
+### Dictée Joe (reconnaissance vocale au micro)
+- Deux moteurs : **Navigateur** (texte instantané pendant que l'on parle, via le
+  service vocal de Chrome/Edge, internet nécessaire) ou **Whisper** (privé : le son
+  reste sur l'appareil, texte à chaque pause, modèle téléchargé la première fois)
+- 11 langues, commandes vocales de ponctuation (« virgule », « point »,
+  « point d'interrogation », « à la ligne », « nouveau paragraphe »…), majuscules
+  automatiques
+- Horodatage des phrases, enregistrement du son en parallèle, indicateur de niveau,
+  compteur de mots, brouillon conservé dans le navigateur
+- Export `.txt`, sous-titres `.srt`, enregistrement audio, traduction (IA Claude)
+- Bouton **🎤 Dicter** dans les champs de texte de PDF Joe (annotations),
+  Photo Joe (texte), Design Joe (texte) et Video Joe (titres)
+
 ## Limites connues
 - L'OCR hors ligne reconnaît le texte imprimé en français et en anglais ; l'écriture
   manuscrite passe par l'option en ligne (internet et clé API Anthropic payante).
+- La dictée « Navigateur » ne fonctionne que dans Chrome et Edge (Firefox : utiliser
+  Whisper) ; le micro doit être autorisé pour la page.
 - La transcription a besoin d'internet la première fois (téléchargement du modèle
   depuis Hugging Face) ; ouvert en local (fichier), le navigateur peut le
   retélécharger à chaque session. Relire les noms propres et les chiffres.
