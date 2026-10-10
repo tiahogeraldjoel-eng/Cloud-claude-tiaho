@@ -349,7 +349,7 @@
   function updateButtons() {
     $('#undoBtn').disabled = !undoStack.length; $('#redoBtn').disabled = !redoStack.length;
     const none = !pages.length;
-    ['#saveAllBtn', '#saveSelBtn', '#splitBtn', '#toImagesBtn', '#toTextBtn', '#ocrBtn', '#compressBtn', '#flattenBtn'].forEach((s) => { $(s).disabled = none; });
+    ['#saveAllBtn', '#saveSelBtn', '#splitBtn', '#toImagesBtn', '#toTextBtn', '#ocrBtn', '#translateBtn', '#compressBtn', '#flattenBtn'].forEach((s) => { $(s).disabled = none; });
   }
 
   /* ---------------- Géométrie : espace visuel (haut-gauche) -> espace PDF ---------------- */
@@ -379,7 +379,8 @@
     let out = '';
     for (const ch of text) {
       const c = map[ch] ?? ch;
-      try { font.widthOfTextAtSize(c, 10); out += c; } catch (e) { out += '?'; }
+      if (!font._charset) font._charset = new Set(font.getCharacterSet());
+      out += font._charset.has(c.codePointAt(0)) || c.length > 1 ? c : '?';
     }
     return out;
   }
@@ -752,6 +753,136 @@
     if (v === 'copy') navigator.clipboard.writeText(all).then(() => toast('Texte copié'), () => toast('Copie refusée par le navigateur'));
     if (v === 'txt') download(new Blob([all], { type: 'text/plain;charset=utf-8' }), outName() + '-ocr.txt');
     if (v === 'pdf') saveAll();
+  }
+
+  /* ---------------- Traduction du document (IA Claude, en ligne) ---------------- */
+  async function pageText(p) {
+    const tc = await (await sources.get(p.src).pjs.getPage(p.index + 1)).getTextContent();
+    let s = ''; tc.items.forEach((it) => { s += it.str + (it.hasEOL ? '\n' : ''); });
+    s = s.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    if (s.replace(/\s/g, '').length >= 2) return s;
+    if (p.ocr && p.ocr.length) { // texte reconnu par OCR, regroupé par ligne
+      const lines = []; let last = null;
+      [...p.ocr].sort((a, b) => a.y - b.y || a.x - b.x).forEach((w) => {
+        if (last && Math.abs(w.y - last.y) < Math.max(w.h, last.h) * 0.6) last.t += ' ' + w.text; else { last = { y: w.y, h: w.h, t: w.text }; lines.push(last); }
+      });
+      return lines.map((l) => l.t).join('\n');
+    }
+    return '';
+  }
+  // texte traduit mis en page sur A4 : texte sélectionnable si l'alphabet le permet, sinon rendu en image
+  async function translatedPdf(texts, target, srcNums) {
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica), bold = await doc.embedFont(StandardFonts.HelveticaBold);
+    const W = 595.28, H = 841.89, M = 56, size = 11, lh = 15.5;
+    const charset = new Set(font.getCharacterSet());
+    const encodable = (t) => [...t.replace(/\n/g, ' ')].every((ch) => charset.has(ch.codePointAt(0)));
+    const langName = Studio.translate.NAME[target] || target;
+    for (let i = 0; i < texts.length; i++) {
+      const head = `Traduction (${langName}) — page ${srcNums[i]} du document original`;
+      const txt = texts[i] || '(page sans texte)';
+      if (encodable(txt) && encodable(head)) {
+        let pg = doc.addPage([W, H]); let y = H - M;
+        pg.drawText(head, { x: M, y, size: 9, font: bold, color: rgb(0.45, 0.45, 0.45) }); y -= 26;
+        for (const para of txt.split('\n')) {
+          const words = para.split(/(\s+)/); let line = '';
+          const flush = () => { if (y < M) { pg = doc.addPage([W, H]); y = H - M; } pg.drawText(line.trimEnd(), { x: M, y, size, font }); y -= lh; line = ''; };
+          for (const w of words) { if (font.widthOfTextAtSize(line + w, size) > W - 2 * M && line.trim()) flush(); line += line || !/^\s+$/.test(w) ? w : ''; }
+          if (line.trim()) flush(); else y -= lh * 0.5;
+        }
+      } else {
+        // écritures non latines (arabe, chinois, russe…) : rendu par le navigateur, qui connaît ces polices
+        const k = 2, c = document.createElement('canvas'); c.width = W * k; c.height = H * k; const x = c.getContext('2d');
+        const rtl = target === 'ar';
+        const newPage = () => { x.setTransform(1, 0, 0, 1, 0, 0); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.setTransform(k, 0, 0, k, 0, 0); x.direction = rtl ? 'rtl' : 'ltr'; x.textAlign = rtl ? 'right' : 'left'; x.textBaseline = 'top'; };
+        const pagesImg = []; let y = M;
+        newPage(); x.font = 'bold 9px sans-serif'; x.fillStyle = '#777'; x.fillText(head, rtl ? W - M : M, y); y += 26;
+        x.font = `${size}px "Segoe UI", "Noto Sans", Arial, sans-serif`; x.fillStyle = '#111';
+        const emit = () => pagesImg.push(c.toDataURL('image/jpeg', 0.9));
+        for (const para of txt.split('\n')) {
+          const tokens = target === 'zh' ? [...para] : para.split(/(\s+)/); let line = '';
+          const flush = () => { if (y > H - M) { emit(); newPage(); x.font = `${size}px "Segoe UI", "Noto Sans", Arial, sans-serif`; x.fillStyle = '#111'; y = M; } x.fillText(line.trim(), rtl ? W - M : M, y); y += lh; line = ''; };
+          for (const t of tokens) { if (x.measureText(line + t).width > W - 2 * M && line.trim()) flush(); line += t; }
+          if (line.trim()) flush(); else y += lh * 0.5;
+        }
+        emit();
+        for (const url of pagesImg) { const img = await doc.embedJpg(await (await fetch(url)).arrayBuffer()); doc.addPage([W, H]).drawImage(img, { x: 0, y: 0, width: W, height: H }); }
+      }
+    }
+    doc.setTitle(`${outName()} — traduction ${langName}`); doc.setCreator('Studio Joe');
+    return new Uint8Array(await doc.save());
+  }
+  async function translateDialog() {
+    if (!pages.length) return;
+    const res = await modal({
+      title: 'Traduire le document',
+      body: `<div class="field"><label for="trTo">Traduire vers</label><select id="trTo">${Studio.translate.options()}</select></div>
+        <div class="field"><label for="trScope">Pages</label><select id="trScope"><option value="all">Toutes les pages (${pages.length})</option>${selected.size ? `<option value="sel">Pages sélectionnées (${selected.size})</option>` : ''}</select></div>
+        <div class="field"><label for="trOut">Résultat</label><select id="trOut"><option value="pdf">Nouveau PDF traduit</option><option value="insert">Ajouter chaque page traduite après l'originale</option><option value="text">Texte seulement (copier, .txt)</option></select></div>
+        <p class="hint" style="margin:0">La langue d'origine est détectée automatiquement. Les pages scannées sans texte sont lues directement sur l'image (imprimé ou manuscrit). Montants, dates, références et noms propres sont conservés. La mise en page d'origine n'est pas reproduite : le texte traduit est remis en page sur A4.</p>`,
+      buttons: [{ label: 'Annuler', value: null }, { label: 'Traduire', primary: true, value: (b) => ({ to: b.querySelector('#trTo').value, scope: b.querySelector('#trScope').value, out: b.querySelector('#trOut').value }) }],
+    });
+    if (!res) return;
+    Studio.translate.saveTarget(res.to);
+    const key = await Studio.translate.ensureKey('le texte des pages à traduire (ou leur image pour les pages scannées)');
+    if (!key) return;
+    const list = res.scope === 'sel' ? targets() : pages.slice();
+    const ov = document.createElement('div'); ov.className = 'modal-back';
+    ov.innerHTML = '<div class="modal" style="width:min(420px,100%)"><header>Traduction en cours…</header><div class="body"><div style="height:10px;border-radius:5px;background:var(--panel-2);overflow:hidden"><div id="trBar" style="height:100%;width:0;background:var(--accent)"></div></div><span class="hint" id="trTxt">Préparation…</span></div></div>';
+    document.body.appendChild(ov);
+    const setP = (u, t) => { ov.querySelector('#trBar').style.width = Math.round(u * 100) + '%'; ov.querySelector('#trTxt').textContent = t; };
+    let out;
+    try {
+      const texts = [];
+      for (const p of list) texts.push(await pageText(p));
+      out = new Array(list.length);
+      // pages avec texte : traduites par lots ; pages scannées : lues et traduites sur l'image
+      const withText = texts.map((t, i) => (t ? i : -1)).filter((i) => i >= 0);
+      if (withText.length) {
+        const tr = await Studio.translate.translateTexts(key, withText.map((i) => texts[i]), res.to, { onProgress: (u) => setP(u * withText.length / list.length, `Traduction du texte… ${Math.round(u * 100)} %`) });
+        withText.forEach((i, k) => { out[i] = tr[k]; });
+      }
+      for (let i = 0; i < list.length; i++) {
+        if (texts[i]) continue;
+        setP((withText.length + i) / list.length, `Page ${pages.indexOf(list[i]) + 1} scannée : lecture et traduction…`);
+        const p = list[i]; const cv = await renderPageCanvas(p, 2000 / Math.max(p.w, p.h), false);
+        out[i] = (await Studio.translate.translateImage(key, cv, res.to)).translation;
+      }
+    } catch (e) { console.error(e); ov.remove(); toast('Traduction impossible : ' + (e.message || e), 6000); return; }
+    ov.remove();
+    const nums = list.map((p) => pages.indexOf(p) + 1);
+    const full = out.map((t, i) => `--- Page ${nums[i]} ---\n${t}`).join('\n\n');
+    if (res.out === 'pdf' || res.out === 'insert') {
+      const bytes = await translatedPdf(out, res.to, nums);
+      if (res.out === 'pdf') download(new Blob([bytes], { type: 'application/pdf' }), `${outName()}-${res.to}.pdf`);
+      else {
+        pushUndo();
+        const before = new Set(pages.map((p) => p.uid));
+        // une page traduite peut déborder sur plusieurs pages A4 : on regroupe par en-tête
+        await addPdf(bytes, `Traduction ${Studio.translate.NAME[res.to]}`);
+        const added = pages.filter((p) => !before.has(p.uid));
+        pages = pages.filter((p) => before.has(p.uid));
+        const tdoc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+        const groups = new Map(); let curNum = null;
+        for (let i = 0; i < added.length; i++) {
+          const t = await (await tdoc.getPage(i + 1)).getTextContent();
+          const m = t.items.map((it) => it.str).join(' ').match(/page (\d+) du document original/);
+          if (m) curNum = +m[1]; else if (curNum == null) curNum = nums[Math.min(i, nums.length - 1)];
+          if (!groups.has(curNum)) groups.set(curNum, []); groups.get(curNum).push(added[i]);
+        }
+        const origByNum = new Map(nums.map((n, i) => [n, list[i]]));
+        for (const [n, grp] of [...groups.entries()].reverse()) { const at = pages.indexOf(origByNum.get(n)); pages.splice(at + 1, 0, ...grp); }
+        render(); toast('Pages traduites ajoutées après les originales');
+      }
+    }
+    const v = await modal({
+      title: `Traduction — ${Studio.translate.NAME[res.to]}`, wide: true,
+      body: `${Studio.translate.note(res.to) ? `<p class="hint" style="margin:0">${Studio.translate.note(res.to)}</p>` : ''}<textarea class="textout" id="trOutTxt" aria-label="Texte traduit"${res.to === 'ar' ? ' dir="rtl"' : ''}></textarea>`,
+      onOpen: (b) => { b.querySelector('#trOutTxt').value = full; },
+      buttons: [{ label: 'Copier', value: 'copy' }, { label: 'Télécharger .txt', primary: true, value: 'txt' }],
+    });
+    if (v === 'copy') navigator.clipboard.writeText(full).then(() => toast('Traduction copiée'), () => toast('Copie refusée par le navigateur'));
+    if (v === 'txt') download(new Blob([full], { type: 'text/plain;charset=utf-8' }), `${outName()}-${res.to}.txt`);
   }
 
   async function toText() {
@@ -1158,7 +1289,7 @@
   $('#moveLBtn').onclick = () => moveSel(-1); $('#moveRBtn').onclick = () => moveSel(1);
   $('#dupBtn').onclick = dupSel; $('#delBtn').onclick = delSel; $('#editBtn').onclick = () => editPage();
   $('#saveAllBtn').onclick = saveAll; $('#saveSelBtn').onclick = saveSel; $('#splitBtn').onclick = split;
-  $('#toImagesBtn').onclick = toImages; $('#toTextBtn').onclick = toText; $('#ocrBtn').onclick = ocrDialog;
+  $('#toImagesBtn').onclick = toImages; $('#toTextBtn').onclick = toText; $('#ocrBtn').onclick = ocrDialog; $('#translateBtn').onclick = translateDialog;
   $('#compressBtn').onclick = () => compress(false); $('#flattenBtn').onclick = () => compress(true);
   [['wmSize', ''], ['wmOpacity', ' %'], ['wmAngle', '°']].forEach(([id, unit]) => {
     const i = $('#' + id), o = $('#' + id + 'O'); i.addEventListener('input', () => { o.textContent = i.value + unit; });
@@ -1180,5 +1311,5 @@
   updateButtons();
 
   // point d'accès pour les tests automatisés
-  window.PDFJoe = { addFiles, buildPdf, ocrDialog, get pages() { return pages; }, sources, editPage, toPdf };
+  window.PDFJoe = { addFiles, buildPdf, ocrDialog, translateDialog, get pages() { return pages; }, sources, editPage, toPdf };
 })();

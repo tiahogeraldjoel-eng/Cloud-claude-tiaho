@@ -1722,6 +1722,54 @@
     } catch (e) { undoStack.pop(); updateHist(); console.error(e); toast('Opération impossible : ' + (e.message || e)); }
   }
 
+  /* ---------------- Traduction (IA Claude, en ligne) ---------------- */
+  // traduit tous les textes du design (pages, groupes, titres de graphiques et tableaux) en gardant la mise en page
+  async function translateDesign() {
+    const res = await modal({
+      title: 'Traduire le design',
+      body: `<div class="field"><label for="trTo">Traduire vers</label><select id="trTo">${Studio.translate.options()}</select></div>
+        <div class="field"><label for="trWhere">Où</label><select id="trWhere"><option value="copy">Copie traduite de chaque page, ajoutée après l'originale</option><option value="replace">Remplacer les textes sur place</option></select></div>
+        <label class="row"><input type="checkbox" id="trAll" ${state.pages.length > 1 ? 'checked' : 'disabled'}> Toutes les pages (${state.pages.length})</label>
+        <p class="hint" style="margin:0">Textes, tableaux et libellés de graphiques sont traduits. Les tailles de police sont réduites si la traduction est plus longue que l'original.</p>`,
+      buttons: [{ label: 'Annuler', value: null }, { label: 'Traduire', primary: true, value: (b) => ({ to: b.querySelector('#trTo').value, where: b.querySelector('#trWhere').value, all: b.querySelector('#trAll').checked }) }],
+    });
+    if (!res) return;
+    Studio.translate.saveTarget(res.to);
+    const key = await Studio.translate.ensureKey('les textes du design'); if (!key) return;
+    const idx = res.all ? state.pages.map((_, i) => i) : [state.cur];
+    pushUndo();
+    let targetsPages = idx;
+    if (res.where === 'copy') { // duplique les pages puis traduit les copies
+      targetsPages = [];
+      for (let n = idx.length - 1; n >= 0; n--) {
+        const i = idx[n]; const copy = JSON.parse(JSON.stringify(state.pages[i]));
+        const reid = (x) => { x.id = uid(); if (x.children) x.children.forEach(reid); }; copy.objects.forEach(reid);
+        state.pages.splice(i + 1, 0, copy);
+      }
+      let shift = 0; idx.forEach((i) => { targetsPages.push(i + shift + 1); shift++; });
+    }
+    const slots = [];
+    const visit = (o) => {
+      if (o.type === 'group') return o.children.forEach(visit);
+      if (o.type === 'text' && String(o.text).trim()) slots.push({ o, k: 'text' });
+      if ((o.type === 'table' || o.type === 'chart') && o.data) slots.push({ o, k: 'data' });
+    };
+    targetsPages.forEach((i) => state.pages[i].objects.forEach(visit));
+    if (!slots.length) { undoStack.pop(); updateHist(); return toast('Aucun texte à traduire.'); }
+    toast('Traduction en cours…', 60000);
+    try {
+      const tr = await Studio.translate.translateTexts(key, slots.map((s) => s.o[s.k]), res.to, { context: 'Ce sont les textes d\'un visuel graphique (affiche, présentation) : garde des formulations courtes et percutantes. Pour les données de tableau ou de graphique, garde le séparateur « ; », le nombre de lignes et de colonnes et les nombres inchangés.' });
+      slots.forEach((s, i) => {
+        const o = s.o;
+        if (s.k === 'text') {
+          const w0 = o.w; o.text = tr[i]; measureText(o);
+          if (o.w > w0 * 1.08 && w0 > 0) { o.fontSize = Math.max(6, o.fontSize * w0 / o.w); measureText(o); }
+        } else o.data = tr[i];
+      });
+    } catch (e) { restoreJSON(undoStack.pop()); updateHist(); console.error(e); toast('Traduction impossible : ' + (e.message || e), 6000); return; }
+    gotoPage(targetsPages[0]); toast(`${slots.length} texte${slots.length > 1 ? 's' : ''} traduit${slots.length > 1 ? 's' : ''} en ${Studio.translate.NAME[res.to]}`, 4000);
+  }
+
   /* ---------------- Actions ---------------- */
   function zorder(kind) {
     const sel = new Set(selIds); if (!sel.size) return; pushUndo();
@@ -1743,6 +1791,7 @@
         case 'exportVideo': return exportVideoDialog();
         case 'unite': case 'subtract': case 'intersect': case 'exclude': case 'outline': return pathfinder(a);
         case 'magicAnim': return magicAnimate('douce');
+        case 'translate': return translateDesign();
         case 'magicResize': return magicResizeDialog();
         case 'addPage': case 'dupPage': case 'delPage': case 'pageLeft': case 'pageRight': return pageAction(a);
         case 'newDoc': return newDocDialog();

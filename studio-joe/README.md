@@ -3,7 +3,8 @@
 Suite d'outils de création pour usage personnel, inspirée d'Adobe, qui fonctionne
 entièrement dans le navigateur (ordinateur ou téléphone), **sans internet** et
 **sans envoyer aucun fichier** sur un serveur — à une exception près, choisie par
-l'utilisateur : la lecture de l'écriture manuscrite par l'IA Claude (voir plus bas).
+l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA Claude
+(voir plus bas).
 
 | Application | Équivalent Adobe | Fichier |
 |---|---|---|
@@ -38,6 +39,10 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
   (Anthropic, modèle `claude-opus-5-5`) avec la clé API de l'utilisateur, après
   un écran d'accord ; le texte lu est ajouté au PDF comme pour l'OCR. Clé
   mémorisée seulement si l'utilisateur le demande (bouton « Oublier la clé »)
+- **Traduction du document** (option en ligne, IA Claude) : 17 langues dont
+  français, anglais, arabe, chinois, mooré, dioula, fulfulde ; langue d'origine
+  détectée ; pages scannées lues sur l'image ; résultat en nouveau PDF, en pages
+  insérées après les originales, ou en texte
 - **Modifier un texte existant** du PDF (cliquer sur le mot, le retaper)
 - **Caviardage définitif** : le contenu masqué est réellement supprimé du fichier
 - PDF protégés : ouverture avec le mot de passe, sans perte de qualité
@@ -59,6 +64,7 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
 - Image : redimensionner, taille de la zone de travail, rotation, miroir
 - Export PNG / JPG / WebP, projet `.joeimg`, coller une image (Ctrl+V), histogramme
 - Extraction du texte d'une photo ou d'une zone sélectionnée (OCR), imprimé ou manuscrit
+- Traduction du texte d'une photo ou d'une zone (IA Claude, en ligne)
 
 ### Design Joe
 - Rectangle, ellipse, polygone, étoile, ligne/flèche, plume, crayon, texte, image
@@ -88,6 +94,8 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
 - Modèles : publication carrée, carte de visite, affiche/avis A4 avec QR code,
   story, logo, bannière, page A4, présentation de 4 diapositives, invitation,
   attestation, CV, collage photos
+- **Traduire le design** (IA Claude, en ligne) : textes, tableaux et graphiques,
+  en copie de page ou sur place, avec ajustement de la taille du texte
 - Export PNG, JPG (une page ou toutes en ZIP), SVG, PDF multipage ; projet `.joedesign`
 
 ### Video Joe
@@ -106,12 +114,17 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
   flou, préréglages (Cinéma, Chaud, Froid, Vintage…)
 - Ken Burns sur les photos, vitesse de 0,25× à 4×, volume jusqu'à 300 %
 - Formats : 16:9, 9:16 (story), 1:1, 4:5 ; 24/25/30 images/s
+- Traduction des titres et sous-titres (IA Claude, en ligne), en remplacement ou
+  en sous-titres bilingues sur une autre piste
 - Export MP4 (ou WebM selon le navigateur) avec le son, capture d'image PNG,
   projet `.joevideo` (les médias sont reliés à la réouverture)
 
 ## Limites connues
 - L'OCR hors ligne reconnaît le texte imprimé en français et en anglais ; l'écriture
   manuscrite passe par l'option en ligne (internet et clé API Anthropic payante).
+- La traduction (en ligne) ne reproduit pas la mise en page des PDF : le texte
+  traduit est remis en page sur A4. Pour les langues nationales (mooré, dioula,
+  fulfulde…), faire relire par un locuteur avant diffusion.
   Vérifier les montants et numéros importants sur un scan de mauvaise qualité.
 - La suppression automatique du fond fonctionne sur un fond uni (mur, papier,
   studio) ; pour un fond chargé, finir à la gomme.

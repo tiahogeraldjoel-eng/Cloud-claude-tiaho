@@ -862,6 +862,33 @@
     if (v === 'txt') download(new Blob([r.text], { type: 'text/plain;charset=utf-8' }), `${doc.name}-ocr.txt`);
   }
 
+  async function translateImage() {
+    const to = await modal({
+      title: 'Traduire le texte de l\'image',
+      body: `<div class="field"><label for="trTo">Traduire vers</label><select id="trTo">${Studio.translate.options()}</select></div><p class="hint" style="margin:0">${sel ? 'Seule la zone sélectionnée sera lue.' : 'Toute l\'image sera lue. Sélectionnez d\'abord une zone (M) pour n\'en traduire qu\'une partie.'} Le texte imprimé et manuscrit est lu, puis traduit.</p>`,
+      buttons: [{ label: 'Annuler', value: null }, { label: 'Traduire', primary: true, value: (b) => b.querySelector('#trTo').value }],
+    });
+    if (!to) return;
+    Studio.translate.saveTarget(to);
+    const key = await Studio.translate.ensureKey('l\'image (ou la zone sélectionnée)'); if (!key) return;
+    cancelAdjust(true);
+    let src = flatCanvas();
+    if (sel) { const c = mkCanvas(sel.w, sel.h); c.getContext('2d').drawImage(src, -sel.x, -sel.y); src = c; }
+    toast('Lecture et traduction en cours…', 60000);
+    let r;
+    try { r = await Studio.translate.translateImage(key, src, to); } catch (e) { toast('Traduction impossible : ' + (e.message || e), 6000); return; }
+    toast('Traduction terminée', 1500);
+    const out = `${r.translation}\n\n--- Texte d'origine (${r.source_language}) ---\n${r.original}`;
+    const v = await modal({
+      title: `Traduction — ${Studio.translate.NAME[to]}`, wide: true,
+      body: `${Studio.translate.note(to) ? `<p class="hint" style="margin:0">${Studio.translate.note(to)}</p>` : ''}<textarea id="trOut" style="width:100%;min-height:50vh;font:13px/1.5 var(--font-mono)" aria-label="Traduction"${to === 'ar' ? ' dir="rtl"' : ''}></textarea>`,
+      onOpen: (b) => { b.querySelector('#trOut').value = out; },
+      buttons: [{ label: 'Copier', value: 'copy' }, { label: 'Télécharger .txt', primary: true, value: 'txt' }],
+    });
+    if (v === 'copy') navigator.clipboard.writeText(out).then(() => toast('Traduction copiée'), () => toast('Copie refusée par le navigateur'));
+    if (v === 'txt') download(new Blob([out], { type: 'text/plain;charset=utf-8' }), `${doc.name}-${to}.txt`);
+  }
+
   /* ---------------- Export / projet ---------------- */
   async function exportDialog() {
     const res = await modal({
@@ -958,6 +985,7 @@
         case 'selFill': { if (!sel) return toast('Faites d\'abord une sélection (M).'); pushUndo(); const L = active(); const c = L.canvas.getContext('2d'); c.fillStyle = fg(); c.fillRect(sel.x - L.x, sel.y - L.y, sel.w, sel.h); return refreshAll(); }
         case 'removeBg': return removeBackground();
         case 'ocr': return ocrImage();
+        case 'translateImg': return translateImage();
         case 'zoomIn': zoom = Math.min(32, zoom * 1.25); return applyZoom();
         case 'zoomOut': zoom = Math.max(0.05, zoom / 1.25); return applyZoom();
         case 'fit': return fit();

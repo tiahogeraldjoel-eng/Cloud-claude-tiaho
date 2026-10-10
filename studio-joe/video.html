@@ -105,6 +105,8 @@
         <button data-title="subtitle">Sous-titre</button>
         <button data-title="credits">Générique de fin</button>
         <button data-title="card">Carton plein écran</button>
+        <hr>
+        <button data-act="translateTitles">Traduire tous les titres…</button>
       </div>
     </div>
     <button data-act="undo" id="undoBtn" title="Annuler (Ctrl+Z)">↶</button>
@@ -178,6 +180,9 @@
 </div>
 <div id="toast" hidden></div>
 <script src="js/common.js"></script>
+<script src="lib/anthropic-sdk.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/translate.js"></script>
 <script src="js/video-app.js"></script>
 </body>
 </html>

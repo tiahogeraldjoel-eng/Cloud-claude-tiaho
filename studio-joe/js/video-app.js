@@ -737,6 +737,34 @@
     pushUndo(); project.clips = []; selId = null; time = 0; renderTimeline(); renderFx(); drawFrame();
   }
 
+  /* ---------------- Traduction des titres (IA Claude, en ligne) ---------------- */
+  async function translateTitles() {
+    const titles = project.clips.filter((c) => c.type === 'text' && String(c.props.text).trim());
+    if (!titles.length) return toast('Aucun titre dans la timeline.');
+    const res = await modal({
+      title: 'Traduire les titres et sous-titres',
+      body: `<div class="field"><label for="trTo">Traduire vers</label><select id="trTo">${Studio.translate.options()}</select></div>
+        <div class="field"><label for="trWhere">Où</label><select id="trWhere"><option value="replace">Remplacer les textes</option><option value="track">Garder l'original et ajouter la traduction sur une autre piste (sous-titres bilingues)</option></select></div>
+        <p class="hint" style="margin:0">${titles.length} titre${titles.length > 1 ? 's' : ''} à traduire.</p>`,
+      buttons: [{ label: 'Annuler', value: null }, { label: 'Traduire', primary: true, value: (b) => ({ to: b.querySelector('#trTo').value, where: b.querySelector('#trWhere').value }) }],
+    });
+    if (!res) return;
+    Studio.translate.saveTarget(res.to);
+    const key = await Studio.translate.ensureKey('le texte des titres'); if (!key) return;
+    toast('Traduction en cours…', 60000);
+    let tr;
+    try { tr = await Studio.translate.translateTexts(key, titles.map((c) => c.props.text), res.to, { context: 'Ce sont des titres et sous-titres de vidéo : garde des phrases courtes et les retours à la ligne.' }); }
+    catch (e) { toast('Traduction impossible : ' + (e.message || e), 6000); return; }
+    pushUndo();
+    titles.forEach((c, i) => {
+      if (res.where === 'replace') { c.props.text = tr[i]; return; }
+      const d = JSON.parse(JSON.stringify(c)); d.id = idSeq++; d.props.text = tr[i]; d.name = `${c.name} (${res.to})`;
+      d.track = c.track === 'V3' ? 'V2' : 'V3'; d.props.pos = 'bottom'; d.props.size = Math.round(c.props.size * 0.8); d.props.y = (d.props.y || 0) + 20;
+      project.clips.push(d);
+    });
+    renderTimeline(); renderFx(); drawFrame(); toast(`${titles.length} titre${titles.length > 1 ? 's' : ''} traduit${titles.length > 1 ? 's' : ''}`);
+  }
+
   /* ---------------- Actions et raccourcis ---------------- */
   async function act(a) {
     try {
@@ -753,6 +781,7 @@
         case 'delete': return deleteClip(false);
         case 'ripple': return deleteClip(true);
         case 'detach': return detachAudio();
+        case 'translateTitles': return translateTitles();
         case 'duplicate': { const c = selClip(); if (!c) return; pushUndo(); const d = JSON.parse(JSON.stringify(c)); d.id = idSeq++; d.start = snapT(c.start + c.dur); project.clips.push(d); selId = d.id; renderTimeline(); renderFx(); return; }
         case 'play': return play();
         case 'toStart': return seek(0);
