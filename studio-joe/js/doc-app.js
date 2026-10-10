@@ -37,11 +37,17 @@
 .doc-body .toc .toc-l.l2{padding-left:16pt}.doc-body .toc .toc-l.l3{padding-left:32pt}
 .doc-body .mf{background:#e7eefb;border:1px solid #9fb6e0;border-radius:3px;padding:0 2px;color:#1f3864}
 .doc-body .tab{display:inline-block;width:1.27cm}
-.doc-body table.nb td,.doc-body table.nb th{border-color:transparent;background:none}`;
+.doc-body table.nb td,.doc-body table.nb th{border-color:transparent;background:none}
+.doc-body ins.rv{color:#1b5e20;text-decoration:underline;text-decoration-color:#2e7d32}
+.doc-body del.rv{color:#c62828;text-decoration:line-through}
+.doc-body span.cm{background:#fff1a8;border-bottom:2px solid #f2b705}
+.doc-body span.cm.on{background:#ffd54f}
+.doc-body span.cm.done{background:none;border-bottom:1px dashed #bbb}
+.doc-body.final del.rv{display:none}.doc-body.final ins.rv{color:inherit;text-decoration:none}`;
   const st = document.createElement('style'); st.textContent = DOC_CSS; document.head.appendChild(st);
 
   /* ================= Modèle ================= */
-  const newDocModel = () => ({ id: uid(), title: 'Document', page: { size: 'A4', orient: 'p', margins: { t: 25, b: 25, l: 25, r: 25 } }, header: '', footer: '', pageNum: { pos: 'bottom-center', fmt: 'Page {n} sur {N}', show: true }, firstDiff: false, watermark: null, html: '<p><br></p>', updated: Date.now() });
+  const newDocModel = () => ({ id: uid(), title: 'Document', page: { size: 'A4', orient: 'p', margins: { t: 25, b: 25, l: 25, r: 25 } }, header: '', footer: '', pageNum: { pos: 'bottom-center', fmt: 'Page {n} sur {N}', show: true }, firstDiff: false, watermark: null, track: false, comments: [], html: '<p><br></p>', updated: Date.now() });
   let doc = newDocModel();
   const body = $('#body'), sheetsEl = $('#sheets'), pagesEl = $('#pages'), desk = $('#desk'), zoomer = $('#zoomer');
   let zoom = 1, view = innerWidth < 700 ? 'mobile' : 'page', pageCount = 1;
@@ -53,7 +59,7 @@
   }
 
   /* ================= Nettoyage du HTML (collage, import) ================= */
-  const TAGS = new Set(['P', 'DIV', 'BR', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'SUB', 'SUP', 'SPAN', 'A', 'UL', 'OL', 'LI', 'TABLE', 'THEAD', 'TBODY', 'TFOOT', 'TR', 'TD', 'TH', 'IMG', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE', 'HR', 'COLGROUP', 'COL', 'CODE']);
+  const TAGS = new Set(['P', 'DIV', 'BR', 'INS', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'SUB', 'SUP', 'SPAN', 'A', 'UL', 'OL', 'LI', 'TABLE', 'THEAD', 'TBODY', 'TFOOT', 'TR', 'TD', 'TH', 'IMG', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE', 'HR', 'COLGROUP', 'COL', 'CODE']);
   const KEEP = ['color', 'background-color', 'font-weight', 'font-style', 'text-decoration', 'text-decoration-line', 'text-align', 'font-size', 'font-family', 'line-height', 'margin-left', 'text-indent', 'margin-top', 'margin-bottom', 'width', 'vertical-align'];
   function sanitize(html, { keepClasses = true } = {}) {
     const d = new DOMParser().parseFromString(`<div id="r">${html}</div>`, 'text/html');
@@ -66,7 +72,9 @@
         let tag = n.tagName.toUpperCase();
         if (tag === 'FONT') { const sp = document.createElement('span'); if (n.getAttribute('color')) sp.style.color = n.getAttribute('color'); if (n.getAttribute('face')) sp.style.fontFamily = n.getAttribute('face'); walk(n, sp); out.appendChild(sp); continue; }
         if (tag === 'H5' || tag === 'H6') tag = 'H4';
-        if (tag === 'STRIKE' || tag === 'DEL') tag = 'S';
+        const rv = n.classList && n.classList.contains('rv');
+        if (tag === 'STRIKE' || (tag === 'DEL' && !rv)) tag = 'S';
+        if (tag === 'INS' && !rv) tag = 'U';
         if (!TAGS.has(tag)) { walk(n, out); continue; }
         const e = document.createElement(tag);
         if (tag === 'A') { const h = n.getAttribute('href') || ''; if (/^(https?:|mailto:|tel:|#)/i.test(h)) e.setAttribute('href', h); }
@@ -74,9 +82,10 @@
         if ((tag === 'TD' || tag === 'TH') && n.getAttribute('colspan')) e.setAttribute('colspan', n.getAttribute('colspan'));
         if ((tag === 'TD' || tag === 'TH') && n.getAttribute('rowspan')) e.setAttribute('rowspan', n.getAttribute('rowspan'));
         if (tag === 'OL' && n.getAttribute('start')) e.setAttribute('start', n.getAttribute('start'));
-        if (keepClasses && n.className && typeof n.className === 'string') { const cls = n.className.split(/\s+/).filter((c) => /^(doc-title|doc-subtitle|pb|toc|toc-t|toc-l|l[123]|mf|tab|fl|fr|ctr|hdr|nb|al-(center|right|justify))$/.test(c)); if (cls.length) e.className = cls.join(' '); }
+        if (keepClasses && n.className && typeof n.className === 'string') { const cls = n.className.split(/\s+/).filter((c) => /^(doc-title|doc-subtitle|pb|rv|cm|done|toc|toc-t|toc-l|l[123]|mf|tab|fl|fr|ctr|hdr|nb|al-(center|right|justify))$/.test(c)); if (cls.length) e.className = cls.join(' '); }
         if (n.classList && n.classList.contains('mf')) { e.setAttribute('contenteditable', 'false'); e.dataset.f = n.dataset.f || n.textContent.replace(/[«»]/g, ''); }
         if (n.classList && n.classList.contains('toc')) e.setAttribute('contenteditable', 'false');
+        if (keepClasses && n.dataset && /^(INS|DEL|SPAN)$/.test(tag)) for (const k of ['cid', 'a', 't']) if (n.dataset[k]) e.dataset[k] = n.dataset[k];
         const stl = n.getAttribute('style');
         if (stl) { const tmp = document.createElement('span'); tmp.setAttribute('style', stl); for (const p of KEEP) { let v = tmp.style.getPropertyValue(p); if (!v) continue; if (p === 'font-family') v = v.split(',').slice(0, 3).join(','); if ((p === 'margin-top' || p === 'margin-bottom') && !/^(P|H\d|LI|DIV)$/.test(tag)) continue; if (p === 'width' && !/^(IMG|TD|TH|COL|TABLE)$/.test(tag)) continue; e.style.setProperty(p, v); } }
         if (n.getAttribute('align') && /^(left|center|right|justify)$/i.test(n.getAttribute('align'))) e.style.textAlign = n.getAttribute('align').toLowerCase();
@@ -89,7 +98,7 @@
     // texte isolé au premier niveau → paragraphes
     const wrapped = document.createElement('div'); let pBuf = null;
     for (const n of [...out.childNodes]) {
-      const inline = n.nodeType === 3 || (n.nodeType === 1 && /^(B|STRONG|I|EM|U|S|SUB|SUP|SPAN|A|IMG|BR|CODE)$/.test(n.tagName));
+      const inline = n.nodeType === 3 || (n.nodeType === 1 && /^(B|STRONG|I|EM|U|S|INS|DEL|SUB|SUP|SPAN|A|IMG|BR|CODE)$/.test(n.tagName));
       if (inline) { if (n.nodeType === 3 && !n.nodeValue.trim() && !pBuf) continue; if (!pBuf) { pBuf = document.createElement('p'); wrapped.appendChild(pBuf); } pBuf.appendChild(n); }
       else { pBuf = null; wrapped.appendChild(n.tagName === 'DIV' && !n.className ? Object.assign(document.createElement('p'), { innerHTML: n.innerHTML, style: n.getAttribute('style') || '' }) : n); }
     }
@@ -173,6 +182,7 @@
   function getHTML() {
     const c = body.cloneNode(true); clearPushes(c);
     c.querySelectorAll('img.sel').forEach((i) => i.classList.remove('sel'));
+    c.querySelectorAll('span.cm.on').forEach((i) => i.classList.remove('on'));
     c.querySelectorAll('[style=""]').forEach((n) => n.removeAttribute('style'));
     return c.innerHTML;
   }
@@ -591,7 +601,7 @@
   /* ================= API pour doc-extra.js ================= */
   window.TexteJoe = {
     get doc() { return doc; }, set doc(v) { doc = v; }, body, dims, MM, GAP, SIZES, DOC_CSS, esc, uid, sanitize, getHTML, setHTML, loadDoc, newDocModel, change, exec, focusBody,
-    selectedBlocks, paginate, clearPushes, hfText, renderSheets, idb, autosave, markDirty, act, actions, showCtx, updateToc, countWords, get pageCount() { return pageCount; }, get view() { return view; }, setView,
+    selectedBlocks, paginate, clearPushes, hfText, renderSheets, idb, autosave, markDirty, act, actions, showCtx, updateToc, countWords, afterContentChange, get pageCount() { return pageCount; }, get view() { return view; }, setView,
     get savedRange() { return savedRange; }, set savedRange(r) { savedRange = r; }, snapshot, markSaved: () => { dirty = false; $('#stSave').textContent = 'Enregistré'; },
   };
 

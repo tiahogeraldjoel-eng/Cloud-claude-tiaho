@@ -136,6 +136,24 @@
       </div>
     </div>
     <div class="menu">
+      <button data-menu>Révision ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="comment">💬 Nouveau commentaire</button>
+        <button data-act="track">Suivi des modifications (activer / désactiver)</button>
+        <button data-act="review">Volet Révision (commentaires et modifications)</button>
+        <hr>
+        <button data-act="acceptChange">Accepter la modification</button>
+        <button data-act="rejectChange">Refuser la modification</button>
+        <button data-act="acceptAll">Accepter toutes les modifications</button>
+        <button data-act="rejectAll">Refuser toutes les modifications</button>
+        <button data-act="prevChange">Révision précédente</button>
+        <button data-act="nextChange">Révision suivante</button>
+        <hr>
+        <button data-act="deleteComments">Supprimer tous les commentaires</button>
+        <button data-act="authorName">Nom de l'auteur…</button>
+      </div>
+    </div>
+    <div class="menu">
       <button data-menu>IA ▾</button>
       <div class="menu-list" hidden>
         <button data-act="aiFix">Corriger l'orthographe et la grammaire</button>
@@ -193,6 +211,8 @@
     <button data-act="table" title="Tableau">▦</button>
     <button data-act="pageBreak" title="Saut de page">⤓</button>
     <button data-act="dictate" title="Dicter">🎤</button>
+    <button data-act="comment" title="Commenter la sélection">💬</button>
+    <button data-act="review" title="Révision : commentaires et suivi des modifications">📝</button>
     <button data-act="clearFormat" title="Effacer la mise en forme">⌫</button>
   </div>
 
@@ -221,5 +241,6 @@
 <script src="js/doc-app.js"></script>
 <script src="js/pdf-convert.js"></script>
 <script src="js/doc-extra.js"></script>
+<script src="js/doc-review.js"></script>
 </body>
 </html>
