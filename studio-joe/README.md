@@ -9,6 +9,7 @@ l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA C
 | Application | Équivalent Adobe | Fichier |
 |---|---|---|
 | **PDF Joe** | Acrobat | `pdf.html` |
+| **Tableur Joe** | Excel | `tableur.html` |
 | **Photo Joe** | Photoshop / Lightroom | `photo.html` |
 | **Design Joe** | Illustrator / Canva / Express | `design.html` |
 | **Video Joe** | Premiere Pro | `video.html` |
@@ -61,6 +62,37 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - **Protection par mot de passe** à l'enregistrement (AES-256) avec droits
   d'impression, de copie et de modification
 - Annuler / rétablir illimité, raccourcis clavier
+
+### Tableur Joe (équivalent Excel)
+- Grille illimitée, plusieurs feuilles (renommer, dupliquer, déplacer, couleur d'onglet),
+  zoom, figer les volets, largeur et hauteur réglables, ajustement au contenu
+- Formules en français comme dans Excel (SOMME, SI, RECHERCHEV, RECHERCHEX, INDEX/EQUIV,
+  SOMME.SI.ENS, NB.SI, SOMMEPROD, ARRONDI, dates, texte, VPM, VAN, TRI…), séparateur « ; »
+  et virgule décimale ; les formules en anglais (SUM, IF…) sont aussi acceptées.
+  Références entre feuilles, $ absolus (F4), cellules désignées à la souris pendant la saisie,
+  aide à la saisie des fonctions et de leurs arguments
+- `ENLETTRES(montant;"francs CFA")` : montant en toutes lettres pour les factures et mandats
+- Saisie intelligente : « 1 250 000 », « 12 % », « 1 500 FCFA », « 10/10/2026 », « 14:30 »
+- Mise en forme : gras, italique, souligné, couleurs, alignements, retour à la ligne,
+  fusion, bordures (dont double trait des totaux), formats de nombres (FCFA, %, dates,
+  négatifs en rouge, formats personnalisés jj/mm/aaaa ou # ##0,00)
+- Mise en forme conditionnelle : seuils, doublons, N plus grandes valeurs, barres de
+  données, échelles de couleurs
+- Copier-coller avec Excel et Google Sheets, recopie et séries (1, 2, 3… ; janvier,
+  février… ; Article 1, Article 2…), Ctrl+D / Ctrl+R, somme automatique
+- Tri sur une ou deux colonnes, filtres par valeurs, suppression des doublons,
+  conversion du texte en colonnes, rechercher et remplacer
+- Graphiques liés aux données : colonnes, barres, courbes, aires, secteurs, anneau
+- Modèles : facture (TVA 18 %, montant en lettres), budget prévisionnel / réalisé,
+  journal de caisse, tableau d'amortissement d'emprunt, suivi des dépenses
+- Fichiers : ouvrir et enregistrer en `.xlsx` (formules, mises en forme, fusions,
+  volets figés, filtres, mises en forme conditionnelles), `.csv` (séparateur « ; »),
+  `.joetab` (tout, graphiques compris) ; export PDF avec ajustement à la page
+- Annuler / rétablir, sauvegarde automatique sur l'appareil
+- Assistant IA Claude (en ligne, avec votre clé) : écrire une formule à partir d'une
+  phrase, expliquer une formule
+- Sur téléphone : toucher une cellule puis la retoucher pour écrire, poignée pour étendre
+  la sélection, appui long pour le menu
 
 ### Photo Joe
 - Calques : opacité, 16 modes de fusion, renommer, masquer, fusionner, aplatir
@@ -161,6 +193,11 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   sous-titres en option)
 
 ## Limites connues
+- Tableur Joe : pas de tableaux croisés dynamiques, de macros ni de formules
+  matricielles à résultat débordant (FILTRE, TRIER, UNIQUE). Les graphiques ne sont
+  pas enregistrés dans le `.xlsx` (utiliser `.joetab` pour les garder), et
+  `ENLETTRES` est enregistrée dans le `.xlsx` sous forme de texte, car Excel ne la
+  connaît pas. L'ancien format `.xls` doit d'abord être réenregistré en `.xlsx`.
 - L'OCR hors ligne reconnaît le texte imprimé en français et en anglais ; l'écriture
   manuscrite passe par l'option en ligne (internet et clé API Anthropic payante).
 - La dictée « Navigateur » ne fonctionne que dans Chrome et Edge (Firefox : utiliser
@@ -195,4 +232,6 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - [gifenc](https://github.com/mattdesl/gifenc) 1.0.3 — MIT
 - [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript) 0.128.0, empaqueté pour le navigateur — MIT
 - [@huggingface/transformers](https://github.com/huggingface/transformers.js) 3.8.1, empaqueté pour le navigateur ; modèles Whisper `Xenova/whisper-base` et `Xenova/whisper-small` téléchargés à la demande — Apache 2.0 / MIT
+- [ExcelJS](https://github.com/exceljs/exceljs) 4.4.0 — MIT
+- [Formula.js](https://github.com/formulajs/formulajs) 4.6.1 — MIT
 - [tesseract.js-core](https://github.com/naptha/tesseract.js-core) 5.1.1 et données `fra` et `eng` (tessdata best_int) — Apache 2.0

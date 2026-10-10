@@ -1,7 +1,7 @@
 {
  "name": "Studio Joe",
  "short_name": "Studio Joe",
- "description": "PDF, photo, design, vidéo, dictée et voix — sur votre appareil",
+ "description": "PDF, tableur, photo, design, vidéo, dictée et voix — sur votre appareil",
  "lang": "fr",
  "start_url": "./index.html",
  "scope": "./",
@@ -32,6 +32,10 @@
   {
    "name": "PDF Joe",
    "url": "pdf.html"
+  },
+  {
+   "name": "Tableur Joe",
+   "url": "tableur.html"
   },
   {
    "name": "Photo Joe",
