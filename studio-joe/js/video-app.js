@@ -765,6 +765,73 @@
     renderTimeline(); renderFx(); drawFrame(); toast(`${titles.length} titre${titles.length > 1 ? 's' : ''} traduit${titles.length > 1 ? 's' : ''}`);
   }
 
+  /* ---------------- Transcription et sous-titres automatiques (Whisper, dans le navigateur) ---------------- */
+  async function transcribeDialog(fromFile) {
+    const T = Studio.transcribe;
+    const c = selClip();
+    const clipOk = !fromFile && c && (c.type === 'video' || c.type === 'audio') && media.get(c.media);
+    const firstMedia = project.clips.find((x) => (x.type === 'video' || x.type === 'audio') && media.get(x.media));
+    const target = clipOk ? c : (!fromFile ? firstMedia : null);
+    if (!fromFile && !target) return toast('Ajoutez d\'abord une vidéo ou un son dans la timeline, ou utilisez Fichier → Transcrire un fichier.');
+    const res = await modal({
+      title: fromFile ? 'Transcrire un fichier audio ou vidéo' : `Sous-titres automatiques — ${escapeHtml(target.name)}`,
+      body: `<div class="field"><label for="tsLang">Langue parlée</label><select id="tsLang">${T.langOptions()}</select></div>
+        <div class="field"><label for="tsModel">Qualité</label><select id="tsModel">${T.modelOptions()}</select></div>
+        <div class="field"><label for="tsTask">Résultat</label><select id="tsTask"><option value="transcribe">Texte dans la langue parlée</option><option value="translate">Traduit en anglais (Whisper)</option></select></div>
+        ${fromFile ? '' : '<label class="row"><input type="checkbox" id="tsAdd" checked> Ajouter les sous-titres sur la timeline</label>'}
+        <p class="hint" style="margin:0">Le son reste sur votre appareil : la reconnaissance vocale tourne dans le navigateur. La première fois, il faut internet pour télécharger le moteur et le modèle (Hugging Face). Comptez environ la durée de l'enregistrement avec le modèle rapide.</p>`,
+      buttons: [{ label: 'Annuler', value: null }, { label: fromFile ? 'Choisir le fichier et transcrire' : 'Transcrire', primary: true, value: (b) => ({ lang: b.querySelector('#tsLang').value, model: b.querySelector('#tsModel').value, task: b.querySelector('#tsTask').value, add: !!(b.querySelector('#tsAdd') && b.querySelector('#tsAdd').checked) }) }],
+    });
+    if (!res) return;
+    let file = null, from = 0, to = Infinity, name;
+    if (fromFile) { [file] = await pickFiles('audio/*,video/*', false); if (!file) return; name = baseName(file.name); }
+    else { const m = media.get(target.media); file = m.file; from = target.in; to = target.in + target.dur * target.speed; name = baseName(target.name); }
+    if (playing) pause();
+    const ov = document.createElement('div'); ov.className = 'export-ov';
+    ov.innerHTML = '<div class="box"><strong>Transcription…</strong><div class="bar"><div id="tsBar"></div></div><span class="hint" id="tsTxt">Lecture du son…</span></div>';
+    document.body.appendChild(ov);
+    const setP = (u, t) => { ov.querySelector('#tsBar').style.width = Math.round(u * 100) + '%'; ov.querySelector('#tsTxt').textContent = t; };
+    let segs;
+    try {
+      const samples = await T.decodeAudio(file);
+      segs = await T.transcribe(samples, { model: res.model, language: res.lang, task: res.task, from, to, onProgress: setP });
+    } catch (e) { console.error(e); ov.remove(); toast('Transcription impossible : ' + (e.message || e), 7000); return; }
+    ov.remove();
+    if (!segs.length) return toast('Aucune parole détectée.', 5000);
+    if (!fromFile && res.add) addSubtitleClips(target, segs);
+    showTranscript(segs, name);
+  }
+  // un titre « sous-titre » par phrase reconnue, placé au bon moment de la timeline
+  function addSubtitleClips(src, segs) {
+    pushUndo();
+    const toTimeline = (t) => src.start + (t - src.in) / src.speed;
+    // piste la moins encombrée sur la durée du clip (de préférence entièrement libre)
+    const busy = (tr) => project.clips.filter((x) => x.track === tr && x.start < src.start + src.dur && x.start + x.dur > src.start).length;
+    const track = ['V3', 'V2'].filter((tr) => tr !== src.track).sort((a, b) => busy(a) - busy(b))[0];
+    for (const s of segs) {
+      const start = snapT(Math.max(src.start, toTimeline(s.start))), end = Math.min(src.start + src.dur, toTimeline(s.end));
+      if (end - start < 0.2) continue;
+      project.clips.push({ id: idSeq++, type: 'text', name: 'Sous-titre', track, start, dur: snapT(end - start), in: 0, speed: 1, kf: {},
+        props: { ...defaultProps(), text: wrapLine(s.text, 42), font: 'Segoe UI', size: Math.round(project.h / 22), weight: 600, color: '#ffffff', box: 'rgba(0,0,0,.6)', pos: 'bottom', anim: 'none', align: 'center', shadow: false } });
+    }
+    renderTimeline(); drawFrame(); toast(`${segs.length} sous-titres ajoutés sur ${track}`);
+  }
+  function wrapLine(t, n) { const w = t.split(' '); const lines = ['']; for (const x of w) { if ((lines[lines.length - 1] + ' ' + x).trim().length > n && lines[lines.length - 1]) lines.push(x); else lines[lines.length - 1] = (lines[lines.length - 1] + ' ' + x).trim(); } return lines.slice(0, 3).join('\n'); }
+  async function showTranscript(segs, name) {
+    const T = Studio.transcribe;
+    const text = T.toTXT(segs);
+    const v = await modal({
+      title: `Transcription — ${segs.length} segment${segs.length > 1 ? 's' : ''}`, wide: true,
+      body: '<textarea id="tsOut" style="width:100%;min-height:45vh;font:13px/1.5 var(--font-mono)" aria-label="Transcription"></textarea><p class="hint" style="margin:0">Relisez les noms propres et les chiffres. Les fichiers .srt et .vtt sont des sous-titres lisibles par VLC, YouTube et la plupart des lecteurs.</p>',
+      onOpen: (b) => { b.querySelector('#tsOut').value = text; },
+      buttons: [{ label: 'Copier', value: 'copy' }, { label: '.txt', value: 'txt' }, { label: '.vtt', value: 'vtt' }, { label: 'Sous-titres .srt', primary: true, value: 'srt' }],
+    });
+    if (v === 'copy') navigator.clipboard.writeText(T.toTXT(segs, false)).then(() => toast('Texte copié'), () => toast('Copie refusée par le navigateur'));
+    if (v === 'txt') download(new Blob([text], { type: 'text/plain;charset=utf-8' }), `${name}-transcription.txt`);
+    if (v === 'vtt') download(new Blob([T.toVTT(segs)], { type: 'text/vtt;charset=utf-8' }), `${name}.vtt`);
+    if (v === 'srt') download(new Blob([T.toSRT(segs)], { type: 'application/x-subrip;charset=utf-8' }), `${name}.srt`);
+  }
+
   /* ---------------- Actions et raccourcis ---------------- */
   async function act(a) {
     try {
@@ -782,6 +849,8 @@
         case 'ripple': return deleteClip(true);
         case 'detach': return detachAudio();
         case 'translateTitles': return translateTitles();
+        case 'transcribe': return transcribeDialog(false);
+        case 'transcribeFile': return transcribeDialog(true);
         case 'duplicate': { const c = selClip(); if (!c) return; pushUndo(); const d = JSON.parse(JSON.stringify(c)); d.id = idSeq++; d.start = snapT(c.start + c.dur); project.clips.push(d); selId = d.id; renderTimeline(); renderFx(); return; }
         case 'play': return play();
         case 'toStart': return seek(0);
@@ -824,5 +893,5 @@
   project.clips.push({ id: idSeq++, type: 'text', name: 'Bandeau bas', track: 'V3', start: 1.5, dur: 4, in: 0, speed: 1, props: { ...defaultProps(), text: 'Importez vos vidéos à gauche\npuis glissez-les ici', font: 'Segoe UI', size: 46, weight: 700, color: '#ffffff', box: '#d9861c', pos: 'lowerleft', anim: 'slide', align: 'left', shadow: true }, kf: {} });
   applySeq(); renderTimeline(); renderFx(); drawFrame(); updHist();
 
-  window.VideoJoe = { get project() { return project; }, importFiles, act, seek, drawFrame, addTitle, splitClip, get time() { return time; }, media, pickMime };
+  window.VideoJoe = { transcribeDialog, get project() { return project; }, importFiles, act, seek, drawFrame, addTitle, splitClip, get time() { return time; }, media, pickMime };
 })();

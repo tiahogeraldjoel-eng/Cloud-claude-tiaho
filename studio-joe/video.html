@@ -85,6 +85,8 @@
         <hr>
         <button data-act="export">Exporter la vidéo… <span class="kbd">Ctrl+M</span></button>
         <button data-act="snapshot">Exporter l'image affichée (PNG)</button>
+        <hr>
+        <button data-act="transcribeFile">Transcrire un fichier audio ou vidéo…</button>
       </div>
     </div>
     <div class="menu"><button data-menu>Édition ▾</button>
@@ -106,6 +108,7 @@
         <button data-title="credits">Générique de fin</button>
         <button data-title="card">Carton plein écran</button>
         <hr>
+        <button data-act="transcribe">Sous-titres automatiques (transcription)…</button>
         <button data-act="translateTitles">Traduire tous les titres…</button>
       </div>
     </div>
@@ -183,6 +186,8 @@
 <script src="lib/anthropic-sdk.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/translate.js"></script>
+<script src="lib/transformers.js"></script>
+<script src="js/transcribe.js"></script>
 <script src="js/video-app.js"></script>
 </body>
 </html>

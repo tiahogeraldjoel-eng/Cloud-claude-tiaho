@@ -114,6 +114,11 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
   flou, préréglages (Cinéma, Chaud, Froid, Vintage…)
 - Ken Burns sur les photos, vitesse de 0,25× à 4×, volume jusqu'à 300 %
 - Formats : 16:9, 9:16 (story), 1:1, 4:5 ; 24/25/30 images/s
+- **Transcription et sous-titres automatiques** avec Whisper, exécuté dans le
+  navigateur (le son ne quitte pas l'appareil) : sous-titres placés sur la timeline,
+  export `.srt`, `.vtt`, `.txt` ; transcription de n'importe quel fichier audio ou
+  vidéo ; 15 langues parlées ou détection automatique ; option traduction en anglais.
+  Le moteur et le modèle (≈ 80 Mo ou 250 Mo) se téléchargent à la première utilisation
 - Traduction des titres et sous-titres (IA Claude, en ligne), en remplacement ou
   en sous-titres bilingues sur une autre piste
 - Export MP4 (ou WebM selon le navigateur) avec le son, capture d'image PNG,
@@ -122,6 +127,9 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
 ## Limites connues
 - L'OCR hors ligne reconnaît le texte imprimé en français et en anglais ; l'écriture
   manuscrite passe par l'option en ligne (internet et clé API Anthropic payante).
+- La transcription a besoin d'internet la première fois (téléchargement du modèle
+  depuis Hugging Face) ; ouvert en local (fichier), le navigateur peut le
+  retélécharger à chaque session. Relire les noms propres et les chiffres.
 - La traduction (en ligne) ne reproduit pas la mise en page des PDF : le texte
   traduit est remis en page sur A4. Pour les langues nationales (mooré, dioula,
   fulfulde…), faire relire par un locuteur avant diffusion.
@@ -146,4 +154,5 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
 - [mp4-muxer](https://github.com/Vanilagy/mp4-muxer) 5.1.5 — MIT
 - [gifenc](https://github.com/mattdesl/gifenc) 1.0.3 — MIT
 - [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript) 0.128.0, empaqueté pour le navigateur — MIT
+- [@huggingface/transformers](https://github.com/huggingface/transformers.js) 3.8.1, empaqueté pour le navigateur ; modèles Whisper `Xenova/whisper-base` et `Xenova/whisper-small` téléchargés à la demande — Apache 2.0 / MIT
 - [tesseract.js-core](https://github.com/naptha/tesseract.js-core) 5.1.1 et données `fra` et `eng` (tessdata best_int) — Apache 2.0
