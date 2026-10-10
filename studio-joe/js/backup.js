@@ -7,7 +7,7 @@
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const KNOWN = {
     'texte-joe': 'Texte Joe — documents', 'presentation-joe': 'Présentation Joe — présentations', 'notes-joe': 'Notes Joe — carnets et notes',
-    'forms-joe': 'Formulaires Joe — formulaires et réponses', 'scan-joe': 'Scan Joe — pages scannées', 'audio-joe': 'Audio Joe — son en cours', 'base-joe': 'Base Joe — bases de données', 'agenda-joe': 'Agenda Joe — rendez-vous et tâches',
+    'forms-joe': 'Formulaires Joe — formulaires et réponses', 'scan-joe': 'Scan Joe — pages scannées', 'audio-joe': 'Audio Joe — son en cours', 'base-joe': 'Base Joe — bases de données', 'agenda-joe': 'Agenda Joe — rendez-vous et tâches', 'schema-joe': 'Diagrammes Joe — schémas',
   };
   const SKIP_DB = new Set(['studio-handoff']);
   const SECRET_LS = new Set(['studio-anthropic-key']);

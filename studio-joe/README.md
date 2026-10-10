@@ -18,6 +18,7 @@ l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA C
 | **Base Joe** | Access | `base.html` |
 | **Tableur Joe** | Excel | `tableur.html` |
 | **Présentation Joe** | PowerPoint | `presentation.html` |
+| **Diagrammes Joe** | Visio / draw.io / tableau blanc | `schema.html` |
 | **Photo Joe** | Photoshop / Lightroom | `photo.html` |
 | **Design Joe** | Illustrator / Canva / Express | `design.html` |
 | **Audio Joe** | Audition | `audio.html` |
@@ -134,6 +135,25 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - **Réponses** : import des fichiers, codes et PDF remplis (doublons ignorés),
   statistiques (répartition des choix, total / moyenne des montants), tableau,
   export Excel (totaux, feuille de statistiques) ou CSV, ouverture dans Tableur Joe
+
+### Diagrammes Joe (équivalent Visio / draw.io / tableau blanc)
+- Formes : rectangles, ellipses, losange (décision), début / fin, entrée / sortie,
+  document, base de données, préparation, triangle, nuage, personne, post-it, texte,
+  images ; couleurs de fond, contour, tirets, texte (taille, gras, alignement)
+- Connecteurs accrochés aux formes (ils suivent quand on déplace) : droits, coudés ou
+  courbes, flèches, étiquettes (« Oui », « Non »…) ; tirer un point bleu dans le vide
+  crée une nouvelle forme déjà reliée
+- **Organigramme** et **carte mentale** créés à partir d'une liste à retraits, puis
+  complétés au clavier (Tab : enfant, Entrée : frère) ou avec les boutons ＋ Enfant /
+  ＋ Frère ; réorganisation automatique (haut en bas, gauche à droite, carte mentale)
+- **Logigramme** à partir d'étapes (une question finissant par « ? » devient un
+  losange avec sa branche « Non »)
+- **Tableau blanc** : crayon, surligneur, gomme, au doigt ou au stylet
+- Sélection multiple, aligner et répartir, même taille, premier plan / arrière-plan,
+  copier-coller (entre schémas aussi), annuler / rétablir, grille magnétique, zoom et
+  déplacement (deux doigts sur téléphone)
+- Exporter en PNG, SVG (vectoriel) ou PDF, insérer dans Texte Joe ; « Mes schémas »
+  gardés sur l'appareil ; fichier `.joeschema` pour continuer ailleurs
 
 ### Base Joe (équivalent Microsoft Access)
 - **Ouvre les fichiers Access** `.accdb` et `.mdb` (mot de passe accepté) : tables, types
@@ -398,6 +418,10 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   l'appareil que dans le fichier que vous envoyez vous-même
 
 ## Limites connues
+- Diagrammes Joe : n'ouvre pas les fichiers Visio (`.vsdx`) ni draw.io ; le SVG exporté
+  est un dessin (il se rouvre dans un logiciel de dessin, pas comme schéma modifiable :
+  garder le `.joeschema`). Les formes ne pivotent pas. Sur téléphone, la double
+  pression pour écrire dans une forme peut être remplacée par le bouton « ✎ Texte ».
 - Agenda Joe : un navigateur ne peut pas réveiller le téléphone quand l'application est
   fermée ; pour des rappels garantis, exporter en `.ics` vers l'agenda du téléphone. Pas
   d'invitations par e-mail ni de partage d'agenda en ligne.

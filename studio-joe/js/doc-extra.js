@@ -282,7 +282,15 @@
       T.loadDoc(d); T.autosave(); toast(`« ${f.name} » ouvert`);
     } catch (e) { console.error(e); toast('Ouverture impossible : ' + e.message, 8000); }
   }
-  Studio.onImport('texte', (fs) => openFile(fs[0]));
+  Studio.onImport('texte', async (fs) => {
+    // une image (schéma de Diagrammes Joe, photo…) est ajoutée à la fin du document ouvert
+    if (fs[0].type.startsWith('image/')) {
+      const srcs = []; for (const f of fs) srcs.push(await Studio.readAsDataURL(f));
+      T.change(() => { T.body.insertAdjacentHTML('beforeend', srcs.map((s2) => `<p style="text-align:center"><img src="${s2}" style="width:${Math.round(Math.min(600, T.dims().pw - T.dims().ml - T.dims().mr))}px"></p>`).join('') + '<p><br></p>'); });
+      T.body.lastElementChild.scrollIntoView({ block: 'end' }); toast('Image ajoutée à la fin du document'); return;
+    }
+    return openFile(fs[0]);
+  });
   Studio.onDropFiles(document.getElementById('desk'), (files) => { const f = files[0]; if (!f) return; if (/^image\//.test(f.type)) { T.focusBody(); Promise.all(files.map((x) => Studio.readAsDataURL(x))).then((urls) => urls.forEach((u) => T.exec('insertHTML', `<img src="${u}" style="max-width:100%">`, false))); } else openFile(f); });
 
   /* ================= PDF et impression ================= */
