@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Base Joe</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#d9861c">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-180.png">
+<link rel="stylesheet" href="css/studio.css">
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  .bj { display: grid; grid-template-rows: auto 1fr; height: 100%; height: 100dvh; }
+  .topbar .logo { background: #a4373a !important; color: #fff !important; }
+  .menu-list hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  .menu-list { max-height: 75vh; overflow-y: auto; }
+  #dbName { font-weight: 600; max-width: 30vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .main { display: grid; grid-template-columns: 240px 1fr; min-height: 0; }
+  .nav { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; padding: 8px 6px 40px; }
+  .nav input { margin: 0 2px 8px; width: calc(100% - 4px); }
+  .nav h4 { margin: 12px 6px 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
+  .nav h4 button { padding: 0 7px; min-width: 0; font-size: 14px; }
+  .nav .it { display: flex; gap: 8px; align-items: center; width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; text-align: left; font-size: 14px; color: var(--fg); cursor: pointer; }
+  .nav .it:hover { background: var(--panel-2); } .nav .it.on { background: var(--accent-soft); color: var(--accent); }
+  .nav .it .ic { width: 18px; text-align: center; flex: none; } .nav .it .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav .it .more { opacity: .55; padding: 0 4px; border: 0; background: none; cursor: pointer; color: inherit; }
+  .work { display: grid; grid-template-rows: auto 1fr; min-height: 0; min-width: 0; }
+  .tabs { display: flex; gap: 2px; padding: 6px 8px 0; background: var(--panel-2); border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .tabs .tb { display: flex; gap: 6px; align-items: center; padding: 6px 10px; border: 1px solid var(--line); border-bottom: 0; border-radius: 8px 8px 0 0; background: var(--panel); font-size: 13px; cursor: pointer; white-space: nowrap; opacity: .75; }
+  .tabs .tb.on { opacity: 1; font-weight: 600; box-shadow: inset 0 3px 0 #a4373a; }
+  .tabs .tb button { border: 0; background: none; padding: 0 2px; min-width: 0; cursor: pointer; color: var(--muted); }
+  .pane { overflow: auto; min-height: 0; background: var(--canvas-bg); }
+  .bar { display: flex; gap: 6px; align-items: center; padding: 8px 10px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; position: sticky; top: 0; left: 0; z-index: 3; }
+  .bar .sp { flex: 1; } .bar input[type=search] { width: 200px; }
+  .bar .count { font-size: 12px; color: var(--muted); }
+  table.ds { border-collapse: separate; border-spacing: 0; font-size: 13px; background: var(--panel); min-width: 100%; }
+  table.ds th { position: sticky; top: 49px; z-index: 2; background: var(--panel-2); border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 6px 8px; text-align: left; white-space: nowrap; font-weight: 600; cursor: pointer; user-select: none; }
+  table.ds td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 0; height: 30px; max-width: 320px; }
+  table.ds td .v { padding: 5px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 19px; cursor: text; }
+  table.ds td.num .v { text-align: right; font-variant-numeric: tabular-nums; }
+  table.ds td.sel { width: 34px; text-align: center; background: var(--panel-2); color: var(--muted); font-size: 11px; }
+  table.ds tr.new td .v { color: var(--muted); font-style: italic; }
+  table.ds td.edit { outline: 2px solid #a4373a; outline-offset: -2px; }
+  table.ds td input, table.ds td select { border: 0; border-radius: 0; padding: 5px 8px; width: 100%; min-width: 120px; height: 30px; box-sizing: border-box; background: var(--panel); color: var(--fg); font: inherit; }
+  table.ds td input[type=checkbox] { width: 18px; height: 18px; min-width: 0; margin: 6px auto; display: block; accent-color: #a4373a; }
+  table.ds tr:hover td { background: color-mix(in srgb, var(--accent-soft) 40%, transparent); }
+  .more-rows { padding: 10px; }
+  .design { padding: 12px; display: grid; gap: 10px; max-width: 1100px; }
+  .design table { border-collapse: collapse; width: 100%; background: var(--panel); font-size: 13px; }
+  .design th, .design td { border: 1px solid var(--line); padding: 4px; text-align: left; }
+  .design td input, .design td select { width: 100%; min-width: 70px; padding: 4px 6px; box-sizing: border-box; }
+  .design td.c { text-align: center; } .design td button { padding: 2px 7px; }
+  .qbe { overflow-x: auto; }
+  .qbe table { border-collapse: collapse; background: var(--panel); font-size: 13px; }
+  .qbe th { background: var(--panel-2); text-align: right; padding: 4px 8px; border: 1px solid var(--line); white-space: nowrap; font-weight: 600; position: sticky; left: 0; z-index: 1; }
+  .qbe td { border: 1px solid var(--line); padding: 3px; min-width: 170px; }
+  .qbe td input, .qbe td select { width: 100%; padding: 4px; box-sizing: border-box; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .chips .ch { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: 13px; display: flex; gap: 6px; align-items: center; }
+  .chips .ch button { border: 0; background: none; padding: 0; min-width: 0; cursor: pointer; color: var(--muted); }
+  textarea.sql { font: 14px/1.5 var(--font-mono); min-height: 220px; width: 100%; box-sizing: border-box; }
+  .form-view { padding: 16px; display: grid; gap: 14px; max-width: 780px; }
+  .rec { background: var(--panel); border: 1px solid var(--line); border-top: 5px solid #a4373a; border-radius: 12px; padding: 16px; display: grid; gap: 10px; }
+  .rec h2 { margin: 0 0 4px; font-size: 18px; }
+  .rec .fl { display: grid; grid-template-columns: 170px 1fr; gap: 10px; align-items: center; }
+  .rec .fl label { font-weight: 600; font-size: 14px; } .rec .fl .ro { color: var(--muted); }
+  .rec .fl input[type=checkbox] { width: 22px; height: 22px; accent-color: #a4373a; }
+  .recnav { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .sub { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; overflow-x: auto; }
+  .sub h3 { margin: 0; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
+  .sub table { border-collapse: collapse; font-size: 13px; width: 100%; } .sub td, .sub th { border-bottom: 1px solid var(--line); padding: 4px 6px; text-align: left; }
+  .rels { padding: 12px; display: grid; gap: 10px; max-width: 900px; }
+  .relc { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 10px; align-items: center; }
+  .relc .side { background: var(--panel-2); border-radius: 8px; padding: 8px 10px; } .relc .side b { display: block; }
+  .relc .lnk { text-align: center; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .report-wrap { padding: 16px; display: grid; justify-items: center; }
+  .report { background: #fff; color: #111; width: min(100%, 210mm); padding: 14mm; box-shadow: 0 1px 6px rgba(0,0,0,.25); font: 11pt Calibri, Carlito, 'Segoe UI', Arial, sans-serif; box-sizing: border-box; }
+  .report h1 { margin: 0; font-size: 20pt; color: #a4373a; } .report .sub2 { color: #666; font-size: 9pt; margin-bottom: 10pt; }
+  .report table { border-collapse: collapse; width: 100%; } .report th { text-align: left; border-bottom: 1.5px solid #a4373a; padding: 4px; font-size: 10pt; } .report td { padding: 3px 4px; border-bottom: 1px solid #e3e3e3; font-size: 10pt; }
+  .report .num { text-align: right; } .report .g td { background: #f6eaea; font-weight: 700; padding-top: 8px; } .report .st td { font-weight: 700; border-top: 1px solid #999; } .report .gt td { font-weight: 700; border-top: 2px solid #a4373a; font-size: 11pt; }
+  .welcome { padding: 30px 20px; display: grid; gap: 16px; justify-items: center; text-align: center; }
+  .welcome .tpl { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; width: min(100%, 900px); }
+  .welcome .tpl button { flex-direction: column; align-items: flex-start; text-align: left; white-space: normal; padding: 14px; gap: 4px; height: 100%; }
+  .welcome .tpl button span { font-size: 12px; color: var(--muted); }
+  .help { font-size: 12px; color: var(--muted); }
+  .help code { font-size: 12px; }
+  #navToggle { display: none; }
+  @media (max-width: 800px) {
+    .main { grid-template-columns: 1fr; }
+    .nav { position: fixed; inset: 52px auto 0 0; width: min(84vw, 300px); z-index: 50; box-shadow: var(--shadow); transform: translateX(-105%); transition: transform .2s; }
+    .main.navopen .nav { transform: none; }
+    #navToggle { display: inline-flex; }
+    .rec .fl { grid-template-columns: 1fr; gap: 3px; }
+    .relc { grid-template-columns: 1fr; }
+    .topbar .brand span:last-child { display: none; }
+    table.ds th { top: 0; } .bar { position: static; }
+  }
+</style>
+</head>
+<body>
+<div class="bj">
+  <div class="topbar">
+    <button id="navToggle" title="Volet de navigation">☰</button>
+    <a class="brand" href="index.html"><span class="logo">Ba</span><span>Base Joe</span></a>
+    <div class="menu">
+      <button data-menu>Fichier ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="newDb">Nouvelle base…</button>
+        <button data-act="library">Mes bases (sur cet appareil)…</button>
+        <button data-act="openAccess">Ouvrir un fichier Access (.accdb, .mdb)…</button>
+        <button data-act="openJoedb">Ouvrir une base Base Joe (.joedb)…</button>
+        <hr>
+        <button data-act="importGrid">Importer une table (Excel, CSV)…</button>
+        <hr>
+        <button data-act="exportXml">Exporter pour Access (XML : structure + données)…</button>
+        <button data-act="exportXlsx">Exporter en Excel (.xlsx, une feuille par table)</button>
+        <button data-act="saveJoedb">Enregistrer une copie (.joedb)</button>
+        <hr>
+        <button data-act="renameDb">Renommer la base…</button>
+        <button data-act="deleteDb">Supprimer cette base…</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Créer ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="newTable">Table</button>
+        <button data-act="newQuery">Requête (mode création)</button>
+        <button data-act="newSql">Requête SQL</button>
+        <button data-act="newForm">Formulaire</button>
+        <button data-act="newReport">État</button>
+        <hr>
+        <button data-act="relations">Relations…</button>
+      </div>
+    </div>
+    <span id="dbName"></span>
+    <span class="spacer"></span>
+    <button data-act="help" class="ghost" title="Aide">?</button>
+    <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+  </div>
+  <div class="main" id="main">
+    <aside class="nav" id="nav"></aside>
+    <section class="work"><div class="tabs" id="tabs"></div><div class="pane" id="pane"></div></section>
+  </div>
+</div>
+<div id="toast" hidden></div>
+<script src="js/common.js"></script>
+<script src="js/base-engine.js"></script>
+<script src="js/base-app.js"></script>
+</body>
+</html>
