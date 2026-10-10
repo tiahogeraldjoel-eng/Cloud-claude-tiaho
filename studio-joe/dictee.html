@@ -57,6 +57,7 @@
     <button id="srtBtn">Sous-titres .srt</button>
     <button id="audioBtn" disabled>Télécharger l'enregistrement</button>
     <button id="trBtn">Traduire… (IA Claude)</button>
+    <button id="readBtn">🔊 Relire à voix haute</button>
     <span class="spacer" style="flex:1"></span>
     <button id="clearBtn" class="danger">Effacer</button>
   </div>
@@ -75,6 +76,7 @@
 <script src="js/ai.js"></script>
 <script src="js/translate.js"></script>
 <script src="js/speech.js"></script>
+<script src="js/tts.js"></script>
 <script>
 (function () {
   const { $, toast, download, modal } = Studio;
@@ -166,6 +168,16 @@
       if (v === 'copy') navigator.clipboard.writeText(tr).then(() => toast('Traduction copiée'), () => toast('Copie refusée par le navigateur'));
       if (v === 'txt') download(new Blob([tr], { type: 'text/plain;charset=utf-8' }), `${name()}-${to}.txt`);
     } catch (e) { toast('Traduction impossible : ' + (e.message || e), 6000); }
+  };
+  let readCtl = null;
+  $('#readBtn').onclick = async () => {
+    if (readCtl) { readCtl.stop(); readCtl = null; $('#readBtn').textContent = '🔊 Relire à voix haute'; return; }
+    if (!Studio.tts.available()) return toast('Synthèse vocale indisponible dans ce navigateur.');
+    const txt = ta.value.replace(/^\[\d+:\d+\]\s*/gm, ''); if (!txt.trim()) return toast('Rien à relire.');
+    await Studio.tts.loadVoices();
+    let pref = {}; try { pref = JSON.parse(localStorage.getItem('voix-prefs') || '{}'); } catch (e) { /* ignore */ }
+    readCtl = Studio.tts.speak(txt, { voiceURI: pref.voice || '', lang: $('#lang').value, rate: +(pref.rate || 1), onEnd: () => { readCtl = null; $('#readBtn').textContent = '🔊 Relire à voix haute'; } });
+    $('#readBtn').textContent = '■ Arrêter la lecture';
   };
   window.DicteeJoe = { addText, toggle };
 })();

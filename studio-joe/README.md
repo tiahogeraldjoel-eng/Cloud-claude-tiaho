@@ -13,6 +13,7 @@ l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA C
 | **Design Joe** | Illustrator / Canva / Express | `design.html` |
 | **Video Joe** | Premiere Pro | `video.html` |
 | **Dictée Joe** | Dictée / Dragon | `dictee.html` |
+| **Voix Joe** | Lecture audio / synthèse vocale | `voix.html` |
 
 ## Utilisation
 
@@ -138,11 +139,24 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
 - Bouton **🎤 Dicter** dans les champs de texte de PDF Joe (annotations),
   Photo Joe (texte), Design Joe (texte) et Video Joe (titres)
 
+### Voix Joe (synthèse vocale)
+- Lecture à voix haute avec les voix installées sur l'appareil : choix de la voix et
+  de la langue, vitesse, hauteur, volume, pause, phrase précédente ou suivante,
+  phrase en cours surlignée (clic sur une phrase pour reprendre à cet endroit)
+- Ouverture d'un fichier texte, de sous-titres ou d'un PDF
+- Fichier audio `.wav` créé par une voix neuronale MMS (français, anglais) qui tourne
+  dans le navigateur ; modèle téléchargé la première fois
+- Aussi : « Lire le document à voix haute » dans PDF Joe, « Relire » dans Dictée Joe,
+  « Voix off à partir d'un texte » dans Video Joe (son placé sur une piste audio,
+  sous-titres en option)
+
 ## Limites connues
 - L'OCR hors ligne reconnaît le texte imprimé en français et en anglais ; l'écriture
   manuscrite passe par l'option en ligne (internet et clé API Anthropic payante).
 - La dictée « Navigateur » ne fonctionne que dans Chrome et Edge (Firefox : utiliser
   Whisper) ; le micro doit être autorisé pour la page.
+- Les voix de lecture dépendent de l'appareil (Windows, Android, macOS en ont en
+  français) ; la voix neuronale pour les fichiers audio existe en français et en anglais.
 - La transcription a besoin d'internet la première fois (téléchargement du modèle
   depuis Hugging Face) ; ouvert en local (fichier), le navigateur peut le
   retélécharger à chaque session. Relire les noms propres et les chiffres.

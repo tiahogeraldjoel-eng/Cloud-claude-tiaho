@@ -766,6 +766,42 @@
     renderTimeline(); renderFx(); drawFrame(); toast(`${titles.length} titre${titles.length > 1 ? 's' : ''} traduit${titles.length > 1 ? 's' : ''}`);
   }
 
+  /* ---------------- Voix off par synthèse vocale (voix neuronale dans le navigateur) ---------------- */
+  async function voiceOverDialog() {
+    const sel = selClip();
+    const res = await modal({
+      title: 'Voix off à partir d\'un texte',
+      body: `<div class="field"><label for="voText">Texte à dire</label><textarea id="voText" style="min-height:140px">${sel && sel.type === 'text' ? escapeHtml(sel.props.text) : ''}</textarea></div>
+        <div class="grid2"><div class="field"><label for="voLang">Voix</label><select id="voLang">${Studio.tts.neuralLangOptions()}</select></div>
+        <div class="field"><label for="voSubs">Sous-titres</label><select id="voSubs"><option value="1">Ajouter le texte en sous-titres</option><option value="0">Voix seule</option></select></div></div>
+        <p class="hint" style="margin:0">La voix est créée dans le navigateur (le texte n'est pas envoyé) ; elle se télécharge la première fois. Le son est placé sur une piste audio, à la tête de lecture.</p>`,
+      onOpen: (b) => Studio.speech && Studio.speech.attachMic(b.querySelector('#voText')),
+      buttons: [{ label: 'Annuler', value: null }, { label: 'Créer la voix off', primary: true, value: (b) => ({ text: b.querySelector('#voText').value.trim(), lang: b.querySelector('#voLang').value, subs: b.querySelector('#voSubs').value === '1' }) }],
+    });
+    if (!res || !res.text) return;
+    const ov = document.createElement('div'); ov.className = 'export-ov';
+    ov.innerHTML = '<div class="box"><strong>Création de la voix off…</strong><div class="bar"><div id="voBar"></div></div><span class="hint" id="voTxt">Préparation…</span></div>';
+    document.body.appendChild(ov);
+    try {
+      const { samples, rate } = await Studio.tts.synthesize(res.text, { lang: res.lang, onProgress: (u, t) => { ov.querySelector('#voBar').style.width = Math.round(u * 100) + '%'; ov.querySelector('#voTxt').textContent = t; } });
+      const file = new File([Studio.tts.toWav(samples, rate)], `voix-off-${idSeq}.wav`, { type: 'audio/wav' });
+      const before = new Set(media.keys());
+      await importFiles([file]);
+      const m = [...media.values()].find((x) => !before.has(x.id));
+      if (!m) throw new Error('import du son impossible');
+      const at = time; const clip = addMediaClip(m, null, at);
+      if (res.subs) {
+        // sous-titres répartis selon la longueur de chaque phrase
+        const parts = Studio.tts.sentences(res.text).map((p) => p.text.trim()).filter(Boolean);
+        const total = parts.reduce((a, p) => a + p.length, 0) || 1; let t = clip.start;
+        const segs = parts.map((p) => { const d = clip.dur * p.length / total; const s = { start: t, end: t + d, text: p }; t += d; return s; });
+        addSubtitleClips({ start: clip.start, dur: clip.dur, in: clip.start, speed: 1, track: 'V1' }, segs);
+      }
+      toast('Voix off ajoutée');
+    } catch (e) { console.error(e); toast('Voix off impossible : ' + (e.message || e), 7000); }
+    finally { ov.remove(); }
+  }
+
   /* ---------------- Transcription et sous-titres automatiques (Whisper, dans le navigateur) ---------------- */
   async function transcribeDialog(fromFile) {
     const T = Studio.transcribe;
@@ -850,6 +886,7 @@
         case 'ripple': return deleteClip(true);
         case 'detach': return detachAudio();
         case 'translateTitles': return translateTitles();
+        case 'voiceover': return voiceOverDialog();
         case 'transcribe': return transcribeDialog(false);
         case 'transcribeFile': return transcribeDialog(true);
         case 'duplicate': { const c = selClip(); if (!c) return; pushUndo(); const d = JSON.parse(JSON.stringify(c)); d.id = idSeq++; d.start = snapT(c.start + c.dur); project.clips.push(d); selId = d.id; renderTimeline(); renderFx(); return; }

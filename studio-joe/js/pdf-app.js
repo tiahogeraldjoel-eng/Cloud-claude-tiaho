@@ -349,7 +349,7 @@
   function updateButtons() {
     $('#undoBtn').disabled = !undoStack.length; $('#redoBtn').disabled = !redoStack.length;
     const none = !pages.length;
-    ['#saveAllBtn', '#saveSelBtn', '#splitBtn', '#toImagesBtn', '#toTextBtn', '#ocrBtn', '#translateBtn', '#compressBtn', '#flattenBtn'].forEach((s) => { $(s).disabled = none; });
+    ['#saveAllBtn', '#saveSelBtn', '#splitBtn', '#toImagesBtn', '#toTextBtn', '#ocrBtn', '#translateBtn', '#readBtn', '#compressBtn', '#flattenBtn'].forEach((s) => { $(s).disabled = none; });
   }
 
   /* ---------------- Géométrie : espace visuel (haut-gauche) -> espace PDF ---------------- */
@@ -885,6 +885,38 @@
     if (v === 'txt') download(new Blob([full], { type: 'text/plain;charset=utf-8' }), `${outName()}-${res.to}.txt`);
   }
 
+  /* ---------------- Lecture à voix haute (voix de l'appareil) ---------------- */
+  let reading = null;
+  async function readAloud() {
+    if (!Studio.tts.available()) return toast('La synthèse vocale n\'est pas disponible dans ce navigateur.');
+    if (reading) { reading.stop(); return; }
+    const list = selected.size ? targets() : pages.slice();
+    const parts = [];
+    for (const p of list) { const t = await pageText(p); if (t) parts.push({ p, t }); }
+    if (!parts.length) return toast('Aucun texte à lire : pour un scan, lancez d\'abord la reconnaissance du texte (OCR).', 6000);
+    await Studio.tts.loadVoices();
+    const pref = (() => { try { return JSON.parse(localStorage.getItem('voix-prefs') || '{}'); } catch (e) { return {}; } })();
+    const bar = document.createElement('div');
+    bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:150;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:999px;padding:6px 10px;display:flex;gap:6px;align-items:center;max-width:calc(100% - 32px)';
+    bar.innerHTML = '<span aria-hidden="true">🔊</span><span id="rdTxt" class="hint" style="white-space:nowrap">Lecture…</span><button id="rdPause">❚❚</button><button id="rdNext" title="Page suivante">⏭</button><button id="rdStop">■</button>';
+    document.body.appendChild(bar);
+    let k = 0, stopped = false, ctl = null;
+    const next = () => {
+      if (stopped || k >= parts.length) { end(); return; }
+      const { p, t } = parts[k];
+      bar.querySelector('#rdTxt').textContent = `Page ${pages.indexOf(p) + 1} (${k + 1}/${parts.length})`;
+      selected = new Set([p.uid]); render();
+      document.querySelector(`.pg[data-uid="${p.uid}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      ctl = Studio.tts.speak(t, { voiceURI: pref.voice || '', lang: 'fr-FR', rate: +(pref.rate || 1), pitch: +(pref.pitch || 1), volume: +(pref.volume || 1), onEnd: () => { k++; next(); }, onError: (m) => { toast('Lecture interrompue : ' + m); end(); } });
+    };
+    const end = () => { stopped = true; if (ctl) ctl.stop(); bar.remove(); reading = null; };
+    bar.querySelector('#rdPause').onclick = (e) => { if (!ctl) return; if (ctl.paused) { ctl.resume(); e.target.textContent = '❚❚'; } else { ctl.pause(); e.target.textContent = '▶'; } };
+    bar.querySelector('#rdNext').onclick = () => { if (ctl) ctl.stop(); k++; next(); };
+    bar.querySelector('#rdStop').onclick = end;
+    reading = { stop: end };
+    next();
+  }
+
   async function toText() {
     if (!pages.length) return;
     let text = '';
@@ -1290,7 +1322,7 @@
   $('#moveLBtn').onclick = () => moveSel(-1); $('#moveRBtn').onclick = () => moveSel(1);
   $('#dupBtn').onclick = dupSel; $('#delBtn').onclick = delSel; $('#editBtn').onclick = () => editPage();
   $('#saveAllBtn').onclick = saveAll; $('#saveSelBtn').onclick = saveSel; $('#splitBtn').onclick = split;
-  $('#toImagesBtn').onclick = toImages; $('#toTextBtn').onclick = toText; $('#ocrBtn').onclick = ocrDialog; $('#translateBtn').onclick = translateDialog;
+  $('#toImagesBtn').onclick = toImages; $('#toTextBtn').onclick = toText; $('#ocrBtn').onclick = ocrDialog; $('#translateBtn').onclick = translateDialog; $('#readBtn').onclick = readAloud;
   $('#compressBtn').onclick = () => compress(false); $('#flattenBtn').onclick = () => compress(true);
   [['wmSize', ''], ['wmOpacity', ' %'], ['wmAngle', '°']].forEach(([id, unit]) => {
     const i = $('#' + id), o = $('#' + id + 'O'); i.addEventListener('input', () => { o.textContent = i.value + unit; });
