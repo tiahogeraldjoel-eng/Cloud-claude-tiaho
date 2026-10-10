@@ -60,6 +60,7 @@
       <button data-menu>Convertir ▾</button>
       <div class="menu-list" hidden>
         <button id="toImagesBtn">PDF → images (PNG/JPG)</button>
+        <button id="ocrBtn">Reconnaître le texte (OCR) des scans…</button>
         <button id="toTextBtn">Extraire le texte</button>
         <button id="compressBtn">Compresser le PDF…</button>
         <button id="flattenBtn">Aplatir en images (anti-copie)</button>
@@ -101,7 +102,7 @@
           <div class="feature-list">
             <span>Fusionner</span><span>Réorganiser</span><span>Pivoter</span><span>Supprimer des pages</span>
             <span>Signer</span><span>Modifier le texte</span><span>Annoter</span><span>Caviarder</span><span>Protéger par mot de passe</span><span>Remplir les formulaires</span><span>Filigrane</span>
-            <span>Numéroter</span><span>Diviser</span><span>Compresser</span><span>PDF ↔ images</span><span>Extraire le texte</span>
+            <span>Numéroter</span><span>Diviser</span><span>Compresser</span><span>PDF ↔ images</span><span>Extraire le texte</span><span>OCR des scans</span>
           </div>
           <p class="hint">Tout reste sur votre appareil : aucun fichier n'est envoyé sur internet.</p>
         </div>
@@ -181,6 +182,7 @@
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/jszip.min.js"></script>
 <script src="js/common.js"></script>
+<script src="js/ocr.js"></script>
 <script src="js/pdf-app.js"></script>
 </body>
 </html>

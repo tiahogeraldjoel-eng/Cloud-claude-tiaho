@@ -829,6 +829,28 @@
     h.globalCompositeOperation = 'source-over';
   }
 
+  /* ---------------- OCR ---------------- */
+  async function ocrImage() {
+    cancelAdjust(true);
+    let src = flatCanvas();
+    if (sel) { const c = mkCanvas(sel.w, sel.h); c.getContext('2d').drawImage(src, -sel.x, -sel.y); src = c; }
+    // agrandit les petites images : Tesseract lit mieux des caractères d'au moins 20 px
+    if (Math.max(src.width, src.height) < 1800) { const k = 1800 / Math.max(src.width, src.height); const c = mkCanvas(src.width * k, src.height * k); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.imageSmoothingQuality = 'high'; x.drawImage(src, 0, 0, c.width, c.height); src = c; }
+    else { const c = mkCanvas(src.width, src.height); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(src, 0, 0); src = c; }
+    toast('Reconnaissance du texte en cours…', 60000);
+    let r;
+    try { r = await Studio.ocr.recognize(src); } catch (e) { toast('OCR impossible : ' + (e.message || e), 6000); return; }
+    toast(`${r.words.length} mots reconnus`, 2000);
+    const v = await modal({
+      title: 'Texte reconnu' + (sel ? ' (sélection)' : ''), wide: true,
+      body: '<textarea id="ocrOut" style="width:100%;min-height:50vh;font:13px/1.5 var(--font-mono)" aria-label="Texte reconnu"></textarea><p class="hint" style="margin:0">Astuce : sélectionnez d\'abord une zone (M) pour ne lire qu\'une partie. Vérifiez les chiffres importants.</p>',
+      onOpen: (b) => { b.querySelector('#ocrOut').value = r.text; },
+      buttons: [{ label: 'Copier', value: 'copy' }, { label: 'Télécharger .txt', primary: true, value: 'txt' }],
+    });
+    if (v === 'copy') navigator.clipboard.writeText(r.text).then(() => toast('Texte copié'), () => toast('Copie refusée par le navigateur'));
+    if (v === 'txt') download(new Blob([r.text], { type: 'text/plain;charset=utf-8' }), `${doc.name}-ocr.txt`);
+  }
+
   /* ---------------- Export / projet ---------------- */
   async function exportDialog() {
     const res = await modal({
@@ -924,6 +946,7 @@
         case 'selClear': { if (!sel) return; pushUndo(); const L = active(); L.canvas.getContext('2d').clearRect(sel.x - L.x, sel.y - L.y, sel.w, sel.h); return refreshAll(); }
         case 'selFill': { if (!sel) return toast('Faites d\'abord une sélection (M).'); pushUndo(); const L = active(); const c = L.canvas.getContext('2d'); c.fillStyle = fg(); c.fillRect(sel.x - L.x, sel.y - L.y, sel.w, sel.h); return refreshAll(); }
         case 'removeBg': return removeBackground();
+        case 'ocr': return ocrImage();
         case 'zoomIn': zoom = Math.min(32, zoom * 1.25); return applyZoom();
         case 'zoomOut': zoom = Math.max(0.05, zoom / 1.25); return applyZoom();
         case 'fit': return fit();

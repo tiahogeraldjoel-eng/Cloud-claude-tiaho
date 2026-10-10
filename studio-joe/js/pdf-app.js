@@ -3,6 +3,7 @@
 (function () {
   const { $, toast, download, pickFiles, baseName, initMenus, modal, confirmBox, store, onDropFiles, loadImage, readAsDataURL } = Studio;
   const { PDFDocument, StandardFonts, rgb, degrees, PDFTextField, PDFCheckBox, PDFDropdown, PDFRadioGroup, PDFOptionList } = PDFLib;
+  const { pushGraphicsState, popGraphicsState, beginText, endText, setFontAndSize, setTextRenderingMode, TextRenderingMode, setCharacterSqueeze, setTextMatrix, showText } = PDFLib;
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
 
   const THUMB_W = 180;
@@ -252,6 +253,7 @@
       const flags = el.querySelector('.flags'); flags.innerHTML = '';
       if (p.overlays.length) flags.insertAdjacentHTML('beforeend', `<span title="Annotations">✎ ${p.overlays.length}</span>`);
       if (p.rot) flags.insertAdjacentHTML('beforeend', `<span>${p.rot}°</span>`);
+      if (p.ocr) flags.insertAdjacentHTML('beforeend', '<span title="Texte reconnu par OCR">OCR</span>');
       frag.appendChild(el);
     });
     grid.innerHTML = ''; grid.appendChild(frag);
@@ -347,7 +349,7 @@
   function updateButtons() {
     $('#undoBtn').disabled = !undoStack.length; $('#redoBtn').disabled = !redoStack.length;
     const none = !pages.length;
-    ['#saveAllBtn', '#saveSelBtn', '#splitBtn', '#toImagesBtn', '#toTextBtn', '#compressBtn', '#flattenBtn'].forEach((s) => { $(s).disabled = none; });
+    ['#saveAllBtn', '#saveSelBtn', '#splitBtn', '#toImagesBtn', '#toTextBtn', '#ocrBtn', '#compressBtn', '#flattenBtn'].forEach((s) => { $(s).disabled = none; });
   }
 
   /* ---------------- Géométrie : espace visuel (haut-gauche) -> espace PDF ---------------- */
@@ -435,6 +437,20 @@
       const R0 = p.baseRot;
       // annotations (exprimées dans l'espace visuel de la rotation d'origine)
       for (const o of p.overlays) await drawOverlayPdf(pg, b, R0, o, font, image);
+      // couche de texte invisible issue de l'OCR : le PDF scanné devient consultable et copiable
+      if (p.ocr && p.ocr.length) {
+        const f = await font('helv'); pg.setFont(f); const key = pg.getFont()[1];
+        const rad = R0 * Math.PI / 180, cs = Math.cos(rad), sn = Math.sin(rad);
+        const ops = [pushGraphicsState(), beginText(), setTextRenderingMode(TextRenderingMode.Invisible)];
+        for (const wd of p.ocr) {
+          const t = sanitize(f, wd.text); if (!t.trim()) continue;
+          const size = Math.max(1, wd.h * 0.9), tw = f.widthOfTextAtSize(t, size) || 1;
+          const [x, y] = toPdf(R0, b, wd.x, wd.y + wd.h * 0.8);
+          ops.push(setFontAndSize(key, size), setCharacterSqueeze(Math.max(10, Math.min(400, 100 * wd.w / tw))), setTextMatrix(cs, sn, -sn, cs, x, y), showText(f.encodeText(t + ' ')));
+        }
+        ops.push(endText(), popGraphicsState());
+        pg.pushOperators(...ops);
+      }
       const R = (R0 + p.rot) % 360;
       pg.setRotation(degrees(R));
       const [VW, VH] = visualSize(R, b);
@@ -681,6 +697,58 @@
     });
   }
 
+  /* ---------------- OCR : rendre les pages scannées lisibles par la machine ---------------- */
+  async function pageHasText(p) {
+    const tc = await (await sources.get(p.src).pjs.getPage(p.index + 1)).getTextContent();
+    return tc.items.map((i) => i.str).join('').replace(/\s/g, '').length > 20;
+  }
+  async function ocrDialog() {
+    if (!pages.length) return;
+    const res = await modal({
+      title: 'Reconnaître le texte (OCR)',
+      body: `<div class="field"><label for="ocrScope">Pages à traiter</label><select id="ocrScope">
+          <option value="auto">Pages scannées seulement (sans texte)</option><option value="all">Toutes les pages</option>${selected.size ? `<option value="sel">Pages sélectionnées (${selected.size})</option>` : ''}</select></div>
+        <div class="field"><label for="ocrDpi">Précision</label><select id="ocrDpi"><option value="300">Haute (300 ppp, recommandé)</option><option value="200">Rapide (200 ppp)</option><option value="400">Très haute (400 ppp, petits caractères)</option></select></div>
+        <p class="hint">Langue : français. Tout se fait sur cet appareil, sans internet. Comptez quelques secondes par page. Le PDF enregistré contiendra une couche de texte invisible : vous pourrez y chercher, copier et sélectionner le texte.</p>`,
+      buttons: [{ label: 'Annuler', value: null }, { label: 'Lancer l\'OCR', primary: true, value: (b) => ({ scope: b.querySelector('#ocrScope').value, dpi: +b.querySelector('#ocrDpi').value }) }],
+    });
+    if (!res) return;
+    let list = res.scope === 'sel' ? targets() : pages.slice();
+    const ov = document.createElement('div'); ov.className = 'modal-back';
+    ov.innerHTML = '<div class="modal" style="width:min(420px,100%)"><header>OCR en cours…</header><div class="body"><div style="height:10px;border-radius:5px;background:var(--panel-2);overflow:hidden"><div id="ocrBar" style="height:100%;width:0;background:var(--accent)"></div></div><span class="hint" id="ocrTxt">Chargement du moteur de reconnaissance…</span></div><footer><button id="ocrStop">Arrêter</button></footer></div>';
+    document.body.appendChild(ov);
+    let stop = false; ov.querySelector('#ocrStop').onclick = () => { stop = true; };
+    const setP = (u, t) => { ov.querySelector('#ocrBar').style.width = Math.round(u * 100) + '%'; ov.querySelector('#ocrTxt').textContent = t; };
+    const texts = []; let done = 0;
+    try {
+      await Studio.ocr.load();
+      if (res.scope === 'auto') { const keep = []; for (const p of list) if (!(await pageHasText(p))) keep.push(p); list = keep; }
+      if (!list.length) { ov.remove(); toast('Toutes les pages contiennent déjà du texte : choisissez « Toutes les pages » pour forcer l\'OCR.', 6000); return; }
+      pushUndo();
+      for (let i = 0; i < list.length && !stop; i++) {
+        const p = list[i];
+        setP(i / list.length, `Page ${pages.indexOf(p) + 1} — ${i + 1} sur ${list.length}…`);
+        const s = Math.min(res.dpi / 72, 5000 / Math.max(p.w, p.h));
+        const cv = await renderPageCanvas(p, s, false);
+        const r = await Studio.ocr.recognize(cv);
+        p.ocr = r.words.filter((w) => w.conf > 20).map((w) => ({ x: w.x / s, y: w.y / s, w: w.w / s, h: w.h / s, text: w.text }));
+        pages.filter((q) => q.src === p.src && q.index === p.index && q !== p).forEach((q) => { q.ocr = p.ocr; });
+        texts.push(`--- Page ${pages.indexOf(p) + 1} ---\n${r.text}`); done++;
+      }
+    } catch (e) { console.error(e); ov.remove(); toast('OCR impossible : ' + (e.message || e), 6000); return; }
+    ov.remove(); render();
+    const all = texts.join('\n\n');
+    const v = await modal({
+      title: `Texte reconnu (${done} page${done > 1 ? 's' : ''})`, wide: true,
+      body: '<p class="hint" style="margin:0">Vérifiez les chiffres importants (montants, numéros) : l\'OCR peut confondre certains caractères sur un scan de mauvaise qualité. Enregistrez le PDF pour obtenir la version consultable.</p><textarea class="textout" id="ocrOut" aria-label="Texte reconnu"></textarea>',
+      onOpen: (b) => { b.querySelector('#ocrOut').value = all; },
+      buttons: [{ label: 'Copier', value: 'copy' }, { label: 'Télécharger .txt', value: 'txt' }, { label: 'Enregistrer le PDF consultable', primary: true, value: 'pdf' }],
+    });
+    if (v === 'copy') navigator.clipboard.writeText(all).then(() => toast('Texte copié'), () => toast('Copie refusée par le navigateur'));
+    if (v === 'txt') download(new Blob([all], { type: 'text/plain;charset=utf-8' }), outName() + '-ocr.txt');
+    if (v === 'pdf') saveAll();
+  }
+
   async function toText() {
     if (!pages.length) return;
     let text = '';
@@ -876,8 +944,9 @@
           return { str: it.str, x: t[4], base: t[5], h: fh, w: it.width, font: fam === 'courier' ? 'courier' : fam + (bold && fam !== 'courier' ? 'B' : '') };
         });
       }
+      if (!textItems.length && p.ocr) textItems = p.ocr.map((w) => ({ str: w.text, x: w.x, base: w.y + w.h * 0.8, h: w.h * 0.9, w: w.w, font: 'helv' }));
       const it = textItems.find((t) => x >= t.x - 2 && x <= t.x + t.w + 2 && y >= t.base - t.h && y <= t.base + t.h * 0.3);
-      if (!it) { toast('Aucun texte ici. Cliquez exactement sur un mot du document (les PDF scannés n\'ont pas de texte).'); return; }
+      if (!it) { toast('Aucun texte ici. Cliquez exactement sur un mot. Pour un PDF scanné, lancez d\'abord Convertir → Reconnaître le texte (OCR).', 5000); return; }
       // couleur du fond prélevée juste à gauche du texte
       const px = pc.getContext('2d').getImageData(Math.max(0, Math.round((it.x - 2) * scale * (pc.width / (p.w * scale)))), Math.round((it.base - it.h * 0.5) * scale * (pc.width / (p.w * scale))), 1, 1).data;
       const bg = '#' + [px[0], px[1], px[2]].map((v) => v.toString(16).padStart(2, '0')).join('');
@@ -1084,7 +1153,7 @@
   $('#moveLBtn').onclick = () => moveSel(-1); $('#moveRBtn').onclick = () => moveSel(1);
   $('#dupBtn').onclick = dupSel; $('#delBtn').onclick = delSel; $('#editBtn').onclick = () => editPage();
   $('#saveAllBtn').onclick = saveAll; $('#saveSelBtn').onclick = saveSel; $('#splitBtn').onclick = split;
-  $('#toImagesBtn').onclick = toImages; $('#toTextBtn').onclick = toText;
+  $('#toImagesBtn').onclick = toImages; $('#toTextBtn').onclick = toText; $('#ocrBtn').onclick = ocrDialog;
   $('#compressBtn').onclick = () => compress(false); $('#flattenBtn').onclick = () => compress(true);
   [['wmSize', ''], ['wmOpacity', ' %'], ['wmAngle', '°']].forEach(([id, unit]) => {
     const i = $('#' + id), o = $('#' + id + 'O'); i.addEventListener('input', () => { o.textContent = i.value + unit; });
@@ -1106,5 +1175,5 @@
   updateButtons();
 
   // point d'accès pour les tests automatisés
-  window.PDFJoe = { addFiles, buildPdf, get pages() { return pages; }, sources, editPage, toPdf };
+  window.PDFJoe = { addFiles, buildPdf, ocrDialog, get pages() { return pages; }, sources, editPage, toPdf };
 })();

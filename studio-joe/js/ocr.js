@@ -1,0 +1,63 @@
+/* Studio Joe — reconnaissance de texte (OCR) hors ligne avec Tesseract (moteur LSTM, français).
+   Le moteur et les données de langue sont chargés à la demande depuis lib/, sans réseau. */
+(function () {
+  let enginePromise = null;
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = src; s.onload = res;
+      s.onerror = () => rej(new Error(`fichier manquant : ${src}`)); document.head.appendChild(s);
+    });
+  }
+  // WebAssembly SIMD (plus rapide) si le navigateur le permet
+  function simdSupported() {
+    try {
+      return WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11]));
+    } catch (e) { return false; }
+  }
+  async function gunzip(b64) {
+    const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    if (!window.DecompressionStream) throw new Error('navigateur trop ancien pour l\'OCR (DecompressionStream absent)');
+    const stream = new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+
+  function load(lang = 'fra') {
+    if (enginePromise) return enginePromise;
+    enginePromise = (async () => {
+      const base = 'lib/';
+      if (!window.TesseractCore) await loadScript(base + (simdSupported() ? 'tesseract-core-simd-lstm.wasm.js' : 'tesseract-core-lstm.wasm.js'));
+      if (!(window.__TESSDATA && window.__TESSDATA[lang])) await loadScript(base + `tessdata-${lang}.js`);
+      const M = await window.TesseractCore({});
+      M.FS.writeFile(`${lang}.traineddata`, await gunzip(window.__TESSDATA[lang]));
+      const api = new M.TessBaseAPI();
+      if (api.Init(null, lang) !== 0) throw new Error('initialisation de l\'OCR impossible');
+      return { M, api };
+    })();
+    enginePromise.catch(() => { enginePromise = null; });
+    return enginePromise;
+  }
+
+  /* Reconnaît le texte d'un canvas. Renvoie { text, words: [{x, y, w, h, text, conf, line}] } en pixels du canvas. */
+  async function recognize(canvas) {
+    const { M, api } = await load();
+    const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
+    M.FS.writeFile('/input', new Uint8Array(await blob.arrayBuffer()));
+    await new Promise((r) => setTimeout(r, 30)); // laisse l'interface afficher la progression
+    if (api.SetImageFile(1, 0) === 1) throw new Error('image illisible');
+    api.SetPageSegMode(3); // mise en page automatique
+    api.Recognize(null);
+    const text = api.GetUTF8Text();
+    const words = [];
+    for (const row of api.GetTSVText(0).split('\n')) {
+      const c = row.split('\t');
+      if (c[0] !== '5' || !c[11] || !c[11].trim()) continue;
+      words.push({ x: +c[6], y: +c[7], w: +c[8], h: +c[9], conf: +c[10], text: c[11], line: `${c[2]}-${c[3]}-${c[4]}` });
+    }
+    api.Clear();
+    return { text: text.replace(/\n{3,}/g, '\n\n').trim(), words };
+  }
+
+  window.Studio = window.Studio || {};
+  window.Studio.ocr = { load, recognize };
+})();
