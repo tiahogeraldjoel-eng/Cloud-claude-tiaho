@@ -588,7 +588,7 @@
     if (T.dirty && T.wb.sheets.some((S) => S.cells.size) && !(await confirmBox('Créer un nouveau classeur ? Le classeur actuel n\'est pas enregistré dans un fichier (il reste dans l\'historique d\'annulation jusqu\'à fermeture).', 'Nouveau'))) return;
     T.loadWorkbook({ name: 'Classeur', sheets: [T.newSheet('Feuil1')], active: 0 }); T.markDirty(false); T.autosave();
   }
-  async function openDialog() { const [f] = await pickFiles('.xlsx,.xlsm,.csv,.tsv,.txt,.joetab,.json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv', false); if (f) openFile(f); }
+  async function openDialog() { const [f] = await pickFiles('.xlsx,.xlsm,.pdf,application/pdf,.csv,.tsv,.txt,.joetab,.json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv', false); if (f) openFile(f); }
   async function openFile(f) {
     const name = f.name.toLowerCase();
     try {
@@ -596,6 +596,11 @@
       if (/\.(xlsx|xlsm)$/.test(name)) w = await readXlsx(f);
       else if (/\.(joetab|json)$/.test(name)) w = T.deserialize(JSON.parse(await f.text()));
       else if (/\.(csv|tsv|txt)$/.test(name)) w = await readCsv(f);
+      else if (/\.pdf$/.test(name)) {
+        toast('Lecture des tableaux du PDF…', 60000);
+        const m = await Studio.pdfConvert.analyzeFile(f, { onProgress: (i, k, what) => toast(`Lecture du PDF : page ${i + 1} sur ${k}${what === 'ocr' ? ' (reconnaissance du texte)' : ''}…`, 60000) });
+        w = await readXlsx(new File([await Studio.pdfConvert.toXlsx(m)], 'pdf.xlsx'));
+      }
       else if (/\.xls$/.test(name)) throw new Error('l\'ancien format .xls n\'est pas pris en charge : dans Excel, enregistrez le fichier en .xlsx');
       else if (/\.ods$/.test(name)) throw new Error('format .ods : enregistrez-le en .xlsx depuis LibreOffice');
       else throw new Error('format non reconnu');
@@ -605,6 +610,11 @@
     } catch (e) { console.error(e); toast('Ouverture impossible : ' + e.message, 7000); }
   }
   onDropFiles($('#gridwrap'), (files) => files[0] && openFile(files[0]));
+  // fichier envoyé par PDF Joe (PDF → Excel → « Ouvrir dans Tableur Joe »)
+  if (location.hash === '#import' && Studio.pdfConvert) {
+    history.replaceState(null, '', location.pathname + location.search);
+    window.addEventListener('load', async () => { try { const h = await Studio.pdfConvert.handoff.take('tableur'); if (h) await openFile(new File([h.blob], h.name)); } catch (e) { console.error(e); } });
+  }
 
   async function readCsv(f) {
     const buf = await f.arrayBuffer();

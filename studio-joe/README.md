@@ -48,6 +48,13 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Filigrane, numérotation des pages, en-tête et pied de page (`{date}`, `{n}`, `{total}`)
 - Diviser (une page par fichier, toutes les N pages, plages `1-3, 4-fin`) en ZIP
 - Compresser, aplatir en images (anti-copie), PDF → PNG/JPG/WebP, extraire le texte
+- **PDF → Word (.docx)** et **PDF → Excel (.xlsx)** (menu Convertir) : paragraphes,
+  titres, listes, alignements et tableaux reconstitués (bordures du PDF lues pour retrouver
+  les cellules, cellules fusionnées comprises) ; montants « 12 500 000 », « 79,5 % » et dates
+  convertis en vrais nombres dans Excel ; un tableau sur plusieurs pages est mis à la
+  suite ; en-têtes et numéros de page répétés retirés ; pages scannées lues par OCR,
+  traits des tableaux compris. Résultat téléchargé, ou ouvert directement dans Texte Joe
+  ou Tableur Joe
 - **OCR des PDF scannés** (français, anglais ou les deux, hors ligne) : le texte est reconnu puis
   ajouté en couche invisible ; le PDF devient consultable par recherche, copiable,
   et son texte modifiable avec l'outil « Modifier un texte existant »
@@ -79,6 +86,7 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Les pages restent dans le téléphone jusqu'à « Tout effacer »
 
 ### Texte Joe (équivalent Word)
+- **Ouvrir un PDF** (même scanné) : il est converti en document modifiable
 - Pages A4, A5, Letter ou Legal, portrait ou paysage, marges réglables ; affichage
   « page » comme dans Word, ou « mobile » (texte adapté à l'écran du téléphone)
 - Styles (Normal, Titre du document, Titre 1 à 3, Citation…), polices, tailles, gras,
@@ -123,6 +131,7 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Graphiques liés aux données : colonnes, barres, courbes, aires, secteurs, anneau
 - Modèles : facture (TVA 18 %, montant en lettres), budget prévisionnel / réalisé,
   journal de caisse, tableau d'amortissement d'emprunt, suivi des dépenses
+- **Ouvrir un PDF** : ses tableaux deviennent des cellules, montants et dates en nombres
 - Fichiers : ouvrir et enregistrer en `.xlsx` (formules, mises en forme, fusions,
   volets figés, filtres, mises en forme conditionnelles), `.csv` (séparateur « ; »),
   `.joetab` (tout, graphiques compris) ; export PDF avec ajustement à la page
@@ -257,6 +266,11 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   sous-titres en option)
 
 ## Limites connues
+- Conversion PDF → Word / Excel : les images, logos, cachets et dessins ne sont pas
+  repris ; les mises en page en plusieurs colonnes (journaux) peuvent devenir des
+  tableaux ; un tableau sans aucun trait ni espacement net entre colonnes peut être lu
+  comme du texte. Sur un document scanné, relire les montants : un chiffre mal reconnu
+  par l'OCR reste possible.
 - Scan Joe : la détection des bords demande un document clair sur un fond plus
   sombre ; sinon, ajuster les coins à la main. L'OCR ne lit pas l'écriture manuscrite
   (utiliser PDF Joe → OCR → Écriture manuscrite, en ligne).
