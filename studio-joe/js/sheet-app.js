@@ -40,7 +40,7 @@
   let tx = null; const undoStack = [], redoStack = [];
   function begin(label) { if (tx) { tx.depth++; return; } tx = { label, depth: 1, cells: new Map(), meta: new Map(), wb: null, sel: { ...sel }, active: wb.active }; }
   function recordCell(s, k, old) { if (!tx) return; let m = tx.cells.get(s); if (!m) tx.cells.set(s, (m = new Map())); if (!m.has(k)) m.set(k, old); }
-  const META = ['name', 'colW', 'rowH', 'merges', 'freeze', 'hiddenRows', 'cf', 'charts', 'filter'];
+  const META = ['name', 'colW', 'rowH', 'merges', 'freeze', 'hiddenRows', 'cf', 'charts', 'filter', 'pivot'];
   const metaSnap = (S) => structuredClone(Object.fromEntries(META.map((k) => [k, S[k]])));
   function touchMeta(s = wb.active) { if (tx && !tx.wb && !tx.meta.has(s)) tx.meta.set(s, metaSnap(wb.sheets[s])); geomDirty = true; dirtyFlag = true; }
   const cloneSheet = (S) => ({ ...structuredClone(Object.fromEntries(META.map((k) => [k, S[k]]))), cells: new Map(S.cells), maxR: S.maxR, maxC: S.maxC });
@@ -1258,13 +1258,13 @@
   function serialize() {
     return {
       app: 'tableur-joe', v: 1, name: wb.name, active: wb.active,
-      sheets: wb.sheets.map((S) => ({ name: S.name, tab: S.tab, colW: S.colW, rowH: S.rowH, merges: S.merges, freeze: S.freeze, hiddenRows: S.hiddenRows, cf: S.cf, charts: S.charts, filter: S.filter, cells: [...S.cells].map(([k, cl]) => [KR(k), KC(k), cl.v === undefined ? null : cl.v, cl.f === undefined ? null : cl.f, cl.s || null]) })),
+      sheets: wb.sheets.map((S) => ({ name: S.name, tab: S.tab, colW: S.colW, rowH: S.rowH, merges: S.merges, freeze: S.freeze, hiddenRows: S.hiddenRows, cf: S.cf, charts: S.charts, filter: S.filter, pivot: S.pivot || null, cells: [...S.cells].map(([k, cl]) => [KR(k), KC(k), cl.v === undefined ? null : cl.v, cl.f === undefined ? null : cl.f, cl.s || null]) })),
     };
   }
   function deserialize(o) {
     if (!o || !Array.isArray(o.sheets) || !o.sheets.length) throw new Error('fichier de classeur invalide');
     const sheets = o.sheets.map((x) => {
-      const S = newSheet(String(x.name || 'Feuille')); Object.assign(S, { tab: x.tab, colW: x.colW || {}, rowH: x.rowH || {}, merges: x.merges || [], freeze: x.freeze || { r: 0, c: 0 }, hiddenRows: x.hiddenRows || {}, cf: x.cf || [], charts: x.charts || [], filter: x.filter || null });
+      const S = newSheet(String(x.name || 'Feuille')); Object.assign(S, { tab: x.tab, colW: x.colW || {}, rowH: x.rowH || {}, merges: x.merges || [], freeze: x.freeze || { r: 0, c: 0 }, hiddenRows: x.hiddenRows || {}, cf: x.cf || [], charts: x.charts || [], filter: x.filter || null, pivot: x.pivot || null });
       for (const [r, c, v, f, s] of x.cells || []) { const cl = cleanCell({ v, f, s }); if (cl) { S.cells.set(K(r, c), cl); bump(S, r, c); } }
       return S;
     });
