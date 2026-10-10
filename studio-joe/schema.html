@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diagrammes Joe</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#d9861c">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-180.png">
+<link rel="stylesheet" href="css/studio.css">
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  .sc-app { display: grid; grid-template-rows: auto 1fr; height: 100%; height: 100dvh; }
+  .topbar .logo { background: #6d4c41 !important; color: #fff !important; }
+  .menu-list hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  .work { position: relative; min-height: 0; overflow: hidden; background: var(--canvas-bg); }
+  #svg { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; display: block; background: #fbfbfd; }
+  :root[data-theme="dark"] #svg { background: #fbfbfd; }
+  #svg.pan, #svg.pan * { cursor: grab !important; }
+  #svg.draw { cursor: crosshair; }
+  .tools { position: absolute; left: 10px; top: 10px; display: flex; flex-direction: column; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 5px; box-shadow: var(--shadow); z-index: 5; max-height: calc(100% - 20px); overflow-y: auto; }
+  .tools button { width: 40px; height: 40px; min-width: 0; padding: 0; display: grid; place-items: center; font-size: 18px; border-radius: 9px; border-color: transparent; background: transparent; flex: none; }
+  .tools button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .tools .sep { height: 1px; background: var(--line); margin: 2px 4px; flex: none; }
+  .tools svg { width: 22px; height: 22px; }
+  .props { position: absolute; right: 10px; top: 10px; width: 250px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px; box-shadow: var(--shadow); z-index: 5; display: grid; gap: 8px; font-size: 13px; max-height: calc(100% - 20px); overflow-y: auto; }
+  .props[hidden] { display: none; }
+  .props h4 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .props .row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+  .props .row button { padding: 3px 8px; min-width: 0; font-size: 13px; }
+  .props .row button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .props select { padding: 3px 6px; font-size: 13px; width: auto; }
+  .sw { width: 22px; height: 22px; min-width: 0 !important; padding: 0 !important; border-radius: 50%; border: 1px solid rgba(0,0,0,.25) !important; }
+  .sw.on { outline: 2px solid var(--fg); outline-offset: 1px; }
+  .sw.none { background: linear-gradient(135deg, #fff 45%, #e53935 45%, #e53935 55%, #fff 55%) !important; }
+  .zoombar { position: absolute; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px; box-shadow: var(--shadow); z-index: 5; font-size: 12px; }
+  .zoombar button { padding: 3px 8px; min-width: 0; }
+  #zoomO { min-width: 44px; text-align: center; }
+  .more { position: absolute; left: 60px; top: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px; box-shadow: var(--shadow); z-index: 6; display: grid; grid-template-columns: repeat(4, 64px); gap: 4px; }
+  .more[hidden] { display: none; }
+  .more button { display: grid; place-items: center; gap: 2px; padding: 4px; font-size: 10px; min-width: 0; height: 60px; }
+  .more svg { width: 40px; height: 28px; }
+  #editor { position: absolute; z-index: 7; border: 2px solid var(--accent); background: rgba(255,255,255,.96); color: #111; resize: none; text-align: center; padding: 4px; margin: 0; box-sizing: border-box; outline: none; border-radius: 4px; font-family: 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.25; overflow: hidden; }
+  .lib { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .lib .it { border: 1px solid var(--line); border-radius: 10px; padding: 6px; display: grid; gap: 4px; cursor: pointer; background: var(--panel-2); text-align: left; }
+  .lib .it img { width: 100%; height: 90px; object-fit: contain; background: #fff; border-radius: 6px; }
+  .lib .it b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lib .it small { color: var(--muted); font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+  .lib .it small button { padding: 0 6px; min-width: 0; font-size: 12px; }
+  .tpl { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .tpl button { display: grid; gap: 6px; padding: 10px; text-align: center; font-size: 13px; }
+  .tpl button span { font-size: 30px; }
+  .hint2 { position: absolute; left: 50%; transform: translateX(-50%); bottom: 14px; background: rgba(30,30,40,.82); color: #fff; padding: 6px 12px; border-radius: 999px; font-size: 13px; z-index: 4; pointer-events: none; white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 760px) {
+    .tools { left: 0; right: 0; top: auto; bottom: 0; flex-direction: row; border-radius: 12px 12px 0 0; max-height: none; overflow-x: auto; padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px)); }
+    .tools .sep { width: 1px; height: auto; margin: 4px 2px; }
+    .props { left: 0; right: 0; width: auto; top: auto; bottom: calc(56px + env(safe-area-inset-bottom, 0px)); border-radius: 12px 12px 0 0; max-height: 32vh; }
+    .zoombar { top: 10px; bottom: auto; }
+    .more { left: 8px; right: 8px; top: auto; bottom: calc(60px + env(safe-area-inset-bottom, 0px)); grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); }
+    .hint2 { bottom: 70px; }
+    .topbar .brand span:last-child { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="sc-app">
+  <div class="topbar">
+    <a class="brand" href="index.html"><span class="logo">Dg</span><span>Diagrammes Joe</span></a>
+    <div class="menu">
+      <button data-menu>Fichier ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="new">Nouveau (modèles)…</button>
+        <button data-act="library">Mes schémas…</button>
+        <button data-act="open">Ouvrir (.joeschema, image)…</button>
+        <button data-act="save">Enregistrer une copie (.joeschema)</button>
+        <hr>
+        <button data-act="png">Exporter en image PNG</button>
+        <button data-act="svg">Exporter en SVG (vectoriel)</button>
+        <button data-act="pdf">Exporter en PDF</button>
+        <button data-act="toTexte">Insérer dans Texte Joe</button>
+        <hr>
+        <button data-act="rename">Renommer…</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Édition ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="undo">Annuler <kbd>Ctrl+Z</kbd></button>
+        <button data-act="redo">Rétablir <kbd>Ctrl+Y</kbd></button>
+        <hr>
+        <button data-act="copy">Copier <kbd>Ctrl+C</kbd></button>
+        <button data-act="paste">Coller <kbd>Ctrl+V</kbd></button>
+        <button data-act="duplicate">Dupliquer <kbd>Ctrl+D</kbd></button>
+        <button data-act="del">Supprimer <kbd>Suppr</kbd></button>
+        <button data-act="selectAll">Tout sélectionner <kbd>Ctrl+A</kbd></button>
+        <hr>
+        <button data-act="clearInk">Effacer tous les dessins à main levée</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Insertion ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="genOrg">Organigramme à partir d'une liste…</button>
+        <button data-act="genMind">Carte mentale à partir d'une liste…</button>
+        <button data-act="genFlow">Logigramme (procédure) à partir d'étapes…</button>
+        <hr>
+        <button data-act="child">Ajouter un élément enfant <kbd>Tab</kbd></button>
+        <button data-act="sibling">Ajouter un élément frère <kbd>Entrée</kbd></button>
+        <button data-act="image">Image…</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Disposition ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="layoutOrg">Réorganiser en organigramme (de haut en bas)</button>
+        <button data-act="layoutMind">Réorganiser en carte mentale</button>
+        <button data-act="layoutRight">Réorganiser de gauche à droite</button>
+        <hr>
+        <button data-act="alignL">Aligner à gauche</button>
+        <button data-act="alignC">Centrer horizontalement</button>
+        <button data-act="alignR">Aligner à droite</button>
+        <button data-act="alignT">Aligner en haut</button>
+        <button data-act="alignM">Centrer verticalement</button>
+        <button data-act="alignB">Aligner en bas</button>
+        <button data-act="distH">Répartir horizontalement</button>
+        <button data-act="distV">Répartir verticalement</button>
+        <button data-act="sameSize">Même taille</button>
+        <hr>
+        <button data-act="front">Premier plan</button>
+        <button data-act="back">Arrière-plan</button>
+        <button data-act="snap">Grille magnétique (activer / désactiver)</button>
+      </div>
+    </div>
+    <span class="spacer"></span>
+    <span class="hint" id="docName"></span>
+    <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+  </div>
+  <div class="work" id="work">
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg">
+      <defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#cfd3dc"/></pattern></defs>
+      <rect id="gridBg" x="0" y="0" width="100%" height="100%" fill="url(#grid)"/>
+      <g id="world"><g id="layer"></g><g id="ui"></g></g>
+    </svg>
+    <div class="tools" id="tools">
+      <button data-tool="select" title="Sélectionner (V)"><svg viewBox="0 0 24 24"><path d="M5 3l14 8-6 2-3 6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+      <button data-tool="hand" title="Déplacer la vue (H ou barre d'espace)">✋</button>
+      <span class="sep"></span>
+      <button data-tool="shape:round" title="Rectangle arrondi (R)"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+      <button data-tool="shape:ellipse" title="Ellipse (O)"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="7" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+      <button data-tool="shape:diamond" title="Losange — décision (D)"><svg viewBox="0 0 24 24"><path d="M12 3l9 9-9 9-9-9z" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+      <button data-act="moreShapes" title="Autres formes">⬡</button>
+      <button data-tool="shape:text" title="Texte (T)"><b style="font-size:18px">T</b></button>
+      <button data-tool="shape:note" title="Post-it">🗒</button>
+      <button data-tool="link" title="Flèche / connecteur (L) : glisser d'une forme à l'autre"><svg viewBox="0 0 24 24"><path d="M4 20L19 5M19 5h-7M19 5v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <span class="sep"></span>
+      <button data-tool="pen" title="Crayon (P) — tableau blanc">✏️</button>
+      <button data-tool="hl" title="Surligneur">🖍</button>
+      <button data-tool="eraser" title="Gomme (E) : efface les traits à main levée">🧽</button>
+      <span class="sep"></span>
+      <button data-act="image" title="Image">🖼</button>
+    </div>
+    <div class="more" id="more" hidden></div>
+    <div class="props" id="props" hidden></div>
+    <div class="zoombar"><button data-act="undo" title="Annuler">↶</button><button data-act="redo" title="Rétablir">↷</button><button data-act="zoomOut" title="Zoom arrière">−</button><span id="zoomO">100 %</span><button data-act="zoomIn" title="Zoom avant">+</button><button data-act="fit" title="Tout afficher">⤢</button></div>
+    <div class="hint2" id="hint" hidden></div>
+  </div>
+</div>
+<div id="toast" hidden></div>
+<script src="js/common.js"></script>
+<script src="js/schema-app.js"></script>
+</body>
+</html>

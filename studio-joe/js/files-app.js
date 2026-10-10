@@ -10,7 +10,7 @@
     texte: { label: 'Texte Joe', ic: 'Tx', color: '#2b579a' }, tableur: { label: 'Tableur Joe', ic: 'Tb', color: '#1f7a46' }, presentation: { label: 'Présentation Joe', ic: 'Pr', color: '#c4501b' },
     base: { label: 'Base Joe', ic: 'Ba', color: '#a4373a' }, notes: { label: 'Notes Joe', ic: 'No', color: '#c8901a' }, agenda: { label: 'Agenda Joe', ic: 'Ag', color: '#1565c0' },
     formulaires: { label: 'Formulaires Joe', ic: 'Fo', color: '#00796b' }, scan: { label: 'Scan Joe', ic: 'Sc', color: '#0b8a8a' }, audio: { label: 'Audio Joe', ic: 'Au', color: '#5b2a86' },
-    pdf: { label: 'PDF Joe', ic: 'PDF', color: '#b3261e' }, photo: { label: 'Photo Joe', ic: 'Ph', color: '#00639b' }, video: { label: 'Video Joe', ic: 'Vd', color: '#7b3fa0' }, design: { label: 'Design Joe', ic: 'De', color: '#e8590c' }, sauvegarde: { label: 'Sauvegarde', ic: 'Sv', color: '#455a64' },
+    pdf: { label: 'PDF Joe', ic: 'PDF', color: '#b3261e' }, photo: { label: 'Photo Joe', ic: 'Ph', color: '#00639b' }, video: { label: 'Video Joe', ic: 'Vd', color: '#7b3fa0' }, design: { label: 'Design Joe', ic: 'De', color: '#e8590c' }, schema: { label: 'Diagrammes Joe', ic: 'Dg', color: '#6d4c41' }, sauvegarde: { label: 'Sauvegarde', ic: 'Sv', color: '#455a64' },
   };
 
   /* ================= Lecture des données des applications (sans rien créer) ================= */
@@ -49,6 +49,8 @@
     // Agenda Joe
     for (const e of await all('agenda-joe', 'events')) add({ app: 'agenda', kind: 'event', title: e.title || 'Événement', sub: `Rendez-vous · ${fmtWhen(e.start)}${e.rrule ? ' · répété' : ''}${e.place ? ' · ' + e.place : ''}`, updated: e.updated || null, date: e.start, text: `${e.place || ''} ${e.notes || ''}`, open: () => { location.href = 'agenda.html#date=' + String(e.start).slice(0, 10); } });
     for (const t of await all('agenda-joe', 'tasks')) add({ app: 'agenda', kind: 'task', title: (t.done ? '☑ ' : '☐ ') + t.title, sub: `Tâche${t.due ? ' · ' + fmtWhen(t.due) : ''}${t.done ? ' · terminée' : ''}`, updated: t.doneAt || t.created, text: t.notes || '', open: () => { try { localStorage.setItem('agenda-view', 'tasks'); } catch (e) { /* ignore */ } location.href = 'agenda.html'; } });
+    // Diagrammes Joe
+    for (const d of await all('schema-joe', 'docs')) add({ app: 'schema', title: d.title || 'Schéma', sub: `Schéma · ${(d.els || []).filter((e) => e.t === 'shape').length} forme(s)`, updated: d.updated, text: (d.els || []).map((e) => e.text || '').filter(Boolean).join('\n'), open: () => { location.href = 'schema.html#doc=' + d.id; } });
     // Scan Joe, Audio Joe
     const pages = await get('scan-joe', 'kv', 'pages'); if (pages && pages.length) add({ app: 'scan', title: `Scan en cours`, sub: `${pages.length} page(s) scannée(s)`, updated: null, text: '', open: () => { location.href = 'scan.html'; } });
     const au = await get('audio-joe', 'kv', 'doc'); if (au && au.ch) add({ app: 'audio', title: au.name || 'Son', sub: `Son en cours · ${Math.round(au.ch[0].length / au.sr / 60)} min`, updated: au.updated, text: '', open: () => { location.href = 'audio.html'; } });
@@ -115,6 +117,7 @@
     if (t.startsWith('video/') || ['mp4', 'mov', 'webm', '3gp', 'mkv'].includes(ext)) return [['video', 'Monter dans Video Joe'], ['audio', 'Extraire le son (Audio Joe)']];
     if (t.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'bmp', 'joeimg'].includes(ext)) return [['scan', 'Document photographié → Scan Joe'], ['photo', 'Retoucher dans Photo Joe'], ['pdf', 'Mettre en PDF (PDF Joe)'], ['design', 'Utiliser dans Design Joe']];
     if (ext === 'joedesign') return [['design', 'Ouvrir dans Design Joe']];
+    if (ext === 'joeschema') return [['schema', 'Ouvrir dans Diagrammes Joe']];
     if (ext === 'joevideo') return [['video', 'Ouvrir dans Video Joe']];
     return [];
   }
