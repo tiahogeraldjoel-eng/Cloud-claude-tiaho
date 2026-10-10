@@ -212,13 +212,18 @@
     if (list) out.push(`</${list}>`);
     return out.join('');
   }
-  async function openDialog() { const [f] = await pickFiles('.docx,.txt,.html,.htm,.md,.joedoc,.json,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain', false); if (f) openFile(f); }
+  async function openDialog() { const [f] = await pickFiles('.docx,.pdf,application/pdf,.txt,.html,.htm,.md,.joedoc,.json,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain', false); if (f) openFile(f); }
   async function openFile(f) {
     const n = f.name.toLowerCase();
     try {
       await T.autosave();
       let d;
       if (n.endsWith('.docx')) { toast('Lecture du document Word…', 15000); d = await readDocx(f); }
+      else if (n.endsWith('.pdf')) {
+        toast('Conversion du PDF en document modifiable…', 60000);
+        const m = await Studio.pdfConvert.analyzeFile(f, { onProgress: (i, k, what) => toast(`Conversion du PDF : page ${i + 1} sur ${k}${what === 'ocr' ? ' (reconnaissance du texte)' : ''}…`, 60000) });
+        d = Studio.pdfConvert.toTexteDoc(m, baseName(f.name));
+      }
       else if (n.endsWith('.doc')) throw new Error('l\'ancien format .doc n\'est pas pris en charge : enregistrez-le en .docx depuis Word');
       else if (n.endsWith('.odt')) throw new Error('format .odt : enregistrez-le en .docx depuis LibreOffice');
       else if (/\.(joedoc|json)$/.test(n)) { d = JSON.parse(await f.text()); if (d.app !== 'texte-joe') throw new Error('fichier non reconnu'); delete d.app; }

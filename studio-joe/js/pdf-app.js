@@ -349,7 +349,7 @@
   function updateButtons() {
     $('#undoBtn').disabled = !undoStack.length; $('#redoBtn').disabled = !redoStack.length;
     const none = !pages.length;
-    ['#saveAllBtn', '#saveSelBtn', '#splitBtn', '#toImagesBtn', '#toTextBtn', '#ocrBtn', '#translateBtn', '#readBtn', '#compressBtn', '#flattenBtn'].forEach((s) => { $(s).disabled = none; });
+    ['#saveAllBtn', '#saveSelBtn', '#splitBtn', '#toImagesBtn', '#toTextBtn', '#toWordBtn', '#toExcelBtn', '#ocrBtn', '#translateBtn', '#readBtn', '#compressBtn', '#flattenBtn'].forEach((s) => { $(s).disabled = none; });
   }
 
   /* ---------------- Géométrie : espace visuel (haut-gauche) -> espace PDF ---------------- */
@@ -942,6 +942,53 @@
     if (v === 'copy') navigator.clipboard.writeText(text).then(() => toast('Texte copié'), () => toast('Copie refusée par le navigateur'));
   }
 
+  /* ---------------- Conversion en Word (.docx) ou Excel (.xlsx) ---------------- */
+  async function convertDialog(kind) {
+    if (!pages.length) return;
+    const C = Studio.pdfConvert; const word = kind === 'word';
+    let scanned = 0;
+    for (const p of pages) { if (p.ocr && p.ocr.length) continue; try { if (!(await pageHasText(p))) scanned++; } catch (e) { /* page sans source lisible */ } }
+    const res = await modal({
+      title: word ? 'Convertir en document Word (.docx)' : 'Convertir en classeur Excel (.xlsx)',
+      body: `${selected.size ? `<div class="field"><label for="cvScope">Pages</label><select id="cvScope"><option value="all">Toutes les pages (${pages.length})</option><option value="sel" selected>Pages sélectionnées (${selected.size})</option></select></div>` : ''}
+        ${scanned ? `<label class="row"><input type="checkbox" id="cvOcr" checked> Reconnaître le texte des ${scanned} page${scanned > 1 ? 's' : ''} scannée${scanned > 1 ? 's' : ''} (OCR)</label>
+        <div class="field"><label for="cvLang">Langue du document</label><select id="cvLang">${Studio.ocr.langOptions(Studio.ocr.savedLang())}</select></div>` : ''}
+        ${word ? '<label class="row"><input type="checkbox" id="cvBreaks" checked> Garder les sauts de page du PDF</label>'
+        : `<div class="field"><label for="cvSheets">Feuilles</label><select id="cvSheets"><option value="one">Tout sur une feuille</option><option value="page">Une feuille par page</option></select></div>
+           <label class="row"><input type="checkbox" id="cvTables"> Seulement les tableaux (sans le texte autour)</label>`}
+        <p class="hint">${word ? 'Paragraphes, titres, listes, tableaux et alignements sont reconstitués. Les images et dessins ne sont pas repris.' : 'Les tableaux deviennent des cellules ; les montants (12 500 000, 79,5 %), les dates et les nombres deviennent de vrais nombres, prêts pour les calculs.'} Tout se fait sur cet appareil.</p>`,
+      buttons: [{ label: 'Annuler', value: null },
+        { label: word ? 'Ouvrir dans Texte Joe' : 'Ouvrir dans Tableur Joe', value: (b) => opts(b, 'open') },
+        { label: word ? 'Télécharger le .docx' : 'Télécharger le .xlsx', primary: true, value: (b) => opts(b, 'dl') }],
+    });
+    function opts(b, action) { const q = (s) => b.querySelector(s); return { action, sel: q('#cvScope') ? q('#cvScope').value === 'sel' : false, ocr: q('#cvOcr') ? q('#cvOcr').checked : false, lang: q('#cvLang') ? q('#cvLang').value : 'fra', breaks: q('#cvBreaks') ? q('#cvBreaks').checked : true, perPage: q('#cvSheets') ? q('#cvSheets').value === 'page' : false, tablesOnly: q('#cvTables') ? q('#cvTables').checked : false }; }
+    if (!res) return;
+    if (res.ocr) Studio.ocr.saveLang(res.lang);
+    const list = res.sel ? targets() : pages.slice();
+    const ov = document.createElement('div'); ov.className = 'modal-back';
+    ov.innerHTML = '<div class="modal" style="width:min(420px,100%)"><header>Conversion en cours…</header><div class="body"><div style="height:10px;border-radius:5px;background:var(--panel-2);overflow:hidden"><div id="cvBar" style="height:100%;width:0;background:var(--accent);transition:width .2s"></div></div><span class="hint" id="cvTxt">Préparation…</span></div></div>';
+    document.body.appendChild(ov);
+    const setP = (u, t) => { ov.querySelector('#cvBar').style.width = Math.round(u * 100) + '%'; ov.querySelector('#cvTxt').textContent = t; };
+    try {
+      const bytes = await buildPdf(list, { wm: null, num: null, hf: null, protect: null });
+      const pjs = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+      const model = await C.analyze(pjs, { ocr: res.ocr, lang: res.lang, onProgress: (i, n, what) => setP(i / n, `Page ${i + 1} sur ${n}${what === 'ocr' ? ' : reconnaissance du texte…' : '…'}`) });
+      pjs.destroy();
+      setP(1, 'Écriture du fichier…');
+      const name = outName();
+      if (word) {
+        if (res.action === 'open') { await C.openInTexte(model, name, { pageBreaks: res.breaks }); return; }
+        download(await C.toDocx(model, { title: name, pageBreaks: res.breaks }), name + '.docx');
+      } else {
+        const blob = await C.toXlsx(model, { sheetPerPage: res.perPage, tablesOnly: res.tablesOnly });
+        if (res.action === 'open') { await C.handoff.put('tableur', name + '.xlsx', blob); location.href = 'tableur.html#import'; return; }
+        download(blob, name + '.xlsx');
+      }
+      toast((word ? 'Document Word créé' : 'Classeur Excel créé') + (model.pages.some((q) => q.ocr) ? ' — pages scannées : relisez les montants et les noms reconnus' : ''), model.pages.some((q) => q.ocr) ? 7000 : 2500);
+    } catch (e) { console.error(e); toast('Conversion impossible : ' + (e.message || e), 7000); }
+    finally { ov.remove(); }
+  }
+
   /* ---------------- Dessin des annotations (éditeur + vignettes) ---------------- */
   function drawOverlays(ctx, list, sel, imgs) {
     for (const o of list) {
@@ -1322,7 +1369,7 @@
   $('#moveLBtn').onclick = () => moveSel(-1); $('#moveRBtn').onclick = () => moveSel(1);
   $('#dupBtn').onclick = dupSel; $('#delBtn').onclick = delSel; $('#editBtn').onclick = () => editPage();
   $('#saveAllBtn').onclick = saveAll; $('#saveSelBtn').onclick = saveSel; $('#splitBtn').onclick = split;
-  $('#toImagesBtn').onclick = toImages; $('#toTextBtn').onclick = toText; $('#ocrBtn').onclick = ocrDialog; $('#translateBtn').onclick = translateDialog; $('#readBtn').onclick = readAloud;
+  $('#toImagesBtn').onclick = toImages; $('#toTextBtn').onclick = toText; $('#toWordBtn').onclick = () => convertDialog('word'); $('#toExcelBtn').onclick = () => convertDialog('excel'); $('#ocrBtn').onclick = ocrDialog; $('#translateBtn').onclick = translateDialog; $('#readBtn').onclick = readAloud;
   $('#compressBtn').onclick = () => compress(false); $('#flattenBtn').onclick = () => compress(true);
   [['wmSize', ''], ['wmOpacity', ' %'], ['wmAngle', '°']].forEach(([id, unit]) => {
     const i = $('#' + id), o = $('#' + id + 'O'); i.addEventListener('input', () => { o.textContent = i.value + unit; });
