@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tableur Joe</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#d9861c">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-180.png">
+<link rel="stylesheet" href="css/studio.css">
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  .tab-app { display: grid; grid-template-rows: auto auto auto 1fr auto; height: 100%; height: 100dvh; }
+  .topbar .logo { background: #1f7a46 !important; color: #fff !important; }
+  .tools {
+    display: flex; gap: 4px; align-items: center; padding: 5px 10px; background: var(--panel); border-bottom: 1px solid var(--line);
+    overflow-x: auto; scrollbar-width: thin;
+  }
+  .tools button { padding: 4px 8px; min-width: 32px; justify-content: center; }
+  .tools button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .tools select { width: auto; padding: 4px 6px; flex: none; }
+  .tools #fontSize { min-width: 58px; }
+  .tools #numFmt { max-width: 190px; }
+  .menu-list hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  .tools .sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 3px; flex: none; }
+  .tools .clr { position: relative; display: inline-flex; }
+  .tools .clr input[type=color] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+  .tools .clr span.bar { position: absolute; left: 6px; right: 6px; bottom: 3px; height: 3px; border-radius: 2px; }
+  .fbar { display: grid; grid-template-columns: 96px auto 1fr; gap: 6px; align-items: center; padding: 5px 10px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .fbar #nameBox { font: 13px var(--font-mono); text-align: center; padding: 4px; }
+  .fbar #fx { font: 14px var(--font-mono); padding: 5px 8px; }
+  .fbar .fxwrap { display: flex; gap: 6px; align-items: center; min-width: 0; }
+  .fbar .fxwrap > button { flex: none; }
+  .gridwrap { position: relative; overflow: hidden; min-height: 0; background: var(--panel); }
+  .scroller { position: absolute; inset: 0; overflow: auto; outline: none; overscroll-behavior: contain; }
+  .scroller:focus-visible { outline: none; }
+  #spacer { position: relative; }
+  #cv { position: sticky; left: 0; top: 0; display: block; touch-action: pan-x pan-y; }
+  .cell-ed {
+    position: absolute; z-index: 5; margin: 0; padding: 2px 4px; border: 2px solid var(--accent); border-radius: 0; resize: none; min-height: 0;
+    font: 14px var(--font-ui); background: #fff; color: #000; box-shadow: 0 2px 10px rgba(0,0,0,.2); overflow: hidden; white-space: pre-wrap;
+  }
+  .sel-handle { position: absolute; z-index: 4; width: 9px; height: 9px; background: #1f7a46; border: 1px solid #fff; touch-action: none; cursor: crosshair; }
+  @media (pointer: coarse) { .sel-handle { width: 18px; height: 18px; border-radius: 50%; margin: -5px 0 0 -5px; border-width: 2px; } }
+  .suggest {
+    position: absolute; z-index: 20; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow);
+    min-width: 260px; max-width: min(420px, 90vw); padding: 4px; font-size: 13px;
+  }
+  .suggest div { padding: 4px 8px; border-radius: 5px; cursor: pointer; }
+  .suggest div.on, .suggest div:hover { background: var(--accent-soft); }
+  .suggest .sig { cursor: default; color: var(--muted); }
+  .suggest .sig b { color: var(--fg); }
+  .bottom { display: flex; align-items: center; gap: 8px; background: var(--panel); border-top: 1px solid var(--line); padding: 3px 8px; min-height: 34px; padding-bottom: calc(3px + env(safe-area-inset-bottom, 0px)); }
+  .tabs { display: flex; gap: 2px; overflow-x: auto; flex: 1; min-width: 0; scrollbar-width: thin; }
+  .tabs button { border-radius: 0 0 6px 6px; border-top: 0; padding: 4px 12px; background: transparent; font-size: 13px; }
+  .tabs button.on { background: var(--panel-2); border-color: var(--line); font-weight: 700; color: #1f7a46; box-shadow: inset 0 -2px 0 #1f7a46; }
+  :root[data-theme="dark"] .tabs button.on { color: #6fd39a; box-shadow: inset 0 -2px 0 #6fd39a; }
+  .status { font: 12px var(--font-mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%; }
+  .zoom { display: flex; align-items: center; gap: 4px; }
+  .zoom input { width: 90px; }
+  .ctx { position: fixed; z-index: 120; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 4px; display: grid; min-width: 220px; max-height: 80vh; overflow-y: auto; }
+  .ctx button { background: transparent; border: 0; justify-content: space-between; width: 100%; padding: 7px 10px; }
+  .ctx button:hover { background: var(--panel-2); }
+  .ctx hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  .ctx kbd, .menu-list kbd { font: 11px var(--font-mono); color: var(--muted); }
+  .fmt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .fmt-preview { font: 15px var(--font-mono); padding: 8px; border: 1px dashed var(--line); border-radius: 6px; min-height: 36px; }
+  .flist { max-height: 45vh; overflow-y: auto; border: 1px solid var(--line); border-radius: 6px; padding: 6px; display: grid; gap: 2px; }
+  .flist label { display: flex; gap: 8px; align-items: center; color: var(--fg); font-size: 13px; padding: 2px 4px; }
+  .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+  .tpl-grid button { flex-direction: column; align-items: flex-start; white-space: normal; text-align: left; padding: 12px; gap: 4px; height: 100%; }
+  .tpl-grid button b { font-size: 14px; }
+  .tpl-grid button span { font-size: 12px; color: var(--muted); }
+  .fnlist { max-height: 40vh; overflow-y: auto; display: grid; gap: 2px; }
+  .fnlist button { justify-content: flex-start; background: transparent; border-color: transparent; white-space: normal; text-align: left; }
+  .fnlist button:hover, .fnlist button.on { background: var(--accent-soft); }
+  @media (max-width: 700px) {
+    .fbar { grid-template-columns: 72px auto 1fr; }
+    .topbar { gap: 4px; padding: 6px 8px; }
+    .topbar .brand span:last-child, #helpBtn, #docName { display: none; }
+    .topbar .brand { margin-right: 2px; }
+    .topbar .menu > button { padding: 5px 7px; font-size: 13px; }
+    #themeBtn { padding: 5px 6px; font-size: 13px; }
+    .topbar .hide-sm { display: none; }
+    .fmt-grid { grid-template-columns: 1fr; }
+    .zoom input { width: 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="tab-app">
+  <div class="topbar">
+    <a class="brand" href="index.html"><span class="logo">Tb</span><span>Tableur Joe</span></a>
+    <div class="menu">
+      <button data-menu>Fichier ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="new">Nouveau classeur</button>
+        <button data-act="templates">Nouveau à partir d'un modèle…</button>
+        <button data-act="open">Ouvrir (.xlsx, .csv, .joetab)… <kbd>Ctrl+O</kbd></button>
+        <hr>
+        <button data-act="saveXlsx">Enregistrer en Excel (.xlsx) <kbd>Ctrl+S</kbd></button>
+        <button data-act="saveCsv">Enregistrer la feuille en CSV</button>
+        <button data-act="saveJoe">Enregistrer en .joetab (tout, graphiques compris)</button>
+        <button data-act="pdf">Exporter en PDF / imprimer…</button>
+        <hr>
+        <button data-act="rename">Renommer le classeur…</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Édition ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="undo">Annuler <kbd>Ctrl+Z</kbd></button>
+        <button data-act="redo">Rétablir <kbd>Ctrl+Y</kbd></button>
+        <hr>
+        <button data-act="copy">Copier <kbd>Ctrl+C</kbd></button>
+        <button data-act="cut">Couper <kbd>Ctrl+X</kbd></button>
+        <button data-act="paste">Coller <kbd>Ctrl+V</kbd></button>
+        <button data-act="pasteValues">Coller les valeurs seulement</button>
+        <hr>
+        <button data-act="fillDown">Recopier vers le bas <kbd>Ctrl+D</kbd></button>
+        <button data-act="fillRight">Recopier vers la droite <kbd>Ctrl+R</kbd></button>
+        <button data-act="fillSeries">Remplir une série…</button>
+        <hr>
+        <button data-act="clearContents">Effacer le contenu <kbd>Suppr</kbd></button>
+        <button data-act="clearFormats">Effacer la mise en forme</button>
+        <button data-act="clearAll">Tout effacer</button>
+        <hr>
+        <button data-act="find">Rechercher et remplacer… <kbd>Ctrl+F</kbd></button>
+        <button data-act="goto">Atteindre une cellule… <kbd>Ctrl+G</kbd></button>
+        <button data-act="selectAll">Tout sélectionner <kbd>Ctrl+A</kbd></button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Insertion ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="insRowAbove">Ligne au-dessus</button>
+        <button data-act="insRowBelow">Ligne en dessous</button>
+        <button data-act="insColLeft">Colonne à gauche</button>
+        <button data-act="insColRight">Colonne à droite</button>
+        <hr>
+        <button data-act="delRows">Supprimer les lignes</button>
+        <button data-act="delCols">Supprimer les colonnes</button>
+        <hr>
+        <button data-act="insFn">Fonction… <kbd>Maj+F3</kbd></button>
+        <button data-act="autosum">Somme automatique <kbd>Alt+=</kbd></button>
+        <button data-act="today">Date du jour <kbd>Ctrl+;</kbd></button>
+        <button data-act="chart">Graphique…</button>
+        <button data-act="newSheet">Nouvelle feuille</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Format ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="formatCells">Format de cellule… <kbd>Ctrl+1</kbd></button>
+        <button data-act="condFormat">Mise en forme conditionnelle…</button>
+        <button data-act="clearCF">Effacer les règles conditionnelles de la sélection</button>
+        <hr>
+        <button data-act="merge">Fusionner / défusionner</button>
+        <button data-act="colWidth">Largeur de colonne…</button>
+        <button data-act="rowHeight">Hauteur de ligne…</button>
+        <button data-act="autofit">Ajuster la largeur au contenu</button>
+        <hr>
+        <button data-act="freeze">Figer les volets (au-dessus et à gauche de la cellule)</button>
+        <button data-act="freezeRow">Figer la première ligne</button>
+        <button data-act="unfreeze">Libérer les volets</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Données ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="sortAsc">Trier de A à Z (croissant)</button>
+        <button data-act="sortDesc">Trier de Z à A (décroissant)</button>
+        <button data-act="sort">Tri personnalisé…</button>
+        <hr>
+        <button data-act="filter">Filtrer (activer / retirer)</button>
+        <button data-act="clearFilter">Afficher toutes les lignes</button>
+        <hr>
+        <button data-act="dedupe">Supprimer les doublons…</button>
+        <button data-act="splitText">Convertir le texte en colonnes…</button>
+        <button data-act="recalc">Recalculer <kbd>F9</kbd></button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>IA ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="aiFormula">Écrire une formule à partir d'une phrase…</button>
+        <button data-act="aiExplain">Expliquer la formule de la cellule</button>
+      </div>
+    </div>
+    <span class="spacer"></span>
+    <span class="hint hide-sm" id="docName"></span>
+    <button id="helpBtn" class="ghost" title="Raccourcis clavier">?</button>
+    <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+  </div>
+
+  <div class="tools" id="tools">
+    <button data-act="undo" title="Annuler (Ctrl+Z)">↶</button>
+    <button data-act="redo" title="Rétablir (Ctrl+Y)">↷</button>
+    <span class="sep"></span>
+    <select id="fontSize" title="Taille du texte">
+      <option>8</option><option>9</option><option>10</option><option selected>11</option><option>12</option><option>14</option><option>16</option><option>18</option><option>20</option><option>24</option><option>28</option><option>36</option>
+    </select>
+    <button data-act="bold" id="tbBold" title="Gras (Ctrl+B)"><b>G</b></button>
+    <button data-act="italic" id="tbItalic" title="Italique (Ctrl+I)"><i>I</i></button>
+    <button data-act="underline" id="tbUnder" title="Souligné (Ctrl+U)"><u>S</u></button>
+    <label class="clr" title="Couleur du texte"><button tabindex="-1" type="button">A<span class="bar" id="fcBar" style="background:#c00000"></span></button><input type="color" id="fcPick" value="#c00000"></label>
+    <label class="clr" title="Couleur de remplissage"><button tabindex="-1" type="button">▧<span class="bar" id="bgBar" style="background:#fff2cc"></span></button><input type="color" id="bgPick" value="#fff2cc"></label>
+    <button data-act="noFill" title="Sans remplissage">⌀</button>
+    <span class="sep"></span>
+    <button data-act="alignL" id="tbL" title="Aligner à gauche">⇤</button>
+    <button data-act="alignC" id="tbC" title="Centrer">↔</button>
+    <button data-act="alignR" id="tbR" title="Aligner à droite">⇥</button>
+    <button data-act="wrap" id="tbWrap" title="Renvoyer à la ligne automatiquement">↵</button>
+    <button data-act="merge" title="Fusionner et centrer">⊞</button>
+    <div class="menu">
+      <button data-menu title="Bordures">▦ ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="bdAll">Toutes les bordures</button>
+        <button data-act="bdOuter">Bordure extérieure</button>
+        <button data-act="bdThick">Bordure épaisse extérieure</button>
+        <button data-act="bdBottom">Bordure inférieure</button>
+        <button data-act="bdDoubleBottom">Double bordure inférieure (totaux)</button>
+        <button data-act="bdNone">Aucune bordure</button>
+      </div>
+    </div>
+    <span class="sep"></span>
+    <select id="numFmt" title="Format des nombres"></select>
+    <button data-act="fmtMoney" title="Monétaire FCFA">F</button>
+    <button data-act="fmtPct" title="Pourcentage">%</button>
+    <button data-act="fmtThousands" title="Séparateur de milliers">000</button>
+    <button data-act="decMore" title="Ajouter une décimale">,0→</button>
+    <button data-act="decLess" title="Retirer une décimale">←,0</button>
+    <span class="sep"></span>
+    <button data-act="autosum" title="Somme automatique (Alt+=)">Σ</button>
+    <button data-act="sortAsc" title="Trier croissant">A→Z</button>
+    <button data-act="sortDesc" title="Trier décroissant">Z→A</button>
+    <button data-act="filter" id="tbFilter" title="Filtrer">⏷ Filtre</button>
+    <button data-act="chart" title="Insérer un graphique">📊</button>
+    <button data-act="condFormat" title="Mise en forme conditionnelle">🎨</button>
+  </div>
+
+  <div class="fbar">
+    <input type="text" id="nameBox" aria-label="Cellule active" title="Tapez une adresse (B12) puis Entrée">
+    <button id="fxBtn" title="Insérer une fonction" class="ghost"><i>fx</i></button>
+    <div class="fxwrap"><input type="text" id="fx" autocomplete="off" spellcheck="false" aria-label="Contenu de la cellule ou formule"></div>
+  </div>
+
+  <div class="gridwrap" id="gridwrap">
+    <div class="scroller" id="scroller" tabindex="0" aria-label="Feuille de calcul">
+      <div id="spacer"><canvas id="cv"></canvas></div>
+    </div>
+    <textarea id="cellEd" class="cell-ed" hidden spellcheck="false" autocomplete="off"></textarea>
+    <div id="selHandle" class="sel-handle" hidden title="Glisser pour recopier"></div>
+  </div>
+
+  <div class="bottom">
+    <button id="addSheet" title="Nouvelle feuille" class="ghost">＋</button>
+    <div class="tabs" id="tabs"></div>
+    <span class="status" id="status"></span>
+    <div class="zoom"><input type="range" id="zoom" min="50" max="200" step="10" value="100" aria-label="Zoom"><span class="hint" id="zoomO">100 %</span></div>
+  </div>
+</div>
+<div id="toast" hidden></div>
+<script src="lib/formula.min.js"></script>
+<script src="js/common.js"></script>
+<script src="js/formula.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/speech.js"></script>
+<script src="js/sheet-app.js"></script>
+<script src="js/sheet-extra.js"></script>
+</body>
+</html>
