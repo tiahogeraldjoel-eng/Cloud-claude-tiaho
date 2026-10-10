@@ -1,7 +1,6 @@
-/* Studio Joe — reconnaissance de texte (OCR) hors ligne avec Tesseract (moteur LSTM, français).
+/* Studio Joe — reconnaissance de texte (OCR) hors ligne avec Tesseract (moteur LSTM, français et anglais).
    Le moteur et les données de langue sont chargés à la demande depuis lib/, sans réseau. */
 (function () {
-  let enginePromise = null;
 
   function loadScript(src) {
     return new Promise((res, rej) => {
@@ -22,25 +21,40 @@
     return new Uint8Array(await new Response(stream).arrayBuffer());
   }
 
-  function load(lang = 'fra') {
-    if (enginePromise) return enginePromise;
-    enginePromise = (async () => {
-      const base = 'lib/';
-      if (!window.TesseractCore) await loadScript(base + (simdSupported() ? 'tesseract-core-simd-lstm.wasm.js' : 'tesseract-core-lstm.wasm.js'));
-      if (!(window.__TESSDATA && window.__TESSDATA[lang])) await loadScript(base + `tessdata-${lang}.js`);
-      const M = await window.TesseractCore({});
-      M.FS.writeFile(`${lang}.traineddata`, await gunzip(window.__TESSDATA[lang]));
-      const api = new M.TessBaseAPI();
-      if (api.Init(null, lang) !== 0) throw new Error('initialisation de l\'OCR impossible');
-      return { M, api };
-    })();
-    enginePromise.catch(() => { enginePromise = null; });
-    return enginePromise;
+  // un seul moteur WebAssembly ; on recharge seulement la ou les langues demandées (« fra », « eng », « fra+eng »)
+  let corePromise = null, current = null;
+  const written = new Set();
+  function core() {
+    if (!corePromise) {
+      corePromise = (async () => {
+        if (!window.TesseractCore) await loadScript('lib/' + (simdSupported() ? 'tesseract-core-simd-lstm.wasm.js' : 'tesseract-core-lstm.wasm.js'));
+        const M = await window.TesseractCore({});
+        return { M, api: new M.TessBaseAPI() };
+      })();
+      corePromise.catch(() => { corePromise = null; });
+    }
+    return corePromise;
+  }
+  async function load(lang = 'fra') {
+    const e = await core();
+    for (const l of lang.split('+')) {
+      if (written.has(l)) continue;
+      if (!(window.__TESSDATA && window.__TESSDATA[l])) await loadScript(`lib/tessdata-${l}.js`);
+      e.M.FS.writeFile(`${l}.traineddata`, await gunzip(window.__TESSDATA[l]));
+      delete window.__TESSDATA[l]; // libère la copie base64
+      written.add(l);
+    }
+    if (current !== lang) {
+      if (current) e.api.End();
+      if (e.api.Init(null, lang) !== 0) throw new Error('initialisation de l\'OCR impossible');
+      current = lang;
+    }
+    return e;
   }
 
   /* Reconnaît le texte d'un canvas. Renvoie { text, words: [{x, y, w, h, text, conf, line}] } en pixels du canvas. */
-  async function recognize(canvas) {
-    const { M, api } = await load();
+  async function recognize(canvas, lang = 'fra') {
+    const { M, api } = await load(lang);
     const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
     M.FS.writeFile('/input', new Uint8Array(await blob.arrayBuffer()));
     await new Promise((r) => setTimeout(r, 30)); // laisse l'interface afficher la progression
@@ -58,6 +72,11 @@
     return { text: text.replace(/\n{3,}/g, '\n\n').trim(), words };
   }
 
+  const LANGS = { fra: 'Français', eng: 'Anglais', 'fra+eng': 'Français + anglais (documents mixtes)' };
+  const langOptions = (sel) => Object.entries(LANGS).map(([k, l]) => `<option value="${k}"${k === sel ? ' selected' : ''}>${l}</option>`).join('');
+  function savedLang() { try { return localStorage.getItem('studio-ocr-lang') || 'fra'; } catch (e) { return 'fra'; } }
+  function saveLang(l) { try { localStorage.setItem('studio-ocr-lang', l); } catch (e) { /* ignore */ } }
+
   window.Studio = window.Studio || {};
-  window.Studio.ocr = { load, recognize };
+  window.Studio.ocr = { load, recognize, LANGS, langOptions, savedLang, saveLang };
 })();

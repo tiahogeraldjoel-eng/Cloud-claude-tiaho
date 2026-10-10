@@ -30,7 +30,7 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
 - Filigrane, numérotation des pages, en-tête et pied de page (`{date}`, `{n}`, `{total}`)
 - Diviser (une page par fichier, toutes les N pages, plages `1-3, 4-fin`) en ZIP
 - Compresser, aplatir en images (anti-copie), PDF → PNG/JPG/WebP, extraire le texte
-- **OCR des PDF scannés** (français, hors ligne) : le texte est reconnu puis
+- **OCR des PDF scannés** (français, anglais ou les deux, hors ligne) : le texte est reconnu puis
   ajouté en couche invisible ; le PDF devient consultable par recherche, copiable,
   et son texte modifiable avec l'outil « Modifier un texte existant »
 - **Modifier un texte existant** du PDF (cliquer sur le mot, le retaper)
@@ -105,7 +105,7 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
   projet `.joevideo` (les médias sont reliés à la réouverture)
 
 ## Limites connues
-- L'OCR reconnaît le français (et les chiffres) ; l'écriture manuscrite est mal lue.
+- L'OCR reconnaît le français et l'anglais (et les chiffres) ; l'écriture manuscrite est mal lue.
   Vérifier les montants et numéros importants sur un scan de mauvaise qualité.
 - La suppression automatique du fond fonctionne sur un fond uni (mur, papier,
   studio) ; pour un fond chargé, finir à la gomme.
@@ -126,4 +126,4 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
 - [Paper.js](https://github.com/paperjs/paper.js) 0.12.18 — MIT
 - [mp4-muxer](https://github.com/Vanilagy/mp4-muxer) 5.1.5 — MIT
 - [gifenc](https://github.com/mattdesl/gifenc) 1.0.3 — MIT
-- [tesseract.js-core](https://github.com/naptha/tesseract.js-core) 5.1.1 et données `fra` (tessdata best_int) — Apache 2.0
+- [tesseract.js-core](https://github.com/naptha/tesseract.js-core) 5.1.1 et données `fra` et `eng` (tessdata best_int) — Apache 2.0
