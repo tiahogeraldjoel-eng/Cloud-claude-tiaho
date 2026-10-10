@@ -11,6 +11,7 @@ l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA C
 | **PDF Joe** | Acrobat | `pdf.html` |
 | **Scan Joe** | Adobe Scan | `scan.html` |
 | **Texte Joe** | Word | `texte.html` |
+| **Agenda Joe** | Outlook / Google Agenda | `agenda.html` |
 | **Notes Joe** | OneNote / Keep | `notes.html` |
 | **Formulaires Joe** | Google Forms | `formulaires.html` |
 | **Base Joe** | Access | `base.html` |
@@ -88,6 +89,23 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Partage direct (WhatsApp, e-mail…) depuis le téléphone ; texte extrait copié,
   enregistré en `.txt` ou ouvert dans Texte Joe ; images en `.zip`
 - Les pages restent dans le téléphone jusqu'à « Tout effacer »
+
+### Agenda Joe (équivalent Outlook / Google Agenda)
+- Vues jour, semaine, mois et liste ; plusieurs agendas colorés, à afficher ou masquer ;
+  petit calendrier, recherche, balayage gauche / droite sur téléphone
+- Événements sur une journée ou à heure fixe, lieu, notes ; répétitions : tous les jours,
+  du lundi au vendredi, chaque semaine (jours au choix), chaque mois à la même date ou
+  « le 2e lundi », chaque année, jusqu'à une date ; modifier ou supprimer un seul jour
+  de la série
+- Jours fériés du Burkina Faso (fêtes fixes, Pâques, Ascension, Pentecôte ; fêtes
+  musulmanes à dates estimées, à confirmer chaque année)
+- Tâches : échéance, heure, priorité, répétition, listes ; saisie rapide
+  (« Appeler la BDT demain 10h », « Envoyer le compte de gestion vendredi !! ») ;
+  les cases à cocher de Notes Joe y apparaissent et peuvent y être cochées
+- Rappels : notification tant que l'application est ouverte ou en arrière-plan ;
+  rappels manqués signalés à l'ouverture
+- Import et export `.ics` (Google Agenda, Outlook, agenda du téléphone), avec les
+  répétitions et les rappels
 
 ### Notes Joe (équivalent OneNote / Google Keep)
 - Carnets (couleur, renommer et supprimer par appui long), étiquettes, couleurs de
@@ -351,6 +369,9 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   l'appareil que dans le fichier que vous envoyez vous-même
 
 ## Limites connues
+- Agenda Joe : un navigateur ne peut pas réveiller le téléphone quand l'application est
+  fermée ; pour des rappels garantis, exporter en `.ics` vers l'agenda du téléphone. Pas
+  d'invitations par e-mail ni de partage d'agenda en ligne.
 - Base Joe : ne peut pas enregistrer directement un fichier `.accdb` (aucune bibliothèque
   libre ne le permet dans un navigateur) : le retour vers Access passe par l'export XML,
   après quoi les relations sont à recréer dans Access. Les formulaires, états, macros et
