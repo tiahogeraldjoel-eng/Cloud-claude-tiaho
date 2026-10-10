@@ -10,6 +10,7 @@ l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA C
 |---|---|---|
 | **PDF Joe** | Acrobat | `pdf.html` |
 | **Tableur Joe** | Excel | `tableur.html` |
+| **Présentation Joe** | PowerPoint | `presentation.html` |
 | **Photo Joe** | Photoshop / Lightroom | `photo.html` |
 | **Design Joe** | Illustrator / Canva / Express | `design.html` |
 | **Video Joe** | Premiere Pro | `video.html` |
@@ -93,6 +94,32 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   phrase, expliquer une formule
 - Sur téléphone : toucher une cellule puis la retoucher pour écrire, poignée pour étendre
   la sélection, appui long pour le menu
+
+### Présentation Joe (équivalent PowerPoint)
+- Diapositives 16:9 ou 4:3, dispositions (titre, titre et contenu, deux contenus,
+  comparaison, section, image et texte…), 8 thèmes (dont « Faso »), arrière-plans
+  couleur ou image, masquer une diapositive
+- Texte riche : police, taille, gras, italique, souligné, couleur, surlignage,
+  alignement, puces et numéros sur plusieurs niveaux (Tab / Maj+Tab), interligne
+- Formes (rectangles, flèches, étoile, bulle…), images (glisser-déposer, coller),
+  tableaux, graphiques (colonnes, barres, courbes, aires, secteurs, anneau), icônes,
+  date, numéros de diapositive
+- Déplacer, redimensionner, faire pivoter, guides magnétiques, aligner et répartir,
+  premier plan / arrière-plan, copier-coller, annuler / rétablir
+- Miniatures réordonnables, notes de l'orateur (avec dictée), sauvegarde automatique
+- Diaporama plein écran : transitions (fondu, poussée, couvrir, zoom, retournement),
+  animations d'entrée (y compris paragraphe par paragraphe), écran noir (B), aller à une
+  diapositive (numéro + Entrée), pointeur laser, balayage au doigt
+- Mode présentateur : diapositive en cours et suivante, notes, minuteur, horloge ;
+  les diapositives s'affichent dans une seconde fenêtre à placer sur le vidéoprojecteur
+- Fichiers : enregistrer en `.pptx` modifiable dans PowerPoint (textes, formes, images,
+  tableaux, vrais graphiques, notes) ; ouvrir un `.pptx` (textes et puces, formes,
+  images, tableaux, graphiques, notes) ; `.joeslides` ; export PDF (diapositives,
+  pages de commentaires, documents 2, 3 ou 6 par page) et images PNG
+- Modèles : rapport d'activité, réunion, budget, formation, projet ; création à
+  partir d'un plan tapé ou dicté
+- IA Claude (en ligne, avec votre clé) : créer une présentation complète à partir d'un
+  sujet ou d'un texte, rédiger les notes de l'orateur
 
 ### Photo Joe
 - Calques : opacité, 16 modes de fusion, renommer, masquer, fusionner, aplatir
@@ -193,6 +220,12 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   sous-titres en option)
 
 ## Limites connues
+- Présentation Joe : les animations et transitions ne sont pas exportées dans le
+  `.pptx`. L'ouverture d'un `.pptx` reprend le contenu, mais pas toujours la mise en
+  forme exacte : SmartArt, vidéos et formes spéciales sont ignorés ou simplifiés.
+  L'ancien format `.ppt` doit d'abord être réenregistré en `.pptx`. Le mode présentateur
+  sur deux écrans demande un ordinateur ; sur téléphone, les notes s'affichent sur le
+  même écran.
 - Tableur Joe : pas de tableaux croisés dynamiques, de macros ni de formules
   matricielles à résultat débordant (FILTRE, TRIER, UNIQUE). Les graphiques ne sont
   pas enregistrés dans le `.xlsx` (utiliser `.joetab` pour les garder), et
@@ -232,6 +265,7 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - [gifenc](https://github.com/mattdesl/gifenc) 1.0.3 — MIT
 - [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript) 0.128.0, empaqueté pour le navigateur — MIT
 - [@huggingface/transformers](https://github.com/huggingface/transformers.js) 3.8.1, empaqueté pour le navigateur ; modèles Whisper `Xenova/whisper-base` et `Xenova/whisper-small` téléchargés à la demande — Apache 2.0 / MIT
+- [PptxGenJS](https://github.com/gitbrent/PptxGenJS) 4.0.1 — MIT
 - [ExcelJS](https://github.com/exceljs/exceljs) 4.4.0 — MIT
 - [Formula.js](https://github.com/formulajs/formulajs) 4.6.1 — MIT
 - [tesseract.js-core](https://github.com/naptha/tesseract.js-core) 5.1.1 et données `fra` et `eng` (tessdata best_int) — Apache 2.0
