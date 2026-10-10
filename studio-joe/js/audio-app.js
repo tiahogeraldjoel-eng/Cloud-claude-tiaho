@@ -349,6 +349,7 @@
     openFile(f, mode);
   }
   Studio.onDropFiles($('#stage'), (files) => files[0] && openFile(files[0], A ? 'insert' : 'open'));
+  Studio.onImport('audio', (fs) => openFile(fs[0], 'open'));
 
   /* ================= Édition ================= */
   const needSel = () => { if (!sel) { toast('Sélectionnez d\'abord un passage (glisser sur la forme d\'onde)'); return false; } return true; };

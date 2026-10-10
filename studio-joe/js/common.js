@@ -125,7 +125,24 @@
 
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  window.Studio = { $, $$, toast, download, readAsArrayBuffer, readAsDataURL, loadImage, pickFiles, baseName, initMenus, modal, confirmBox, initTheme, store, onDropFiles, clamp };
+  /* Passage de fichiers d'une application à l'autre (Mes fichiers, partage depuis une autre appli, conversions) :
+     les fichiers sont déposés dans IndexedDB puis l'application cible est ouverte avec « #import ». */
+  const handoff = {
+    db() { return new Promise((res, rej) => { const r = indexedDB.open('studio-handoff', 1); r.onupgradeneeded = () => r.result.createObjectStore('files'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+    async put(key, files) { const h = await this.db(); const list = [...files].map((f) => ({ name: f.name, type: f.type, blob: f })); await new Promise((res, rej) => { const t = h.transaction('files', 'readwrite'); t.objectStore('files').put(list, key); t.oncomplete = res; t.onerror = () => rej(t.error); }); h.close(); },
+    async peek(key) { const h = await this.db(); const v = await new Promise((res, rej) => { const q = h.transaction('files').objectStore('files').get(key); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); h.close(); return norm(v); },
+    async take(key) { const h = await this.db(); const v = await new Promise((res, rej) => { const t = h.transaction('files', 'readwrite'); const st = t.objectStore('files'); const g = st.get(key); g.onsuccess = () => st.delete(key); t.oncomplete = () => res(g.result); t.onerror = () => rej(t.error); }); h.close(); return norm(v); },
+  };
+  const norm = (v) => (v ? (Array.isArray(v) ? v : [v]) : []).filter((x) => x && x.blob).map((x) => (x.blob instanceof File && x.blob.name === x.name ? x.blob : new File([x.blob], x.name || 'fichier', { type: x.type || x.blob.type || '' })));
+  function onImport(key, fn) {
+    if (location.hash !== '#import') return;
+    history.replaceState(null, '', location.pathname + location.search);
+    const go = async () => { try { const fs = await handoff.take(key); if (fs.length) await fn(fs); } catch (e) { console.error(e); toast('Ouverture impossible : ' + (e.message || e), 7000); } };
+    if (document.readyState === 'complete') setTimeout(go, 300); else window.addEventListener('load', () => setTimeout(go, 300));
+  }
+  async function openIn(app, files) { await handoff.put(app, files); location.href = `${app}.html#import`; }
+
+  window.Studio = { $, $$, toast, download, readAsArrayBuffer, readAsDataURL, loadImage, pickFiles, baseName, initMenus, modal, confirmBox, initTheme, store, onDropFiles, clamp, handoff, onImport, openIn };
   document.addEventListener('DOMContentLoaded', initTheme);
 
   // Application installable (Chrome, Edge, Android) et utilisable hors connexion, quand le site est servi en https

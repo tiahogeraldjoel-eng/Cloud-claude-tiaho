@@ -493,8 +493,8 @@
   }
 
   /* ================= Fichiers ================= */
-  async function openAccess() {
-    const [file] = await pickFiles('.accdb,.mdb,.accde,.mde', false); if (!file) return;
+  async function openAccess(given) {
+    const file = given || (await pickFiles('.accdb,.mdb,.accde,.mde', false))[0]; if (!file) return;
     let pw;
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
@@ -511,9 +511,9 @@
       }
     }
   }
-  async function importGrid() {
-    if (!db) await useDb(blankDb('Ma base'));
-    const [file] = await pickFiles('.xlsx,.xlsm,.csv,.txt,.tsv', false); if (!file) return;
+  async function importGrid(given) {
+    const file = given || (await pickFiles('.xlsx,.xlsm,.csv,.txt,.tsv', false))[0]; if (!file) return;
+    if (!db) await useDb(blankDb(baseName(file.name)));
     try {
       const grids = [];
       if (/\.xls[xm]$/i.test(file.name)) {
@@ -608,8 +608,8 @@
 
   /* ================= Commandes ================= */
   const ACT = {
-    newDb: newDbDialog, library, openAccess, importGrid, exportXml,
-    openJoedb: async () => { const [f] = await pickFiles('.joedb,.json', false); if (!f) return; try { const o = JSON.parse(await f.text()); if (o.app !== 'base-joe' || !o.db) throw new Error('fichier non reconnu'); o.db.id = E.uid(); await useDb(o.db); toast(`« ${o.db.name} » ouvert`); } catch (e) { toast('Ouverture impossible : ' + e.message, 6000); } },
+    newDb: newDbDialog, library, openAccess: () => openAccess(), importGrid: () => importGrid(), exportXml,
+    openJoedb: async (given) => { const f = given || (await pickFiles('.joedb,.json', false))[0]; if (!f) return; try { const o = JSON.parse(await f.text()); if (o.app !== 'base-joe' || !o.db) throw new Error('fichier non reconnu'); o.db.id = E.uid(); await useDb(o.db); toast(`« ${o.db.name} » ouvert`); } catch (e) { toast('Ouverture impossible : ' + e.message, 6000); } },
     saveJoedb: () => { if (!db) return; download(new Blob([JSON.stringify({ app: 'base-joe', v: 1, db })], { type: 'application/json' }), db.name.replace(/[\\/:*?"<>|]/g, '_') + '.joedb'); },
     exportXlsx: async () => { if (!db) return; download(await E.toXlsx(db), db.name.replace(/[\\/:*?"<>|]/g, '_') + '.xlsx'); },
     renameDb: async () => { if (!db) return; const n = await askName('Nom de la base', db.name); if (!n) return; db.name = n; dirty(); renderAll(); },
@@ -627,7 +627,13 @@
 
   initMenus();
   (async () => {
-    try { const cur = await idb.kv('current'); const all = await idb.all(); const d = all.find((x) => x.id === cur) || all.sort((a, b) => b.updated - a.updated)[0]; if (d) { await useDb(d); return; } } catch (e) { console.warn(e); }
+    Studio.onImport('base', async (fs) => { const f = fs[0]; if (/\.joedb$/i.test(f.name)) await ACT.openJoedb(f); else if (/\.(xlsx|xlsm|csv|tsv|txt)$/i.test(f.name)) await importGrid(f); else await openAccess(f); });
+    try {
+      const deep = /^#db=([^&]+)(?:&t=(.+))?$/.exec(location.hash); // lien direct depuis Mes fichiers
+      const all = await idb.all(); const cur = deep ? decodeURIComponent(deep[1]) : await idb.kv('current');
+      const d = all.find((x) => x.id === cur) || all.sort((a, b) => b.updated - a.updated)[0];
+      if (d) { await useDb(d); if (deep) { history.replaceState(null, '', location.pathname); if (deep[2] && E.table(db, decodeURIComponent(deep[2]))) open('T|' + E.table(db, decodeURIComponent(deep[2])).name); } return; }
+    } catch (e) { console.warn(e); }
     renderAll();
   })();
   window.BaseJoe = { get db() { return db; }, open, act, createFromTemplate, useDb };

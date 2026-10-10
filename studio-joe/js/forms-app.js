@@ -176,7 +176,7 @@
     m.querySelectorAll('[data-add]').forEach((b) => { b.onclick = () => { const f = F(b.dataset.add, b.dataset.add === 'section' ? 'Nouvelle partie' : '', WITH_OPTIONS.has(b.dataset.add) ? { options: 'Option 1\nOption 2' } : {}); form.fields.push(f); save(); renderQs(); const el = $(`#qs [data-id="${f.id}"] input`); if (el) { el.focus(); el.scrollIntoView({ block: 'center' }); } }; });
     $('#fDup').onclick = async () => { const c = JSON.parse(JSON.stringify(form)); c.id = uid('f'); c.title += ' (copie)'; c.created = c.updated = Date.now(); forms.push(c); await db.put('forms', c); form = c; render(); toast('Formulaire dupliqué (sans les réponses)'); };
     $('#fExport').onclick = () => download(new Blob([JSON.stringify({ app: 'formulaires-joe', type: 'formulaire', form }, null, 1)], { type: 'application/json' }), slug(form.title) + '.joeform');
-    $('#fImport').onclick = importForm;
+    $('#fImport').onclick = () => importForm();
     $('#fDel').onclick = async () => { const n = myResps().length; if (!(await confirmBox(`Supprimer « ${form.title} »${n ? ` et ses ${n} réponse(s)` : ''} ?`, 'Supprimer'))) return; for (const r of myResps()) await db.del('resp', r.id); resps = resps.filter((r) => r.form !== form.id); await db.del('forms', form.id); forms = forms.filter((f) => f !== form); form = forms[0] || null; if (!form) await newForm('vide'); else render(); };
     renderQs();
   }
@@ -205,8 +205,8 @@
       q.querySelector('[data-del]').onclick = async () => { if (myResps().some((r) => r.values[f.id] !== undefined && r.values[f.id] !== '') && !(await confirmBox('Des réponses existent pour cette question : elles ne seront plus affichées. Supprimer ?', 'Supprimer'))) return; form.fields = form.fields.filter((x) => x !== f); save(); renderQs(); };
     });
   }
-  async function importForm() {
-    const [file] = await pickFiles('.joeform,.json,application/json', false); if (!file) return;
+  async function importForm(given) {
+    const file = given || (await pickFiles('.joeform,.json,application/json', false))[0]; if (!file) return;
     try { const o = JSON.parse(await file.text()); if (o.app !== 'formulaires-joe' || !o.form) throw new Error('fichier non reconnu'); const f = o.form; if (forms.some((x) => x.id === f.id)) f.id = uid('f'); f.updated = Date.now(); forms.push(f); await db.put('forms', f); form = f; render(); toast('Formulaire importé'); }
     catch (e) { toast('Import impossible : ' + e.message, 6000); }
   }
@@ -499,8 +499,20 @@ document.getElementById('again').onclick=()=>{RT.render(root,FORM,{});root.hidde
     try { [forms, resps] = await Promise.all([db.all('forms'), db.all('resp')]); } catch (e) { toast('Stockage indisponible', 6000); }
     let last = null; try { last = localStorage.getItem('forms-last'); } catch (e) { /* ignore */ }
     form = forms.find((f) => f.id === last) || forms.slice().sort((a, b) => b.updated - a.updated)[0] || null;
-    if (!form) { await newForm('recensement'); return; }
-    render();
+    if (!form) { await newForm('recensement'); } else render();
+    // fichiers reçus (Mes fichiers, partage) : formulaire à importer, ou réponses (fichier, PDF rempli)
+    Studio.onImport('formulaires', async (fs) => {
+      let added = 0;
+      for (const f of fs) {
+        try {
+          if (/\.pdf$/i.test(f.name)) { const o = await readFilledPdf(f); const fm = forms.find((x) => x.id === o.form); if (fm && !resps.some((r) => r.id === o.id)) { const rec = { id: o.id, form: fm.id, at: o.at, source: 'PDF', values: o.values }; resps.push(rec); await db.put('resp', rec); form = fm; added++; } continue; }
+          const o = JSON.parse(await f.text());
+          if (o.type === 'formulaire') { await importForm(f); continue; }
+          if (o.type === 'reponse') { const fm = forms.find((x) => x.id === o.form); if (!fm) throw new Error('formulaire inconnu sur cet appareil'); if (!resps.some((r) => r.id === o.id)) { const rec = { id: o.id, form: fm.id, at: o.at || Date.now(), source: 'fichier', values: o.values || {} }; resps.push(rec); await db.put('resp', rec); form = fm; added++; } }
+        } catch (e) { toast(`${f.name} : ${e.message}`, 6000); }
+      }
+      if (added) { setTab('resp'); toast(`${added} réponse(s) ajoutée(s)`); }
+    });
   })();
   window.FormsJoe = { get form() { return form; }, get resps() { return resps; }, standaloneHtml, buildPdf, readFilledPdf, exportXlsx, decodeCode, setTab, RT };
 })();

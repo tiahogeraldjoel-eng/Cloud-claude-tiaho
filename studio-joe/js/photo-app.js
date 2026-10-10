@@ -1024,6 +1024,7 @@
     const item = Array.from(e.clipboardData?.items || []).find((i) => i.type.startsWith('image/'));
     if (item) { e.preventDefault(); await importLayer(item.getAsFile()); toast('Image collée dans un nouveau calque'); }
   });
+  Studio.onImport('photo', async (fs) => { const f = fs[0]; if (/\.joeimg$/i.test(f.name)) await openProject(f); else await openImageFile(f); doc.isSample = false; });
   onDropFiles($('#stage'), async (files) => {
     for (const f of files) {
       if (/\.joeimg$/i.test(f.name)) await openProject(f);

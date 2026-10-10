@@ -353,6 +353,7 @@
   $('#imgBtn').onclick = exportImages;
   $('#clearBtn').onclick = async () => { if (!pages.length) return; if (await confirmBox(`Effacer les ${pages.length} page(s) scannée(s) ?`, 'Tout effacer')) { pages = []; render(); save(); } };
   Studio.onDropFiles(document.body, (files) => { const imgs = files.filter((f) => f.type.startsWith('image/')); if (imgs.length) addBlobs(imgs); });
+  Studio.onImport('scan', (fs) => { const imgs = fs.filter((f) => f.type.startsWith('image/') || /\.(jpe?g|png|webp|heic)$/i.test(f.name)); if (imgs.length) addBlobs(imgs); });
 
   window.ScanJoe = { get pages() { return pages; }, addBlobs, detectQuad, warp, applyFilter, buildPdf, render };
   document.addEventListener('DOMContentLoaded', async () => { try { const p = await idb.get('pages'); if (Array.isArray(p)) pages = p.filter((x) => x && x.out); } catch (e) { console.warn(e); } render(); });

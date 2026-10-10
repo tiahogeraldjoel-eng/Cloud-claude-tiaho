@@ -30,6 +30,10 @@
  ],
  "shortcuts": [
   {
+   "name": "Mes fichiers",
+   "url": "fichiers.html"
+  },
+  {
    "name": "PDF Joe",
    "url": "pdf.html"
   },
@@ -93,5 +97,47 @@
    "name": "Sauvegarde",
    "url": "sauvegarde.html"
   }
- ]
+ ],
+ "share_target": {
+  "action": "fichiers.html",
+  "method": "POST",
+  "enctype": "multipart/form-data",
+  "params": {
+   "title": "title",
+   "text": "text",
+   "url": "url",
+   "files": [
+    {
+     "name": "files",
+     "accept": [
+      "*/*",
+      "application/pdf",
+      "image/*",
+      "audio/*",
+      "video/*",
+      "text/*",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/msword",
+      "application/vnd.ms-excel",
+      "application/vnd.ms-access",
+      "application/x-msaccess",
+      "application/octet-stream",
+      "application/zip",
+      "application/json",
+      "text/calendar",
+      ".accdb",
+      ".mdb",
+      ".joebak",
+      ".ics",
+      ".csv",
+      ".docx",
+      ".xlsx",
+      ".pptx"
+     ]
+    }
+   ]
+  }
+ }
 }

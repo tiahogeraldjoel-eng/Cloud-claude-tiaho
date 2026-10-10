@@ -377,8 +377,8 @@
     await new Promise((res, rej) => { const q = indexedDB.open('texte-joe', 1); q.onupgradeneeded = () => { q.result.createObjectStore('docs'); q.result.createObjectStore('kv'); }; q.onsuccess = () => { const h = q.result; const tx = h.transaction(['docs', 'kv'], 'readwrite'); tx.objectStore('docs').put({ id, title: n.title || 'Note', html, updated: Date.now() }, id); tx.objectStore('kv').put(id, 'current'); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }; q.onerror = () => rej(q.error); });
     location.href = 'texte.html';
   }
-  async function importFiles() {
-    const fs = await pickFiles('.txt,.md,text/plain,text/markdown', true); if (!fs.length) return;
+  async function importFiles(given) {
+    const fs = given && given.length ? given : await pickFiles('.txt,.md,text/plain,text/markdown', true); if (!fs.length) return;
     let last = null;
     for (const f of fs) {
       const t = await f.text(); const lines = t.split(/\r?\n/);
@@ -407,13 +407,16 @@
     for (const n of old) await db.del('notes', n.id).catch(() => {});
     notes = notes.filter((n) => !old.includes(n));
     renderNav(); renderList(); renderEditor();
-    if (innerWidth > 860) { const first = visible()[0]; if (first) openNote(first.id); }
+    const deep = /^#note=(.+)$/.exec(location.hash); // lien direct depuis Mes fichiers
+    if (deep && notes.some((n) => n.id === decodeURIComponent(deep[1]))) { history.replaceState(null, '', location.pathname); openNote(decodeURIComponent(deep[1])); }
+    else if (innerWidth > 860) { const first = visible()[0]; if (first) openNote(first.id); }
+    Studio.onImport('notes', (fs) => importFiles(fs));
   }
   $('#q').addEventListener('input', () => renderList());
   $('#sort').addEventListener('change', () => renderList());
   $('#newBtn').onclick = () => newNote(); $('#fab').onclick = () => newNote();
   $('#navBtn').onclick = () => setView(panes.dataset.view === 'nav' ? 'list' : 'nav');
-  $('#importBtn').onclick = importFiles;
+  $('#importBtn').onclick = () => importFiles();
   document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === 'n') { e.preventDefault(); newNote(); } if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f' && !e.altKey) { e.preventDefault(); setView('list'); $('#q').focus(); } });
   window.addEventListener('pagehide', flush);
   document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
