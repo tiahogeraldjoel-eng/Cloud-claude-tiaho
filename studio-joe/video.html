@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Video Joe</title>
+<link rel="stylesheet" href="css/studio.css">
+<style>
+  /* Disposition type Premiere : projet | moniteur | options d'effet, timeline en bas. */
+  .vapp { display: grid; grid-template-rows: auto minmax(0, 1fr) minmax(220px, 40%); height: 100%; }
+  .upper { display: grid; grid-template-columns: 270px minmax(0, 1fr) 300px; min-height: 0; }
+  .panel { background: var(--panel); min-height: 0; overflow-y: auto; }
+  .panel.left { border-right: 1px solid var(--line); }
+  .panel.right { border-left: 1px solid var(--line); }
+  .monitor { display: grid; grid-template-rows: minmax(0, 1fr) auto; background: var(--canvas-bg); min-width: 0; min-height: 0; }
+  .screen { display: grid; place-items: center; padding: 12px; min-height: 0; overflow: hidden; }
+  #preview { max-width: 100%; max-height: 100%; background: #000; box-shadow: var(--shadow); display: block; }
+  .transport { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; background: var(--panel); border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .tc { font: 600 14px var(--font-mono); font-variant-numeric: tabular-nums; min-width: 110px; text-align: center; }
+  .tc.dim { color: var(--muted); font-weight: 400; }
+  .media-list { display: grid; gap: 6px; }
+  .media { display: grid; grid-template-columns: 64px 1fr; gap: 8px; align-items: center; padding: 5px; border: 1px solid var(--line); border-radius: 8px; cursor: grab; background: var(--panel-2); }
+  .media:hover { border-color: var(--accent); }
+  .media .th { width: 64px; height: 40px; border-radius: 4px; background: #111 center / cover no-repeat; display: grid; place-items: center; color: #fff; font-size: 18px; }
+  .media .nm { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .media .meta { font: 11px var(--font-mono); color: var(--muted); }
+  .drop-hint { border: 2px dashed var(--line); border-radius: 10px; padding: 14px; text-align: center; color: var(--muted); font-size: 12px; }
+  .drop-hint.over { border-color: var(--accent); background: var(--accent-soft); }
+
+  /* timeline */
+  .tl { display: grid; grid-template-rows: auto minmax(0, 1fr); background: var(--panel); border-top: 1px solid var(--line); min-height: 0; }
+  .tl-bar { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .tl-bar .tool { width: 34px; height: 32px; }
+  .tl-body { display: grid; grid-template-columns: 74px minmax(0, 1fr); min-height: 0; overflow-y: auto; }
+  .heads { display: grid; grid-auto-rows: min-content; border-right: 1px solid var(--line); }
+  .head { height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 6px; border-bottom: 1px solid var(--line); font: 700 12px var(--font-mono); color: var(--muted); }
+  .head.ruler-h { height: 26px; }
+  .head button { padding: 1px 5px; font-size: 11px; }
+  .head.audio { background: color-mix(in srgb, var(--ok) 6%, transparent); }
+  .lanes { position: relative; overflow-x: auto; overflow-y: hidden; }
+  .lanes-inner { position: relative; min-width: 100%; }
+  .ruler { height: 26px; position: relative; border-bottom: 1px solid var(--line); cursor: pointer; background: var(--panel-2); }
+  .ruler .tick { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--line); font: 10px var(--font-mono); color: var(--muted); padding-left: 3px; padding-top: 2px; }
+  .ruler .tick.minor { top: 18px; }
+  .track { height: 52px; position: relative; border-bottom: 1px solid var(--line); }
+  .track.audio { background: color-mix(in srgb, var(--ok) 6%, transparent); }
+  .track.over { background: var(--accent-soft); }
+  .clip { position: absolute; top: 4px; bottom: 4px; border-radius: 6px; overflow: hidden; cursor: grab; border: 1px solid rgba(0,0,0,.25); color: #fff; font-size: 11px; user-select: none; touch-action: none; }
+  .clip.video { background: #3657a8; } .clip.image { background: #7b3fa0; } .clip.text { background: #b8892b; } .clip.audio { background: #23784f; }
+  .clip .bgimg { position: absolute; inset: 0; background-repeat: repeat-x; background-size: auto 100%; opacity: .55; }
+  .clip .lbl { position: absolute; left: 6px; top: 3px; right: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px rgba(0,0,0,.6); font-weight: 600; }
+  .clip .fx { position: absolute; left: 6px; bottom: 2px; font-size: 10px; opacity: .85; }
+  .clip.sel { outline: 2px solid var(--accent); outline-offset: 0; z-index: 2; }
+  .clip .h { position: absolute; top: 0; bottom: 0; width: 8px; cursor: ew-resize; background: rgba(255,255,255,.18); }
+  .clip .h.l { left: 0; } .clip .h.r { right: 0; }
+  .clip .trans { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, rgba(255,255,255,.55), transparent); pointer-events: none; }
+  .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #e0368c; pointer-events: none; z-index: 5; }
+  .playhead::before { content: ""; position: absolute; top: 0; left: -6px; border: 7px solid transparent; border-top-color: #e0368c; }
+  .snapline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--accent); z-index: 4; pointer-events: none; }
+  .export-ov { position: fixed; inset: 0; z-index: 400; background: rgba(10,12,18,.75); display: grid; place-items: center; color: #fff; }
+  .export-ov .box { background: var(--panel); color: var(--fg); padding: 22px; border-radius: 12px; width: min(420px, 90vw); display: grid; gap: 12px; }
+  .bar { height: 10px; border-radius: 5px; background: var(--panel-2); overflow: hidden; }
+  .bar > div { height: 100%; background: var(--accent); width: 0; }
+  @media (max-width: 960px) {
+    .vapp { height: auto; grid-template-rows: auto auto auto; }
+    .upper { grid-template-columns: 1fr; }
+    .monitor { order: -1; }
+    .screen { height: 46vh; }
+    .panel { max-height: 50vh; }
+    .tl { min-height: 300px; }
+  }
+</style>
+</head>
+<body>
+<div class="vapp">
+  <div class="topbar">
+    <a class="brand" href="index.html"><span class="logo">Vd</span><span>Video Joe</span></a>
+    <div class="menu"><button data-menu>Fichier ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="import">Importer des médias… <span class="kbd">Ctrl+I</span></button>
+        <button data-act="newProject">Nouveau projet…</button>
+        <hr>
+        <button data-act="saveProject">Enregistrer le projet (.joevideo)</button>
+        <button data-act="openProject">Ouvrir un projet…</button>
+        <hr>
+        <button data-act="export">Exporter la vidéo… <span class="kbd">Ctrl+M</span></button>
+        <button data-act="snapshot">Exporter l'image affichée (PNG)</button>
+      </div>
+    </div>
+    <div class="menu"><button data-menu>Édition ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="undo">Annuler <span class="kbd">Ctrl+Z</span></button>
+        <button data-act="redo">Rétablir <span class="kbd">Ctrl+Y</span></button>
+        <hr>
+        <button data-act="split">Couper à la tête de lecture <span class="kbd">S</span></button>
+        <button data-act="delete">Supprimer le clip <span class="kbd">Suppr</span></button>
+        <button data-act="ripple">Supprimer et combler le vide <span class="kbd">Maj+Suppr</span></button>
+        <button data-act="duplicate">Dupliquer le clip <span class="kbd">Ctrl+D</span></button>
+      </div>
+    </div>
+    <div class="menu"><button data-menu>Titres ▾</button>
+      <div class="menu-list" hidden>
+        <button data-title="center">Titre centré</button>
+        <button data-title="lower">Bandeau bas (nom, fonction)</button>
+        <button data-title="subtitle">Sous-titre</button>
+        <button data-title="credits">Générique de fin</button>
+        <button data-title="card">Carton plein écran</button>
+      </div>
+    </div>
+    <button data-act="undo" id="undoBtn" title="Annuler (Ctrl+Z)">↶</button>
+    <button data-act="redo" id="redoBtn" title="Rétablir (Ctrl+Y)">↷</button>
+    <span class="spacer"></span>
+    <span class="badge" id="fmtBadge"></span>
+    <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+    <button class="primary" data-act="export">Exporter</button>
+  </div>
+
+  <div class="upper">
+    <aside class="panel left" aria-label="Projet">
+      <div class="section">
+        <h3>Médias du projet</h3>
+        <button class="primary" data-act="import">Importer vidéos, sons, images</button>
+        <div class="drop-hint" id="drop">Déposez vos fichiers ici. Glissez ensuite un média sur la timeline, ou double-cliquez pour l'ajouter.</div>
+        <div class="media-list" id="mediaList"></div>
+      </div>
+      <div class="section">
+        <h3>Réglages de la séquence</h3>
+        <div class="field"><label for="seqFmt">Format</label>
+          <select id="seqFmt">
+            <option value="1920x1080">16:9 Full HD — 1920 × 1080</option>
+            <option value="1280x720">16:9 HD — 1280 × 720</option>
+            <option value="1080x1920">9:16 Story / TikTok / statut — 1080 × 1920</option>
+            <option value="1080x1080">1:1 Carré — 1080 × 1080</option>
+            <option value="1080x1350">4:5 Portrait — 1080 × 1350</option>
+          </select></div>
+        <div class="grid2">
+          <div class="field"><label for="seqFps">Images/seconde</label><select id="seqFps"><option>24</option><option>25</option><option selected>30</option></select></div>
+          <div class="field"><label for="seqBg">Fond</label><input type="color" id="seqBg" value="#000000"></div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="monitor" aria-label="Moniteur de programme">
+      <div class="screen"><canvas id="preview" width="1920" height="1080"></canvas></div>
+      <div class="transport">
+        <span class="tc" id="tcNow">00:00:00:00</span>
+        <button data-act="toStart" title="Début (Origine)" aria-label="Aller au début">⏮</button>
+        <button data-act="frameBack" title="Image précédente (←)" aria-label="Image précédente">◀︎|</button>
+        <button class="primary" data-act="play" id="playBtn" title="Lecture / pause (Espace)" style="min-width:64px;justify-content:center">▶</button>
+        <button data-act="frameFwd" title="Image suivante (→)" aria-label="Image suivante">|▶︎</button>
+        <button data-act="toEnd" title="Fin" aria-label="Aller à la fin">⏭</button>
+        <button data-act="loop" id="loopBtn" title="Lecture en boucle">⟲</button>
+        <span class="tc dim" id="tcDur">00:00:00:00</span>
+        <button data-act="snapshot" title="Capture de l'image (PNG)">📷</button>
+      </div>
+    </section>
+
+    <aside class="panel right" id="fxPanel" aria-label="Options d'effet"></aside>
+  </div>
+
+  <section class="tl" aria-label="Timeline">
+    <div class="tl-bar">
+      <button class="tool active" data-tool="select" title="Sélection (V)" aria-label="Outil sélection"><svg viewBox="0 0 24 24"><path d="m5 3 14 8-6 2-3 6z"/></svg></button>
+      <button class="tool" data-tool="razor" title="Cutter : cliquez sur un clip pour le couper (C)" aria-label="Outil cutter"><svg viewBox="0 0 24 24"><path d="M14 3 7 21M6 7a3 3 0 1 0 0 .01M18 7a3 3 0 1 0 0 .01"/></svg></button>
+      <button data-act="split" title="Couper à la tête de lecture (S)">✂ Couper</button>
+      <button data-act="ripple" title="Supprimer et combler (Maj+Suppr)">Supprimer + combler</button>
+      <button data-act="detach" title="Séparer l'audio d'une vidéo sur la piste A1">Détacher l'audio</button>
+      <label class="row" style="gap:4px"><input type="checkbox" id="snapOn" checked> Magnétisme</label>
+      <span class="spacer" style="flex:1"></span>
+      <label for="tlZoom">Zoom</label><input type="range" id="tlZoom" min="10" max="300" value="60" style="width:140px">
+      <button data-act="fitTl" title="Toute la séquence">Ajuster</button>
+    </div>
+    <div class="tl-body" id="tlBody">
+      <div class="heads" id="heads"></div>
+      <div class="lanes" id="lanes"><div class="lanes-inner" id="lanesInner"></div></div>
+    </div>
+  </section>
+</div>
+<div id="toast" hidden></div>
+<script src="js/common.js"></script>
+<script src="js/video-app.js"></script>
+</body>
+</html>
