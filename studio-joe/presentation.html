@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Présentation Joe</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#d9861c">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-180.png">
+<link rel="stylesheet" href="css/studio.css">
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  .pres-app { display: grid; grid-template-rows: auto auto 1fr; height: 100%; height: 100dvh; }
+  .topbar .logo { background: #c4501b !important; color: #fff !important; }
+  .menu-list hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  .menu-list kbd { font: 11px var(--font-mono); color: var(--muted); }
+  .tools { display: flex; gap: 4px; align-items: center; padding: 5px 10px; background: var(--panel); border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: thin; }
+  .tools button { padding: 4px 8px; min-width: 32px; justify-content: center; }
+  .tools button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .tools select { width: auto; padding: 4px 6px; flex: none; }
+  .tools .sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 3px; flex: none; }
+  .tools .clr { position: relative; display: inline-flex; }
+  .tools .clr input[type=color] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+  .tools .clr span.bar { position: absolute; left: 6px; right: 6px; bottom: 3px; height: 3px; border-radius: 2px; }
+  .work { display: grid; grid-template-columns: 190px minmax(0, 1fr) 280px; min-height: 0; }
+  .sorter { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; padding: 10px 10px 40px; display: grid; gap: 10px; align-content: start; }
+  .thumb { display: grid; grid-template-columns: 18px 1fr; gap: 6px; align-items: start; cursor: pointer; user-select: none; touch-action: pan-y; }
+  .thumb .n { font: 12px var(--font-mono); color: var(--muted); text-align: right; padding-top: 2px; }
+  .thumb .box { position: relative; border: 2px solid transparent; border-radius: 4px; overflow: hidden; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+  .thumb.on .box { border-color: var(--accent); }
+  .thumb.hid .box { opacity: .4; }
+  .thumb.drop-before .box { box-shadow: 0 -4px 0 var(--accent); }
+  .thumb .box > .sj-slide { transform-origin: 0 0; pointer-events: none; }
+  .sorter .addslide { justify-content: center; }
+  .center { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-width: 0; min-height: 0; background: var(--canvas-bg); }
+  .stage { position: relative; overflow: hidden; touch-action: none; min-height: 0; }
+  .stage .frame { position: absolute; box-shadow: 0 2px 12px rgba(0,0,0,.25); background: #fff; }
+  .stage .frame > .sj-slide { transform-origin: 0 0; }
+  .overlay { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
+  .selbox { position: absolute; border: 1.5px solid #1f6fd1; pointer-events: none; }
+  .selbox.editing { border-style: dashed; }
+  .hdl { position: absolute; background: #fff; border: 1.5px solid #1f6fd1; border-radius: 50%; pointer-events: auto; touch-action: none; }
+  .hdl.rot { background: #1f6fd1; }
+  .guide { position: absolute; background: #e0389d; pointer-events: none; }
+  .marquee { position: absolute; border: 1px dashed #1f6fd1; background: rgba(31,111,209,.08); pointer-events: none; }
+  .notes { border-top: 1px solid var(--line); background: var(--panel); padding: 6px 10px; display: grid; gap: 4px; }
+  .notes textarea { min-height: 52px; max-height: 22vh; font-size: 13px; }
+  .notes label { display: flex; justify-content: space-between; align-items: center; }
+  .props { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; }
+  .props .section { padding: 10px 12px; }
+  .props .btns { display: flex; flex-wrap: wrap; gap: 4px; }
+  .props .btns button { padding: 4px 7px; }
+  .themes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .themes button { padding: 0; height: 64px; overflow: hidden; display: block; position: relative; border-width: 2px; }
+  .themes button.on { border-color: var(--accent); }
+  .themes button span { position: absolute; left: 6px; bottom: 4px; font-size: 11px; font-weight: 700; }
+  .layout-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .layout-grid button { flex-direction: column; gap: 4px; padding: 6px; height: auto; white-space: normal; }
+  .layout-grid .lp { width: 100%; aspect-ratio: 16/9; background: #fff; border: 1px solid var(--line); position: relative; }
+  .layout-grid .lp i { position: absolute; background: #c9ccd4; border-radius: 2px; }
+  .ctx { position: fixed; z-index: 120; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 4px; display: grid; min-width: 210px; }
+  .ctx button { background: transparent; border: 0; justify-content: space-between; width: 100%; padding: 7px 10px; }
+  .ctx button:hover { background: var(--panel-2); }
+  .ctx hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  .chart-data { width: 100%; min-height: 180px; font: 13px var(--font-mono); }
+  /* diaporama */
+  .show { position: fixed; inset: 0; z-index: 200; background: #000; display: grid; place-items: center; overflow: hidden; cursor: none; touch-action: none; }
+  .show.cursor { cursor: default; }
+  .show .stagebox { position: relative; overflow: hidden; }
+  .show .stagebox > .sj-slide { transform-origin: 0 0; position: absolute; left: 0; top: 0; }
+  .show .bar { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--accent); transition: width .3s; }
+  .show .hud { position: absolute; right: 12px; bottom: 10px; display: flex; gap: 6px; opacity: 0; transition: opacity .3s; }
+  .show.cursor .hud { opacity: 1; }
+  .show .hud button { background: rgba(0,0,0,.55); color: #fff; border-color: rgba(255,255,255,.3); }
+  .show .black { position: absolute; inset: 0; background: #000; display: none; }
+  .presenter { position: fixed; inset: 0; z-index: 200; background: #15171c; color: #eee; display: grid; grid-template-columns: 1.6fr 1fr; grid-template-rows: auto 1fr auto; gap: 12px; padding: 12px; }
+  .presenter .cur, .presenter .next { position: relative; overflow: hidden; background: #000; }
+  .presenter .cur > .sj-slide, .presenter .next > .sj-slide { transform-origin: 0 0; position: absolute; left: 0; top: 0; }
+  .presenter .pn { white-space: pre-wrap; font-size: 20px; line-height: 1.45; overflow-y: auto; background: #1f232c; padding: 12px; border-radius: 8px; }
+  .presenter .clock { font: 28px var(--font-mono); }
+  .presenter button { background: #2a2f3a; color: #eee; border-color: #444; }
+  @media (max-width: 900px) {
+    .work { grid-template-columns: 1fr; grid-template-rows: minmax(260px, 1fr) auto auto; overflow-y: auto; }
+    html, body { overflow: auto; }
+    .pres-app { height: auto; min-height: 100dvh; grid-template-rows: auto auto auto; }
+    .center { min-height: 62vh; }
+    .sorter { order: 2; border-right: 0; border-top: 1px solid var(--line); display: flex; overflow-x: auto; overflow-y: hidden; padding: 8px; }
+    .sorter .thumb { flex: none; width: 128px; touch-action: pan-x; }
+    .sorter .addslide { flex: none; }
+    .props { order: 3; border-left: 0; border-top: 1px solid var(--line); }
+    .topbar .brand span:last-child, #docName { display: none; }
+    .topbar .menu > button { padding: 5px 7px; font-size: 13px; }
+    .presenter { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto; overflow-y: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="pres-app">
+  <div class="topbar">
+    <a class="brand" href="index.html"><span class="logo">Pr</span><span>Présentation Joe</span></a>
+    <div class="menu">
+      <button data-menu>Fichier ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="new">Nouvelle présentation</button>
+        <button data-act="templates">Nouvelle à partir d'un modèle…</button>
+        <button data-act="outline">Créer à partir d'un plan (texte)…</button>
+        <button data-act="open">Ouvrir (.pptx, .joeslides)… <kbd>Ctrl+O</kbd></button>
+        <hr>
+        <button data-act="savePptx">Enregistrer en PowerPoint (.pptx) <kbd>Ctrl+S</kbd></button>
+        <button data-act="saveJoe">Enregistrer en .joeslides</button>
+        <button data-act="pdf">Exporter en PDF / imprimer…</button>
+        <button data-act="images">Exporter les diapositives en images (PNG)</button>
+        <hr>
+        <button data-act="rename">Renommer la présentation…</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Édition ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="undo">Annuler <kbd>Ctrl+Z</kbd></button>
+        <button data-act="redo">Rétablir <kbd>Ctrl+Y</kbd></button>
+        <hr>
+        <button data-act="cut">Couper <kbd>Ctrl+X</kbd></button>
+        <button data-act="copy">Copier <kbd>Ctrl+C</kbd></button>
+        <button data-act="paste">Coller <kbd>Ctrl+V</kbd></button>
+        <button data-act="duplicate">Dupliquer <kbd>Ctrl+D</kbd></button>
+        <button data-act="delete">Supprimer <kbd>Suppr</kbd></button>
+        <button data-act="selectAll">Tout sélectionner <kbd>Ctrl+A</kbd></button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Insertion ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="newSlide">Nouvelle diapositive… <kbd>Ctrl+M</kbd></button>
+        <button data-act="dupSlide">Dupliquer la diapositive</button>
+        <hr>
+        <button data-act="addText">Zone de texte</button>
+        <button data-act="shapes">Forme…</button>
+        <button data-act="addImage">Image…</button>
+        <button data-act="addTable">Tableau…</button>
+        <button data-act="addChart">Graphique…</button>
+        <button data-act="addIcon">Icône / émoji…</button>
+        <button data-act="addDate">Date du jour</button>
+        <button data-act="slideNumbers">Numéros de diapositive (toutes)</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Création ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="themes">Thème de la présentation…</button>
+        <button data-act="layout">Disposition de la diapositive…</button>
+        <button data-act="bgAll">Arrière-plan pour toutes les diapositives…</button>
+        <button data-act="size">Format 16:9 / 4:3…</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Diaporama ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="showStart">Depuis le début <kbd>F5</kbd></button>
+        <button data-act="showHere">Depuis la diapositive actuelle <kbd>Maj+F5</kbd></button>
+        <button data-act="presenter">Mode présentateur (notes, minuteur, 2ᵉ écran)</button>
+        <hr>
+        <button data-act="transAll">Appliquer la transition à toutes les diapositives</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>IA ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="aiDeck">Créer une présentation à partir d'un sujet ou d'un texte…</button>
+        <button data-act="aiNotes">Rédiger les notes de l'orateur</button>
+      </div>
+    </div>
+    <span class="spacer"></span>
+    <span class="hint" id="docName"></span>
+    <button class="primary" data-act="showHere" title="Lancer le diaporama (F5)">▶ Diaporama</button>
+    <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+  </div>
+
+  <div class="tools" id="tools">
+    <button data-act="undo" title="Annuler (Ctrl+Z)">↶</button>
+    <button data-act="redo" title="Rétablir (Ctrl+Y)">↷</button>
+    <span class="sep"></span>
+    <button data-act="newSlide" title="Nouvelle diapositive (Ctrl+M)">＋ Diapo</button>
+    <button data-act="addText" title="Zone de texte">T</button>
+    <button data-act="shapes" title="Formes">◆</button>
+    <button data-act="addImage" title="Image">🖼</button>
+    <button data-act="addTable" title="Tableau">▦</button>
+    <button data-act="addChart" title="Graphique">📊</button>
+    <span class="sep"></span>
+    <select id="tFont" title="Police">
+      <option value="">Police du thème</option>
+      <option value="Arial, Helvetica, sans-serif">Arial</option>
+      <option value="Calibri, Carlito, 'Segoe UI', sans-serif">Calibri</option>
+      <option value="'Segoe UI', Roboto, sans-serif">Segoe UI</option>
+      <option value="Georgia, 'Times New Roman', serif">Georgia</option>
+      <option value="'Times New Roman', Times, serif">Times New Roman</option>
+      <option value="Verdana, sans-serif">Verdana</option>
+      <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+      <option value="'Courier New', monospace">Courier New</option>
+      <option value="Impact, 'Arial Black', sans-serif">Impact</option>
+    </select>
+    <select id="tSize" title="Taille du texte (points)">
+      <option value="">Taille</option><option>10</option><option>12</option><option>14</option><option>16</option><option>18</option><option>20</option><option>24</option><option>28</option><option>32</option><option>36</option><option>40</option><option>44</option><option>54</option><option>60</option><option>72</option><option>96</option>
+    </select>
+    <button data-act="tBold" title="Gras (Ctrl+B)"><b>G</b></button>
+    <button data-act="tItalic" title="Italique (Ctrl+I)"><i>I</i></button>
+    <button data-act="tUnder" title="Souligné (Ctrl+U)"><u>S</u></button>
+    <label class="clr" title="Couleur du texte"><button tabindex="-1" type="button">A<span class="bar" id="tColorBar" style="background:#c4501b"></span></button><input type="color" id="tColor" value="#c4501b"></label>
+    <label class="clr" title="Surligner"><button tabindex="-1" type="button">ab<span class="bar" id="tHiBar" style="background:#ffe066"></span></button><input type="color" id="tHi" value="#ffe066"></label>
+    <span class="sep"></span>
+    <button data-act="tLeft" title="Aligner à gauche">⇤</button>
+    <button data-act="tCenter" title="Centrer">↔</button>
+    <button data-act="tRight" title="Aligner à droite">⇥</button>
+    <button data-act="tBullets" title="Puces">•≡</button>
+    <button data-act="tNumbers" title="Numérotation">1≡</button>
+    <button data-act="tOutdent" title="Diminuer le retrait (Maj+Tab)">⇠</button>
+    <button data-act="tIndent" title="Augmenter le retrait (Tab)">⇢</button>
+    <span class="sep"></span>
+    <button data-act="front" title="Mettre au premier plan">⬒</button>
+    <button data-act="back" title="Mettre à l'arrière-plan">⬓</button>
+    <button data-act="duplicate" title="Dupliquer (Ctrl+D)">⧉</button>
+    <button data-act="delete" title="Supprimer (Suppr)">🗑</button>
+  </div>
+
+  <div class="work">
+    <div class="sorter" id="sorter" aria-label="Diapositives"></div>
+    <div class="center">
+      <div class="stage" id="stage" tabindex="0" aria-label="Diapositive en cours"></div>
+      <div class="notes">
+        <label for="notes"><span>Notes de l'orateur (visibles en mode présentateur)</span><span class="hint" id="slideInfo"></span></label>
+        <textarea id="notes" placeholder="Cliquez pour ajouter des notes"></textarea>
+      </div>
+    </div>
+    <div class="props" id="props"></div>
+  </div>
+</div>
+<div id="toast" hidden></div>
+<script src="lib/jszip.min.js"></script>
+<script src="js/common.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/speech.js"></script>
+<script src="js/slides-app.js"></script>
+<script src="js/slides-extra.js"></script>
+</body>
+</html>
