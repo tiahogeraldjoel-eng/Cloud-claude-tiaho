@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Photo Joe</title>
+<link rel="stylesheet" href="css/studio.css">
+<style>
+  .app { grid-template-rows: auto auto 1fr; }
+  .optbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 6px 12px; background: var(--panel-2); border-bottom: 1px solid var(--line); min-height: 44px; }
+  .optbar label { display: inline-flex; align-items: center; gap: 6px; }
+  .optbar input[type="range"] { width: 110px; }
+  .optbar input[type="number"] { width: 70px; }
+  .optbar select { width: auto; }
+  .optbar .tname { font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .stage { display: grid; place-items: center; padding: 40px; }
+  .canvas-wrap { position: relative; box-shadow: var(--shadow); }
+  #view { display: block; touch-action: none; image-rendering: auto; }
+  #ui { position: absolute; left: 0; top: 0; pointer-events: none; }
+  .colors { position: relative; width: 44px; height: 44px; margin: 4px auto; }
+  .colors input { position: absolute; width: 28px; height: 28px; border-radius: 4px; padding: 0; }
+  .colors #fg { left: 0; top: 0; z-index: 2; }
+  .colors #bg { right: 0; bottom: 0; }
+  .layers { display: grid; gap: 4px; max-height: 300px; overflow-y: auto; }
+  .layer { display: grid; grid-template-columns: auto 44px 1fr; align-items: center; gap: 8px; padding: 4px 6px; border: 1px solid transparent; border-radius: 6px; cursor: pointer; }
+  .layer:hover { background: var(--panel-2); }
+  .layer.active { border-color: var(--accent); background: var(--accent-soft); }
+  .layer canvas { width: 44px; height: 32px; object-fit: contain; border: 1px solid var(--line); border-radius: 3px; }
+  .layer .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .layer .eye { background: transparent; border: 0; padding: 2px 4px; color: var(--muted); }
+  .layer .eye.off { opacity: .35; }
+  .icon-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .icon-row button { padding: 4px 8px; font-size: 12px; }
+  #hist { width: 100%; height: 70px; background: var(--panel-2); border-radius: 6px; border: 1px solid var(--line); }
+  .status { font: 12px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .filters button { justify-content: center; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <a class="brand" href="index.html"><span class="logo">Ph</span><span>Photo Joe</span></a>
+    <div class="menu"><button data-menu>Fichier ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="new">Nouveau… <span class="kbd">Ctrl+N</span></button>
+        <button data-act="open">Ouvrir une image… <span class="kbd">Ctrl+O</span></button>
+        <button data-act="importLayer">Importer comme calque…</button>
+        <hr>
+        <button data-act="export">Exporter (PNG, JPG, WebP)… <span class="kbd">Ctrl+S</span></button>
+        <button data-act="saveProject">Enregistrer le projet (.joeimg)</button>
+        <button data-act="openProject">Ouvrir un projet…</button>
+      </div>
+    </div>
+    <div class="menu"><button data-menu>Image ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="resize">Taille de l'image…</button>
+        <button data-act="canvasSize">Taille de la zone de travail…</button>
+        <button data-act="cropSel">Recadrer sur la sélection</button>
+        <hr>
+        <button data-act="rotCW">Rotation 90° horaire</button>
+        <button data-act="rotCCW">Rotation 90° anti-horaire</button>
+        <button data-act="rot180">Rotation 180°</button>
+        <button data-act="flipH">Miroir horizontal</button>
+        <button data-act="flipV">Miroir vertical</button>
+        <hr>
+        <button data-act="flatten">Aplatir l'image</button>
+      </div>
+    </div>
+    <div class="menu"><button data-menu>Calque ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="newLayer">Nouveau calque <span class="kbd">Ctrl+Maj+N</span></button>
+        <button data-act="dupLayer">Dupliquer le calque <span class="kbd">Ctrl+J</span></button>
+        <button data-act="delLayer">Supprimer le calque</button>
+        <button data-act="mergeDown">Fusionner avec le calque inférieur <span class="kbd">Ctrl+E</span></button>
+        <hr>
+        <button data-act="layerFlipH">Miroir horizontal du calque</button>
+        <button data-act="layerFlipV">Miroir vertical du calque</button>
+        <button data-act="layerScale">Mettre à l'échelle / pivoter le calque…</button>
+        <button data-act="layerFromSel">Copier la sélection vers un nouveau calque</button>
+      </div>
+    </div>
+    <div class="menu"><button data-menu>Sélection ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="selAll">Tout sélectionner <span class="kbd">Ctrl+A</span></button>
+        <button data-act="deselect">Désélectionner <span class="kbd">Ctrl+D</span></button>
+        <button data-act="selClear">Effacer le contenu <span class="kbd">Suppr</span></button>
+        <button data-act="selFill">Remplir avec la couleur de premier plan</button>
+      </div>
+    </div>
+    <button data-act="undo" id="undoBtn" title="Annuler (Ctrl+Z)">↶</button>
+    <button data-act="redo" id="redoBtn" title="Rétablir (Ctrl+Y)">↷</button>
+    <span class="spacer"></span>
+    <span class="status" id="status"></span>
+    <button data-act="zoomOut" title="Zoom arrière">−</button>
+    <button data-act="fit" id="zoomLbl" title="Ajuster à l'écran (Ctrl+0)">100 %</button>
+    <button data-act="zoomIn" title="Zoom avant">+</button>
+    <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+    <button class="primary" data-act="export">Exporter</button>
+  </div>
+  <div class="optbar" id="optbar"></div>
+
+  <div class="workspace">
+    <nav class="rail" id="rail" aria-label="Outils"></nav>
+    <main class="stage" id="stage">
+      <div class="canvas-wrap checker" id="wrap"><canvas id="view"></canvas><canvas id="ui"></canvas></div>
+    </main>
+    <aside class="side">
+      <div class="section">
+        <h3>Calques</h3>
+        <div class="layers" id="layers"></div>
+        <div class="grid2">
+          <div class="slider"><label for="lOpacity">Opacité</label><output id="lOpacityO">100 %</output><input type="range" id="lOpacity" min="0" max="100" value="100"></div>
+          <div class="field"><label for="lBlend">Fusion</label>
+            <select id="lBlend">
+              <option value="source-over">Normal</option><option value="multiply">Produit</option><option value="screen">Superposition claire</option>
+              <option value="overlay">Incrustation</option><option value="darken">Obscurcir</option><option value="lighten">Éclaircir</option>
+              <option value="color-dodge">Densité couleur −</option><option value="color-burn">Densité couleur +</option><option value="hard-light">Lumière crue</option>
+              <option value="soft-light">Lumière tamisée</option><option value="difference">Différence</option><option value="exclusion">Exclusion</option>
+              <option value="hue">Teinte</option><option value="saturation">Saturation</option><option value="color">Couleur</option><option value="luminosity">Luminosité</option>
+            </select></div>
+        </div>
+        <div class="icon-row">
+          <button data-act="newLayer" title="Nouveau calque">+ Calque</button>
+          <button data-act="dupLayer" title="Dupliquer">Dupliquer</button>
+          <button data-act="layerUp" title="Monter">▲</button>
+          <button data-act="layerDown" title="Descendre">▼</button>
+          <button data-act="mergeDown" title="Fusionner vers le bas">Fusionner</button>
+          <button data-act="delLayer" class="danger" title="Supprimer">Suppr.</button>
+        </div>
+      </div>
+      <div class="section">
+        <h3>Réglages <span class="row" style="gap:4px"><button id="adjReset" style="padding:2px 8px;font-size:11px">Réinitialiser</button><button id="adjApply" class="primary" style="padding:2px 8px;font-size:11px">Appliquer</button></span></h3>
+        <div id="adjusts" style="display:grid; gap:6px"></div>
+      </div>
+      <div class="section">
+        <h3>Filtres</h3>
+        <div class="filters" id="filters"></div>
+      </div>
+      <div class="section">
+        <h3>Histogramme</h3>
+        <canvas id="hist" width="512" height="140" aria-label="Histogramme"></canvas>
+      </div>
+    </aside>
+  </div>
+</div>
+<div id="toast" hidden></div>
+<script src="js/common.js"></script>
+<script src="js/photo-app.js"></script>
+</body>
+</html>

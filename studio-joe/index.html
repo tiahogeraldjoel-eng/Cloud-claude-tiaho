@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Studio Joe</title>
+<link rel="stylesheet" href="css/studio.css">
+<style>
+  body { height: auto; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 48px; display: grid; gap: 32px; }
+  header.hero { display: grid; gap: 10px; }
+  .hero .brand .logo { width: 40px; height: 40px; font-size: 16px; border-radius: 10px; }
+  .hero h1 { margin: 0; font-size: clamp(28px, 5vw, 44px); line-height: 1.1; text-wrap: balance; letter-spacing: -.01em; }
+  .hero p { margin: 0; color: var(--muted); max-width: 62ch; font-size: 16px; }
+  .apps { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .app-card {
+    display: grid; grid-template-rows: auto auto 1fr auto; gap: 10px; padding: 20px; text-decoration: none; color: var(--fg);
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px; transition: border-color .15s, transform .15s;
+  }
+  .app-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .app-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .app-card .top { display: flex; align-items: center; gap: 12px; }
+  .app-card .ico { width: 46px; height: 46px; border-radius: 11px; display: grid; place-items: center; font-weight: 800; font-size: 15px; color: #fff; }
+  .app-card h2 { margin: 0; font-size: 20px; }
+  .app-card .like { font-size: 12px; color: var(--muted); }
+  .app-card p { margin: 0; color: var(--muted); }
+  .app-card ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 13px; }
+  .app-card .go { font-weight: 700; color: var(--accent); }
+  .ico.pdf { background: #c23b3b; } .ico.ph { background: #1a3d8f; } .ico.ds { background: #0f766e; }
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .note { padding: 16px; border-top: 3px solid var(--accent); background: var(--panel); border-radius: 0 0 10px 10px; display: grid; gap: 6px; }
+  .note h3 { margin: 0; font-size: 15px; }
+  .note p { margin: 0; color: var(--muted); font-size: 13px; }
+  table.cmp { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .cmp th, .cmp td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .cmp th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .tablebox { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+  footer { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="row" style="justify-content:space-between">
+      <span class="brand"><span class="logo">SJ</span><span style="font-size:18px">Studio Joe</span></span>
+      <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+    </div>
+    <h1>Vos outils PDF, photo et graphisme, sans abonnement</h1>
+    <p>Trois logiciels qui tournent dans votre navigateur, sur ordinateur comme sur téléphone. Vos fichiers ne quittent jamais votre appareil, et tout fonctionne sans connexion internet.</p>
+  </header>
+
+  <section class="apps" aria-label="Applications">
+    <a class="app-card" href="pdf.html">
+      <div class="top"><span class="ico pdf">PDF</span><div><h2>PDF Joe</h2><span class="like">équivalent Acrobat</span></div></div>
+      <p>Assembler, signer et préparer vos documents officiels.</p>
+      <ul>
+        <li>Fusionner, réordonner, pivoter, supprimer des pages</li>
+        <li>Signer (dessin, nom ou photo de signature)</li>
+        <li>Annoter : texte, date, coches, surlignage, masquage</li>
+        <li>Remplir les formulaires PDF</li>
+        <li>Filigrane, numéros de page, en-tête et pied de page</li>
+        <li>Diviser, compresser, PDF ↔ images, extraire le texte</li>
+      </ul>
+      <span class="go">Ouvrir PDF Joe →</span>
+    </a>
+    <a class="app-card" href="photo.html">
+      <div class="top"><span class="ico ph">Ph</span><div><h2>Photo Joe</h2><span class="like">équivalent Photoshop / Lightroom</span></div></div>
+      <p>Retoucher des photos et monter des images à calques.</p>
+      <ul>
+        <li>Calques avec opacité et 16 modes de fusion</li>
+        <li>Pinceau, gomme, tampon de duplication, flou localisé</li>
+        <li>Sélection, recadrage (A4, carré, photo d'identité…)</li>
+        <li>Exposition, contraste, ombres, température, teinte…</li>
+        <li>Suppression du fond, gomme magique, filtres</li>
+        <li>Mode « document scanné » pour nettoyer un scan</li>
+      </ul>
+      <span class="go">Ouvrir Photo Joe →</span>
+    </a>
+    <a class="app-card" href="design.html">
+      <div class="top"><span class="ico ds">Ds</span><div><h2>Design Joe</h2><span class="like">équivalent Illustrator / Express</span></div></div>
+      <p>Créer affiches, logos, cartes de visite et visuels.</p>
+      <ul>
+        <li>Formes, plume, crayon, texte, images</li>
+        <li>Dégradés, ombres, contours, pointillés, fusion</li>
+        <li>Rotation, groupes, alignement, repères magnétiques</li>
+        <li>Édition des points d'un tracé</li>
+        <li>Modèles : affiche A4, carte de visite, story, logo…</li>
+        <li>Export PNG, JPG, SVG vectoriel et PDF</li>
+      </ul>
+      <span class="go">Ouvrir Design Joe →</span>
+    </a>
+  </section>
+
+  <section class="notes" aria-label="Bon à savoir">
+    <div class="note"><h3>Confidentiel</h3><p>Aucun envoi sur internet : vos bulletins, contrats et pièces comptables restent sur votre appareil.</p></div>
+    <div class="note"><h3>Hors ligne</h3><p>Copiez le dossier <code>studio-joe</code> sur votre ordinateur ou une clé USB et ouvrez <code>index.html</code>.</p></div>
+    <div class="note"><h3>Projets modifiables</h3><p>Photo Joe enregistre des fichiers <code>.joeimg</code> et Design Joe des <code>.joedesign</code>, rouvrables pour continuer le travail.</p></div>
+  </section>
+
+  <section aria-label="Comparaison">
+    <div class="tablebox">
+      <table class="cmp">
+        <thead><tr><th>Besoin</th><th>Outil Adobe</th><th>Dans Studio Joe</th></tr></thead>
+        <tbody>
+          <tr><td>Signer un PDF reçu par e-mail</td><td>Acrobat — Remplir et signer</td><td>PDF Joe → double-clic sur la page → Signature</td></tr>
+          <tr><td>Regrouper plusieurs scans en un seul PDF</td><td>Acrobat — Combiner les fichiers</td><td>PDF Joe → ouvrir les images → Enregistrer</td></tr>
+          <tr><td>Réduire un PDF trop lourd pour l'envoi</td><td>Acrobat — Compresser</td><td>PDF Joe → Convertir → Compresser</td></tr>
+          <tr><td>Masquer un numéro sur un document</td><td>Acrobat — Biffer</td><td>PDF Joe → Rectangle plein, puis Convertir → Aplatir en images</td></tr>
+          <tr><td>Détourer une photo</td><td>Photoshop — Supprimer l'arrière-plan</td><td>Photo Joe → Filtres → Supprimer le fond, puis gomme</td></tr>
+          <tr><td>Photo d'identité 35 × 45</td><td>Photoshop — Recadrage</td><td>Photo Joe → Recadrage → Photo d'identité</td></tr>
+          <tr><td>Affiche ou avis à la population</td><td>Illustrator / Express</td><td>Design Joe → Modèle « Affiche / avis A4 »</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer><span>Studio Joe — usage personnel</span><span>Bibliothèques : pdf.js (Mozilla), pdf-lib, JSZip</span></footer>
+</div>
+<script src="js/common.js"></script>
+</body>
+</html>

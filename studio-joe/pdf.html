@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PDF Joe</title>
+<link rel="stylesheet" href="css/studio.css">
+<style>
+  .pages { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; align-content: start; }
+  .pg {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; display: grid; gap: 6px;
+    cursor: pointer; user-select: none; position: relative;
+  }
+  .pg.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .pg.dragging { opacity: .4; }
+  .pg.drop-before::before { content: ""; position: absolute; left: -10px; top: 6px; bottom: 6px; width: 4px; border-radius: 2px; background: var(--accent); }
+  .pg .thumb { aspect-ratio: 1 / 1.25; display: grid; place-items: center; background: var(--panel-2); border-radius: 6px; overflow: hidden; }
+  .pg .thumb canvas { max-width: 100%; max-height: 100%; box-shadow: 0 1px 4px rgba(0,0,0,.25); background: #fff; }
+  .pg .meta { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .pg .meta b { color: var(--fg); font-variant-numeric: tabular-nums; }
+  .pg .src { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+  .pg .flags { position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; }
+  .pg .flags span { background: var(--accent); color: var(--accent-fg); font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 4px; }
+  .empty { padding: 24px; display: grid; place-items: center; min-height: 100%; }
+  .empty .dropzone { width: min(560px, 100%); }
+  .feature-list { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .feature-list span { font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; color: var(--muted); }
+  .count { font: 12px var(--font-mono); color: var(--muted); }
+
+  /* éditeur de page */
+  .ed { display: grid; grid-template-columns: auto 1fr 240px; gap: 0; height: min(calc(90vh - 130px), 900px); }
+  .ed .tools { display: flex; flex-direction: column; gap: 4px; padding: 8px; border-right: 1px solid var(--line); overflow-y: auto; }
+  .ed .area { overflow: auto; background: var(--canvas-bg); padding: 16px; min-width: 0; }
+  .ed .paper { position: relative; margin: 0 auto; box-shadow: var(--shadow); background: #fff; }
+  .ed .paper canvas { position: absolute; left: 0; top: 0; }
+  .ed .props { border-left: 1px solid var(--line); overflow-y: auto; }
+  .modal.editor .body { padding: 0; }
+  @media (max-width: 860px) {
+    .ed { grid-template-columns: 1fr; height: auto; }
+    .ed .tools { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--line); }
+    .ed .area { height: 60vh; }
+    .ed .props { border-left: 0; border-top: 1px solid var(--line); }
+  }
+  .sigpad { width: 100%; height: 200px; background: #fff; border: 1px solid var(--line); border-radius: 8px; touch-action: none; }
+  .sig-list { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sig-list button { background: #fff; padding: 4px; height: 56px; }
+  .sig-list img { height: 46px; }
+  .textout { width: 100%; min-height: 50vh; font: 12px/1.5 var(--font-mono); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <a class="brand" href="index.html"><span class="logo">PDF</span><span>PDF Joe</span></a>
+    <button class="primary" id="openBtn">Ouvrir PDF / images</button>
+    <button id="blankBtn" title="Ajouter une page blanche A4">+ Page blanche</button>
+    <button id="undoBtn" title="Annuler (Ctrl+Z)">↶ Annuler</button>
+    <button id="redoBtn" title="Rétablir (Ctrl+Y)">↷ Rétablir</button>
+    <div class="menu">
+      <button data-menu>Convertir ▾</button>
+      <div class="menu-list" hidden>
+        <button id="toImagesBtn">PDF → images (PNG/JPG)</button>
+        <button id="toTextBtn">Extraire le texte</button>
+        <button id="compressBtn">Compresser le PDF…</button>
+        <button id="flattenBtn">Aplatir en images (anti-copie)</button>
+      </div>
+    </div>
+    <button id="splitBtn">Diviser…</button>
+    <span class="spacer"></span>
+    <span class="count" id="countLbl">0 page</span>
+    <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+    <div class="menu">
+      <button class="primary" data-menu>Enregistrer ▾</button>
+      <div class="menu-list" hidden style="left:auto; right:0">
+        <button id="saveAllBtn">Tout en un seul PDF <span class="kbd">Ctrl+S</span></button>
+        <button id="saveSelBtn">Pages sélectionnées seulement</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <nav class="rail" aria-label="Actions sur les pages">
+      <button class="tool" id="selAllBtn" title="Tout sélectionner (Ctrl+A)"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 12 3 3 5-6"/></svg></button>
+      <div class="sep"></div>
+      <button class="tool" id="rotLBtn" title="Pivoter à gauche"><svg viewBox="0 0 24 24"><path d="M4 9a8 8 0 1 1 1.5 7.5"/><path d="M4 4v5h5"/></svg></button>
+      <button class="tool" id="rotRBtn" title="Pivoter à droite"><svg viewBox="0 0 24 24"><path d="M20 9a8 8 0 1 0-1.5 7.5"/><path d="M20 4v5h-5"/></svg></button>
+      <button class="tool" id="moveLBtn" title="Déplacer avant"><svg viewBox="0 0 24 24"><path d="m14 6-6 6 6 6"/></svg></button>
+      <button class="tool" id="moveRBtn" title="Déplacer après"><svg viewBox="0 0 24 24"><path d="m10 6 6 6-6 6"/></svg></button>
+      <button class="tool" id="dupBtn" title="Dupliquer"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
+      <button class="tool" id="editBtn" title="Annoter / signer la page (double-clic)"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13 7 4 4"/></svg></button>
+      <div class="sep"></div>
+      <button class="tool" id="delBtn" title="Supprimer (Suppr)" style="color:var(--danger)"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg></button>
+    </nav>
+
+    <main class="stage" id="stage">
+      <div class="empty" id="empty">
+        <div class="dropzone" id="drop">
+          <strong>Déposez vos PDF ou images ici</strong>
+          <span>ou</span>
+          <button class="primary" id="openBtn2">Choisir des fichiers</button>
+          <div class="feature-list">
+            <span>Fusionner</span><span>Réorganiser</span><span>Pivoter</span><span>Supprimer des pages</span>
+            <span>Signer</span><span>Annoter</span><span>Remplir les formulaires</span><span>Filigrane</span>
+            <span>Numéroter</span><span>Diviser</span><span>Compresser</span><span>PDF ↔ images</span><span>Extraire le texte</span>
+          </div>
+          <p class="hint">Tout reste sur votre appareil : aucun fichier n'est envoyé sur internet.</p>
+        </div>
+      </div>
+      <div class="pages" id="pages" hidden></div>
+    </main>
+
+    <aside class="side">
+      <div class="section">
+        <h3>Fichier de sortie</h3>
+        <div class="field"><label for="outName">Nom du fichier</label><input type="text" id="outName" value="document"></div>
+        <div class="grid2">
+          <div class="field"><label for="metaTitle">Titre</label><input type="text" id="metaTitle"></div>
+          <div class="field"><label for="metaAuthor">Auteur</label><input type="text" id="metaAuthor"></div>
+        </div>
+      </div>
+      <div class="section">
+        <h3>Filigrane <input type="checkbox" id="wmOn" aria-label="Activer le filigrane"></h3>
+        <div class="field"><label for="wmText">Texte</label><input type="text" id="wmText" value="CONFIDENTIEL"></div>
+        <div class="grid2">
+          <div class="slider"><label for="wmSize">Taille</label><output id="wmSizeO">60</output><input type="range" id="wmSize" min="12" max="160" value="60"></div>
+          <div class="slider"><label for="wmOpacity">Opacité</label><output id="wmOpacityO">20 %</output><input type="range" id="wmOpacity" min="5" max="100" value="20"></div>
+        </div>
+        <div class="row">
+          <div class="slider" style="flex:1"><label for="wmAngle">Angle</label><output id="wmAngleO">45°</output><input type="range" id="wmAngle" min="-90" max="90" value="45"></div>
+          <input type="color" id="wmColor" value="#c23b3b" aria-label="Couleur du filigrane">
+        </div>
+      </div>
+      <div class="section">
+        <h3>Numérotation <input type="checkbox" id="numOn" aria-label="Activer la numérotation"></h3>
+        <div class="field"><label for="numFmt">Format ({n} = numéro, {total} = nombre de pages)</label><input type="text" id="numFmt" value="Page {n} / {total}"></div>
+        <div class="grid2">
+          <div class="field"><label for="numPos">Position</label>
+            <select id="numPos"><option value="bc">Bas centre</option><option value="br">Bas droite</option><option value="bl">Bas gauche</option><option value="tc">Haut centre</option><option value="tr">Haut droite</option><option value="tl">Haut gauche</option></select>
+          </div>
+          <div class="field"><label for="numStart">Commencer à</label><input type="number" id="numStart" value="1" min="0"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label for="numSize">Taille</label><input type="number" id="numSize" value="10" min="5" max="40"></div>
+          <div class="field"><label for="numSkip">Ignorer les N premières</label><input type="number" id="numSkip" value="0" min="0"></div>
+        </div>
+      </div>
+      <div class="section">
+        <h3>En-tête et pied de page <input type="checkbox" id="hfOn" aria-label="Activer en-tête et pied"></h3>
+        <div class="field"><label for="hdrText">En-tête</label><input type="text" id="hdrText" placeholder="Ex. Commune de …"></div>
+        <div class="field"><label for="ftrText">Pied de page ({date} = date du jour)</label><input type="text" id="ftrText" placeholder="Ex. Édité le {date}"></div>
+      </div>
+      <div class="section">
+        <h3>Import d'images</h3>
+        <div class="field"><label for="imgPage">Format de page</label>
+          <select id="imgPage"><option value="a4">A4 (image ajustée, marges 1 cm)</option><option value="fit">Taille exacte de l'image</option><option value="letter">Lettre US</option></select>
+        </div>
+      </div>
+      <div class="section" id="formSection" hidden>
+        <h3>Formulaire PDF</h3>
+        <p class="hint">Champs détectés dans vos documents. Ils seront remplis puis aplatis à l'enregistrement.</p>
+        <div id="formFields" style="display:grid; gap:8px"></div>
+      </div>
+      <div class="section">
+        <h3>Raccourcis</h3>
+        <p class="hint">Clic : sélectionner · Maj/Ctrl+clic : sélection multiple · Double-clic : annoter · Glisser : réordonner · Suppr : supprimer · Ctrl+Z / Ctrl+Y</p>
+      </div>
+    </aside>
+  </div>
+</div>
+<div id="toast" hidden></div>
+
+<script src="lib/pdf.min.js"></script>
+<script src="lib/pdf.worker.min.js"></script>
+<script src="lib/pdf-lib.min.js"></script>
+<script src="lib/jszip.min.js"></script>
+<script src="js/common.js"></script>
+<script src="js/pdf-app.js"></script>
+</body>
+</html>
