@@ -127,4 +127,16 @@
 
   window.Studio = { $, $$, toast, download, readAsArrayBuffer, readAsDataURL, loadImage, pickFiles, baseName, initMenus, modal, confirmBox, initTheme, store, onDropFiles, clamp };
   document.addEventListener('DOMContentLoaded', initTheme);
+
+  // Application installable (Chrome, Edge, Android) et utilisable hors connexion, quand le site est servi en https
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch((e) => console.warn('hors connexion indisponible', e)));
+  }
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    const b = document.getElementById('installBtn'); if (!b) return;
+    b.hidden = false;
+    b.onclick = async () => { e.prompt(); const r = await e.userChoice; if (r.outcome === 'accepted') b.hidden = true; };
+  });
+  window.addEventListener('appinstalled', () => { const b = document.getElementById('installBtn'); if (b) b.hidden = true; toast('Studio Joe est installé'); });
 })();

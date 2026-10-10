@@ -23,6 +23,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # liste des fichiers mis en cache hors connexion et version du cache (change à chaque publication)
+      - name: Préparer le mode hors connexion
+        working-directory: studio-joe
+        run: |
+          files=$(find . -type f ! -name sw.js ! -name '*.md' | sed 's|^\./||' | sort | python3 -c 'import sys,json;print(json.dumps(["./"]+sys.stdin.read().split()))')
+          python3 - "$files" "${GITHUB_SHA::10}" <<'PY'
+          import sys,re
+          s=open('sw.js').read()
+          s=re.sub(r"const VERSION = '[^']*';", f"const VERSION = 'studio-joe-{sys.argv[2]}';", s)
+          s=re.sub(r"const FILES = \[.*?\];", "const FILES = "+sys.argv[1]+";", s, flags=re.S)
+          open('sw.js','w').write(s)
+          PY
       - uses: actions/upload-pages-artifact@v3
         with:
           path: studio-joe

@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Studio Joe</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#d9861c">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-180.png">
 <link rel="stylesheet" href="css/studio.css">
 <style>
   body { height: auto; }
@@ -43,7 +47,7 @@
   <header class="hero">
     <div class="row" style="justify-content:space-between">
       <span class="brand"><span class="logo">SJ</span><span style="font-size:18px">Studio Joe</span></span>
-      <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+      <span class="row" style="gap:8px"><button id="installBtn" class="primary" hidden>Installer l'application</button><button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button></span>
     </div>
     <h1>Vos outils PDF, photo, graphisme, vidéo et voix, sans abonnement</h1>
     <p>Six logiciels qui tournent dans votre navigateur, sur ordinateur comme sur téléphone. Vos fichiers restent sur votre appareil et tout fonctionne sans connexion internet, sauf la lecture de l'écriture manuscrite et la traduction (IA Claude), que vous activez vous-même, et le premier téléchargement du modèle de transcription.</p>
