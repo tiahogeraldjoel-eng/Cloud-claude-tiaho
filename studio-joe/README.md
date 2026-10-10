@@ -9,6 +9,7 @@ l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA C
 | Application | Équivalent Adobe | Fichier |
 |---|---|---|
 | **PDF Joe** | Acrobat | `pdf.html` |
+| **Texte Joe** | Word | `texte.html` |
 | **Tableur Joe** | Excel | `tableur.html` |
 | **Présentation Joe** | PowerPoint | `presentation.html` |
 | **Photo Joe** | Photoshop / Lightroom | `photo.html` |
@@ -63,6 +64,29 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - **Protection par mot de passe** à l'enregistrement (AES-256) avec droits
   d'impression, de copie et de modification
 - Annuler / rétablir illimité, raccourcis clavier
+
+### Texte Joe (équivalent Word)
+- Pages A4, A5, Letter ou Legal, portrait ou paysage, marges réglables ; affichage
+  « page » comme dans Word, ou « mobile » (texte adapté à l'écran du téléphone)
+- Styles (Normal, Titre du document, Titre 1 à 3, Citation…), polices, tailles, gras,
+  italique, souligné, barré, exposant, indice, couleurs, surlignage, alignements,
+  interligne, espacements, retraits, puces et numéros sur plusieurs niveaux, casse
+- Tableaux (lignes, colonnes, en-tête, couleur de cellule, sans bordures), images
+  (redimensionner, habillage), sauts de page, liens, lignes, caractères spéciaux
+- En-tête et pied de page, numéros de page (« Page 1 sur 5 »), première page
+  différente, filigrane (BROUILLON, CONFIDENTIEL…), sommaire avec numéros de page
+- Rechercher et remplacer, statistiques, annuler / rétablir, coller depuis Word ou le
+  web (mise en forme nettoyée) ou sans mise en forme
+- Fichiers : ouvrir et enregistrer en `.docx` (titres, listes, tableaux, images,
+  en-têtes, numéros de page, mise en page) ; PDF ; impression ; `.txt`, `.html`,
+  `.md` ; « Mes documents » gardés sur l'appareil avec sauvegarde automatique
+- Modèles : lettre administrative, note de service, procès-verbal, rapport (page de
+  garde et sommaire), attestation, demande, ordre de mission, CV
+- Publipostage : lettres en série à partir d'une feuille de Tableur Joe, d'un `.xlsx`
+  ou d'un `.csv`, avec filtre (ex. « Statut = Relance »), vers un document, un PDF ou
+  un `.docx`
+- Dictée au micro, lecture à voix haute ; IA Claude (en ligne) : corriger, reformuler
+  (officiel, simple), raccourcir, résumer, rédiger à partir d'une consigne, traduire
 
 ### Tableur Joe (équivalent Excel)
 - Grille illimitée, plusieurs feuilles (renommer, dupliquer, déplacer, couleur d'onglet),
@@ -220,6 +244,11 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   sous-titres en option)
 
 ## Limites connues
+- Texte Joe : pas de suivi des modifications, de commentaires ni de notes de bas de
+  page. À l'ouverture d'un `.docx`, les couleurs et polices particulières peuvent être
+  simplifiées. Un tableau plus haut qu'une page n'est pas coupé entre deux pages à
+  l'écran : utiliser l'impression, qui le coupe. L'ancien format `.doc` doit d'abord
+  être réenregistré en `.docx`.
 - Présentation Joe : les animations et transitions ne sont pas exportées dans le
   `.pptx`. L'ouverture d'un `.pptx` reprend le contenu, mais pas toujours la mise en
   forme exacte : SmartArt, vidéos et formes spéciales sont ignorés ou simplifiés.
@@ -265,6 +294,8 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - [gifenc](https://github.com/mattdesl/gifenc) 1.0.3 — MIT
 - [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript) 0.128.0, empaqueté pour le navigateur — MIT
 - [@huggingface/transformers](https://github.com/huggingface/transformers.js) 3.8.1, empaqueté pour le navigateur ; modèles Whisper `Xenova/whisper-base` et `Xenova/whisper-small` téléchargés à la demande — Apache 2.0 / MIT
+- [docx](https://github.com/dolanmiu/docx) 9.7.1 — MIT
+- [Mammoth](https://github.com/mwilliamson/mammoth.js) 1.12.2 — BSD-2-Clause
 - [PptxGenJS](https://github.com/gitbrent/PptxGenJS) 4.0.1 — MIT
 - [ExcelJS](https://github.com/exceljs/exceljs) 4.4.0 — MIT
 - [Formula.js](https://github.com/formulajs/formulajs) 4.6.1 — MIT

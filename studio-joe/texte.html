@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Texte Joe</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#d9861c">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-180.png">
+<link rel="stylesheet" href="css/studio.css">
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  .doc-app { display: grid; grid-template-rows: auto auto 1fr auto; height: 100%; height: 100dvh; }
+  .topbar .logo { background: #2b579a !important; color: #fff !important; }
+  .menu-list hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  .menu-list kbd { font: 11px var(--font-mono); color: var(--muted); }
+  .menu-list { max-height: 75vh; overflow-y: auto; }
+  .tools { display: flex; gap: 4px; align-items: center; padding: 5px 10px; background: var(--panel); border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: thin; }
+  .tools button { padding: 4px 8px; min-width: 32px; justify-content: center; }
+  .tools button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .tools select { width: auto; padding: 4px 6px; flex: none; }
+  .tools #dStyle { min-width: 120px; } .tools #dFont { max-width: 140px; } .tools #dSize { min-width: 58px; }
+  .tools .sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 3px; flex: none; }
+  .tools .clr { position: relative; display: inline-flex; }
+  .tools .clr input[type=color] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+  .tools .clr span.bar { position: absolute; left: 6px; right: 6px; bottom: 3px; height: 3px; border-radius: 2px; }
+  .desk { overflow: auto; background: var(--canvas-bg); position: relative; min-height: 0; }
+  .zoomer { padding: 24px 0 60px; }
+  .pages { position: relative; margin: 0 auto; }
+  .sheets { position: absolute; left: 0; top: 0; right: 0; pointer-events: none; }
+  .sheet { position: absolute; left: 0; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,.25); overflow: hidden; }
+  .sheet .hf { position: absolute; color: #555; font: 10pt Calibri, Carlito, 'Segoe UI', Arial, sans-serif; overflow: hidden; }
+  .sheet .wm { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+  .sheet .wm span { transform: rotate(-40deg); font: 700 96px Arial, sans-serif; white-space: nowrap; }
+  .doc-body { position: relative; z-index: 1; outline: none; box-sizing: border-box; }
+  .mobile .sheets { display: none; }
+  .mobile .pages { width: auto !important; max-width: 820px; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,.2); }
+  .mobile .doc-body { padding: 20px 18px 60px !important; min-height: 70vh !important; }
+  .mobile .zoomer { padding: 10px; zoom: 1 !important; }
+  .statusbar { display: flex; gap: 12px; align-items: center; padding: 3px 10px; background: var(--panel); border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); padding-bottom: calc(3px + env(safe-area-inset-bottom, 0px)); }
+  .statusbar .spacer { flex: 1; }
+  .statusbar input[type=range] { width: 100px; }
+  .ctx { position: fixed; z-index: 120; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 4px; display: grid; min-width: 220px; max-height: 80vh; overflow-y: auto; }
+  .ctx button { background: transparent; border: 0; justify-content: space-between; width: 100%; padding: 7px 10px; }
+  .ctx button:hover { background: var(--panel-2); }
+  .ctx hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  .imghandle { position: absolute; z-index: 5; width: 14px; height: 14px; background: #2b579a; border: 2px solid #fff; border-radius: 3px; cursor: nwse-resize; touch-action: none; }
+  .mini-ed { min-height: 70px; border: 1px solid var(--line); border-radius: 6px; padding: 8px; background: #fff; color: #000; outline: none; font: 11pt Calibri, Carlito, sans-serif; }
+  .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+  .tpl-grid button { flex-direction: column; align-items: flex-start; white-space: normal; text-align: left; padding: 12px; gap: 4px; height: 100%; }
+  .tpl-grid button span { font-size: 12px; color: var(--muted); }
+  .doclist { display: grid; gap: 6px; max-height: 55vh; overflow-y: auto; }
+  .doclist .it { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+  .chars { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 4px; }
+  .chars button { justify-content: center; font-size: 18px; padding: 6px 0; }
+  .find-panel { position: fixed; right: 12px; top: 112px; z-index: 90; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 10px; display: grid; gap: 8px; width: min(340px, calc(100vw - 24px)); }
+  @media (max-width: 700px) {
+    .topbar .brand span:last-child, #docName { display: none; }
+    .topbar .menu > button { padding: 5px 7px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<div class="doc-app">
+  <div class="topbar">
+    <a class="brand" href="index.html"><span class="logo">Tx</span><span>Texte Joe</span></a>
+    <div class="menu">
+      <button data-menu>Fichier ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="new">Nouveau document</button>
+        <button data-act="templates">Nouveau à partir d'un modèle…</button>
+        <button data-act="library">Mes documents (sur cet appareil)…</button>
+        <button data-act="open">Ouvrir (.docx, .txt, .html, .md, .joedoc)… <kbd>Ctrl+O</kbd></button>
+        <hr>
+        <button data-act="saveDocx">Enregistrer en Word (.docx) <kbd>Ctrl+S</kbd></button>
+        <button data-act="pdf">Télécharger en PDF</button>
+        <button data-act="print">Imprimer… <kbd>Ctrl+P</kbd></button>
+        <button data-act="saveJoe">Enregistrer en .joedoc</button>
+        <button data-act="saveTxt">Exporter en texte (.txt)</button>
+        <button data-act="saveHtml">Exporter en page web (.html)</button>
+        <hr>
+        <button data-act="pageSetup">Mise en page (format, marges, orientation)…</button>
+        <button data-act="rename">Renommer le document…</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Édition ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="undo">Annuler <kbd>Ctrl+Z</kbd></button>
+        <button data-act="redo">Rétablir <kbd>Ctrl+Y</kbd></button>
+        <hr>
+        <button data-act="pastePlain">Coller sans mise en forme <kbd>Ctrl+Maj+V</kbd></button>
+        <button data-act="selectAll">Tout sélectionner <kbd>Ctrl+A</kbd></button>
+        <button data-act="find">Rechercher et remplacer… <kbd>Ctrl+H</kbd></button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Insertion ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="image">Image…</button>
+        <button data-act="table">Tableau…</button>
+        <button data-act="pageBreak">Saut de page <kbd>Ctrl+Entrée</kbd></button>
+        <button data-act="link">Lien… <kbd>Ctrl+K</kbd></button>
+        <button data-act="hr">Ligne horizontale</button>
+        <button data-act="chars">Caractère spécial…</button>
+        <button data-act="date">Date du jour</button>
+        <button data-act="toc">Sommaire</button>
+        <hr>
+        <button data-act="headerFooter">En-tête, pied de page et numéros de page…</button>
+        <button data-act="watermark">Filigrane…</button>
+        <button data-act="mergeField">Champ de publipostage…</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Format ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="paragraph">Paragraphe (interligne, espacement, retraits)…</button>
+        <button data-act="upper">MAJUSCULES</button>
+        <button data-act="lower">minuscules</button>
+        <button data-act="titleCase">Première Lettre En Majuscule</button>
+        <button data-act="sup">Exposant</button>
+        <button data-act="sub">Indice</button>
+        <button data-act="strike">Barré</button>
+        <button data-act="clearFormat">Effacer la mise en forme</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>Outils ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="dictate">🎤 Dicter</button>
+        <button data-act="readAloud">🔊 Lire à voix haute</button>
+        <button data-act="wordCount">Statistiques (mots, caractères, pages)</button>
+        <button data-act="mailMerge">Publipostage (lettres en série)…</button>
+        <button data-act="translate">Traduire le document… (IA Claude)</button>
+      </div>
+    </div>
+    <div class="menu">
+      <button data-menu>IA ▾</button>
+      <div class="menu-list" hidden>
+        <button data-act="aiFix">Corriger l'orthographe et la grammaire</button>
+        <button data-act="aiFormal">Reformuler (plus officiel)</button>
+        <button data-act="aiSimple">Reformuler (plus simple)</button>
+        <button data-act="aiShort">Raccourcir</button>
+        <button data-act="aiSummary">Résumer le document</button>
+        <button data-act="aiWrite">Rédiger à partir d'une consigne…</button>
+      </div>
+    </div>
+    <span class="spacer"></span>
+    <span class="hint" id="docName"></span>
+    <button id="viewBtn" class="ghost" title="Affichage page / mobile">📄</button>
+    <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+  </div>
+
+  <div class="tools" id="tools">
+    <button data-act="undo" title="Annuler (Ctrl+Z)">↶</button>
+    <button data-act="redo" title="Rétablir (Ctrl+Y)">↷</button>
+    <span class="sep"></span>
+    <select id="dStyle" title="Style de paragraphe">
+      <option value="p">Normal</option><option value="title">Titre du document</option><option value="subtitle">Sous-titre</option><option value="h1">Titre 1</option><option value="h2">Titre 2</option><option value="h3">Titre 3</option><option value="blockquote">Citation</option><option value="pre">Code / texte fixe</option>
+    </select>
+    <select id="dFont" title="Police">
+      <option value="">Calibri</option>
+      <option value="Arial, Helvetica, sans-serif">Arial</option>
+      <option value="'Times New Roman', Times, serif">Times New Roman</option>
+      <option value="Cambria, Georgia, serif">Cambria</option>
+      <option value="Georgia, serif">Georgia</option>
+      <option value="Verdana, sans-serif">Verdana</option>
+      <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+      <option value="'Century Gothic', 'Segoe UI', sans-serif">Century Gothic</option>
+      <option value="'Courier New', monospace">Courier New</option>
+    </select>
+    <select id="dSize" title="Taille (points)">
+      <option value="">Taille</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>14</option><option>16</option><option>18</option><option>20</option><option>24</option><option>28</option><option>36</option><option>48</option><option>72</option>
+    </select>
+    <button data-act="bold" title="Gras (Ctrl+B)"><b>G</b></button>
+    <button data-act="italic" title="Italique (Ctrl+I)"><i>I</i></button>
+    <button data-act="underline" title="Souligné (Ctrl+U)"><u>S</u></button>
+    <label class="clr" title="Couleur du texte"><button tabindex="-1" type="button">A<span class="bar" id="dColorBar" style="background:#c00000"></span></button><input type="color" id="dColor" value="#c00000"></label>
+    <label class="clr" title="Surligner"><button tabindex="-1" type="button">ab<span class="bar" id="dHiBar" style="background:#ffff00"></span></button><input type="color" id="dHi" value="#ffff00"></label>
+    <span class="sep"></span>
+    <button data-act="left" title="Aligner à gauche (Ctrl+L)">⇤</button>
+    <button data-act="center" title="Centrer (Ctrl+E)">↔</button>
+    <button data-act="right" title="Aligner à droite (Ctrl+R)">⇥</button>
+    <button data-act="justify" title="Justifier (Ctrl+J)">☰</button>
+    <button data-act="bullets" title="Puces">•≡</button>
+    <button data-act="numbers" title="Numérotation">1≡</button>
+    <button data-act="outdent" title="Diminuer le retrait (Maj+Tab)">⇠</button>
+    <button data-act="indent" title="Augmenter le retrait (Tab)">⇢</button>
+    <select id="dLine" title="Interligne"><option value="">Interligne</option><option value="1">1,0</option><option value="1.15">1,15</option><option value="1.5">1,5</option><option value="2">2,0</option></select>
+    <span class="sep"></span>
+    <button data-act="image" title="Image">🖼</button>
+    <button data-act="table" title="Tableau">▦</button>
+    <button data-act="pageBreak" title="Saut de page">⤓</button>
+    <button data-act="dictate" title="Dicter">🎤</button>
+    <button data-act="clearFormat" title="Effacer la mise en forme">⌫</button>
+  </div>
+
+  <div class="desk" id="desk">
+    <div class="zoomer" id="zoomer">
+      <div class="pages" id="pages">
+        <div class="sheets" id="sheets"></div>
+        <div class="doc-body" id="body" contenteditable="true" spellcheck="true" lang="fr"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span id="stPage">Page 1 sur 1</span><span id="stWords">0 mot</span><span id="stSave"></span>
+    <span class="spacer"></span>
+    <input type="range" id="zoom" min="50" max="200" step="10" value="100" aria-label="Zoom"><span id="zoomO">100 %</span>
+  </div>
+</div>
+<div id="toast" hidden></div>
+<script src="lib/jszip.min.js"></script>
+<script src="js/common.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/speech.js"></script>
+<script src="js/tts.js"></script>
+<script src="js/translate.js"></script>
+<script src="js/doc-app.js"></script>
+<script src="js/doc-extra.js"></script>
+</body>
+</html>
