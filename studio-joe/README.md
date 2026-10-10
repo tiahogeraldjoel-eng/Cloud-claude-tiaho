@@ -11,6 +11,7 @@ l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA C
 | **PDF Joe** | Acrobat | `pdf.html` |
 | **Scan Joe** | Adobe Scan | `scan.html` |
 | **Texte Joe** | Word | `texte.html` |
+| **Notes Joe** | OneNote / Keep | `notes.html` |
 | **Tableur Joe** | Excel | `tableur.html` |
 | **Présentation Joe** | PowerPoint | `presentation.html` |
 | **Photo Joe** | Photoshop / Lightroom | `photo.html` |
@@ -85,6 +86,19 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Partage direct (WhatsApp, e-mail…) depuis le téléphone ; texte extrait copié,
   enregistré en `.txt` ou ouvert dans Texte Joe ; images en `.zip`
 - Les pages restent dans le téléphone jusqu'à « Tout effacer »
+
+### Notes Joe (équivalent OneNote / Google Keep)
+- Carnets (couleur, renommer et supprimer par appui long), étiquettes, couleurs de
+  note, notes épinglées, tri par date ou par titre
+- Notes riches : titres, gras, surlignage, listes, **listes à cocher** (« [] » puis
+  espace, ou Ctrl+L), séparateurs, date et heure, liens cliquables
+- Photos (appareil photo ou galerie, réduites automatiquement), **mémos vocaux**
+  enregistrés dans la note, dictée, lecture à voix haute
+- Vue « Tâches à faire » : toutes les notes ayant des cases non cochées
+- Recherche instantanée sans tenir compte des accents, mots surlignés
+- Corbeille (vidée après 30 jours) ; export `.txt`, `.md`, impression / PDF,
+  ouverture dans Texte Joe, partage ; import de fichiers `.txt` et `.md`
+- Sur téléphone : une colonne à la fois (carnets, liste, note) et bouton ＋ flottant
 
 ### Texte Joe (équivalent Word)
 - **Ouvrir un PDF** (même scanné) : il est converti en document modifiable
@@ -286,6 +300,8 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   sous-titres en option)
 
 ## Limites connues
+- Notes Joe : pas de rappels à heure fixe ni de dessin à main levée ; les notes restent sur
+  l'appareil où elles ont été écrites (voir la sauvegarde pour les transférer).
 - Audio Joe : une seule piste (pas de mixage multipiste : utiliser Video Joe) ; au-delà
   d'environ 2 heures, le téléphone peut manquer de mémoire. La sauvegarde automatique
   peut échouer pour un son très long : exporter le travail.
