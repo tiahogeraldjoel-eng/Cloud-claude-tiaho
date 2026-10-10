@@ -9,6 +9,7 @@ l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA C
 | Application | Équivalent Adobe | Fichier |
 |---|---|---|
 | **PDF Joe** | Acrobat | `pdf.html` |
+| **Scan Joe** | Adobe Scan | `scan.html` |
 | **Texte Joe** | Word | `texte.html` |
 | **Tableur Joe** | Excel | `tableur.html` |
 | **Présentation Joe** | PowerPoint | `presentation.html` |
@@ -64,6 +65,18 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - **Protection par mot de passe** à l'enregistrement (AES-256) avec droits
   d'impression, de copie et de modification
 - Annuler / rétablir illimité, raccourcis clavier
+
+### Scan Joe (équivalent Adobe Scan)
+- « Prendre une photo » ouvre l'appareil photo du téléphone ; « Caméra avec
+  détection » montre le contour du document en direct et enchaîne les pages
+- Bords détectés automatiquement, page redressée (correction de perspective) ;
+  coins ajustables au doigt avec loupe ; rotation ; recadrage sur toute l'image
+- Filtres : Document (fond blanchi, ombres atténuées), Couleur, Gris, Noir et blanc
+- PDF multipage (A4 ou taille de l'image) avec texte reconnu par OCR en français
+  ou en anglais, invisible mais cherchable et copiable
+- Partage direct (WhatsApp, e-mail…) depuis le téléphone ; texte extrait copié,
+  enregistré en `.txt` ou ouvert dans Texte Joe ; images en `.zip`
+- Les pages restent dans le téléphone jusqu'à « Tout effacer »
 
 ### Texte Joe (équivalent Word)
 - Pages A4, A5, Letter ou Legal, portrait ou paysage, marges réglables ; affichage
@@ -244,6 +257,9 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   sous-titres en option)
 
 ## Limites connues
+- Scan Joe : la détection des bords demande un document clair sur un fond plus
+  sombre ; sinon, ajuster les coins à la main. L'OCR ne lit pas l'écriture manuscrite
+  (utiliser PDF Joe → OCR → Écriture manuscrite, en ligne).
 - Texte Joe : pas de suivi des modifications, de commentaires ni de notes de bas de
   page. À l'ouverture d'un `.docx`, les couleurs et polices particulières peuvent être
   simplifiées. Un tableau plus haut qu'une page n'est pas coupé entre deux pages à
