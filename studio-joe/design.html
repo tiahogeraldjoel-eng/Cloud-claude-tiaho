@@ -13,11 +13,21 @@
   .objlist button.active { background: var(--accent-soft); border-color: var(--accent); }
   .templates { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
   .templates button { flex-direction: column; align-items: stretch; padding: 8px; gap: 6px; white-space: normal; text-align: left; }
-  .templates svg { width: 100%; height: 110px; background: var(--panel-2); border-radius: 4px; }
+  .templates button > svg { width: 100%; height: 110px; background: var(--panel-2); border-radius: 4px; }
   .templates small { color: var(--muted); }
   .status { font: 12px var(--font-mono); color: var(--muted); }
   .align-row button { padding: 4px 6px; }
   .align-row svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+  .center { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-width: 0; min-height: 0; }
+  #pagebar { display: flex; gap: 8px; align-items: center; padding: 8px 12px; overflow-x: auto; background: var(--panel); border-top: 1px solid var(--line); }
+  .pthumb { flex-direction: column; padding: 4px; gap: 2px; background: var(--panel-2); flex: none; }
+  .pthumb > svg { display: block; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .pthumb span { font: 11px var(--font-mono); color: var(--muted); }
+  .pthumb.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .pactions { display: flex; gap: 4px; flex: none; }
+  .pactions button { font-size: 12px; padding: 4px 8px; }
+  #side .icon-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  #side .icon-row button { font-size: 12px; padding: 4px 8px; }
 </style>
 </head>
 <body>
@@ -27,6 +37,7 @@
     <div class="menu"><button data-menu>Fichier ▾</button>
       <div class="menu-list" hidden>
         <button data-act="templates">Nouveau depuis un modèle…</button>
+        <button data-act="magicResize">Redimensionner (format magique)…</button>
         <button data-act="newDoc">Nouveau format personnalisé…</button>
         <button data-act="openProject">Ouvrir un projet (.joedesign / .svg)…</button>
         <button data-act="saveProject">Enregistrer le projet (.joedesign)</button>
@@ -62,6 +73,8 @@
         <button data-act="flipH">Miroir horizontal</button>
         <button data-act="flipV">Miroir vertical</button>
         <button data-act="lock">Verrouiller / déverrouiller</button>
+        <hr>
+        <button data-act="library">Éléments (formes, icônes, cadres, graphiques, QR)… <span class="kbd">K</span></button>
       </div>
     </div>
     <button data-act="undo" id="undoBtn" title="Annuler (Ctrl+Z)">↶</button>
@@ -72,6 +85,7 @@
     <button data-act="fit" id="zoomLbl" title="Ajuster (Ctrl+0)">100 %</button>
     <button data-act="zoomIn" title="Zoom avant">+</button>
     <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+    <button data-act="present" title="Présenter en plein écran (F5)">▶ Présenter</button>
     <div class="menu"><button class="primary" data-menu>Exporter ▾</button>
       <div class="menu-list" hidden style="left:auto; right:0">
         <button data-act="exportPNG">PNG</button><button data-act="exportJPG">JPG</button><button data-act="exportSVG">SVG</button><button data-act="exportPDF">PDF</button>
@@ -80,12 +94,17 @@
   </div>
   <div class="workspace">
     <nav class="rail" id="rail" aria-label="Outils"></nav>
-    <main class="stage" id="stage"><svg id="board" xmlns="http://www.w3.org/2000/svg"></svg></main>
+    <div class="center">
+      <main class="stage" id="stage"><svg id="board" xmlns="http://www.w3.org/2000/svg"></svg></main>
+      <nav id="pagebar" aria-label="Pages"></nav>
+    </div>
     <aside class="side" id="side"></aside>
   </div>
 </div>
 <div id="toast" hidden></div>
 <script src="lib/pdf-lib.min.js"></script>
+<script src="lib/jszip.min.js"></script>
+<script src="lib/qrcode.js"></script>
 <script src="js/common.js"></script>
 <script src="js/design-app.js"></script>
 </body>
