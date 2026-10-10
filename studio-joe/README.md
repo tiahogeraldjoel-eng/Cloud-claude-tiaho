@@ -12,6 +12,7 @@ l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA C
 | **Scan Joe** | Adobe Scan | `scan.html` |
 | **Texte Joe** | Word | `texte.html` |
 | **Notes Joe** | OneNote / Keep | `notes.html` |
+| **Formulaires Joe** | Google Forms | `formulaires.html` |
 | **Tableur Joe** | Excel | `tableur.html` |
 | **Présentation Joe** | PowerPoint | `presentation.html` |
 | **Photo Joe** | Photoshop / Lightroom | `photo.html` |
@@ -99,6 +100,20 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Corbeille (vidée après 30 jours) ; export `.txt`, `.md`, impression / PDF,
   ouverture dans Texte Joe, partage ; import de fichiers `.txt` et `.md`
 - Sur téléphone : une colonne à la fois (carnets, liste, note) et bouton ＋ flottant
+
+### Formulaires Joe (équivalent Google Forms / Microsoft Forms, sans serveur)
+- Questions : texte court ou long, nombre, montant en FCFA, date, choix unique,
+  cases à cocher, liste déroulante, oui / non, note de 1 à 5, e-mail, téléphone,
+  signature au doigt, titres de partie ; questions obligatoires, aides, contrôles
+- Modèles : recensement des contribuables, liste de présence, enquête de
+  satisfaction, demande d'intervention, collecte des droits de place
+- **Remplir** sur l'appareil (enquête de terrain, guichet) : chaque réponse est gardée
+- **Diffuser** : formulaire HTML autonome (un fichier à envoyer par WhatsApp ou
+  e-mail, rempli hors ligne ; la réponse revient en fichier `.json` ou en code
+  `FJ1.…` à coller), PDF à remplir (champs Acrobat), PDF papier à imprimer
+- **Réponses** : import des fichiers, codes et PDF remplis (doublons ignorés),
+  statistiques (répartition des choix, total / moyenne des montants), tableau,
+  export Excel (totaux, feuille de statistiques) ou CSV, ouverture dans Tableur Joe
 
 ### Texte Joe (équivalent Word)
 - **Ouvrir un PDF** (même scanné) : il est converti en document modifiable
@@ -300,6 +315,9 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   sous-titres en option)
 
 ## Limites connues
+- Formulaires Joe : pas de collecte automatique en ligne (aucun serveur) : les réponses
+  reviennent par fichier, code ou PDF, à importer. La signature n'est pas reprise depuis un
+  PDF rempli.
 - Notes Joe : pas de rappels à heure fixe ni de dessin à main levée ; les notes restent sur
   l'appareil où elles ont été écrites (voir la sauvegarde pour les transférer).
 - Audio Joe : une seule piste (pas de mixage multipiste : utiliser Video Joe) ; au-delà
