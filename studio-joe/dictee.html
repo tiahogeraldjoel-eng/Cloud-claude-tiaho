@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dictée Joe</title>
+<link rel="stylesheet" href="css/studio.css">
+<style>
+  body { height: auto; }
+  .wrap { max-width: 980px; margin: 0 auto; padding-inline: 16px; padding-block: 16px 40px; display: grid; gap: 16px; }
+  .bar { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .bar .field { min-width: 180px; flex: 1; }
+  .rec-row { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  #micBtn { width: 76px; height: 76px; border-radius: 50%; font-size: 30px; justify-content: center; background: var(--accent); color: var(--accent-fg); border: 0; box-shadow: var(--shadow); }
+  #micBtn.on { background: var(--danger); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--danger) 25%, transparent); } }
+  .live { min-height: 2.6em; font-size: 17px; color: var(--muted); font-style: italic; }
+  .meter { height: 8px; border-radius: 4px; background: var(--panel-2); overflow: hidden; margin-top: 8px; }
+  .meter > div { height: 100%; width: 0; background: var(--ok); transition: width .08s; }
+  .stats { font: 13px var(--font-mono); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; display: grid; gap: 4px; }
+  #transcript { width: 100%; min-height: 48vh; font: 16px/1.6 var(--font-ui); padding: 14px; border-radius: 12px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tips { font-size: 13px; color: var(--muted); }
+  .tips code { background: var(--panel-2); padding: 0 5px; border-radius: 4px; }
+  @media (max-width: 600px) { .rec-row { grid-template-columns: auto 1fr; } .stats { grid-column: 1 / -1; text-align: left; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="row" style="justify-content:space-between">
+    <a class="brand" href="index.html"><span class="logo" style="background:#2f8a57">Dt</span><span>Dictée Joe</span></a>
+    <button id="themeBtn" class="ghost" title="Basculer thème clair/sombre">Thème</button>
+  </div>
+
+  <div class="bar">
+    <div class="field"><label for="engine">Moteur</label><select id="engine"></select></div>
+    <div class="field"><label for="lang">Langue parlée</label><select id="lang"></select></div>
+    <div class="field" id="modelField"><label for="model">Modèle Whisper</label><select id="model"><option value="base">Rapide (≈ 80 Mo)</option><option value="small">Précis (≈ 250 Mo)</option></select></div>
+    <label class="row"><input type="checkbox" id="stamps"> Horodater chaque phrase</label>
+    <label class="row"><input type="checkbox" id="record"> Enregistrer aussi le son</label>
+  </div>
+
+  <div class="rec-row">
+    <button id="micBtn" aria-label="Démarrer la dictée" title="Démarrer / arrêter (Ctrl+Espace)">🎤</button>
+    <div style="min-width:0">
+      <div class="live" id="live">Appuyez sur le micro et parlez. Dites « virgule », « point », « à la ligne »…</div>
+      <div class="meter" aria-hidden="true"><div id="level"></div></div>
+    </div>
+    <div class="stats"><span id="clock">00:00</span><span id="words">0 mot</span></div>
+  </div>
+
+  <textarea id="transcript" aria-label="Texte dicté" placeholder="Le texte dicté apparaît ici. Vous pouvez le corriger à tout moment."></textarea>
+
+  <div class="actions">
+    <button id="copyBtn">Copier</button>
+    <button id="txtBtn">Télécharger .txt</button>
+    <button id="srtBtn">Sous-titres .srt</button>
+    <button id="audioBtn" disabled>Télécharger l'enregistrement</button>
+    <button id="trBtn">Traduire… (IA Claude)</button>
+    <button id="readBtn">🔊 Relire à voix haute</button>
+    <span class="spacer" style="flex:1"></span>
+    <button id="clearBtn" class="danger">Effacer</button>
+  </div>
+
+  <div class="tips">
+    <p><strong>Commandes vocales :</strong> <code>virgule</code> <code>point</code> <code>point d'interrogation</code> <code>deux points</code> <code>point virgule</code> <code>à la ligne</code> <code>nouveau paragraphe</code> <code>ouvrez / fermez les guillemets</code>.</p>
+    <p><strong>Navigateur :</strong> le texte s'affiche pendant que vous parlez ; le son est traité par le service vocal de Chrome ou d'Edge (internet nécessaire). <strong>Whisper :</strong> le son reste sur l'appareil ; le texte arrive à chaque pause ; le modèle se télécharge la première fois.</p>
+    <p>Le texte est gardé dans ce navigateur jusqu'à ce que vous l'effaciez.</p>
+  </div>
+</div>
+<div id="toast" hidden></div>
+<script src="js/common.js"></script>
+<script src="lib/transformers.js"></script>
+<script src="js/transcribe.js"></script>
+<script src="lib/anthropic-sdk.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/translate.js"></script>
+<script src="js/speech.js"></script>
+<script src="js/tts.js"></script>
+<script>
+(function () {
+  const { $, toast, download, modal } = Studio;
+  const S = Studio.speech;
+  const ta = $('#transcript');
+  $('#engine').innerHTML = S.engineOptions(); $('#lang').innerHTML = S.langOptions();
+  const syncModel = () => { $('#modelField').hidden = $('#engine').value !== 'whisper'; };
+  syncModel(); $('#engine').onchange = () => { S.save($('#engine').value, $('#lang').value); syncModel(); };
+  $('#lang').onchange = () => S.save($('#engine').value, $('#lang').value);
+
+  try { ta.value = localStorage.getItem('dictee-draft') || ''; } catch (e) { /* ignore */ }
+  let segs = []; // [{start, end, text}] en secondes depuis le début de la dictée
+  try { segs = JSON.parse(localStorage.getItem('dictee-segs') || '[]'); } catch (e) { segs = []; }
+  const save = () => { try { localStorage.setItem('dictee-draft', ta.value); localStorage.setItem('dictee-segs', JSON.stringify(segs)); } catch (e) { /* ignore */ } };
+  const countWords = () => { const n = (ta.value.match(/[\p{L}\p{N}]+/gu) || []).length; $('#words').textContent = `${n} mot${n > 1 ? 's' : ''}`; };
+  ta.addEventListener('input', () => { save(); countWords(); }); countWords();
+
+  let session = null, t0 = 0, offset = segs.length ? segs[segs.length - 1].end : 0, lastEnd = offset, timer = 0, recorder = null, chunks = [], audioBlob = null;
+  // temps de dictée cumulé ; à l'arrêt, l'horloge est figée (t0 = stopAt)
+  let running = false, stopAt = 0;
+  const elapsed = (at = performance.now()) => offset + ((running ? at : Math.min(at, stopAt)) - t0) / 1000;
+  const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+  function addText(txt, meta) {
+    // Whisper indique quand la phrase a été dite ; le moteur du navigateur répond en direct
+    const begin = meta && meta.at ? elapsed(meta.at) : lastEnd;
+    const now = meta && meta.at ? begin + meta.duration : elapsed();
+    segs.push({ start: Math.max(lastEnd, begin), end: Math.max(Math.max(lastEnd, begin) + 0.5, now), text: txt.replace(/\n+/g, ' ').trim() }); lastEnd = Math.max(lastEnd, now);
+    let piece = txt;
+    if ($('#stamps').checked && !/^[.,;:?!…]/.test(txt)) piece = `[${fmt(Math.max(0, begin))}] ${txt}`;
+    const v = ta.value;
+    const sep = !v ? '' : /\n$/.test(v) || /^\n/.test(piece) ? '' : /^[.,;:?!…]/.test(piece) ? '' : $('#stamps').checked ? '\n' : ' ';
+    ta.value = v + sep + piece; ta.scrollTop = ta.scrollHeight;
+    save(); countWords();
+  }
+  function setState(on) {
+    $('#micBtn').classList.toggle('on', on); $('#micBtn').textContent = on ? '■' : '🎤';
+    $('#micBtn').setAttribute('aria-label', on ? 'Arrêter la dictée' : 'Démarrer la dictée');
+    ['#engine', '#lang', '#model', '#record'].forEach((s) => { $(s).disabled = on; });
+  }
+  async function startRec() {
+    if (!$('#record').checked) return;
+    try {
+      const st = await navigator.mediaDevices.getUserMedia({ audio: true });
+      chunks = []; recorder = new MediaRecorder(st);
+      recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+      recorder.onstop = () => { st.getTracks().forEach((t) => t.stop()); audioBlob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' }); $('#audioBtn').disabled = false; };
+      recorder.start(1000);
+    } catch (e) { toast('Enregistrement du son impossible : ' + e.message, 5000); }
+  }
+  async function toggle() {
+    if (session) { session.stop(); session = null; clearInterval(timer); stopAt = performance.now(); offset = elapsed(stopAt); running = false; t0 = stopAt; if (recorder && recorder.state !== 'inactive') recorder.stop(); setState(false); $('#live').textContent = 'Dictée arrêtée.'; $('#level').style.width = '0'; return; }
+    const engine = $('#engine').value, lang = $('#lang').value; S.save(engine, lang);
+    setState(true); $('#live').textContent = engine === 'whisper' ? 'Préparation du modèle Whisper (téléchargement la première fois)…' : 'Écoute…';
+    try {
+      session = await S.start(engine, {
+        lang, model: $('#model').value,
+        onInterim: (t) => { $('#live').textContent = t || (running ? 'Écoute…' : 'Dictée arrêtée.'); },
+        onFinal: addText,
+        onLevel: (l) => { $('#level').style.width = Math.min(100, l * 600) + '%'; },
+        onError: (m) => { toast('Dictée : ' + m, 7000); if (session) toggle(); },
+        onState: () => {},
+      });
+      t0 = performance.now(); stopAt = t0; running = true; timer = setInterval(() => { $('#clock').textContent = fmt(elapsed()); }, 500);
+      startRec();
+      if (engine === 'web') $('#live').textContent = 'Écoute… parlez maintenant.';
+    } catch (e) { session = null; setState(false); $('#live').textContent = ''; toast('Dictée impossible : ' + (e.message || e), 7000); }
+  }
+  $('#micBtn').onclick = toggle;
+  document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.code === 'Space') { e.preventDefault(); toggle(); } });
+
+  const name = () => `dictee-${new Date().toISOString().slice(0, 16).replace(/[T:]/g, '-')}`;
+  $('#copyBtn').onclick = () => navigator.clipboard.writeText(ta.value).then(() => toast('Texte copié'), () => { ta.select(); toast('Copie refusée : le texte est sélectionné, faites Ctrl+C'); });
+  $('#txtBtn').onclick = () => download(new Blob([ta.value], { type: 'text/plain;charset=utf-8' }), name() + '.txt');
+  $('#srtBtn').onclick = () => { if (!segs.length) return toast('Pas encore de phrase horodatée.'); download(new Blob([Studio.transcribe.toSRT(segs)], { type: 'application/x-subrip;charset=utf-8' }), name() + '.srt'); };
+  $('#audioBtn').onclick = () => audioBlob && download(audioBlob, name() + (audioBlob.type.includes('ogg') ? '.ogg' : audioBlob.type.includes('mp4') ? '.m4a' : '.webm'));
+  $('#clearBtn').onclick = async () => { if (!ta.value || await Studio.confirmBox('Effacer tout le texte dicté ?', 'Effacer')) { ta.value = ''; segs = []; offset = 0; lastEnd = 0; $('#clock').textContent = '00:00'; save(); countWords(); } };
+  $('#trBtn').onclick = async () => {
+    if (!ta.value.trim()) return toast('Rien à traduire.');
+    const to = await modal({ title: 'Traduire le texte dicté', body: `<div class="field"><label for="trTo">Traduire vers</label><select id="trTo">${Studio.translate.options()}</select></div>`, buttons: [{ label: 'Annuler', value: null }, { label: 'Traduire', primary: true, value: (b) => b.querySelector('#trTo').value }] });
+    if (!to) return;
+    Studio.translate.saveTarget(to);
+    const key = await Studio.translate.ensureKey('le texte dicté'); if (!key) return;
+    toast('Traduction en cours…', 60000);
+    try {
+      const [tr] = await Studio.translate.translateTexts(key, [ta.value], to);
+      toast('Traduction terminée', 1500);
+      const v = await modal({ title: `Traduction — ${Studio.translate.NAME[to]}`, wide: true, body: `<textarea id="trOut" style="width:100%;min-height:45vh"${to === 'ar' ? ' dir="rtl"' : ''} aria-label="Traduction"></textarea>`, onOpen: (b) => { b.querySelector('#trOut').value = tr; }, buttons: [{ label: 'Copier', value: 'copy' }, { label: 'Télécharger .txt', primary: true, value: 'txt' }] });
+      if (v === 'copy') navigator.clipboard.writeText(tr).then(() => toast('Traduction copiée'), () => toast('Copie refusée par le navigateur'));
+      if (v === 'txt') download(new Blob([tr], { type: 'text/plain;charset=utf-8' }), `${name()}-${to}.txt`);
+    } catch (e) { toast('Traduction impossible : ' + (e.message || e), 6000); }
+  };
+  let readCtl = null;
+  $('#readBtn').onclick = async () => {
+    if (readCtl) { readCtl.stop(); readCtl = null; $('#readBtn').textContent = '🔊 Relire à voix haute'; return; }
+    if (!Studio.tts.available()) return toast('Synthèse vocale indisponible dans ce navigateur.');
+    const txt = ta.value.replace(/^\[\d+:\d+\]\s*/gm, ''); if (!txt.trim()) return toast('Rien à relire.');
+    await Studio.tts.loadVoices();
+    let pref = {}; try { pref = JSON.parse(localStorage.getItem('voix-prefs') || '{}'); } catch (e) { /* ignore */ }
+    readCtl = Studio.tts.speak(txt, { voiceURI: pref.voice || '', lang: $('#lang').value, rate: +(pref.rate || 1), onEnd: () => { readCtl = null; $('#readBtn').textContent = '🔊 Relire à voix haute'; } });
+    $('#readBtn').textContent = '■ Arrêter la lecture';
+  };
+  window.DicteeJoe = { addText, toggle };
+})();
+</script>
+</body>
+</html>
