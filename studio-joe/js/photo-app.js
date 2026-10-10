@@ -831,13 +831,17 @@
 
   /* ---------------- OCR ---------------- */
   async function ocrImage() {
-    const lang = await modal({
+    const choice = await modal({
       title: 'Extraire le texte (OCR)',
-      body: `<div class="field"><label for="ocrLang">Langue du texte</label><select id="ocrLang">${Studio.ocr.langOptions(Studio.ocr.savedLang())}</select></div><p class="hint" style="margin:0">${sel ? 'Seule la zone sélectionnée sera lue.' : 'Toute l\'image sera lue. Sélectionnez d\'abord une zone (M) pour n\'en lire qu\'une partie.'}</p>`,
-      buttons: [{ label: 'Annuler', value: null }, { label: 'Lire le texte', primary: true, value: (b) => b.querySelector('#ocrLang').value }],
+      body: `<div class="field"><label for="ocrEngine">Type d'écriture</label><select id="ocrEngine"><option value="print">Texte imprimé (hors ligne)</option><option value="hand">Écriture manuscrite (IA Claude, en ligne, clé API)</option></select></div>
+        <div class="field"><label for="ocrLang">Langue du texte</label><select id="ocrLang">${Studio.ocr.langOptions(Studio.ocr.savedLang())}</select></div><p class="hint" style="margin:0">${sel ? 'Seule la zone sélectionnée sera lue.' : 'Toute l\'image sera lue. Sélectionnez d\'abord une zone (M) pour n\'en lire qu\'une partie.'}</p>`,
+      buttons: [{ label: 'Annuler', value: null }, { label: 'Lire le texte', primary: true, value: (b) => ({ lang: b.querySelector('#ocrLang').value, engine: b.querySelector('#ocrEngine').value }) }],
     });
-    if (!lang) return;
+    if (!choice) return;
+    const { lang, engine } = choice;
     Studio.ocr.saveLang(lang);
+    let apiKey = null;
+    if (engine === 'hand') { apiKey = await Studio.handwriting.ensureKey(); if (!apiKey) return; }
     cancelAdjust(true);
     let src = flatCanvas();
     if (sel) { const c = mkCanvas(sel.w, sel.h); c.getContext('2d').drawImage(src, -sel.x, -sel.y); src = c; }
@@ -846,8 +850,8 @@
     else { const c = mkCanvas(src.width, src.height); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(src, 0, 0); src = c; }
     toast('Reconnaissance du texte en cours…', 60000);
     let r;
-    try { r = await Studio.ocr.recognize(src, lang); } catch (e) { toast('OCR impossible : ' + (e.message || e), 6000); return; }
-    toast(`${r.words.length} mots reconnus`, 2000);
+    try { r = apiKey ? await Studio.handwriting.transcribe(src, apiKey, lang) : await Studio.ocr.recognize(src, lang); } catch (e) { toast('OCR impossible : ' + (e.message || e), 6000); return; }
+    toast(apiKey ? `${r.words.length} lignes lues` : `${r.words.length} mots reconnus`, 2000);
     const v = await modal({
       title: 'Texte reconnu' + (sel ? ' (sélection)' : ''), wide: true,
       body: '<textarea id="ocrOut" style="width:100%;min-height:50vh;font:13px/1.5 var(--font-mono)" aria-label="Texte reconnu"></textarea><p class="hint" style="margin:0">Astuce : sélectionnez d\'abord une zone (M) pour ne lire qu\'une partie. Vérifiez les chiffres importants.</p>',

@@ -2,7 +2,8 @@
 
 Suite d'outils de création pour usage personnel, inspirée d'Adobe, qui fonctionne
 entièrement dans le navigateur (ordinateur ou téléphone), **sans internet** et
-**sans envoyer aucun fichier** sur un serveur.
+**sans envoyer aucun fichier** sur un serveur — à une exception près, choisie par
+l'utilisateur : la lecture de l'écriture manuscrite par l'IA Claude (voir plus bas).
 
 | Application | Équivalent Adobe | Fichier |
 |---|---|---|
@@ -33,6 +34,10 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
 - **OCR des PDF scannés** (français, anglais ou les deux, hors ligne) : le texte est reconnu puis
   ajouté en couche invisible ; le PDF devient consultable par recherche, copiable,
   et son texte modifiable avec l'outil « Modifier un texte existant »
+- **Écriture manuscrite** (option en ligne) : la page est envoyée à l'IA Claude
+  (Anthropic, modèle `claude-opus-5-5`) avec la clé API de l'utilisateur, après
+  un écran d'accord ; le texte lu est ajouté au PDF comme pour l'OCR. Clé
+  mémorisée seulement si l'utilisateur le demande (bouton « Oublier la clé »)
 - **Modifier un texte existant** du PDF (cliquer sur le mot, le retaper)
 - **Caviardage définitif** : le contenu masqué est réellement supprimé du fichier
 - PDF protégés : ouverture avec le mot de passe, sans perte de qualité
@@ -53,7 +58,7 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
   « document scanné », suppression du fond
 - Image : redimensionner, taille de la zone de travail, rotation, miroir
 - Export PNG / JPG / WebP, projet `.joeimg`, coller une image (Ctrl+V), histogramme
-- Extraction du texte d'une photo ou d'une zone sélectionnée (OCR)
+- Extraction du texte d'une photo ou d'une zone sélectionnée (OCR), imprimé ou manuscrit
 
 ### Design Joe
 - Rectangle, ellipse, polygone, étoile, ligne/flèche, plume, crayon, texte, image
@@ -105,7 +110,8 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
   projet `.joevideo` (les médias sont reliés à la réouverture)
 
 ## Limites connues
-- L'OCR reconnaît le français et l'anglais (et les chiffres) ; l'écriture manuscrite est mal lue.
+- L'OCR hors ligne reconnaît le texte imprimé en français et en anglais ; l'écriture
+  manuscrite passe par l'option en ligne (internet et clé API Anthropic payante).
   Vérifier les montants et numéros importants sur un scan de mauvaise qualité.
 - La suppression automatique du fond fonctionne sur un fond uni (mur, papier,
   studio) ; pour un fond chargé, finir à la gomme.
@@ -126,4 +132,5 @@ Aucune installation : les bibliothèques sont incluses dans `lib/`.
 - [Paper.js](https://github.com/paperjs/paper.js) 0.12.18 — MIT
 - [mp4-muxer](https://github.com/Vanilagy/mp4-muxer) 5.1.5 — MIT
 - [gifenc](https://github.com/mattdesl/gifenc) 1.0.3 — MIT
+- [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript) 0.128.0, empaqueté pour le navigateur — MIT
 - [tesseract.js-core](https://github.com/naptha/tesseract.js-core) 5.1.1 et données `fra` et `eng` (tessdata best_int) — Apache 2.0

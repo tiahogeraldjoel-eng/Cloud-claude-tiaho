@@ -708,31 +708,34 @@
       title: 'Reconnaître le texte (OCR)',
       body: `<div class="field"><label for="ocrScope">Pages à traiter</label><select id="ocrScope">
           <option value="auto">Pages scannées seulement (sans texte)</option><option value="all">Toutes les pages</option>${selected.size ? `<option value="sel">Pages sélectionnées (${selected.size})</option>` : ''}</select></div>
+        <div class="field"><label for="ocrEngine">Type d'écriture</label><select id="ocrEngine"><option value="print">Texte imprimé ou dactylographié (hors ligne)</option><option value="hand">Écriture manuscrite (IA Claude, en ligne, clé API)</option></select></div>
         <div class="field"><label for="ocrLang">Langue du document</label><select id="ocrLang">${Studio.ocr.langOptions(Studio.ocr.savedLang())}</select></div>
         <div class="field"><label for="ocrDpi">Précision</label><select id="ocrDpi"><option value="300">Haute (300 ppp, recommandé)</option><option value="200">Rapide (200 ppp)</option><option value="400">Très haute (400 ppp, petits caractères)</option></select></div>
         <p class="hint">Tout se fait sur cet appareil, sans internet. Comptez quelques secondes par page. Le PDF enregistré contiendra une couche de texte invisible : vous pourrez y chercher, copier et sélectionner le texte.</p>`,
-      buttons: [{ label: 'Annuler', value: null }, { label: 'Lancer l\'OCR', primary: true, value: (b) => ({ scope: b.querySelector('#ocrScope').value, dpi: +b.querySelector('#ocrDpi').value, lang: b.querySelector('#ocrLang').value }) }],
+      buttons: [{ label: 'Annuler', value: null }, { label: 'Lancer l\'OCR', primary: true, value: (b) => ({ scope: b.querySelector('#ocrScope').value, dpi: +b.querySelector('#ocrDpi').value, lang: b.querySelector('#ocrLang').value, engine: b.querySelector('#ocrEngine').value }) }],
     });
     if (!res) return;
     Studio.ocr.saveLang(res.lang);
+    let apiKey = null;
+    if (res.engine === 'hand') { apiKey = await Studio.handwriting.ensureKey(); if (!apiKey) return; }
     let list = res.scope === 'sel' ? targets() : pages.slice();
     const ov = document.createElement('div'); ov.className = 'modal-back';
-    ov.innerHTML = '<div class="modal" style="width:min(420px,100%)"><header>OCR en cours…</header><div class="body"><div style="height:10px;border-radius:5px;background:var(--panel-2);overflow:hidden"><div id="ocrBar" style="height:100%;width:0;background:var(--accent)"></div></div><span class="hint" id="ocrTxt">Chargement du moteur de reconnaissance…</span></div><footer><button id="ocrStop">Arrêter</button></footer></div>';
+    ov.innerHTML = '<div class="modal" style="width:min(420px,100%)"><header>Lecture du texte en cours…</header><div class="body"><div style="height:10px;border-radius:5px;background:var(--panel-2);overflow:hidden"><div id="ocrBar" style="height:100%;width:0;background:var(--accent)"></div></div><span class="hint" id="ocrTxt">Préparation…</span></div><footer><button id="ocrStop">Arrêter</button></footer></div>';
     document.body.appendChild(ov);
     let stop = false; ov.querySelector('#ocrStop').onclick = () => { stop = true; };
     const setP = (u, t) => { ov.querySelector('#ocrBar').style.width = Math.round(u * 100) + '%'; ov.querySelector('#ocrTxt').textContent = t; };
     const texts = []; let done = 0;
     try {
-      await Studio.ocr.load(res.lang);
+      if (!apiKey) await Studio.ocr.load(res.lang);
       if (res.scope === 'auto') { const keep = []; for (const p of list) if (!(await pageHasText(p))) keep.push(p); list = keep; }
       if (!list.length) { ov.remove(); toast('Toutes les pages contiennent déjà du texte : choisissez « Toutes les pages » pour forcer l\'OCR.', 6000); return; }
       pushUndo();
       for (let i = 0; i < list.length && !stop; i++) {
         const p = list[i];
         setP(i / list.length, `Page ${pages.indexOf(p) + 1} — ${i + 1} sur ${list.length}…`);
-        const s = Math.min(res.dpi / 72, 5000 / Math.max(p.w, p.h));
+        const s = apiKey ? 2000 / Math.max(p.w, p.h) : Math.min(res.dpi / 72, 5000 / Math.max(p.w, p.h));
         const cv = await renderPageCanvas(p, s, false);
-        const r = await Studio.ocr.recognize(cv, res.lang);
+        const r = apiKey ? await Studio.handwriting.transcribe(cv, apiKey, res.lang) : await Studio.ocr.recognize(cv, res.lang);
         p.ocr = r.words.filter((w) => w.conf > 20).map((w) => ({ x: w.x / s, y: w.y / s, w: w.w / s, h: w.h / s, text: w.text }));
         pages.filter((q) => q.src === p.src && q.index === p.index && q !== p).forEach((q) => { q.ocr = p.ocr; });
         texts.push(`--- Page ${pages.indexOf(p) + 1} ---\n${r.text}`); done++;
