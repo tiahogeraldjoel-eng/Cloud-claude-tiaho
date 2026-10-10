@@ -14,3 +14,12 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || u.origin !== location.origin) return; // modèles, API : réseau direct
   e.respondWith(caches.match(e.request, { ignoreSearch: true }).then((r) => r || fetch(e.request)));
 });
+// rappels d'Agenda Joe : toucher la notification ouvre l'agenda
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    const w = list.find((c) => /agenda\.html/.test(c.url)) || list[0];
+    if (w) { if (!/agenda\.html/.test(w.url) && w.navigate) return w.navigate('agenda.html').then((c) => c && c.focus()); return w.focus(); }
+    return self.clients.openWindow('agenda.html');
+  }));
+});
