@@ -1,0 +1,57 @@
+{
+ "name": "Studio Joe",
+ "short_name": "Studio Joe",
+ "description": "PDF, photo, design, vidéo, dictée et voix — sur votre appareil",
+ "lang": "fr",
+ "start_url": "./index.html",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#f2f1ee",
+ "theme_color": "#d9861c",
+ "icons": [
+  {
+   "src": "icons/icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icons/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icons/maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ],
+ "shortcuts": [
+  {
+   "name": "PDF Joe",
+   "url": "pdf.html"
+  },
+  {
+   "name": "Photo Joe",
+   "url": "photo.html"
+  },
+  {
+   "name": "Design Joe",
+   "url": "design.html"
+  },
+  {
+   "name": "Video Joe",
+   "url": "video.html"
+  },
+  {
+   "name": "Dictée Joe",
+   "url": "dictee.html"
+  },
+  {
+   "name": "Voix Joe",
+   "url": "voix.html"
+  }
+ ]
+}

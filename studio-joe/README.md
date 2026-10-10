@@ -22,6 +22,16 @@ l'utilisateur : la lecture de l'écriture manuscrite et la traduction par l'IA C
 
 Aucune installation : les bibliothèques sont incluses dans `lib/`.
 
+### Installer comme une application (téléphone, ordinateur)
+Depuis le site publié (https://tiahogeraldjoel-eng.github.io/Cloud-claude-tiaho/) :
+- **Android (Chrome)** : bouton « Installer l'application » de la page d'accueil, ou menu ⋮ →
+  « Installer l'application » / « Ajouter à l'écran d'accueil ».
+- **iPhone (Safari)** : bouton Partager → « Sur l'écran d'accueil ».
+- **Ordinateur (Chrome, Edge)** : icône d'installation dans la barre d'adresse.
+
+Une fois installée, l'application s'ouvre en plein écran et fonctionne sans connexion
+(toute l'application, environ 17 Mo, est gardée sur l'appareil).
+
 ## Fonctions
 
 ### PDF Joe
