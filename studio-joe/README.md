@@ -158,8 +158,9 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   l'appareil ; fichier `.joeschema`
 - **Compatible draw.io** (diagrams.net) : ouvre les `.drawio`, `.drawio.svg` et
   `.drawio.png`, compressés ou non, et exporte en `.drawio`
-- **Ouvre les fichiers Visio** `.vsdx` : formes (avec leurs modèles et styles),
-  textes, couleurs, groupes, rotation et connecteurs reliés
+- **Compatible Visio** : ouvre les `.vsdx` (formes avec leurs modèles et styles,
+  textes, couleurs, groupes, images, rotation, connecteurs reliés) et enregistre en
+  `.vsdx`
 
 ### Base Joe (équivalent Microsoft Access)
 - **Ouvre les fichiers Access** `.accdb` et `.mdb` (mot de passe accepté) : tables, types
@@ -426,8 +427,9 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 ## Limites connues
 - Diagrammes Joe : à l'ouverture d'un fichier Visio ou draw.io, les formes très
   particulières (pochoirs spécialisés) deviennent des rectangles et seule la première
-  page est reprise ; l'enregistrement en `.vsdx` n'est pas possible (exporter en
-  `.drawio`, que Visio sait importer avec l'outil de diagrams.net, ou en PDF/SVG).
+  page est reprise. Dans le `.vsdx` enregistré, les formes arrondies (document, nuage…)
+  sont dessinées par des segments très courts : à l'œil identiques, mais Visio ne les
+  reconnaît pas comme ses propres modèles.
 - Agenda Joe : un navigateur ne peut pas réveiller le téléphone quand l'application est
   fermée ; pour des rappels garantis, exporter en `.ics` vers l'agenda du téléphone. Pas
   d'invitations par e-mail ni de partage d'agenda en ligne.

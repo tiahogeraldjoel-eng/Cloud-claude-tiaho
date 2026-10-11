@@ -868,6 +868,7 @@
     return out;
   }
   async function inflateRaw(u8) { const s = new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw')); return new Uint8Array(await new Response(s).arrayBuffer()); }
+  const solid = (c) => { if (!c || c === 'none') return c; const m = /^#([0-9a-f]{6})([0-9a-f]{2})$/i.exec(c); if (!m) return c.slice(0, 7); const a = parseInt(m[2], 16) / 255; return '#' + [0, 2, 4].map((i) => Math.round(parseInt(m[1].slice(i, i + 2), 16) * a + 255 * (1 - a)).toString(16).padStart(2, '0')).join(''); };
   const xmlEsc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c])).replace(/\n/g, '&#xa;');
   const htmlToText = (h) => { const d = new DOMParser().parseFromString('<div>' + String(h).replace(/<br\s*\/?>/gi, '\n').replace(/<\/(div|p|li)>/gi, '\n') + '</div>', 'text/html'); return d.body.textContent.replace(/\u00a0/g, ' ').replace(/\n{2,}/g, '\n').trim(); };
   const colorOf = (v, dflt) => { if (!v) return dflt; if (v === 'none') return 'none'; if (/^#[0-9a-f]{3,8}$/i.test(v)) return v.length === 4 ? '#' + v.slice(1).split('').map((c) => c + c).join('') : v.slice(0, 7); return dflt; };
@@ -936,7 +937,7 @@
   }
   const DIO = { rect: 'rounded=0;', round: 'rounded=1;', ellipse: 'ellipse;', circle: 'ellipse;aspect=fixed;', diamond: 'rhombus;', term: 'rounded=1;arcSize=50;', para: 'shape=parallelogram;perimeter=parallelogramPerimeter;fixedSize=1;', doc: 'shape=document;boundedLbl=1;', cyl: 'shape=cylinder3;boundedLbl=1;size=15;', hex: 'shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;', tri: 'triangle;direction=north;', note: 'shape=note;size=18;', text: 'text;', person: 'shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;', cloud: 'ellipse;shape=cloud;', image: 'shape=image;imageAspect=1;aspect=fixed;' };
   function toDrawio() {
-    const out = ['<mxCell id="0"/>', '<mxCell id="1" parent="0"/>']; const hx = (c) => (c && c !== 'none' ? c.slice(0, 7) : 'none');
+    const out = ['<mxCell id="0"/>', '<mxCell id="1" parent="0"/>']; const hx = (c) => (c && c !== 'none' ? solid(c) : 'none');
     for (const e of doc.els) {
       if (e.t === 'shape') {
         const st = e.st; let style = DIO[e.kind] || 'rounded=0;';
@@ -983,7 +984,8 @@
     const secIn = (src, sec, n) => { const s = kids(src, 'Section').find((x) => x.getAttribute('N') === sec); const row = s && kids(s, 'Row')[0]; const c = row && kids(row, 'Cell').find((x) => x.getAttribute('N') === n); return c ? c.getAttribute('V') : null; };
     const secCell = (sh, sec, n, ms) => { for (const src of [sh, ms && ms.s]) { if (!src) continue; const v = secIn(src, sec, n); if (v !== null) return v; } return fromSheets(sh.getAttribute('TextStyle') ? sh : ms && ms.s, (ss) => secIn(ss, sec, n)); };
     const textOf = (sh, ms) => { const t = kids(sh, 'Text')[0] || (ms && ms.s && kids(ms.s, 'Text')[0]); return t ? t.textContent.replace(/\r\n?/g, '\n').replace(/\u2028/g, '\n').trim() : ''; };
-    const IN = 96; const els = []; const idMap = {}; const ones = [];
+    const IN = 96; const els = []; const idMap = {}; const ones = []; const foreign = [];
+    const pageRelsMap = await relsOf('visio/pages/' + (prels[RID(pageEl)] || 'page1.xml').replace(/^.*\//, ''));
     const geomKind = (sh, ms) => { for (const src of [sh, ms && ms.s]) { if (!src) continue; for (const s of kids(src, 'Section')) if (s.getAttribute('N') === 'Geometry') { const rows = kids(s, 'Row'); if (rows.some((r) => r.getAttribute('T') === 'Ellipse')) return 'ellipse'; } } return null; };
     const walk = (list, ox, oy, inherited) => {
       for (const sh of list) {
@@ -994,6 +996,16 @@
         const oneD = cell(sh, 'BeginX', ms) !== null && cell(sh, 'EndX', ms) !== null && (H === 0 || /connect|connecteur|line|ligne|arrow|flèche/i.test(name) || !isGroup && W > 0 && cell(sh, 'ObjType', ms) === '2');
         if (oneD) { ones.push({ sh, ms, ox, oy, name, text: textOf(sh, ms) }); continue; }
         if (isGroup) { const sub = kids(kids(sh, 'Shapes')[0], 'Shape'); const t = textOf(sh, ms); walk(sub, px - lx, py - ly, ms); if (t && !sub.length) { /* rien */ } if (t) { const s = makeShape('text', Math.round((px - lx) * IN), Math.round((pageH - (py - ly + H)) * IN), Math.round(W * IN), Math.round(H * IN), t); els.push(s); } continue; }
+        if (sh.getAttribute('Type') === 'Foreign') {
+          const fd = kids(sh, 'ForeignData')[0]; const rid = fd && RID(fd); const t = rid && pageRelsMap[rid];
+          if (t) foreign.push({ sh, x: Math.round((px - lx) * IN), y: Math.round((pageH - (py - ly + H)) * IN), w: Math.max(4, Math.round(W * IN)), h: Math.max(4, Math.round(H * IN)), path: 'visio/' + t.replace(/^\.\.\//, ''), ang: num('Angle') });
+          continue;
+        }
+        const geos = kids(sh, 'Section').filter((x) => x.getAttribute('N') === 'Geometry');
+        if (geos.length && !textOf(sh, ms) && geos.every((g) => kids(g, 'Cell').some((c) => c.getAttribute('N') === 'NoFill' && c.getAttribute('V') === '1')) && !geos.some((g) => kids(g, 'Row').some((rw) => rw.getAttribute('T') === 'Ellipse'))) {
+          const pts = []; for (const g of geos) for (const rw of kids(g, 'Row')) { const cv = (n2) => +((kids(rw, 'Cell').find((c) => c.getAttribute('N') === n2) || { getAttribute: () => 0 }).getAttribute('V')); if (/^(MoveTo|LineTo)$/.test(rw.getAttribute('T'))) pts.push([+(((px - lx) + cv('X')) * IN).toFixed(1), +((pageH - (py - ly + cv('Y'))) * IN).toFixed(1)]); }
+          if (pts.length > 1) { els.push({ id: uid(), t: 'ink', pts, st: { stroke: colorOf(cell(sh, 'LineColor', ms), '#000000'), sw: Math.max(1, Math.round((+cell(sh, 'LineWeight', ms) || 0.02) * IN)) } }); continue; }
+        }
         let kind = (VKIND.find(([re]) => re.test(name)) || [])[1] || geomKind(sh, ms) || 'rect'; if (kind === 'link') kind = 'rect';
         if (kind === 'rect' && +cell(sh, 'Rounding', ms) > 0) kind = 'round';
         const s = makeShape(kind, Math.round((px - lx) * IN), Math.round((pageH - (py - ly + H)) * IN), Math.max(4, Math.round(W * IN)), Math.max(4, Math.round(H * IN)), textOf(sh, ms));
@@ -1010,6 +1022,7 @@
       }
     };
     walk(kids(kids(pageXml.documentElement, 'Shapes')[0], 'Shape'), 0, 0, null);
+    for (const fo of foreign) { const fz = zip.file(fo.path); if (!fz) continue; const ext = (fo.path.split('.').pop() || 'png').toLowerCase().replace('jpg', 'jpeg'); const s = makeShape('image', fo.x, fo.y, fo.w, fo.h, '', { fill: 'none', stroke: 'none' }); s.src = `data:image/${ext};base64,` + (await fz.async('base64')); if (fo.ang) s.rot = Math.round(((-fo.ang * 180) / Math.PI % 360 + 360) % 360); idMap[fo.sh.getAttribute('ID')] = s.id; els.push(s); }
     const connects = [...pageXml.getElementsByTagName('Connect')];
     for (const o of ones) {
       const id = o.sh.getAttribute('ID'); const num = (n) => +cell(o.sh, n, o.ms) || 0;
@@ -1024,9 +1037,92 @@
     return { title: pageEl.getAttribute('NameU') || pageEl.getAttribute('Name') || '', els, snap: true };
   }
 
+  async function writeVsdx() {
+    if (!needEls()) return;
+    await loadScript('lib/jszip.min.js');
+    const IN = 96; const b = bounds(); const pad = 0.5; const PW = (b.x2 - b.x) / IN + 2 * pad, PH = (b.y2 - b.y) / IN + 2 * pad;
+    const X = (x) => (x - b.x) / IN + pad, Y = (y) => PH - ((y - b.y) / IN + pad); const f = (v) => +(+v).toFixed(5);
+    const C = (n, v, u) => `<Cell N="${n}" V="${typeof v === 'number' ? f(v) : xmlEsc(v)}"${u ? ` U="${u}"` : ''}/>`;
+    const hex = (c) => (c && c !== 'none' ? solid(c).toUpperCase() : '#000000');
+    const tmp = document.createElementNS(NS, 'svg'); tmp.style.cssText = 'position:absolute;left:-9999px;top:0;width:10px;height:10px'; document.body.appendChild(tmp);
+    // contours d'une forme (repère local Visio : origine en bas à gauche, pouces)
+    function geometry(e) {
+      const loc = { ...e, x: 0, y: 0, rot: 0, text: '' }; tmp.innerHTML = shapeSVG(loc);
+      const secs = []; const H = e.h;
+      const P = (x, y) => [x / IN, (H - y) / IN];
+      for (const el of tmp.querySelectorAll('rect,ellipse,circle,polygon,path')) {
+        if (el.getAttribute('fill') === 'transparent' || (el.getAttribute('fill') === 'none' && el.getAttribute('stroke') === 'none')) continue;
+        const noFill = el.getAttribute('fill') === 'none' || /^rgba/.test(el.getAttribute('fill') || '') ? 1 : 0;
+        const tag = el.tagName;
+        if (tag === 'ellipse' || tag === 'circle') { const cx = +el.getAttribute('cx'), cy = +el.getAttribute('cy'), rx = +(el.getAttribute('rx') || el.getAttribute('r')), ry = +(el.getAttribute('ry') || el.getAttribute('r')); const [ex, ey] = P(cx, cy); secs.push({ noFill, rows: [['Ellipse', { X: ex, Y: ey, A: ex + rx / IN, B: ey, C: ex, D: ey + ry / IN }]] }); continue; }
+        if (tag === 'polygon') { const pts = el.getAttribute('points').trim().split(/\s+/).map((p) => p.split(',').map(Number)); secs.push({ noFill, rows: pts.concat([pts[0]]).map((p, i) => [i ? 'LineTo' : 'MoveTo', { X: P(...p)[0], Y: P(...p)[1] }]) }); continue; }
+        if (tag === 'rect' && !+el.getAttribute('rx')) { const x = +el.getAttribute('x'), y = +el.getAttribute('y'), w = +el.getAttribute('width'), h = +el.getAttribute('height'); const pts = [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]]; secs.push({ noFill, rows: pts.map((p, i) => [i ? 'LineTo' : 'MoveTo', { X: P(...p)[0], Y: P(...p)[1] }]) }); continue; }
+        const ds = tag === 'path' ? el.getAttribute('d').split(/(?=M)/).filter((d) => d.trim()) : [null];
+        for (const d of ds) {
+          const g = d ? document.createElementNS(NS, 'path') : el; if (d) { g.setAttribute('d', d); tmp.appendChild(g); }
+          const L = g.getTotalLength(); const n = Math.max(2, Math.min(64, Math.ceil(L / 6))); const pts = [];
+          for (let i = 0; i <= n; i++) { const q = g.getPointAtLength((L * i) / n); pts.push([q.x, q.y]); }
+          const closed = d ? /Z\s*$/i.test(d) : true; secs.push({ noFill: closed ? noFill : 1, rows: pts.map((p, i) => [i ? 'LineTo' : 'MoveTo', { X: P(...p)[0], Y: P(...p)[1] }]) });
+        }
+      }
+      return secs.map((s, i) => `<Section N="Geometry" IX="${i}">${C('NoFill', s.noFill)}${C('NoLine', 0)}${C('NoShow', 0)}${s.rows.map(([t, c], j) => `<Row T="${t}" IX="${j + 1}">${Object.entries(c).map(([k, v]) => C(k, v)).join('')}</Row>`).join('')}</Section>`).join('');
+    }
+    const ids = {}; let n = 1; doc.els.forEach((e) => { ids[e.id] = n++; });
+    const shapesXml = []; const connects = []; const media = []; const pageRels = [];
+    for (const e of doc.els) {
+      const id = ids[e.id];
+      if (e.t === 'shape') {
+        const st = e.st; const cx = e.x + e.w / 2, cy = e.y + e.h / 2;
+        let cells = C('PinX', X(cx), 'IN') + C('PinY', Y(cy), 'IN') + C('Width', e.w / IN, 'IN') + C('Height', e.h / IN, 'IN') + C('LocPinX', e.w / 2 / IN, 'IN') + C('LocPinY', e.h / 2 / IN, 'IN') + C('Angle', -((e.rot || 0) * Math.PI) / 180, 'DEG');
+        cells += C('FillForegnd', hex(st.fill === 'none' ? '#ffffff' : st.fill)) + C('FillPattern', st.fill === 'none' ? 0 : 1) + C('LineColor', hex(st.stroke)) + C('LinePattern', st.stroke === 'none' ? 0 : st.dash ? 2 : 1) + C('LineWeight', (st.sw || 1) / IN, 'IN') + C('VerticalAlign', st.valign === 'top' ? 0 : 1);
+        const chars = `<Section N="Character"><Row IX="0">${C('Color', hex(st.color || '#1a1a1a'))}${C('Size', (st.fs || 16) / 1.333 / 72, 'PT')}${C('Style', (st.bold ? 1 : 0) + (st.italic ? 2 : 0))}</Row></Section><Section N="Paragraph"><Row IX="0">${C('HorzAlign', st.align === 'left' ? 0 : st.align === 'right' ? 2 : 1)}</Row></Section>`;
+        if (e.kind === 'image' && e.src) {
+          const m = /^data:image\/(png|jpe?g|gif|bmp);base64,(.*)$/i.exec(e.src); let data = m ? m[2] : null, ext = m ? m[1].replace('jpeg', 'jpg').toLowerCase() : 'png';
+          if (!m) { try { const img = await Studio.loadImage(e.src); const cv = document.createElement('canvas'); cv.width = img.naturalWidth || 300; cv.height = img.naturalHeight || 200; cv.getContext('2d').drawImage(img, 0, 0); data = cv.toDataURL('image/png').split(',')[1]; ext = 'png'; } catch (x) { data = null; } }
+          if (data) { const k = media.length + 1; media.push({ name: `image${k}.${ext}`, data }); const rid = 'rId' + k; pageRels.push(`<Relationship Id="${rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image${k}.${ext}"/>`);
+            shapesXml.push(`<Shape ID="${id}" Type="Foreign" LineStyle="0" FillStyle="0" TextStyle="0">${cells}${C('ImgOffsetX', 0, 'IN')}${C('ImgOffsetY', 0, 'IN')}${C('ImgWidth', e.w / IN, 'IN')}${C('ImgHeight', e.h / IN, 'IN')}<ForeignData ForeignType="Bitmap" CompressionType="${ext === 'jpg' ? 'JPEG' : ext.toUpperCase()}"><Rel r:id="${rid}"/></ForeignData></Shape>`); continue; }
+        }
+        shapesXml.push(`<Shape ID="${id}" NameU="${xmlEsc(KINDS[e.kind] || 'Forme')}" Type="Shape" LineStyle="0" FillStyle="0" TextStyle="0">${cells}${chars}${geometry(e)}${e.text ? `<Text>${xmlEsc(e.text).replace(/&#xa;/g, '\n')}</Text>` : ''}</Shape>`);
+      } else if (e.t === 'link') {
+        const g = linkGeom(e); const st = e.st; const s = g.s, t = g.e; const L = Math.hypot(t.x - s.x, t.y - s.y) / IN || 0.01; const ang = Math.atan2(-(t.y - s.y), t.x - s.x);
+        // tracé dans le repère du connecteur : origine au début, axe x vers la fin
+        const pts = (() => { const tm = document.createElementNS(NS, 'path'); tm.setAttribute('d', g.d); tmp.appendChild(tm); const Lp = tm.getTotalLength(); const k = e.route === 'straight' ? 1 : e.route === 'elbow' ? 0 : 24; const out = [];
+          if (e.route === 'elbow') { const m = g.d.match(/-?[\d.]+ -?[\d.]+/g).map((q) => q.split(' ').map(Number)); m[0] = [s.x, s.y]; m[m.length - 1] = [t.x, t.y]; return m; }
+          for (let i = 0; i <= k; i++) { const q = tm.getPointAtLength((Lp * i) / k); out.push([q.x, q.y]); } out[0] = [s.x, s.y]; out[out.length - 1] = [t.x, t.y]; return out; })();
+        const loc = pts.map(([x, y]) => { const dx = (x - s.x) / IN, dy = -(y - s.y) / IN; return [dx * Math.cos(-ang) - dy * Math.sin(-ang), dx * Math.sin(-ang) + dy * Math.cos(-ang)]; });
+        const geo = `<Section N="Geometry" IX="0">${C('NoFill', 1)}${loc.map((p, j) => `<Row T="${j ? 'LineTo' : 'MoveTo'}" IX="${j + 1}">${C('X', p[0])}${C('Y', p[1])}</Row>`).join('')}</Section>`;
+        const ea = e.arrow === 'end' || e.arrow === 'both', ba = e.arrow === 'start' || e.arrow === 'both';
+        shapesXml.push(`<Shape ID="${id}" NameU="${e.route === 'straight' ? 'Line' : 'Dynamic connector'}" Type="Shape" LineStyle="0" FillStyle="0" TextStyle="0">${C('PinX', (X(s.x) + X(t.x)) / 2, 'IN')}${C('PinY', (Y(s.y) + Y(t.y)) / 2, 'IN')}${C('Width', L, 'IN')}${C('Height', 0, 'IN')}${C('LocPinX', L / 2, 'IN')}${C('LocPinY', 0, 'IN')}${C('Angle', ang, 'DEG')}${C('BeginX', X(s.x), 'IN')}${C('BeginY', Y(s.y), 'IN')}${C('EndX', X(t.x), 'IN')}${C('EndY', Y(t.y), 'IN')}${C('ObjType', 2)}${C('LineColor', hex(st.stroke))}${C('LinePattern', st.dash ? 2 : 1)}${C('LineWeight', (st.sw || 1) / IN, 'IN')}${C('EndArrow', ea ? 13 : 0)}${C('BeginArrow', ba ? 13 : 0)}${C('ConLineRouteExt', e.route === 'curve' ? 2 : 1)}${e.text ? (() => { const tw = (textWidth(e.text, st.fs || 13) + 16) / IN, th = ((String(e.text).split('\n').length * (st.fs || 13) * 1.25) + 8) / IN; const ml = loc[Math.floor(loc.length / 2)]; const mid = e.route === 'elbow' && loc.length >= 4 ? [(loc[1][0] + loc[2][0]) / 2, (loc[1][1] + loc[2][1]) / 2] : e.route === 'curve' ? ml : [L / 2, 0]; return C('TxtPinX', mid[0], 'IN') + C('TxtPinY', mid[1], 'IN') + C('TxtWidth', tw, 'IN') + C('TxtHeight', th, 'IN') + C('TxtLocPinX', tw / 2, 'IN') + C('TxtLocPinY', th / 2, 'IN') + C('TxtAngle', -ang, 'DEG'); })() : ''}${geo}${e.text ? `<Text>${xmlEsc(e.text).replace(/&#xa;/g, '\n')}</Text>` : ''}</Shape>`);
+        if (e.a.id && ids[e.a.id]) connects.push(`<Connect FromSheet="${id}" FromCell="BeginX" FromPart="9" ToSheet="${ids[e.a.id]}" ToCell="PinX" ToPart="3"/>`);
+        if (e.b.id && ids[e.b.id]) connects.push(`<Connect FromSheet="${id}" FromCell="EndX" FromPart="12" ToSheet="${ids[e.b.id]}" ToCell="PinX" ToPart="3"/>`);
+      } else if (e.t === 'ink' && e.pts.length > 1) {
+        const bb = bboxOf(e); const w = Math.max(1, bb.x2 - bb.x), h = Math.max(1, bb.y2 - bb.y);
+        const geo = `<Section N="Geometry" IX="0">${C('NoFill', 1)}${simplify(e.pts, 1).map((p, j) => `<Row T="${j ? 'LineTo' : 'MoveTo'}" IX="${j + 1}">${C('X', (p[0] - bb.x) / IN)}${C('Y', (bb.y2 - p[1]) / IN)}</Row>`).join('')}</Section>`;
+        shapesXml.push(`<Shape ID="${id}" NameU="Dessin" Type="Shape" LineStyle="0" FillStyle="0" TextStyle="0">${C('PinX', X(bb.x + w / 2), 'IN')}${C('PinY', Y(bb.y + h / 2), 'IN')}${C('Width', w / IN, 'IN')}${C('Height', h / IN, 'IN')}${C('LocPinX', w / 2 / IN, 'IN')}${C('LocPinY', h / 2 / IN, 'IN')}${C('LineColor', hex(e.st.stroke))}${C('LineWeight', e.st.sw / IN, 'IN')}${C('FillPattern', 0)}${geo}</Shape>`);
+      }
+    }
+    tmp.remove();
+    const NSV = 'xmlns="http://schemas.microsoft.com/office/visio/2012/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xml:space="preserve"';
+    const R = 'http://schemas.microsoft.com/visio/2010/relationships';
+    const zip = new window.JSZip();
+    zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="gif" ContentType="image/gif"/><Default Extension="bmp" ContentType="image/bmp"/><Override PartName="/visio/document.xml" ContentType="application/vnd.ms-visio.drawing.main+xml"/><Override PartName="/visio/pages/pages.xml" ContentType="application/vnd.ms-visio.pages+xml"/><Override PartName="/visio/pages/page1.xml" ContentType="application/vnd.ms-visio.page+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`);
+    zip.file('_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${R}/document" Target="visio/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`);
+    zip.file('docProps/core.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${xmlEsc(doc.title)}</dc:title><dc:creator>Diagrammes Joe</dc:creator></cp:coreProperties>`);
+    zip.file('docProps/app.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Microsoft Visio</Application><Template></Template></Properties>`);
+    zip.file('visio/document.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><VisioDocument ${NSV}><DocumentSettings TopPage="0" DefaultTextStyle="0" DefaultLineStyle="0" DefaultFillStyle="0" DefaultGuideStyle="0"/><Colors/><FaceNames><FaceName NameU="Calibri" UnicodeRanges="-536859905 -1073732485 9 0" CharSets="536871423 0" Panose="2 15 5 2 2 2 4 3 2 4" Flags="325"/></FaceNames><StyleSheets><StyleSheet ID="0" NameU="No Style" Name="No Style">${C('EnableLineProps', 1)}${C('EnableFillProps', 1)}${C('EnableTextProps', 1)}${C('LineWeight', 0.01041666666666667, 'PT')}${C('LineColor', '#000000')}${C('LinePattern', 1)}${C('FillForegnd', '#ffffff')}${C('FillPattern', 1)}${C('VerticalAlign', 1)}${C('TopMargin', 0.05555555555555555, 'PT')}${C('BottomMargin', 0.05555555555555555, 'PT')}${C('LeftMargin', 0.05555555555555555, 'PT')}${C('RightMargin', 0.05555555555555555, 'PT')}<Section N="Character"><Row IX="0">${C('Font', 'Calibri')}${C('Color', '#000000')}${C('Size', 0.1666666666666667, 'PT')}</Row></Section><Section N="Paragraph"><Row IX="0">${C('HorzAlign', 1)}</Row></Section></StyleSheet></StyleSheets><DocumentSheet NameU="TheDoc" Name="TheDoc" LineStyle="0" FillStyle="0" TextStyle="0"/></VisioDocument>`);
+    zip.file('visio/_rels/document.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${R}/pages" Target="pages/pages.xml"/></Relationships>`);
+    zip.file('visio/pages/pages.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Pages ${NSV}><Page ID="0" NameU="${xmlEsc(doc.title || 'Page-1')}" Name="${xmlEsc(doc.title || 'Page-1')}"><PageSheet LineStyle="0" FillStyle="0" TextStyle="0">${C('PageWidth', PW, 'IN')}${C('PageHeight', PH, 'IN')}${C('ShdwOffsetX', 0.125, 'IN')}${C('ShdwOffsetY', -0.125, 'IN')}${C('PageScale', 1, 'IN')}${C('DrawingScale', 1, 'IN')}${C('DrawingSizeType', 0)}${C('DrawingScaleType', 0)}${C('InhibitSnap', 0)}${C('PageLockReplace', 0, 'BOOL')}${C('PageLockDuplicate', 0, 'BOOL')}${C('UIVisibility', 0)}${C('ShdwType', 0)}${C('ShdwObliqueAngle', 0)}${C('ShdwScaleFactor', 1)}${C('DrawingResizeType', 1)}${C('PageShapeSplit', 1)}</PageSheet><Rel r:id="rId1"/></Page></Pages>`);
+    zip.file('visio/pages/_rels/pages.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${R}/page" Target="page1.xml"/></Relationships>`);
+    zip.file('visio/pages/page1.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><PageContents ${NSV}><Shapes>${shapesXml.join('')}</Shapes>${connects.length ? `<Connects>${connects.join('')}</Connects>` : ''}</PageContents>`);
+    if (pageRels.length) zip.file('visio/pages/_rels/page1.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${pageRels.join('')}</Relationships>`);
+    media.forEach((m) => zip.file('visio/media/' + m.name, m.data, { base64: true }));
+    const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.ms-visio.drawing', compression: 'DEFLATE' });
+    download(blob, fileBase() + '.vsdx'); toast('Fichier Visio (.vsdx) prêt');
+  }
+
   /* ================= Actions et clavier ================= */
   const actions = {
-    new: newDialog, library, open: () => openFiles(), save: saveFile, drawio: exportDrawio, png: exportPNG, svg: exportSVGFile, pdf: exportPDF, toTexte, rename,
+    new: newDialog, library, open: () => openFiles(), save: saveFile, drawio: exportDrawio, vsdx: writeVsdx, png: exportPNG, svg: exportSVGFile, pdf: exportPDF, toTexte, rename,
     undo, redo, copy, paste: () => paste(), duplicate: () => { copy(); paste(); }, del, selectAll: () => { sel = new Set(doc.els.map((e) => e.id)); render(); props(); },
     clearInk: async () => { if (!doc.els.some((e) => e.t === 'ink')) return toast('Aucun dessin à main levée'); if (await confirmBox('Effacer tous les traits à main levée ?', 'Effacer')) mutate(() => { doc.els = doc.els.filter((e) => e.t !== 'ink'); }); },
     genOrg: () => genDialog('org'), genMind: () => genDialog('mind'), genFlow: () => genDialog('flow'),
