@@ -266,7 +266,8 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Diaporama plein écran : transitions (fondu, poussée, couvrir, zoom, retournement),
   animations d'entrée (y compris paragraphe par paragraphe), écran noir (B), aller à une
   diapositive (numéro + Entrée), pointeur laser, balayage au doigt ; transitions et
-  animations d'entrée sont aussi enregistrées dans le `.pptx` et jouées par PowerPoint
+  animations d'entrée sont aussi enregistrées dans le `.pptx` (durées exactes,
+  « Retournement » compris) et relues à l'ouverture d'un `.pptx`
 - Mode présentateur : diapositive en cours et suivante, notes, minuteur, horloge ;
   les diapositives s'affichent dans une seconde fenêtre à placer sur le vidéoprojecteur
 - Fichiers : enregistrer en `.pptx` modifiable dans PowerPoint (textes, formes, images,
@@ -462,8 +463,9 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   simplifiées. Un tableau plus haut qu'une page n'est pas coupé entre deux pages à
   l'écran : utiliser l'impression, qui le coupe. L'ancien format `.doc` doit d'abord
   être réenregistré en `.docx`.
-- Présentation Joe : dans le `.pptx`, la transition « Retournement » devient un fondu ;
-  les animations ne sont pas relues à l'ouverture d'un `.pptx`. L'ouverture d'un `.pptx` reprend le contenu, mais pas toujours la mise en
+- Présentation Joe : à l'ouverture d'un `.pptx`, les effets PowerPoint sans équivalent
+  (emphase, sortie, trajectoires) sont ignorés et les transitions rares remplacées par
+  la plus proche. L'ouverture d'un `.pptx` reprend le contenu, mais pas toujours la mise en
   forme exacte : SmartArt, vidéos et formes spéciales sont ignorés ou simplifiés.
   L'ancien format `.ppt` doit d'abord être réenregistré en `.pptx`. Le mode présentateur
   sur deux écrans demande un ordinateur ; sur téléphone, les notes s'affichent sur le
