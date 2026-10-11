@@ -432,10 +432,13 @@
       let x = await f.async('string'); const s = d.slides[i];
       const ids = {}; x.replace(/<p:cNvPr id="(\d+)" name="sj-([^"]+)"/g, (m, id, el) => { ids[el] = id; return m; });
       const t = s.transition || {}; const dur = t.dur || 0.5;
-      const tr = PPT_TRANS[t.type] ? `<p:transition spd="${dur <= 0.4 ? 'fast' : dur <= 0.8 ? 'med' : 'slow'}">${PPT_TRANS[t.type]}</p:transition>` : '';
+      // durée exacte et « Retournement » (PowerPoint 2010+) avec repli lisible par les anciens logiciels
+      const spd = dur <= 0.4 ? 'fast' : dur <= 0.8 ? 'med' : 'slow';
+      const tr = PPT_TRANS[t.type] ? `<mc:AlternateContent><mc:Choice Requires="p14"><p:transition spd="${spd}" p14:dur="${Math.round(dur * 1000)}">${t.type === 'flip' ? '<p14:flip dir="r"/>' : PPT_TRANS[t.type]}</p:transition></mc:Choice><mc:Fallback><p:transition spd="${spd}">${PPT_TRANS[t.type]}</p:transition></mc:Fallback></mc:AlternateContent>` : '';
+      if (tr && !/xmlns:mc=/.test(x.slice(0, 600))) x = x.replace(/<p:sld\b/, '<p:sld xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main"');
       const tm = timingXml(s, i, ids);
       if (!tr && !tm) continue;
-      x = x.replace(/<p:transition[\s\S]*?<\/p:transition>|<p:timing[\s\S]*?<\/p:timing>/g, '');
+      x = x.replace(/<mc:AlternateContent>(?:(?!<\/mc:AlternateContent>)[\s\S])*?<p:transition[\s\S]*?<\/mc:AlternateContent>|<p:transition[\s\S]*?<\/p:transition>|<p:timing[\s\S]*?<\/p:timing>/g, '');
       x = /<\/p:clrMapOvr>/.test(x) ? x.replace('</p:clrMapOvr>', '</p:clrMapOvr>' + tr + tm) : x.replace('</p:cSld>', '</p:cSld>' + tr + tm);
       zip.file(`ppt/slides/slide${i + 1}.xml`, x);
     }
@@ -529,6 +532,30 @@
   const kid = (n, ns, name) => kids(n, ns, name)[0] || null;
   const desc = (n, ns, name) => (n ? [...n.getElementsByTagNameNS(ns, name)] : []);
   const path = (n, ...names) => { let c = n; for (const nm of names) { c = c && [...c.children].find((x) => x.localName === nm); } return c || null; };
+  // transitions et animations d'entrée d'une diapositive PowerPoint
+  const TR_IN = { fade: 'fade', dissolve: 'fade', cut: 'none', push: 'push', cover: 'cover', pull: 'cover', reveal: 'cover', zoom: 'zoom', warp: 'zoom', vortex: 'zoom', flip: 'flip', cube: 'flip', gallery: 'flip', switch: 'flip', prism: 'flip', ferris: 'flip', conveyor: 'push', pan: 'push', flythrough: 'zoom' };
+  function readMotion(sx, s) {
+    const tr = sx.getElementsByTagNameNS(PNS, 'transition')[0];
+    if (tr) {
+      const kind = [...tr.children].map((c) => c.localName).find((n) => n !== 'sndAc' && n !== 'extLst');
+      const durA = [...tr.attributes].find((a) => a.localName === 'dur'); const spd = tr.getAttribute('spd');
+      s.transition = { type: kind ? TR_IN[kind] || 'fade' : 'fade', dur: durA ? Math.min(3, Math.max(0.1, +durA.value / 1000)) : spd === 'fast' ? 0.3 : spd === 'slow' ? 1 : 0.6 };
+      if (s.transition.type === 'none') s.transition = { type: 'none', dur: 0.5 };
+    }
+    const bySp = {}; s.els.forEach((e) => { if (e.spid) bySp[e.spid] = e; });
+    const effects = [...sx.getElementsByTagNameNS(PNS, 'cTn')].filter((c) => c.getAttribute('presetClass') === 'entr');
+    const seen = new Set();
+    for (const c of effects) {
+      const tg = c.getElementsByTagNameNS(PNS, 'spTgt')[0]; const el = tg && bySp[tg.getAttribute('spid')]; if (!el) continue;
+      const para = tg.getElementsByTagNameNS(PNS, 'pRg').length > 0;
+      if (seen.has(el.id)) { if (para) el.anim.byPara = true; continue; }
+      seen.add(el.id);
+      const id = +c.getAttribute('presetID'), sub = +c.getAttribute('presetSubtype');
+      const type = id === 1 ? 'appear' : id === 2 || id === 26 || id === 47 || id === 42 || id === 37 ? (sub === 8 || sub === 2 ? 'left' : 'up') : id === 53 || id === 23 || id === 21 || id === 31 ? 'zoom' : id === 22 || id === 16 || id === 3 ? 'wipe' : 'fade';
+      const nt = c.getAttribute('nodeType'); el.anim = { type, start: nt === 'withEffect' ? 'with' : nt === 'afterEffect' ? 'after' : 'click' }; if (para) el.anim.byPara = true;
+    }
+    s.els.forEach((e) => { delete e.spid; });
+  }
   async function readPptx(file) {
     const zip = await window.JSZip.loadAsync(await file.arrayBuffer());
     const xml = async (p) => { const f = zip.file(p); if (!f) return null; return new DOMParser().parseFromString(await f.async('string'), 'application/xml'); };
@@ -598,7 +625,7 @@
           if (['dt', 'ftr', 'sldNum'].includes(phType)) { if (phType !== 'sldNum') continue; }
           const off = kid(xf, A, 'off'), ext = kid(xf, A, 'ext');
           const [X, Y, Wx, Hx] = tf(+off.getAttribute('x'), +off.getAttribute('y'), +ext.getAttribute('cx'), +ext.getAttribute('cy'));
-          const base = { id: uid(), x: Math.round(X * k), y: Math.round(Y * k), w: Math.max(4, Math.round(Wx * k)), h: Math.max(4, Math.round(Hx * k)), rot: Math.round((+xf.getAttribute('rot') || 0) / 60000), style: {} };
+          const base = { id: uid(), spid: (desc(n, PNS, 'cNvPr')[0] || { getAttribute: () => null }).getAttribute('id'), x: Math.round(X * k), y: Math.round(Y * k), w: Math.max(4, Math.round(Wx * k)), h: Math.max(4, Math.round(Hx * k)), rot: Math.round((+xf.getAttribute('rot') || 0) / 60000), style: {} };
           if (xf.getAttribute('flipH') === '1' || xf.getAttribute('flipV') === '1') { /* miroir ignoré */ }
           if (phType === 'sldNum') { s.els.push({ ...base, type: 'text', role: 'text', field: 'num', text: '', style: { size: 12, align: 'right' } }); continue; }
           if (ln === 'pic') {
@@ -647,6 +674,7 @@
       };
       const tree = desc(sx, PNS, 'spTree')[0];
       if (tree) await walkTree(tree, (x, y, w, h) => [x, y, w, h]);
+      readMotion(sx, s);
       // notes
       const nr = Object.values(srels).find((r) => /notesSlide$/.test(r.type));
       if (nr) { const nx = await xml(nr.target); if (nx) { const body = desc(nx, PNS, 'sp').find((sp2) => { const ph = desc(sp2, PNS, 'ph')[0]; return ph && (ph.getAttribute('type') || 'body') === 'body'; }); if (body) s.notes = desc(body, A, 'p').map((p) => desc(p, A, 't').map((t) => t.textContent).join('')).join('\n').trim(); } }

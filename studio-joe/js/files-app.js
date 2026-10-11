@@ -117,7 +117,7 @@
     if (t.startsWith('video/') || ['mp4', 'mov', 'webm', '3gp', 'mkv'].includes(ext)) return [['video', 'Monter dans Video Joe'], ['audio', 'Extraire le son (Audio Joe)']];
     if (t.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'bmp', 'joeimg'].includes(ext)) return [['scan', 'Document photographié → Scan Joe'], ['photo', 'Retoucher dans Photo Joe'], ['pdf', 'Mettre en PDF (PDF Joe)'], ['design', 'Utiliser dans Design Joe']];
     if (ext === 'joedesign') return [['design', 'Ouvrir dans Design Joe']];
-    if (ext === 'joeschema') return [['schema', 'Ouvrir dans Diagrammes Joe']];
+    if (['joeschema', 'drawio', 'vsdx'].includes(ext)) return [['schema', 'Ouvrir dans Diagrammes Joe']];
     if (ext === 'joevideo') return [['video', 'Ouvrir dans Video Joe']];
     return [];
   }

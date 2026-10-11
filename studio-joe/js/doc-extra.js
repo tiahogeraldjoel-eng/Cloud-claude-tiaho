@@ -37,7 +37,8 @@
     const fmtFrom = (el, f0) => {
       const f = { ...f0 }; const t = el.tagName; const s = el.style;
       if (t === 'B' || t === 'STRONG' || /bold|[6-9]00/.test(s.fontWeight)) f.b = true; if (s.fontWeight === 'normal' || s.fontWeight === '400') f.b = false;
-      if (t === 'I' || t === 'EM' || s.fontStyle === 'italic') f.i = true;
+      if (t === 'I' || t === 'EM' || s.fontStyle === 'italic') f.i = true; if (s.fontStyle === 'normal') f.i = false;
+      if (/none/.test(s.textDecorationLine)) { f.u = false; f.s = false; } if (s.verticalAlign === 'super') f.sup = true; if (s.verticalAlign === 'sub') f.sub = true; if (s.verticalAlign === 'baseline') { f.sup = false; f.sub = false; }
       if (t === 'U' || /underline/.test(s.textDecoration + s.textDecorationLine)) f.u = true;
       if (t === 'S' || /line-through/.test(s.textDecoration + s.textDecorationLine)) f.s = true;
       if (t === 'SUP') f.sup = true; if (t === 'SUB') f.sub = true;
@@ -48,7 +49,7 @@
     };
     async function inlines(node, f, out) {
       for (const n of node.childNodes) {
-        if (n.nodeType === 3) { const t = n.nodeValue.replace(/\u200b/g, ''); if (t) out.push(f.rev ? revRun(t, f) : new D.TextRun({ text: t, ...runOpts(f) })); continue; }
+        if (n.nodeType === 3) { const t = n.nodeValue.replace(/\u200b/g, ''); if (t) out.push(f.rev ? revRun(t, f) : new D.TextRun({ text: t, ...runOpts(f), ...(f.fmtRev ? { revision: { id: revId++, author: f.fmtRev.author, date: f.fmtRev.date, ...runOpts(f.fmtRev.old) } } : {}) })); continue; }
         if (n.nodeType !== 1) continue;
         const tag = n.tagName;
         if (tag === 'BR') { let nx = n.nextSibling; while (nx && nx.nodeType === 3 && !nx.nodeValue.replace(/\u200b/g, '').trim()) nx = nx.nextSibling; if (!nx) continue; out.push(new D.TextRun({ break: 1 })); continue; } // <br> final d'un bloc : ignoré
@@ -57,6 +58,7 @@
         if (tag === 'IMG') { const ib = await imageBytes(n); if (ib) { const w = Math.min(contentPx, parseFloat(n.style.width) || n.naturalWidth || 300); const h = n.naturalWidth ? (w * n.naturalHeight) / n.naturalWidth : w * 0.75; out.push(new D.ImageRun({ type: ib.type, data: ib.data, transformation: { width: Math.round(w), height: Math.round(h) } })); } continue; }
         if (tag === 'A' && n.getAttribute('href')) { const kids = []; await inlines(n, { ...fmtFrom(n, f), color: '0563C1', u: true }, kids); out.push(new D.ExternalHyperlink({ link: n.getAttribute('href'), children: kids.length ? kids : [new D.TextRun({ text: n.getAttribute('href'), style: 'Hyperlink' })] })); continue; }
         if (/^(UL|OL|TABLE|P|DIV|H\d|BLOCKQUOTE|PRE)$/.test(tag)) continue; // blocs imbriqués traités à part
+        if (tag === 'SPAN' && n.classList.contains('rvf')) { const nf = fmtFrom(n, f); nf.fmtRev = { author: n.dataset.a || 'Auteur', date: n.dataset.t || new Date().toISOString(), old: f }; await inlines(n, nf, out); continue; }
         if ((tag === 'INS' || tag === 'DEL') && n.classList.contains('rv')) { await inlines(n, { ...f, rev: { k: tag, a: n.dataset.a || 'Auteur', t: n.dataset.t } }, out); continue; }
         if (tag === 'SPAN' && n.classList.contains('cm') && cmIds.has(n.dataset.cid)) {
           const id = cmIds.get(n.dataset.cid); const all = T.body.querySelectorAll(`span.cm[data-cid="${CSS.escape(n.dataset.cid)}"]`);
@@ -71,6 +73,7 @@
     }
     const paraOpts = (el) => {
       const s = el.style; const o = {};
+      if (el.classList && (el.classList.contains('rvp') || el.classList.contains('rvpd'))) o.run = { [el.classList.contains('rvp') ? 'insertion' : 'deletion']: { id: revId++, author: el.dataset.a || 'Auteur', date: el.dataset.t || new Date().toISOString() } };
       const al = s.textAlign || (el.closest && el.closest('[style*="text-align"]') && el.closest('[style*="text-align"]') !== el && el.closest('td,th') ? '' : '');
       const A = { center: D.AlignmentType.CENTER, right: D.AlignmentType.RIGHT, justify: D.AlignmentType.JUSTIFIED, left: D.AlignmentType.LEFT };
       if (A[al]) o.alignment = A[al];
@@ -193,10 +196,26 @@
     const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
     const zip = await window.JSZip.loadAsync(buf); const f = zip.file('word/document.xml'); if (!f) return null;
     const xml = await f.async('string');
-    if (!/<w:(ins|del|commentRangeStart)\b/.test(xml)) return null;
+    if (!/<w:(ins|del|commentRangeStart|rPrChange)\b/.test(xml)) return null;
     const x = new DOMParser().parseFromString(xml, 'application/xml');
     const marks = {}; let n = 0;
     const run = (text) => { const r = x.createElementNS(W, 'w:r'); const t = x.createElementNS(W, 'w:t'); t.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:space', 'preserve'); t.textContent = text; r.appendChild(t); return r; };
+    // marques de paragraphe ajoutées / supprimées
+    for (const p of [...x.getElementsByTagNameNS(W, 'p')]) {
+      const ppr = [...p.children].find((c) => c.localName === 'pPr'); const rpr = ppr && [...ppr.children].find((c) => c.localName === 'rPr'); if (!rpr) continue;
+      const m = [...rpr.children].find((c) => c.localName === 'ins' || c.localName === 'del'); if (!m) continue;
+      const id = 'Q' + n++; marks[id] = { k: m.localName === 'ins' ? 'PINS' : 'PDEL', a: m.getAttributeNS(W, 'author') || 'Auteur', t: m.getAttributeNS(W, 'date') || '' }; m.remove();
+      p.appendChild(run(`\uE000${id}\uE001`));
+    }
+    // changements de mise en forme
+    const HI = { yellow: '#ffff00', green: '#00ff00', cyan: '#00ffff', magenta: '#ff00ff', blue: '#0000ff', red: '#ff0000', darkBlue: '#000080', lightGray: '#c0c0c0', darkGray: '#808080' };
+    for (const ch of [...x.getElementsByTagNameNS(W, 'rPrChange')]) {
+      const rn = ch.parentNode && ch.parentNode.parentNode; if (!rn || rn.localName !== 'r') { ch.remove(); continue; }
+      const old = [...ch.children].find((c) => c.localName === 'rPr'); const o = {};
+      if (old) for (const c of old.children) { const v = c.getAttributeNS(W, 'val'); const on = v === null || !/^(0|false|none)$/.test(v); if (c.localName === 'b') o.b = on; if (c.localName === 'i') o.i = on; if (c.localName === 'u') o.u = on; if (c.localName === 'strike') o.s = on; if (c.localName === 'color' && /^[0-9a-f]{6}$/i.test(v || '')) o.color = '#' + v; if (c.localName === 'highlight') o.hi = HI[v]; if (c.localName === 'shd' && /^[0-9a-f]{6}$/i.test(c.getAttributeNS(W, 'fill') || '')) o.hi = '#' + c.getAttributeNS(W, 'fill'); if (c.localName === 'sz') o.size = +v / 2; if (c.localName === 'rFonts') o.font = c.getAttributeNS(W, 'ascii'); }
+      const id = 'F' + n++; marks[id] = { k: 'FMT', a: ch.getAttributeNS(W, 'author') || 'Auteur', t: ch.getAttributeNS(W, 'date') || '', old: o }; ch.remove();
+      rn.before(run(`\uE000${id}\uE001`)); rn.after(run(`\uE000/${id}\uE001`));
+    }
     for (const tag of ['del', 'ins']) {
       for (const e of [...x.getElementsByTagNameNS(W, tag)]) {
         if (!e.parentNode || e.parentNode.localName === 'rPr' || e.parentNode.localName === 'pPr' || !e.getElementsByTagNameNS(W, 'r').length) continue;

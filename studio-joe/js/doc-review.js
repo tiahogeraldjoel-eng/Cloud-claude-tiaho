@@ -96,42 +96,104 @@
     if (tr) { const r = document.createRange(); try { r.setStart(tr.startContainer, tr.startOffset); r.setEnd(tr.endContainer, tr.endOffset); return r; } catch (x) { /* plage invalide */ } }
     const s = getSelection(); return s.rangeCount ? s.getRangeAt(0).cloneRange() : null;
   }
+  const BLOCK = 'p,li,h1,h2,h3,h4,blockquote,pre,div.p,td,th';
+  const blockOf = (n) => { const b = up(n, BLOCK); return b && b !== body ? b : null; };
+  const atEdge = (block, r, start) => { const x = document.createRange(); x.selectNodeContents(block); if (start) x.setEnd(r.startContainer, r.startOffset); else x.setStart(r.endContainer, r.endOffset); return !x.toString().replace(/[​\n]/g, '') && !(x.cloneContents().querySelector && x.cloneContents().querySelector('img')); };
+  const markPara = (b, cls) => { b.classList.remove('rvp', 'rvpd'); b.classList.add(cls); b.dataset.a = who(); b.dataset.t = now(); };
+  const unmarkPara = (b) => { b.classList.remove('rvp', 'rvpd'); if (!b.className) b.removeAttribute('class'); delete b.dataset.a; delete b.dataset.t; };
+  function mergeNext(b) { // réunit un paragraphe avec le suivant
+    const nx = b.nextElementSibling; if (!nx || nx.tagName === 'TABLE' || nx.classList.contains('pb')) return false;
+    const last = b.lastChild; if (last && last.nodeName === 'BR') last.remove();
+    while (nx.firstChild) b.appendChild(nx.firstChild); if (nx.classList.contains('rvp') || nx.classList.contains('rvpd')) { b.classList.toggle('rvp', nx.classList.contains('rvp')); b.classList.toggle('rvpd', nx.classList.contains('rvpd')); b.dataset.a = nx.dataset.a; b.dataset.t = nx.dataset.t; } else unmarkPara(b);
+    nx.remove(); if (!b.firstChild) b.innerHTML = '<br>'; return true;
+  }
+  let pendingPara = false;
+  // saisie suivie hors des cas gérés (claviers de téléphone, correcteurs) : on compare le paragraphe avant / après
+  let snap = null;
+  const textMap = (block) => { const nodes = []; const w = document.createTreeWalker(block, NodeFilter.SHOW_TEXT); let off = 0; for (let n = w.nextNode(); n; n = w.nextNode()) { nodes.push({ n, start: off }); off += n.length; } return { nodes, text: nodes.map((x) => x.n.nodeValue).join('') }; };
+  function takeSnap() {
+    const s = getSelection(); if (!s.rangeCount) return; const b = blockOf(s.anchorNode); if (!b) return;
+    const m = textMap(b); const mask = []; m.nodes.forEach((x) => { const own = !!ownIns(x.n), del = !!up(x.n, 'del.rv'); for (let i = 0; i < x.n.length; i++) mask.push(own ? 1 : del ? 2 : 0); });
+    snap = { b, text: m.text, mask };
+  }
+  function pointAt(m, off, preferEnd) { for (const x of m.nodes) { const end = x.start + x.n.length; if (off < end || (preferEnd ? off <= end : off === end && x === m.nodes[m.nodes.length - 1])) if (off >= x.start) return [x.n, off - x.start]; } const l = m.nodes[m.nodes.length - 1]; return l ? [l.n, l.n.length] : null; }
+  function reconcile() {
+    const sn = snap; snap = null; if (!sn || !T.doc.track || !body.contains(sn.b)) return;
+    const m = textMap(sn.b); const a = sn.text, b2 = m.text; if (a === b2) return;
+    let p = 0; while (p < a.length && p < b2.length && a[p] === b2[p]) p++;
+    let q = 0; while (q < a.length - p && q < b2.length - p && a[a.length - 1 - q] === b2[b2.length - 1 - q]) q++;
+    // au niveau du mot entier, comme Word (« cent » → « cinq » plutôt que « c[ent][inq] »)
+    const L = (ch) => /[\p{L}\p{N}]/u.test(ch || '');
+    while (p > 0 && L(a[p - 1]) && sn.mask[p - 1] !== 2) p--;
+    while (q > 0 && L(a[a.length - q]) && sn.mask[a.length - q] !== 2) q--;
+    let oldMid = a.slice(p, a.length - q); let newMid = b2.slice(p, b2.length - q);
+    // simple ajout ou simple suppression au bout d'un mot : on ne marque que la différence
+    if (oldMid && newMid.startsWith(oldMid)) p += oldMid.length; else if (oldMid && newMid.endsWith(oldMid)) q += oldMid.length;
+    else if (newMid && oldMid.startsWith(newMid)) p += newMid.length; else if (newMid && oldMid.endsWith(newMid)) q += newMid.length;
+    oldMid = a.slice(p, a.length - q); newMid = b2.slice(p, b2.length - q); const oldMask = sn.mask.slice(p, a.length - q);
+    if (oldMid === newMid) return;
+    // remettre d'abord le texte supprimé (barré), puis marquer le texte ajouté
+    const keep = [...oldMid].filter((_, i) => oldMask[i] === 0).join('');
+    const common = (() => { let k = 0; while (k < oldMid.length && k < newMid.length && oldMid[k] === newMid[k] && oldMask[k] !== 0) k++; return k; })();
+    let caret = null; let insFrom = p, insLen = newMid.length;
+    if (keep) {
+      const del = document.createElement('del'); del.className = 'rv'; del.dataset.a = who(); del.dataset.t = now(); del.textContent = keep;
+      const pt = pointAt(m, p, true); const host = pt && up(pt[0], 'ins.rv');
+      if (pt) { const r = document.createRange(); r.setStart(...pt); r.collapse(true); if (host && pt[1] === 0) host.before(del); else r.insertNode(del); } else sn.b.appendChild(del);
+      insFrom = p + keep.length; caret = del;
+    }
+    void common;
+    if (insLen > 0) {
+      const m2 = textMap(sn.b); const r = document.createRange(); const st = pointAt(m2, insFrom, false), en = pointAt(m2, insFrom + insLen, true); if (!st || !en) return; r.setStart(...st); r.setEnd(...en);
+      let last = null;
+      for (const n of pieces(r)) { if (ownIns(n)) { last = n.parentNode.closest('ins.rv'); continue; } const d = up(n, 'del.rv'); if (d) d.after(n); last = mergeSiblings(wrap(n, 'ins', 'rv', { a: who(), t: now() })); }
+      if (last) caret = last;
+    }
+    if (caret) { try { if (caret.tagName === 'INS' && caret.lastChild && caret.lastChild.nodeType === 3) caretIn(caret.lastChild, caret.lastChild.length); else caretAt(caret, true); } catch (e) { /* curseur laissé */ } }
+    T.afterContentChange(); refreshSoon();
+  }
   body.addEventListener('beforeinput', (e) => {
-    if (!T.doc.track || e.isComposing) return;
+    if (!T.doc.track) return;
     const t = e.inputType; const s = getSelection(); if (!s.rangeCount) return;
+    if (e.isComposing || t === 'insertCompositionText') { if (!snap) takeSnap(); return; }
+    if (t === 'insertParagraph') { pendingPara = true; return; }
     if (t === 'insertText' || t === 'insertReplacementText' || t === 'insertFromPaste' || t === 'insertFromDrop') {
       const text = e.data != null ? e.data : e.dataTransfer ? e.dataTransfer.getData('text/plain') : '';
-      if (!text) return;
+      if (!text) { takeSnap(); return; }
       let r = t === 'insertReplacementText' ? rangeFromEvent(e) : s.getRangeAt(0);
       if (r.collapsed && ownIns(r.startContainer) && !up(r.startContainer, 'del.rv')) return; // on écrit dans son propre ajout
+      if (!e.cancelable) { takeSnap(); return; }
       e.preventDefault(); before();
       if (!r.collapsed) { const m = markDeleted(r, false); r = document.createRange(); r.setStartAfter(m); r.collapse(true); m.remove(); }
       mergeSiblings(insertTracked(text, r)); after(); return;
     }
     if (/^delete/.test(t)) {
-      let r = s.getRangeAt(0);
+      const sel = s.getRangeAt(0); let r = sel;
       if (r.collapsed) r = rangeFromEvent(e);
-      if (!r || r.collapsed || !r.toString().replace(/\u200b/g, '')) return; // fusion de paragraphes : non suivie
+      if (!r || r.collapsed || !r.toString().replace(/​/g, '')) {
+        // fusion de deux paragraphes : la marque de paragraphe est barrée au lieu d'être supprimée
+        if (!sel.collapsed || !e.cancelable) return;
+        const blk = blockOf(sel.startContainer); if (!blk) return;
+        const back = /Backward/.test(t);
+        const target = back ? (atEdge(blk, sel, true) ? blk.previousElementSibling : null) : (atEdge(blk, sel, false) ? blk : null);
+        if (!target || !target.matches(BLOCK) || !target.nextElementSibling) return;
+        if (target.classList.contains('rvp') && target.dataset.a === who()) { e.preventDefault(); before(); mergeNext(target); unmarkPara(target); after(); return; }
+        e.preventDefault(); before(); markPara(target, 'rvpd');
+        if (back) { const rr = document.createRange(); rr.selectNodeContents(target); rr.collapse(false); s.removeAllRanges(); s.addRange(rr); }
+        after(); return;
+      }
+      if (!e.cancelable) { takeSnap(); return; }
       e.preventDefault(); before();
       const backward = /Backward/.test(t);
       const m = markDeleted(r, backward); caretAt(m, false); m.remove(); after();
     }
   });
-  // claviers de téléphone (saisie « composée ») : on prépare un ajout vide avant la composition
-  body.addEventListener('compositionstart', () => {
-    if (!T.doc.track) return; const s = getSelection(); if (!s.rangeCount) return;
-    let r = s.getRangeAt(0);
-    if (r.collapsed && ownIns(r.startContainer)) return;
-    before();
-    if (!r.collapsed) { const m = markDeleted(r, false); r = document.createRange(); r.setStartAfter(m); r.collapse(true); m.remove(); }
-    insertTracked('\u200b', r);
+  body.addEventListener('input', (e) => {
+    if (!T.doc.track) return;
+    if (pendingPara) { pendingPara = false; const s = getSelection(); const b = s.rangeCount && blockOf(s.anchorNode); const prev = b && b.previousElementSibling; if (prev && prev.matches(BLOCK)) { markPara(prev, 'rvp'); refreshSoon(); } return; } // la 2e partie garde la marque d'origine
+    if (snap && !e.isComposing) reconcile();
   });
-  body.addEventListener('compositionend', () => {
-    if (!T.doc.track) return; const s = getSelection(); const n = s.anchorNode;
-    const i = ownIns(n); if (!i || !n || n.nodeType !== 3) return;
-    const z = n.nodeValue.indexOf('\u200b'); if (z < 0 || n.length < 2) return;
-    const off = s.anchorOffset; n.deleteData(z, 1); caretIn(n, Math.max(0, off - (z < off ? 1 : 0)));
-  });
+  body.addEventListener('compositionend', () => { if (T.doc.track && snap) setTimeout(reconcile, 0); });
   // collage en mode suivi : texte brut, marqué comme ajout
   body.addEventListener('paste', (e) => {
     if (!T.doc.track || !e.clipboardData) return;
@@ -145,18 +207,66 @@
   function setTrack(on) { T.doc.track = !!on; T.markDirty(); status(); refresh(); toast(on ? 'Suivi des modifications activé : vos ajouts et suppressions sont marqués' : 'Suivi des modifications désactivé'); }
   async function toggleTrack() { if (!T.doc.track) await askAuthor(); setTrack(!T.doc.track); }
 
-  function accept(e) { if (e.tagName === 'INS') unwrap(e); else e.remove(); }
-  function reject(e) { if (e.tagName === 'INS') e.remove(); else unwrap(e); }
-  function revsIn(r) { return [...body.querySelectorAll('ins.rv,del.rv')].filter((e) => !r || r.intersectsNode(e)); }
+  const REV = 'ins.rv,del.rv,span.rvf,.rvp,.rvpd';
+  // mise en forme suivie : le texte reçoit un <span class="rvf"> portant le nouveau style ; l'ancien vient des parents
+  const FMT_LABEL = { bold: 'Gras', italic: 'Italique', underline: 'Souligné', strikeThrough: 'Barré', superscript: 'Exposant', subscript: 'Indice', foreColor: 'Couleur', hiliteColor: 'Surlignage', backColor: 'Surlignage', fontName: 'Police', fontSizePt: 'Taille', removeFormat: 'Mise en forme effacée' };
+  const qs = (c) => { try { return document.queryCommandState(c); } catch (e) { return false; } };
+  T.fmtHook = (cmd, val) => {
+    if (!T.doc.track) return false;
+    const s = getSelection(); if (!s.rangeCount || !body.contains(s.anchorNode)) return false;
+    let r = s.getRangeAt(0);
+    if (cmd === 'insertText') { before(); if (!r.collapsed) { const m = markDeleted(r, false); r = document.createRange(); r.setStartAfter(m); r.collapse(true); m.remove(); } if (val) mergeSiblings(insertTracked(String(val), r)); after(); return true; }
+    if (!FMT_LABEL[cmd] || r.collapsed) return false;
+    let css;
+    if (cmd === 'bold') css = { fontWeight: qs('bold') ? 'normal' : 'bold' };
+    else if (cmd === 'italic') css = { fontStyle: qs('italic') ? 'normal' : 'italic' };
+    else if (cmd === 'underline' || cmd === 'strikeThrough') { const u = cmd === 'underline' ? !qs('underline') : qs('underline'), st = cmd === 'strikeThrough' ? !qs('strikeThrough') : qs('strikeThrough'); css = { textDecorationLine: [u ? 'underline' : '', st ? 'line-through' : ''].filter(Boolean).join(' ') || 'none' }; }
+    else if (cmd === 'superscript' || cmd === 'subscript') { const on = !qs(cmd); css = { verticalAlign: on ? (cmd === 'superscript' ? 'super' : 'sub') : 'baseline', fontSize: on ? '0.75em' : '' }; }
+    else if (cmd === 'foreColor') css = { color: val };
+    else if (cmd === 'hiliteColor' || cmd === 'backColor') css = { backgroundColor: val };
+    else if (cmd === 'fontName') css = { fontFamily: val };
+    else if (cmd === 'fontSizePt') css = { fontSize: val + 'pt' };
+    else css = { fontWeight: 'normal', fontStyle: 'normal', textDecorationLine: 'none', color: '#000000', backgroundColor: 'transparent', fontFamily: "Calibri, Carlito, 'Segoe UI', Arial, sans-serif", verticalAlign: 'baseline', fontSize: '11pt' };
+    before(); const meta = { a: who(), t: now() }; const spans = [];
+    for (const n of pieces(r)) {
+      let sp = n.parentNode.nodeName === 'SPAN' && n.parentNode.classList.contains('rvf') && n.parentNode.childNodes.length === 1 && n.parentNode.dataset.a === meta.a ? n.parentNode : null;
+      if (!sp) sp = wrap(n, 'span', 'rvf', { ...meta, f: '' });
+      Object.assign(sp.style, css); const labels = new Set((sp.dataset.f || '').split(', ').filter(Boolean)); labels.add(FMT_LABEL[cmd]); sp.dataset.f = [...labels].join(', '); sp.dataset.t = meta.t; spans.push(sp);
+    }
+    if (spans.length) { const rr = document.createRange(); rr.setStartBefore(spans[0]); rr.setEndAfter(spans[spans.length - 1]); s.removeAllRanges(); s.addRange(rr); }
+    after(); return true;
+  };
+  const OLD_CSS = (o) => ({ fontWeight: o.b ? 'bold' : 'normal', fontStyle: o.i ? 'italic' : 'normal', textDecorationLine: [o.u ? 'underline' : '', o.s ? 'line-through' : ''].filter(Boolean).join(' ') || 'none', color: o.color || '', backgroundColor: o.hi || '', fontSize: o.size ? o.size + 'pt' : '', fontFamily: o.font || '' });
+  function accept(e) {
+    if (e.tagName === 'INS') unwrap(e);
+    else if (e.tagName === 'DEL') e.remove();
+    else if (e.classList.contains('rvf')) { e.classList.remove('rvf'); ['a', 't', 'f', 'old'].forEach((k) => delete e.dataset[k]); if (!e.getAttribute('style')) unwrap(e); else e.removeAttribute('class'); }
+    else if (e.classList.contains('rvp')) unmarkPara(e);
+    else if (e.classList.contains('rvpd')) { unmarkPara(e); mergeNext(e); }
+  }
+  function reject(e) {
+    if (e.tagName === 'INS') e.remove();
+    else if (e.tagName === 'DEL') unwrap(e);
+    else if (e.classList.contains('rvf')) {
+      if (e.dataset.old) { // révision venue de Word : on remet l'ancienne mise en forme
+        let o = {}; try { o = JSON.parse(e.dataset.old); } catch (x) { /* illisible */ }
+        e.querySelectorAll('b,strong,i,em,u,s,sup,sub,span').forEach((n) => unwrap(n)); e.removeAttribute('style'); Object.assign(e.style, OLD_CSS(o));
+        e.classList.remove('rvf'); ['a', 't', 'f', 'old'].forEach((k) => delete e.dataset[k]); e.removeAttribute('class');
+      } else unwrap(e);
+    }
+    else if (e.classList.contains('rvp')) { unmarkPara(e); mergeNext(e); }
+    else if (e.classList.contains('rvpd')) unmarkPara(e);
+  }
+  function revsIn(r) { return [...body.querySelectorAll(REV)].filter((e) => !r || r.intersectsNode(e) || e.contains(r.startContainer)); }
   function decide(all, ok) {
     const s = getSelection(); const r = !all && s.rangeCount && body.contains(s.anchorNode) ? s.getRangeAt(0) : null;
     if (!all && !r) return toast('Placez le curseur dans une modification');
     const list = revsIn(r); if (!list.length) return toast(all ? 'Aucune modification suivie dans le document' : 'Aucune modification à cet endroit');
-    before(); list.forEach(ok ? accept : reject); body.normalize(); after();
+    before(); list.forEach(ok ? accept : reject); for (let i = 0; all && i < 10 && body.querySelector(REV); i++) [...body.querySelectorAll(REV)].forEach(ok ? accept : reject); body.normalize(); after();
     toast(`${list.length} modification${list.length > 1 ? 's' : ''} ${ok ? 'acceptée' : 'refusée'}${list.length > 1 ? 's' : ''}`);
   }
   function goto(dir) {
-    const all = [...body.querySelectorAll('ins.rv,del.rv,span.cm')]; if (!all.length) return toast('Aucune révision dans le document');
+    const all = [...body.querySelectorAll(REV + ',span.cm')]; if (!all.length) return toast('Aucune révision dans le document');
     const s = getSelection(); const cur = s.rangeCount && body.contains(s.anchorNode) ? s.getRangeAt(0) : null;
     let target;
     if (!cur) target = dir > 0 ? all[0] : all[all.length - 1];
@@ -212,9 +322,11 @@
   function togglePanel() { panel.hidden ? openPanel() : (panel.hidden = true); }
   function items() {
     const out = []; const seen = new Set();
-    for (const e of body.querySelectorAll('ins.rv,del.rv,span.cm')) {
-      if (e.tagName === 'SPAN') { const cid = e.dataset.cid; if (seen.has(cid)) continue; seen.add(cid); const c = comments().find((x) => x.id === cid); if (c) out.push({ k: 'c', c, el: e }); continue; }
-      out.push({ k: e.tagName === 'INS' ? 'i' : 'd', el: e, a: e.dataset.a || 'Auteur', t: e.dataset.t, text: e.textContent.replace(/\u200b/g, '') });
+    for (const e of body.querySelectorAll(REV + ',span.cm')) {
+      if (e.tagName === 'SPAN' && e.classList.contains('cm')) { const cid = e.dataset.cid; if (seen.has(cid)) continue; seen.add(cid); const c = comments().find((x) => x.id === cid); if (c) out.push({ k: 'c', c, el: e }); continue; }
+      const k = e.tagName === 'INS' ? 'i' : e.tagName === 'DEL' ? 'd' : e.classList.contains('rvf') ? 'f' : e.classList.contains('rvp') ? 'p' : 'pd';
+      if (k === 'f' && out.length && out[out.length - 1].k === 'f' && out[out.length - 1].a === (e.dataset.a || 'Auteur') && out[out.length - 1].t === e.dataset.t) { out[out.length - 1].more.push(e); out[out.length - 1].text += e.textContent; continue; }
+      out.push({ k, more: [], f: e.dataset.f, el: e, a: e.dataset.a || 'Auteur', t: e.dataset.t, text: e.textContent.replace(/\u200b/g, '') });
     }
     for (const c of comments()) if (!seen.has(c.id)) out.push({ k: 'c', c, orphan: true });
     return out;
@@ -239,8 +351,10 @@
           ${(c.replies || []).map((rp) => `<div class="rp"><div class="m"><b>${esc(rp.a)}</b> · ${fmtDate(rp.t)}</div>${esc(rp.text).replace(/\n/g, '<br>')}</div>`).join('')}
           <div class="bt"><button data-rv="reply">Répondre</button><button data-rv="resolve">${c.done ? 'Rouvrir' : 'Résolu'}</button><button data-rv="del">Supprimer</button></div>`;
       } else {
-        d.style.setProperty('--c', x.k === 'i' ? '#2e7d32' : '#c62828');
-        d.innerHTML = `<div class="m">${x.k === 'i' ? '➕ Ajout' : '➖ Suppression'} · <b>${esc(x.a)}</b> · ${fmtDate(x.t)}</div><div class="q" style="font-style:normal;color:var(--fg)">« ${esc(x.text.slice(0, 160))} »</div>
+        d.style.setProperty('--c', { i: '#2e7d32', d: '#c62828', f: '#7e57c2', p: '#2e7d32', pd: '#c62828' }[x.k]);
+        const what = { i: '➕ Ajout', d: '➖ Suppression', f: '🎨 Mise en forme : ' + esc(x.f || 'modifiée'), p: '¶ Nouveau paragraphe', pd: '¶ Paragraphes réunis' }[x.k];
+        const quote = x.k === 'p' || x.k === 'pd' ? `« ${esc(x.text.slice(-60))} ¶ »` : `« ${esc(x.text.slice(0, 160))} »`;
+        d.innerHTML = `<div class="m">${what} · <b>${esc(x.a)}</b> · ${fmtDate(x.t)}</div><div class="q" style="font-style:normal;color:var(--fg)">${quote}</div>
           <div class="bt"><button data-rv="acc">✓ Accepter</button><button data-rv="rej">✗ Refuser</button></div>`;
       }
       d._x = x; rl.appendChild(d);
@@ -262,7 +376,7 @@
     else if (k === 'comment') addComment();
     else if (k === 'acceptAll') decide(true, true);
     else if (k === 'rejectAll') decide(true, false);
-    else if (k === 'acc' || k === 'rej') { before(); (k === 'acc' ? accept : reject)(x.el); body.normalize(); after(); }
+    else if (k === 'acc' || k === 'rej') { before(); [x.el, ...(x.more || [])].forEach(k === 'acc' ? accept : reject); body.normalize(); after(); }
     else if (k === 'del') deleteComment(x.c.id);
     else if (k === 'resolve') resolveComment(x.c.id);
     else if (k === 'reply') {
@@ -275,7 +389,7 @@
   /* ================= Barre d'état ================= */
   const stT = document.createElement('span'); stT.id = 'stTrack'; stT.title = 'Ouvrir le volet Révision'; stT.onclick = openPanel;
   const stSave = $('#stSave'); if (stSave) stSave.after(stT);
-  function status() { const n = body.querySelectorAll('ins.rv,del.rv').length, c = comments().length; stT.textContent = T.doc.track ? `● Suivi activé${n ? ` (${n})` : ''}` : n || c ? `Révisions : ${n} · 💬 ${c}` : ''; stT.style.color = T.doc.track ? '#c62828' : 'var(--muted)'; }
+  function status() { const n = body.querySelectorAll(REV).length, c = comments().length; stT.textContent = T.doc.track ? `● Suivi activé${n ? ` (${n})` : ''}` : n || c ? `Révisions : ${n} · 💬 ${c}` : ''; stT.style.color = T.doc.track ? '#c62828' : 'var(--muted)'; }
   // un nouveau document (ou un document ouvert) rafraîchit le volet
   const origLoad = T.loadDoc; T.loadDoc = function (d) { origLoad(d); body.classList.remove('final'); refresh(); };
 
@@ -289,7 +403,7 @@
   // ouverture d'un .docx : les repères posés par doc-extra.js (prepRevisions) deviennent des révisions / commentaires
   function applyMarkers(html, info) {
     const box = document.createElement('div'); box.innerHTML = html;
-    const ph = {}; const re = /\uE000(\/?)([RC][^\uE001]*)\uE001/g;
+    const ph = {}; const re = /\uE000(\/?)([RCFQ][^\uE001]*)\uE001/g;
     const w = document.createTreeWalker(box, NodeFilter.SHOW_TEXT); const texts = []; for (let n = w.nextNode(); n; n = w.nextNode()) if (n.nodeValue.includes('\uE000')) texts.push(n);
     for (const t of texts) {
       const frag = document.createDocumentFragment(); let last = 0; let m; re.lastIndex = 0;
@@ -302,7 +416,9 @@
     }
     const comments = [];
     for (const [id, [s, e]] of Object.entries(ph)) {
+      if (id[0] === 'Q') { const m = info.marks[id]; const b = s && s.closest('p,li,h1,h2,h3,h4,blockquote,pre,td,th'); if (m && b) { b.classList.add(m.k === 'PINS' ? 'rvp' : 'rvpd'); b.dataset.a = m.a; b.dataset.t = m.t; } continue; }
       if (!s || !e) continue;
+      if (id[0] === 'F') { const m = info.marks[id]; if (!m) continue; const r = document.createRange(); r.setStartAfter(s); r.setEndBefore(e); for (const n of pieces(r)) wrap(n, 'span', 'rvf', { a: m.a, t: m.t, f: 'Mise en forme', old: JSON.stringify(m.old || {}) }); continue; }
       const r = document.createRange(); r.setStartAfter(s); r.setEndBefore(e);
       if (id[0] === 'R') { const m = info.marks[id]; if (!m) continue; const ps = pieces(r); for (const n of ps) wrap(n, m.k.toLowerCase(), 'rv', { a: m.a, t: m.t }); }
       else {

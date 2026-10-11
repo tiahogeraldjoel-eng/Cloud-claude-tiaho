@@ -152,8 +152,15 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Sélection multiple, aligner et répartir, même taille, premier plan / arrière-plan,
   copier-coller (entre schémas aussi), annuler / rétablir, grille magnétique, zoom et
   déplacement (deux doigts sur téléphone)
-- Exporter en PNG, SVG (vectoriel) ou PDF, insérer dans Texte Joe ; « Mes schémas »
-  gardés sur l'appareil ; fichier `.joeschema` pour continuer ailleurs
+- Rotation des formes (poignée ↻ ou angle exact)
+- Exporter en PNG, SVG (vectoriel) ou PDF, insérer dans Texte Joe ; le PNG et le SVG
+  exportés se rouvrent comme schémas modifiables ; « Mes schémas » gardés sur
+  l'appareil ; fichier `.joeschema`
+- **Compatible draw.io** (diagrams.net) : ouvre les `.drawio`, `.drawio.svg` et
+  `.drawio.png`, compressés ou non, et exporte en `.drawio`
+- **Compatible Visio** : ouvre les `.vsdx` (formes avec leurs modèles et styles,
+  textes, couleurs, groupes, images, rotation, connecteurs reliés) et enregistre en
+  `.vsdx`
 
 ### Base Joe (équivalent Microsoft Access)
 - **Ouvre les fichiers Access** `.accdb` et `.mdb` (mot de passe accepté) : tables, types
@@ -202,8 +209,10 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Dictée au micro, lecture à voix haute ; IA Claude (en ligne) : corriger, reformuler
   (officiel, simple), raccourcir, résumer, rédiger à partir d'une consigne, traduire
 - **Révision** comme dans Word : commentaires (réponses, « résolu »), suivi des
-  modifications (ajouts soulignés en vert, suppressions barrées en rouge, avec auteur
-  et date), accepter ou refuser une modification ou toutes, volet Révision, affichage
+  modifications (ajouts soulignés en vert, suppressions barrées en rouge, mise en
+  forme — gras, couleur, police, taille… — soulignée en violet, paragraphes ajoutés
+  ou réunis marqués ¶, avec auteur et date, y compris avec les claviers de téléphone
+  qui proposent et corrigent les mots), accepter ou refuser une modification ou toutes, volet Révision, affichage
   du texte final. Commentaires et modifications suivies sont enregistrés dans le
   `.docx` et relus à l'ouverture d'un `.docx` venant de Word
 
@@ -230,7 +239,8 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   rubriques en lignes, une en colonnes, plusieurs valeurs (somme, nombre, moyenne, min,
   max), regroupement des dates par mois, trimestre ou année, filtre, tri, sous-totaux
   et totaux ; résultat dans une nouvelle feuille, à actualiser après modification
-  des données (Données → Actualiser le tableau croisé)
+  des données (Données → Actualiser le tableau croisé). Dans le `.xlsx`, c'est un vrai
+  tableau croisé Excel, recalculé à l'ouverture et modifiable dans Excel
 - Graphiques liés aux données : colonnes, barres, courbes, aires, secteurs, anneau
 - Modèles : facture (TVA 18 %, montant en lettres), budget prévisionnel / réalisé,
   journal de caisse, tableau d'amortissement d'emprunt, suivi des dépenses
@@ -259,7 +269,8 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Diaporama plein écran : transitions (fondu, poussée, couvrir, zoom, retournement),
   animations d'entrée (y compris paragraphe par paragraphe), écran noir (B), aller à une
   diapositive (numéro + Entrée), pointeur laser, balayage au doigt ; transitions et
-  animations d'entrée sont aussi enregistrées dans le `.pptx` et jouées par PowerPoint
+  animations d'entrée sont aussi enregistrées dans le `.pptx` (durées exactes,
+  « Retournement » compris) et relues à l'ouverture d'un `.pptx`
 - Mode présentateur : diapositive en cours et suivante, notes, minuteur, horloge ;
   les diapositives s'affichent dans une seconde fenêtre à placer sur le vidéoprojecteur
 - Fichiers : enregistrer en `.pptx` modifiable dans PowerPoint (textes, formes, images,
@@ -418,10 +429,11 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   l'appareil que dans le fichier que vous envoyez vous-même
 
 ## Limites connues
-- Diagrammes Joe : n'ouvre pas les fichiers Visio (`.vsdx`) ni draw.io ; le SVG exporté
-  est un dessin (il se rouvre dans un logiciel de dessin, pas comme schéma modifiable :
-  garder le `.joeschema`). Les formes ne pivotent pas. Sur téléphone, la double
-  pression pour écrire dans une forme peut être remplacée par le bouton « ✎ Texte ».
+- Diagrammes Joe : à l'ouverture d'un fichier Visio ou draw.io, les formes très
+  particulières (pochoirs spécialisés) deviennent des rectangles et seule la première
+  page est reprise. Dans le `.vsdx` enregistré, les formes arrondies (document, nuage…)
+  sont dessinées par des segments très courts : à l'œil identiques, mais Visio ne les
+  reconnaît pas comme ses propres modèles.
 - Agenda Joe : un navigateur ne peut pas réveiller le téléphone quand l'application est
   fermée ; pour des rappels garantis, exporter en `.ics` vers l'agenda du téléphone. Pas
   d'invitations par e-mail ni de partage d'agenda en ligne.
@@ -446,23 +458,22 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Scan Joe : la détection des bords demande un document clair sur un fond plus
   sombre ; sinon, ajuster les coins à la main. L'OCR ne lit pas l'écriture manuscrite
   (utiliser PDF Joe → OCR → Écriture manuscrite, en ligne).
-- Texte Joe : pas de notes de bas de page. Le suivi des modifications marque les
-  ajouts et suppressions de texte, pas les changements de mise en forme ni les
-  paragraphes ajoutés ou fusionnés ; avec certains claviers de téléphone, vérifier
-  que la saisie est bien marquée. Les réponses aux commentaires sont enregistrées dans
+- Texte Joe : pas de notes de bas de page. Le suivi des modifications ne marque pas
+  les changements de style de paragraphe (titre, alignement, retraits) ni les
+  tableaux et images ajoutés ou supprimés. Les réponses aux commentaires sont enregistrées dans
   le `.docx` à l'intérieur du commentaire. À l'ouverture d'un `.docx`, les couleurs et polices particulières peuvent être
   simplifiées. Un tableau plus haut qu'une page n'est pas coupé entre deux pages à
   l'écran : utiliser l'impression, qui le coupe. L'ancien format `.doc` doit d'abord
   être réenregistré en `.docx`.
-- Présentation Joe : dans le `.pptx`, la transition « Retournement » devient un fondu ;
-  les animations ne sont pas relues à l'ouverture d'un `.pptx`. L'ouverture d'un `.pptx` reprend le contenu, mais pas toujours la mise en
+- Présentation Joe : à l'ouverture d'un `.pptx`, les effets PowerPoint sans équivalent
+  (emphase, sortie, trajectoires) sont ignorés et les transitions rares remplacées par
+  la plus proche. L'ouverture d'un `.pptx` reprend le contenu, mais pas toujours la mise en
   forme exacte : SmartArt, vidéos et formes spéciales sont ignorés ou simplifiés.
   L'ancien format `.ppt` doit d'abord être réenregistré en `.pptx`. Le mode présentateur
   sur deux écrans demande un ordinateur ; sur téléphone, les notes s'affichent sur le
   même écran.
-- Tableur Joe : le tableau croisé dynamique est enregistré dans le `.xlsx` comme un
-  tableau de valeurs (il ne s'actualise que dans Tableur Joe ou un `.joetab`). Pas de
-  macros ni de formules
+- Tableur Joe : dans LibreOffice, un tableau croisé regroupé par mois s'affiche date
+  par date (Excel, lui, garde le regroupement). Pas de macros ni de formules
   matricielles à résultat débordant (FILTRE, TRIER, UNIQUE). Les graphiques ne sont
   pas enregistrés dans le `.xlsx` (utiliser `.joetab` pour les garder), et
   `ENLETTRES` est enregistrée dans le `.xlsx` sous forme de texte, car Excel ne la
