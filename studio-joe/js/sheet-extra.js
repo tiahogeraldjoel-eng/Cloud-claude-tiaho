@@ -488,7 +488,7 @@
     const head = []; for (let c = def.c1; c <= def.c2; c++) { const v = T.val(def.r1, c, s); head.push(v == null || v === '' ? `Colonne ${F.colName(c)}` : String(v)); }
     const fmts = head.map((_, j) => { for (let r = def.r1 + 1; r <= Math.min(r2, def.r1 + 50); r++) { const x = S.cells.get(T.K(r, def.c1 + j)); if (x && x.s && x.s.fmt) return x.s.fmt; } return null; });
     const rows = []; for (let r = def.r1 + 1; r <= r2; r++) { const o = []; let any = false; for (let c = def.c1; c <= def.c2; c++) { let v = T.val(r, c, s); if (F.isErr && F.isErr(v)) v = null; if (v !== null && v !== '') any = true; o.push(v); } if (any) rows.push(o); }
-    return { head, fmts, rows, s };
+    return { head, fmts, rows, s, r2 };
   }
   function pivotKey(v, fmt, group) {
     if (v === null || v === undefined || v === '') return { k: '￿', label: '(vide)' };
@@ -807,6 +807,104 @@
     return { name: baseName(f.name), sheets, active: 0 };
   }
 
+  /* ================= Tableaux croisés dynamiques dans le .xlsx =================
+     Chaque feuille « TCD » devient un vrai tableau croisé Excel (cache des données + définition), marqué
+     « actualiser à l'ouverture » : Excel le recalcule et il reste actualisable et modifiable. */
+  const xe = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const isoOf = (serial) => new Date(Date.UTC(1899, 11, 30) + Math.round(serial * 864e5)).toISOString().slice(0, 19);
+  const FN_X = { sum: 'sum', count: 'count', avg: 'average', min: 'min', max: 'max' };
+  function pivotXml(def, si, n, grid) {
+    const src = pivotSource(def); const S = T.wb.sheets[src.s]; const H = src.head; const nf = H.length;
+    const rows = []; for (let r = def.r1 + 1; r <= src.r2; r++) { const o = []; for (let c = def.c1; c <= def.c2; c++) { let v = T.val(r, c, src.s); if (F.isErr(v) || v === '') v = null; o.push(v); } rows.push(o); }
+    const ix = (name) => H.indexOf(name);
+    const rowF = def.rows.filter((x) => ix(x) >= 0).map(ix), colF = def.col && ix(def.col) >= 0 ? ix(def.col) : -1, vals = def.vals.filter((v) => ix(v.f) >= 0);
+    const pageF = def.filter && def.filter.f && ix(def.filter.f) >= 0 ? ix(def.filter.f) : -1;
+    const isDate = (j) => F.isDateFormat(src.fmts[j]) && rows.some((r) => typeof r[j] === 'number');
+    const group = (j) => (isDate(j) && (def.groups || {})[H[j]] && def.groups[H[j]] !== 'none' ? def.groups[H[j]] : null);
+    const axis = new Set([...rowF, ...(colF >= 0 ? [colF] : []), ...(pageF >= 0 ? [pageF] : [])]);
+    // champs supplémentaires « Années » quand on regroupe par mois ou trimestre sur plusieurs années
+    const extra = []; const yearsOf = (j) => [...new Set(rows.map((r) => r[j]).filter((v) => typeof v === 'number').map((v) => +isoOf(v).slice(0, 4)))].sort();
+    const cacheFields = []; const items = {}; const recFns = [];
+    for (let j = 0; j < nf; j++) {
+      const col = rows.map((r) => r[j]); const g = axis.has(j) ? group(j) : null;
+      const nums = col.filter((v) => typeof v === 'number'), strs = col.filter((v) => typeof v === 'string'), blank = col.some((v) => v === null || typeof v === 'boolean');
+      if (g) {
+        const ys = yearsOf(j); const mn = Math.min(...nums), mx = Math.max(...nums); const start = isoOf(mn).slice(0, 10) + 'T00:00:00', end = isoOf(mx).slice(0, 10) + 'T00:00:00';
+        const labels = g === 'year' ? ys.map(String) : g === 'quarter' ? ['1er trim.', '2e trim.', '3e trim.', '4e trim.'] : MOIS_C;
+        const gi = [`&lt;${isoOf(mn).slice(0, 10)}`, ...labels, `&gt;${isoOf(mx).slice(0, 10)}`];
+        const du = []; const dpos = new Map(); col.forEach((v) => { const k = v === null ? 'm' : String(v); if (!dpos.has(k)) { dpos.set(k, du.length); du.push(v); } });
+        cacheFields.push(`<cacheField name="${xe(H[j])}" numFmtId="14"><sharedItems containsSemiMixedTypes="0" containsNonDate="0" containsDate="1" containsString="0"${blank ? ' containsBlank="1"' : ''} minDate="${isoOf(mn)}" maxDate="${isoOf(mx)}" count="${du.length}">${du.map((v) => (v === null ? '<m/>' : `<d v="${isoOf(v)}"/>`)).join('')}</sharedItems><fieldGroup base="${j}"><rangePr groupBy="${g === 'year' ? 'years' : g === 'quarter' ? 'quarters' : 'months'}" startDate="${start}" endDate="${isoOf(mx + 1).slice(0, 10)}T00:00:00"/><groupItems count="${gi.length}">${gi.map((s) => `<s v="${s.replace(/&(?!lt;|gt;)/g, '&amp;')}"/>`).join('')}</groupItems></fieldGroup></cacheField>`);
+        items[j] = gi.map((_, i) => i);
+        if (g !== 'year' && ys.length > 1) extra.push({ base: j, ys, start, end: isoOf(mx + 1).slice(0, 10) + 'T00:00:00', mn, mx });
+        recFns.push((v) => `<x v="${dpos.get(v === null ? 'm' : String(v))}"/>`);
+        continue;
+      }
+      if (axis.has(j)) {
+        const uniq = []; const pos = new Map(); col.forEach((v) => { const k = v === null ? '\u0000' : typeof v + ':' + v; if (!pos.has(k)) { pos.set(k, uniq.length); uniq.push(v); } });
+        const it = uniq.map((v) => (v === null ? '<m/>' : typeof v === 'number' ? (isDate(j) ? `<d v="${isoOf(v)}"/>` : `<n v="${v}"/>`) : typeof v === 'boolean' ? `<b v="${v ? 1 : 0}"/>` : `<s v="${xe(v)}"/>`));
+        const flags = isDate(j) && !strs.length ? ` containsSemiMixedTypes="0" containsNonDate="0" containsDate="1" containsString="0" minDate="${isoOf(Math.min(...nums))}" maxDate="${isoOf(Math.max(...nums))}"` : `${!strs.length ? ' containsSemiMixedTypes="0" containsString="0"' : ''}${nums.length ? ` containsNumber="1"${nums.every(Number.isInteger) ? ' containsInteger="1"' : ''} minValue="${Math.min(...nums)}" maxValue="${Math.max(...nums)}"` : ''}${nums.length && strs.length ? ' containsMixedTypes="1"' : ''}`;
+        cacheFields.push(`<cacheField name="${xe(H[j])}" numFmtId="0"><sharedItems${flags}${blank ? ' containsBlank="1"' : ''} count="${uniq.length}">${it.join('')}</sharedItems></cacheField>`);
+        items[j] = uniq; recFns.push((v) => `<x v="${pos.get(v === null ? '\u0000' : typeof v + ':' + v)}"/>`);
+        // ordre d'affichage comme dans Tableur Joe (alphabétique / chronologique)
+        items[j] = uniq.map((v, i) => ({ v, i })).sort((a, b) => { const ka = pivotKey(a.v, src.fmts[j], null).k, kb = pivotKey(b.v, src.fmts[j], null).k; return ka < kb ? -1 : ka > kb ? 1 : 0; }).map((o) => o.i);
+        items[j].vals = uniq;
+        continue;
+      }
+      const flags = `${!strs.length ? ' containsSemiMixedTypes="0" containsString="0"' : ''}${nums.length ? ` containsNumber="1"${nums.every(Number.isInteger) ? ' containsInteger="1"' : ''} minValue="${Math.min(...nums)}" maxValue="${Math.max(...nums)}"` : ''}${nums.length && strs.length ? ' containsMixedTypes="1"' : ''}${blank ? ' containsBlank="1"' : ''}`;
+      cacheFields.push(`<cacheField name="${xe(H[j])}" numFmtId="0"><sharedItems${flags}/></cacheField>`);
+      recFns.push((v) => (v === null ? '<m/>' : typeof v === 'number' ? (isDate(j) ? `<d v="${isoOf(v)}"/>` : `<n v="${v}"/>`) : typeof v === 'boolean' ? `<b v="${v ? 1 : 0}"/>` : `<s v="${xe(v)}"/>`));
+    }
+    extra.forEach((x, k) => { const gi = [`&lt;${isoOf(x.mn).slice(0, 10)}`, ...x.ys.map(String), `&gt;${isoOf(x.mx).slice(0, 10)}`]; x.index = nf + k; items[x.index] = gi.map((_, i) => i); cacheFields.push(`<cacheField name="Années" numFmtId="0" databaseField="0"><sharedItems/><fieldGroup base="${x.base}"><rangePr groupBy="years" startDate="${x.start}" endDate="${x.end}"/><groupItems count="${gi.length}">${gi.map((s) => `<s v="${s}"/>`).join('')}</groupItems></fieldGroup></cacheField>`); });
+    const cacheDef = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><pivotCacheDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId1" refreshOnLoad="1" refreshedBy="Tableur Joe" refreshedDate="${(Date.now() / 864e5 + 25569).toFixed(6)}" createdVersion="6" refreshedVersion="6" minRefreshableVersion="3" recordCount="${rows.length}"><cacheSource type="worksheet"><worksheetSource ref="${F.addr(def.r1, def.c1)}:${F.addr(src.r2, def.c2)}" sheet="${xe(S.name.slice(0, 31))}"/></cacheSource><cacheFields count="${cacheFields.length}">${cacheFields.join('')}</cacheFields></pivotCacheDefinition>`;
+    const records = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><pivotCacheRecords xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" count="${rows.length}">${rows.map((r) => `<r>${r.map((v, j) => recFns[j](v)).join('')}</r>`).join('')}</pivotCacheRecords>`;
+    // champs en lignes : années d'abord quand elles ont été ajoutées
+    const withYears = (list) => list.flatMap((j) => { const x = extra.find((e) => e.base === j); return x ? [x.index, j] : [j]; });
+    const R = withYears(rowF), Cc = colF >= 0 ? withYears([colF]) : [];
+    const tot = def.totals !== false;
+    const pf = []; for (let j = 0; j < cacheFields.length; j++) {
+      const ax = R.includes(j) ? 'axisRow' : Cc.includes(j) ? 'axisCol' : j === pageF ? 'axisPage' : null;
+      const isData = vals.some((v) => ix(v.f) === j);
+      let sort = ''; if (ax === 'axisRow' && def.sortBy === 'value' && R[0] === j) sort = ' sortType="descending"';
+      const its = ax && items[j] ? `<items count="${items[j].length + (tot ? 1 : 0)}">${items[j].map((i) => `<item x="${i}"/>`).join('')}${tot ? '<item t="default"/>' : ''}</items>` : '';
+      const scope = sort ? '<autoSortScope><pivotArea dataOnly="0" outline="0" fieldPosition="0"><references count="1"><reference field="4294967294" count="1" selected="0"><x v="0"/></reference></references></pivotArea></autoSortScope>' : '';
+      pf.push(`<pivotField${ax ? ` axis="${ax}"` : ''}${isData ? ' dataField="1"' : ''} compact="0" outline="0" showAll="0"${tot ? '' : ' defaultSubtotal="0"'}${sort}>${its}${scope}</pivotField>`);
+    }
+    const nRow = Math.max(1, R.length); const w = Math.max(...grid.map((r) => r.length)); const h = grid.length;
+    const page = pageF >= 0 ? (() => { const val = def.filter.v; const k = (items[pageF].vals || []).findIndex((v) => String(v ?? '') === val); return `<pageFields count="1"><pageField fld="${pageF}"${k >= 0 ? ` item="${k}"` : ''} hier="-1"/></pageFields>`; })() : '';
+    const top = pageF >= 0 ? 4 : 2; // ligne de départ (0 = ligne 1) ; le filtre se place au-dessus
+    const nfmt = (v) => (v.fn === 'count' ? 1 : v.fn === 'avg' ? 4 : 3);
+    const table = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><pivotTableDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" name="Tableau croisé ${n}" cacheId="${100 + n}" applyNumberFormats="0" applyBorderFormats="0" applyFontFormats="0" applyPatternFormats="0" applyAlignmentFormats="0" applyWidthHeightFormats="1" dataCaption="Valeurs" grandTotalCaption="Total général" updatedVersion="6" minRefreshableVersion="3" useAutoFormatting="1" itemPrintTitles="1" createdVersion="6" indent="0" compact="0" compactData="0" outline="0" outlineData="0" gridDropZones="1" multipleFieldFilters="0" rowGrandTotals="${tot ? 1 : 0}" colGrandTotals="${tot ? 1 : 0}"><location ref="${F.addr(top, 0)}:${F.addr(top + Math.max(2, h) - 1, Math.max(nRow, w) - 1)}" firstHeaderRow="1" firstDataRow="${Cc.length || vals.length > 1 ? 2 : 1}" firstDataCol="${R.length}"${pageF >= 0 ? ' rowPageCount="1" colPageCount="1"' : ''}/><pivotFields count="${pf.length}">${pf.join('')}</pivotFields>${R.length ? `<rowFields count="${R.length}">${R.map((j) => `<field x="${j}"/>`).join('')}</rowFields>` : ''}${Cc.length ? `<colFields count="${Cc.length}">${Cc.map((j) => `<field x="${j}"/>`).join('')}</colFields>` : vals.length > 1 ? '<colFields count="1"><field x="-2"/></colFields>' : ''}${page}<dataFields count="${vals.length}">${vals.map((v) => `<dataField name="${xe(`${AGG[v.fn]} de ${v.f}`)}" fld="${ix(v.f)}" subtotal="${FN_X[v.fn]}" baseField="0" baseItem="0" numFmtId="${nfmt(v)}"/>`).join('')}</dataFields><pivotTableStyleInfo name="PivotStyleLight16" showRowHeaders="1" showColHeaders="1" showRowStripes="0" showColStripes="0" showLastColumn="1"/></pivotTableDefinition>`;
+    return { cacheDef, records, table };
+  }
+  async function addPivots(buf) {
+    const list = T.wb.sheets.map((S, i) => ({ S, i })).filter((x) => x.S.pivot);
+    if (!list.length) return buf;
+    await loadScript('lib/jszip.min.js');
+    const zip = await window.JSZip.loadAsync(buf);
+    let ct = await zip.file('[Content_Types].xml').async('string'); let wbx = await zip.file('xl/workbook.xml').async('string'); let wbr = await zip.file('xl/_rels/workbook.xml.rels').async('string');
+    const caches = []; let n = 0;
+    for (const { S, i } of list) {
+      let parts; try { parts = pivotXml(S.pivot, i, n + 1, pivotGrid(S.pivot).grid); } catch (e) { console.warn('TCD non exporté', e); continue; }
+      n++;
+      zip.file(`xl/pivotCache/pivotCacheDefinition${n}.xml`, parts.cacheDef); zip.file(`xl/pivotCache/pivotCacheRecords${n}.xml`, parts.records);
+      zip.file(`xl/pivotCache/_rels/pivotCacheDefinition${n}.xml.rels`, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheRecords" Target="pivotCacheRecords${n}.xml"/></Relationships>`);
+      zip.file(`xl/pivotTables/pivotTable${n}.xml`, parts.table);
+      zip.file(`xl/pivotTables/_rels/pivotTable${n}.xml.rels`, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheDefinition" Target="../pivotCache/pivotCacheDefinition${n}.xml"/></Relationships>`);
+      const relP = `xl/worksheets/_rels/sheet${i + 1}.xml.rels`; const rel = `<Relationship Id="rIdPv${n}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotTable" Target="../pivotTables/pivotTable${n}.xml"/>`;
+      const old = zip.file(relP) ? await zip.file(relP).async('string') : '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
+      zip.file(relP, old.replace('</Relationships>', rel + '</Relationships>'));
+      ct = ct.replace('</Types>', `<Override PartName="/xl/pivotTables/pivotTable${n}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.pivotTable+xml"/><Override PartName="/xl/pivotCache/pivotCacheDefinition${n}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheDefinition+xml"/><Override PartName="/xl/pivotCache/pivotCacheRecords${n}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheRecords+xml"/></Types>`);
+      wbr = wbr.replace('</Relationships>', `<Relationship Id="rIdPc${n}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheDefinition" Target="pivotCache/pivotCacheDefinition${n}.xml"/></Relationships>`);
+      caches.push(`<pivotCache cacheId="${100 + n}" r:id="rIdPc${n}"/>`);
+    }
+    if (!n) return buf;
+    if (!/xmlns:r=/.test(wbx.slice(0, 1000))) wbx = wbx.replace(/<workbook\b/, '<workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"');
+    // ordre imposé par le schéma : … calcPr, oleSize, customWorkbookViews, pivotCaches, …
+    const after = ['</calcPr>', '<calcPr[^>]*/>', '</definedNames>', '</sheets>'].map((x) => new RegExp(x)).find((re) => re.test(wbx));
+    wbx = wbx.replace(after, (m) => m + `<pivotCaches>${caches.join('')}</pivotCaches>`);
+    zip.file('[Content_Types].xml', ct); zip.file('xl/workbook.xml', wbx); zip.file('xl/_rels/workbook.xml.rels', wbr);
+    return zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
+  }
   async function saveXlsx() {
     await loadScript('lib/exceljs.min.js');
     T.recalc();
@@ -850,7 +948,8 @@
         if (rule) { rule.priority = 1; try { ws.addConditionalFormatting({ ref, rules: [rule] }); } catch (e) { console.warn('règle ignorée', e); } }
       });
     });
-    const buf = await xw.xlsx.writeBuffer();
+    let buf = await xw.xlsx.writeBuffer();
+    try { buf = await addPivots(buf); } catch (e) { console.warn('tableaux croisés enregistrés en valeurs', e); }
     download(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), fileBase() + '.xlsx');
     if (T.wb.sheets.some((S) => S.charts.length)) toast('Enregistré. Les graphiques ne sont pas conservés dans le .xlsx : utilisez .joetab pour les garder.', 7000);
     else toast('Classeur enregistré en .xlsx');

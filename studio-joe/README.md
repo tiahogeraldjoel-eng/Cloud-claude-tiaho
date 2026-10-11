@@ -237,7 +237,8 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   rubriques en lignes, une en colonnes, plusieurs valeurs (somme, nombre, moyenne, min,
   max), regroupement des dates par mois, trimestre ou année, filtre, tri, sous-totaux
   et totaux ; résultat dans une nouvelle feuille, à actualiser après modification
-  des données (Données → Actualiser le tableau croisé)
+  des données (Données → Actualiser le tableau croisé). Dans le `.xlsx`, c'est un vrai
+  tableau croisé Excel, recalculé à l'ouverture et modifiable dans Excel
 - Graphiques liés aux données : colonnes, barres, courbes, aires, secteurs, anneau
 - Modèles : facture (TVA 18 %, montant en lettres), budget prévisionnel / réalisé,
   journal de caisse, tableau d'amortissement d'emprunt, suivi des dépenses
@@ -470,9 +471,8 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   L'ancien format `.ppt` doit d'abord être réenregistré en `.pptx`. Le mode présentateur
   sur deux écrans demande un ordinateur ; sur téléphone, les notes s'affichent sur le
   même écran.
-- Tableur Joe : le tableau croisé dynamique est enregistré dans le `.xlsx` comme un
-  tableau de valeurs (il ne s'actualise que dans Tableur Joe ou un `.joetab`). Pas de
-  macros ni de formules
+- Tableur Joe : dans LibreOffice, un tableau croisé regroupé par mois s'affiche date
+  par date (Excel, lui, garde le regroupement). Pas de macros ni de formules
   matricielles à résultat débordant (FILTRE, TRIER, UNIQUE). Les graphiques ne sont
   pas enregistrés dans le `.xlsx` (utiliser `.joetab` pour les garder), et
   `ENLETTRES` est enregistrée dans le `.xlsx` sous forme de texte, car Excel ne la
