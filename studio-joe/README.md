@@ -152,8 +152,14 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Sélection multiple, aligner et répartir, même taille, premier plan / arrière-plan,
   copier-coller (entre schémas aussi), annuler / rétablir, grille magnétique, zoom et
   déplacement (deux doigts sur téléphone)
-- Exporter en PNG, SVG (vectoriel) ou PDF, insérer dans Texte Joe ; « Mes schémas »
-  gardés sur l'appareil ; fichier `.joeschema` pour continuer ailleurs
+- Rotation des formes (poignée ↻ ou angle exact)
+- Exporter en PNG, SVG (vectoriel) ou PDF, insérer dans Texte Joe ; le PNG et le SVG
+  exportés se rouvrent comme schémas modifiables ; « Mes schémas » gardés sur
+  l'appareil ; fichier `.joeschema`
+- **Compatible draw.io** (diagrams.net) : ouvre les `.drawio`, `.drawio.svg` et
+  `.drawio.png`, compressés ou non, et exporte en `.drawio`
+- **Ouvre les fichiers Visio** `.vsdx` : formes (avec leurs modèles et styles),
+  textes, couleurs, groupes, rotation et connecteurs reliés
 
 ### Base Joe (équivalent Microsoft Access)
 - **Ouvre les fichiers Access** `.accdb` et `.mdb` (mot de passe accepté) : tables, types
@@ -418,10 +424,10 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
   l'appareil que dans le fichier que vous envoyez vous-même
 
 ## Limites connues
-- Diagrammes Joe : n'ouvre pas les fichiers Visio (`.vsdx`) ni draw.io ; le SVG exporté
-  est un dessin (il se rouvre dans un logiciel de dessin, pas comme schéma modifiable :
-  garder le `.joeschema`). Les formes ne pivotent pas. Sur téléphone, la double
-  pression pour écrire dans une forme peut être remplacée par le bouton « ✎ Texte ».
+- Diagrammes Joe : à l'ouverture d'un fichier Visio ou draw.io, les formes très
+  particulières (pochoirs spécialisés) deviennent des rectangles et seule la première
+  page est reprise ; l'enregistrement en `.vsdx` n'est pas possible (exporter en
+  `.drawio`, que Visio sait importer avec l'outil de diagrams.net, ou en PDF/SVG).
 - Agenda Joe : un navigateur ne peut pas réveiller le téléphone quand l'application est
   fermée ; pour des rappels garantis, exporter en `.ics` vers l'agenda du téléphone. Pas
   d'invitations par e-mail ni de partage d'agenda en ligne.
