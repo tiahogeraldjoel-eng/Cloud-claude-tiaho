@@ -43,7 +43,10 @@
 .doc-body span.cm{background:#fff1a8;border-bottom:2px solid #f2b705}
 .doc-body span.cm.on{background:#ffd54f}
 .doc-body span.cm.done{background:none;border-bottom:1px dashed #bbb}
-.doc-body.final del.rv{display:none}.doc-body.final ins.rv{color:inherit;text-decoration:none}`;
+.doc-body.final del.rv{display:none}.doc-body.final ins.rv{color:inherit;text-decoration:none}
+.doc-body span.rvf{border-bottom:2px dotted #7e57c2}.doc-body.final span.rvf{border-bottom:0}
+.doc-body .rvp::after{content:'¶';color:#1b5e20;text-decoration:underline;margin-left:2px}.doc-body .rvpd::after{content:'¶';color:#c62828;text-decoration:line-through;margin-left:2px}
+.doc-body.final .rvp::after,.doc-body.final .rvpd::after{content:none}`;
   const st = document.createElement('style'); st.textContent = DOC_CSS; document.head.appendChild(st);
 
   /* ================= Modèle ================= */
@@ -82,10 +85,10 @@
         if ((tag === 'TD' || tag === 'TH') && n.getAttribute('colspan')) e.setAttribute('colspan', n.getAttribute('colspan'));
         if ((tag === 'TD' || tag === 'TH') && n.getAttribute('rowspan')) e.setAttribute('rowspan', n.getAttribute('rowspan'));
         if (tag === 'OL' && n.getAttribute('start')) e.setAttribute('start', n.getAttribute('start'));
-        if (keepClasses && n.className && typeof n.className === 'string') { const cls = n.className.split(/\s+/).filter((c) => /^(doc-title|doc-subtitle|pb|rv|cm|done|toc|toc-t|toc-l|l[123]|mf|tab|fl|fr|ctr|hdr|nb|al-(center|right|justify))$/.test(c)); if (cls.length) e.className = cls.join(' '); }
+        if (keepClasses && n.className && typeof n.className === 'string') { const cls = n.className.split(/\s+/).filter((c) => /^(doc-title|doc-subtitle|pb|rv|rvf|rvp|rvpd|cm|done|toc|toc-t|toc-l|l[123]|mf|tab|fl|fr|ctr|hdr|nb|al-(center|right|justify))$/.test(c)); if (cls.length) e.className = cls.join(' '); }
         if (n.classList && n.classList.contains('mf')) { e.setAttribute('contenteditable', 'false'); e.dataset.f = n.dataset.f || n.textContent.replace(/[«»]/g, ''); }
         if (n.classList && n.classList.contains('toc')) e.setAttribute('contenteditable', 'false');
-        if (keepClasses && n.dataset && /^(INS|DEL|SPAN)$/.test(tag)) for (const k of ['cid', 'a', 't']) if (n.dataset[k]) e.dataset[k] = n.dataset[k];
+        if (keepClasses && n.dataset && (/^(INS|DEL|SPAN)$/.test(tag) || /\brvpd?\b/.test(n.className || ''))) for (const k of ['cid', 'a', 't', 'f', 'old']) if (n.dataset[k]) e.dataset[k] = n.dataset[k];
         const stl = n.getAttribute('style');
         if (stl) { const tmp = document.createElement('span'); tmp.setAttribute('style', stl); for (const p of KEEP) { let v = tmp.style.getPropertyValue(p); if (!v) continue; if (p === 'font-family') v = v.split(',').slice(0, 3).join(','); if ((p === 'margin-top' || p === 'margin-bottom') && !/^(P|H\d|LI|DIV)$/.test(tag)) continue; if (p === 'width' && !/^(IMG|TD|TH|COL|TABLE)$/.test(tag)) continue; e.style.setProperty(p, v); } }
         if (n.getAttribute('align') && /^(left|center|right|justify)$/i.test(n.getAttribute('align'))) e.style.textAlign = n.getAttribute('align').toLowerCase();
@@ -272,7 +275,8 @@
     if (savedRange && body.contains(savedRange.startContainer)) { s.removeAllRanges(); s.addRange(savedRange); return true; }
     const r = document.createRange(); r.selectNodeContents(body); r.collapse(false); s.removeAllRanges(); s.addRange(r); return true;
   }
-  function exec(cmd, val = null, css = true) { focusBody(); document.execCommand('styleWithCSS', false, css); document.execCommand(cmd, false, val); afterContentChange(); scheduleSnap(); updateTools(); }
+  let fmtHook = null; // suivi des modifications (doc-review.js) : mise en forme et saisie marquées
+  function exec(cmd, val = null, css = true) { focusBody(); if (fmtHook && fmtHook(cmd, val)) { afterContentChange(); updateTools(); return; } document.execCommand('styleWithCSS', false, css); document.execCommand(cmd, false, val); afterContentChange(); scheduleSnap(); updateTools(); }
   function selectedBlocks() {
     focusBody(); const s = getSelection(); if (!s.rangeCount) return [];
     const r = s.getRangeAt(0); const blocks = [];
@@ -302,6 +306,7 @@
       change(() => selectedBlocks().forEach((b) => { b.style.fontSize = pt + 'pt'; b.querySelectorAll('[style*="font-size"]').forEach((n) => { n.style.fontSize = ''; }); }));
       return;
     }
+    if (fmtHook && fmtHook('fontSizePt', pt)) { afterContentChange(); return; }
     change(() => {
       document.execCommand('styleWithCSS', false, false); document.execCommand('fontSize', false, '7');
       body.querySelectorAll('font[size="7"]').forEach((f) => { const sp = document.createElement('span'); sp.style.fontSize = pt + 'pt'; sp.append(...f.childNodes); f.replaceWith(sp); });
@@ -315,7 +320,7 @@
     const out = mode === 'upper' ? t.toLocaleUpperCase('fr') : mode === 'lower' ? t.toLocaleLowerCase('fr') : t.toLocaleLowerCase('fr').replace(/(^|[\s'’(\-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('fr'));
     exec('insertText', out);
   }
-  function clearFormat() { change(() => { focusBody(); document.execCommand('removeFormat'); document.execCommand('formatBlock', false, 'p'); selectedBlocks().forEach((b) => { b.removeAttribute('style'); b.removeAttribute('class'); }); }); }
+  function clearFormat() { focusBody(); if (fmtHook && fmtHook('removeFormat')) { afterContentChange(); return; } change(() => { focusBody(); document.execCommand('removeFormat'); document.execCommand('formatBlock', false, 'p'); selectedBlocks().forEach((b) => { b.removeAttribute('style'); b.removeAttribute('class'); }); }); }
   function list(type) { exec(type === 'ul' ? 'insertUnorderedList' : 'insertOrderedList'); }
   function indent(d) {
     focusBody(); const inList = selectedBlocks().some((b) => b.tagName === 'LI');
@@ -601,7 +606,7 @@
   /* ================= API pour doc-extra.js ================= */
   window.TexteJoe = {
     get doc() { return doc; }, set doc(v) { doc = v; }, body, dims, MM, GAP, SIZES, DOC_CSS, esc, uid, sanitize, getHTML, setHTML, loadDoc, newDocModel, change, exec, focusBody,
-    selectedBlocks, paginate, clearPushes, hfText, renderSheets, idb, autosave, markDirty, act, actions, showCtx, updateToc, countWords, afterContentChange, get pageCount() { return pageCount; }, get view() { return view; }, setView,
+    selectedBlocks, paginate, clearPushes, hfText, renderSheets, idb, autosave, markDirty, act, actions, showCtx, updateToc, countWords, afterContentChange, set fmtHook(f) { fmtHook = f; }, get pageCount() { return pageCount; }, get view() { return view; }, setView,
     get savedRange() { return savedRange; }, set savedRange(r) { savedRange = r; }, snapshot, markSaved: () => { dirty = false; $('#stSave').textContent = 'Enregistré'; },
   };
 

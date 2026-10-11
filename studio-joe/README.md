@@ -209,8 +209,10 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Dictée au micro, lecture à voix haute ; IA Claude (en ligne) : corriger, reformuler
   (officiel, simple), raccourcir, résumer, rédiger à partir d'une consigne, traduire
 - **Révision** comme dans Word : commentaires (réponses, « résolu »), suivi des
-  modifications (ajouts soulignés en vert, suppressions barrées en rouge, avec auteur
-  et date), accepter ou refuser une modification ou toutes, volet Révision, affichage
+  modifications (ajouts soulignés en vert, suppressions barrées en rouge, mise en
+  forme — gras, couleur, police, taille… — soulignée en violet, paragraphes ajoutés
+  ou réunis marqués ¶, avec auteur et date, y compris avec les claviers de téléphone
+  qui proposent et corrigent les mots), accepter ou refuser une modification ou toutes, volet Révision, affichage
   du texte final. Commentaires et modifications suivies sont enregistrés dans le
   `.docx` et relus à l'ouverture d'un `.docx` venant de Word
 
@@ -456,10 +458,9 @@ Une fois installée, l'application s'ouvre en plein écran et fonctionne sans co
 - Scan Joe : la détection des bords demande un document clair sur un fond plus
   sombre ; sinon, ajuster les coins à la main. L'OCR ne lit pas l'écriture manuscrite
   (utiliser PDF Joe → OCR → Écriture manuscrite, en ligne).
-- Texte Joe : pas de notes de bas de page. Le suivi des modifications marque les
-  ajouts et suppressions de texte, pas les changements de mise en forme ni les
-  paragraphes ajoutés ou fusionnés ; avec certains claviers de téléphone, vérifier
-  que la saisie est bien marquée. Les réponses aux commentaires sont enregistrées dans
+- Texte Joe : pas de notes de bas de page. Le suivi des modifications ne marque pas
+  les changements de style de paragraphe (titre, alignement, retraits) ni les
+  tableaux et images ajoutés ou supprimés. Les réponses aux commentaires sont enregistrées dans
   le `.docx` à l'intérieur du commentaire. À l'ouverture d'un `.docx`, les couleurs et polices particulières peuvent être
   simplifiées. Un tableau plus haut qu'une page n'est pas coupé entre deux pages à
   l'écran : utiliser l'impression, qui le coupe. L'ancien format `.doc` doit d'abord
