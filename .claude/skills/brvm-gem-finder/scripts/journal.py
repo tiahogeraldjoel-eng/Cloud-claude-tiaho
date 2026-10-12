@@ -27,6 +27,14 @@ HORIZON_CALIBRATION = "1 mois"
 MIN_CALIBRATION = 10      # prédictions mûres nécessaires avant d'afficher un taux de réussite
 COLS = ["date", "ticker", "verdict", "rang", "score", "cours", "composite", "objectif",
         "seuil_sortie", "rendement_pct", "source"]
+# Fractionnements d'actions : (date de la première séance au nouveau cours, nombre d'actions
+# nouvelles pour une ancienne). Sans cet ajustement, la division du cours ferait apparaître
+# une chute fictive d'environ -90 % dans l'évaluation.
+SPLITS = {
+    "SNTS": [("2026-10-26", 10)],   # Sonatel : 10 pour 1, avis BRVM 304-2026
+}
+SAUT_SUSPECT = 0.5   # variation d'une séance à l'autre > 50 % : impossible sous le plafond de ±7,5 %
+
 FAMILLES = {"PÉPITE (ACHAT PRÉCOCE)": "PÉPITE", "PÉPITE SPÉCULATIVE (position réduite)": "PÉPITE SPÉCULATIVE",
             "ACHAT": "ACHAT", "PANIER": "PANIER"}
 
@@ -47,13 +55,37 @@ def load_series(boc_dir: str) -> tuple:
     return sorted(prices), prices, composite
 
 
+def split_factor(ticker: str, d0: str, d1: str) -> float:
+    """Nombre d'actions détenues en d1 pour une action détenue en d0 (fractionnements entre les deux)."""
+    f = 1.0
+    for date, ratio in SPLITS.get(ticker, []):
+        if d0 < date <= d1:
+            f *= ratio
+    return f
+
+
 def total_return(prices: dict, d0: str, d1: str, ticker: str) -> Optional[float]:
-    """Performance en % entre deux séances, dividende détaché entre les deux inclus."""
+    """Performance en % entre deux séances, dividende détaché entre les deux et fractionnements inclus."""
     a, b = prices[d0].get(ticker), prices[d1].get(ticker)
     if not a or not b or not a[0] or not b[0]:
         return None
-    div = b[1] if b[2] and d0 < b[2] <= d1 and b[1] else 0.0
-    return ((b[0] + div) / a[0] - 1) * 100
+    # Un dividende détaché après un fractionnement est versé par action nouvelle.
+    div = b[1] * split_factor(ticker, d0, b[2]) if b[2] and d0 < b[2] <= d1 and b[1] else 0.0
+    return ((b[0] * split_factor(ticker, d0, d1) + div) / a[0] - 1) * 100
+
+
+def detect_jumps(dates: list, prices: dict) -> list:
+    """Variations d'une séance à l'autre impossibles en cotation normale et non expliquées par
+    SPLITS : probable fractionnement ou regroupement à déclarer dans SPLITS."""
+    out = []
+    for d0, d1 in zip(dates, dates[1:]):
+        for t, a in prices[d0].items():
+            b = prices[d1].get(t)
+            if a and b and a[0] and b[0]:
+                r = b[0] * split_factor(t, d0, d1) / a[0]
+                if abs(r - 1) > SAUT_SUSPECT:
+                    out.append((d1, t, a[0], b[0]))
+    return out
 
 
 def read(path: str) -> list:
@@ -134,6 +166,9 @@ def main() -> None:
     args = p.parse_args()
 
     dates, prices, composite = load_series(args.boc_dir)
+    for d, t, p0, p1 in detect_jumps(dates, prices):
+        print(f"⚠ {t} : {p0:,.0f} -> {p1:,.0f} FCFA le {d}, saut non expliqué ; "
+              "déclarer le fractionnement dans SPLITS (journal.py) avant de se fier au bilan")
     ev = evaluate(read(args.journal), dates, prices, composite)
     print(bilan(ev))
     if args.detail:
