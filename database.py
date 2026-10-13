@@ -347,6 +347,13 @@ def init_db() -> None:
     except Exception:
         pass
 
+    # ── Migration 10 : nombre d'actions en circulation ────────────────────────
+    try:
+        c.execute("ALTER TABLE fundamentals ADD COLUMN shares_outstanding REAL")
+        conn.commit()
+    except Exception:
+        pass
+
     conn.commit()
 
     # ── Seed stocks (INSERT OR IGNORE — ne touche pas aux lignes existantes) ─
@@ -540,15 +547,15 @@ def upsert_fundamental(data: Dict) -> None:
     data["last_updated"] = datetime.utcnow().isoformat()
     # S'assurer que les clés manquantes sont présentes (None par défaut)
     for col in ("per","dividend_yield","dividend_per_share","book_value","revenue","net_income",
-                "eps","div_status","div_payment_date","div_exercice_year"):
+                "eps","div_status","div_payment_date","div_exercice_year","shares_outstanding"):
         data.setdefault(col, None)
     conn.execute("""
         INSERT INTO fundamentals
             (symbol,per,dividend_yield,dividend_per_share,book_value,revenue,net_income,eps,
-             div_status,div_payment_date,div_exercice_year,last_updated)
+             div_status,div_payment_date,div_exercice_year,shares_outstanding,last_updated)
         VALUES
             (:symbol,:per,:dividend_yield,:dividend_per_share,:book_value,:revenue,:net_income,:eps,
-             :div_status,:div_payment_date,:div_exercice_year,:last_updated)
+             :div_status,:div_payment_date,:div_exercice_year,:shares_outstanding,:last_updated)
         ON CONFLICT(symbol) DO UPDATE SET
             per=COALESCE(excluded.per, per),
             -- ── Protection données sikafinance (exercice 2025) ─────────────────
@@ -585,6 +592,7 @@ def upsert_fundamental(data: Dict) -> None:
             revenue=COALESCE(excluded.revenue, revenue),
             net_income=COALESCE(excluded.net_income, net_income),
             eps=COALESCE(excluded.eps, eps),
+            shares_outstanding=COALESCE(excluded.shares_outstanding, shares_outstanding),
             last_updated=excluded.last_updated
     """, data)
     conn.commit()
