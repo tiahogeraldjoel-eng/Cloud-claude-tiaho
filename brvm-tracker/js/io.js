@@ -170,6 +170,10 @@
       }
     }
     if (chars < 20) throw new Error('Ce PDF ne contient pas de texte (document scanné ou photo). Exportez le relevé en Excel/CSV depuis l\'espace client de votre SGI, ou passez-le d\'abord dans un outil de reconnaissance de texte (OCR).');
+    if (/etat\s+de\s+portefeuille|portefeuille\s+titres\s+valoris/i.test(norm(lines.map((l) => l.cells.map((c) => c.t).join(' ')).join(' ')))) {
+      const snap = BT.parseSnapshot(lines);
+      if (snap.positions.length) return snap;
+    }
     const plain = lines.map((l) => l.cells.map((c) => c.t));
     const hi = BT.findHeader(plain);
     const header = lines[hi].cells;
@@ -204,6 +208,94 @@
       }
       out.push(row);
       prevLine = l;
+    }
+    return out;
+  };
+
+  /* ---------- État de portefeuille d'une SGI (positions valorisées à une date) ----------
+     Ligne type : « SONATEL SENEGAL - SNTS | 100 | 30 108 | 3 010 777 | 45 000 | 4 500 000 | 1 489 223 »
+     (désignation, quantité, coût moyen, coût global, cours, valeur, +/- value) ; la désignation peut
+     déborder sur la ligne suivante (« BANK OF AFRICA BURKINA FASO - » puis « BOABF »). */
+  const numVal = (t) => (String(t).trim() === '-' ? 0 : BT.parseNum(t));
+  const isNumOrDash = (t) => String(t).trim() === '-' || isNumCell(t);
+  const tickerIn = (txt) => { const m = String(txt).match(/-\s*([A-Z][A-Z0-9]{2,6})\s*$/); return m ? BT.normTicker(m[1]) : ''; };
+
+  BT.parseSnapshot = function (lines) {
+    const all = lines.map((l) => l.cells.map((c) => c.t).join('  '));
+    const full = all.join('\n');
+    const dm = full.match(/(?:portefeuille|valoris[ée]+)\s+au\s*:?\s*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})/i) || full.match(/au\s*:?\s*(\d{1,2}[/.-]\d{1,2}[/.-]\d{4})/i);
+    const date = dm ? BT.parseDate(dm[1]) : BT.today();
+    const sgiM = full.match(/(Coris Bourse|SGI\s+[A-Z][\w-]*(?:\s+[A-Z][\w-]*)?|[A-Z][\w-]+\s+(?:Bourse|Capital|Securities|Finance)\b)/);
+    const stocks = BT.stocks();
+    const positions = [];
+    const used = new Set();
+    for (let i = 0; i < lines.length; i++) {
+      const cells = lines[i].cells.map((c) => c.t);
+      if (cells.length < 7) continue;
+      const nums = cells.slice(-6);
+      if (!nums.every(isNumOrDash)) continue;
+      const label = cells.slice(0, -6).join(' ').trim();
+      if (!label || /^total/i.test(norm(label))) continue;
+      const [qty, avg, cost, price, value, pv] = nums.map(numVal);
+      if (!(qty > 0)) continue;
+      let name = label, t = tickerIn(label);
+      // désignation sur deux lignes : la suite (texte seul) est juste dessous, ou parfois juste au-dessus
+      const textOnly = (j) => j >= 0 && j < lines.length && !used.has(j) && lines[j].cells.length <= 2 && !lines[j].cells.some((c) => isNumOrDash(c.t)) && !/^(total|actions|obligations|droits)/i.test(norm(lines[j].cells[0].t));
+      if (!t && textOnly(i + 1)) { const nx = lines[i + 1].cells.map((c) => c.t).join(' '); if (tickerIn(label + ' ' + nx) || /^[A-Z0-9]{3,6}$/.test(nx.trim())) { name = label + ' ' + nx; used.add(i + 1); t = tickerIn(name) || BT.normTicker(nx.trim()); } }
+      if (!t && textOnly(i - 1)) { const pv2 = lines[i - 1].cells.map((c) => c.t).join(' '); if (tickerIn(pv2 + ' ' + label)) { name = pv2 + ' ' + label; used.add(i - 1); t = tickerIn(name); } }
+      if (!t) t = findTicker(name, stocks);
+      name = name.replace(/\s*-\s*[A-Z][A-Z0-9]{2,6}\s*$/, '').replace(/\s*-\s*$/, '').trim();
+      positions.push({ t, name, qty, avg, cost: cost || avg * qty, price: price || (value && qty ? value / qty : 0), value, pv, known: stocks.some((s) => s.t === t) });
+    }
+    const cashLine = all.find((l) => /tr[ée]sorerie\s+disponible/i.test(l)) || all.find((l) => /total\s+tr[ée]sorerie|esp[èe]ces/i.test(l)) || '';
+    const cashNums = cashLine.split(/ {2,}/).filter(isNumOrDash);
+    const totLine = all.find((l) => /total\s+portefeuille\s*:/i.test(l)) || '';
+    const totNums = totLine.split(/ {2,}/).filter(isNumOrDash);
+    return {
+      kind: 'snapshot', date, sgi: sgiM ? sgiM[1].trim() : '', positions,
+      cash: cashNums.length ? numVal(cashNums[cashNums.length - 1]) : 0,
+      total: totNums.length ? numVal(totNums[totNums.length - 1]) : null,
+    };
+  };
+
+  // Opérations à créer pour que le portefeuille corresponde à l'état de la SGI
+  BT.snapshotTx = function (snap, pid, entryDate) {
+    const st = BT.state;
+    const own = st.transactions.filter((t) => t.pid === pid).sort((a, b) => a.date.localeCompare(b.date) || (a.seq || 0) - (b.seq || 0));
+    const r = BT.replay(own, snap.date);
+    const fresh = !own.length;
+    const date = fresh ? (entryDate || snap.date) : snap.date;
+    const out = [];
+    const mk = (o) => out.push(Object.assign({ id: BT.uid(), pid, date, ticker: '', qty: '', price: '', fees: '', amount: '', note: '' }, o));
+    const src = `état de portefeuille ${snap.sgi || 'SGI'} du ${BT.dateLong(snap.date)}`;
+    let cash = r.cash;
+    for (const p of snap.positions) {
+      const cur = r.pos[p.t] || { qty: 0, cost: 0 };
+      const dq = p.qty - cur.qty;
+      if (dq > 0) {
+        const unit = p.cost - cur.cost > 0 ? (p.cost - cur.cost) / dq : p.avg || p.price;
+        const price = Math.round(unit * 10000) / 10000;
+        mk({ type: 'achat', ticker: p.t, qty: dq, price, fees: 0, note: (fresh ? 'Position reprise — ' : 'Rapprochement — ') + src });
+        cash -= dq * price;
+      } else if (dq < 0) {
+        mk({ type: 'vente', ticker: p.t, qty: -dq, price: p.price, fees: 0, note: 'Rapprochement (titres sortis) — ' + src });
+        cash += -dq * p.price;
+      }
+    }
+    for (const [t, cur] of Object.entries(r.pos)) {
+      if (cur.qty > 0 && !snap.positions.some((p) => p.t === t)) {
+        const s = BT.stock(t);
+        const px = snap.prices && snap.prices[t] || (s ? s.price : cur.pru);
+        mk({ type: 'vente', ticker: t, qty: cur.qty, price: px, fees: 0, note: 'Rapprochement (absent de l\'état SGI) — ' + src });
+        cash += cur.qty * px;
+      }
+    }
+    const diff = Math.round(snap.cash - cash);
+    if (fresh) {
+      const need = Math.round(snap.cash - cash); // apport qui finance les positions et la trésorerie
+      if (need > 0) out.unshift({ id: BT.uid(), pid, date, type: 'depot', ticker: '', qty: '', price: '', fees: '', amount: need, note: 'Apports reconstitués — ' + src });
+    } else if (Math.abs(diff) >= 1) {
+      mk({ type: diff > 0 ? 'depot' : 'retrait', amount: Math.abs(diff), note: 'Ajustement de trésorerie (dividendes, frais ou versements non saisis) — ' + src });
     }
     return out;
   };

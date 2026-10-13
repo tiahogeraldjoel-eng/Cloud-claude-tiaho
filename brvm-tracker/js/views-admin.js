@@ -50,10 +50,17 @@
     BT.$('#x-xlsx').onclick = () => BT.exportExcel(st.currentPid);
     BT.$('#x-csv').onclick = () => BT.download(`brvm-operations-${BT.today()}.csv`, BT.toCSV(BT.txRows(BT.txFor(st.currentPid))), 'text/csv');
     BT.$('#x-json').onclick = backup;
-    if (imp) renderMapping();
+    if (imp) (imp.snap ? renderSnapshot : renderMapping)();
   };
 
   function start(rows, pid) {
+    if (rows && rows.kind === 'snapshot') {
+      const st = BT.state;
+      const empty = (id) => !st.transactions.some((t) => t.pid === id);
+      const same = st.portfolios.find((p) => p.sgi && rows.sgi && p.sgi.toLowerCase() === rows.sgi.toLowerCase());
+      imp = { snap: rows, pid: same ? same.id : empty(pid) ? pid : '__new', entry: rows.date, savePrices: true };
+      return renderSnapshot();
+    }
     if (!rows.length) return BT.toast('Fichier vide ou illisible.', 'err');
     const h = BT.findHeader(rows);
     imp = { rows, start: h + 1, header: rows[h].map((c, i) => String(c || '').trim() || 'Colonne ' + (i + 1)), map: BT.guessMapping(rows[h]), pid };
@@ -113,6 +120,75 @@
       BT.save(); imp = null;
       BT.toast(`${list.length} opération(s) importée(s).`, 'ok');
       location.hash = '#/operations';
+    };
+  }
+
+  /* ---------- Import d'un état de portefeuille (positions valorisées) ---------- */
+  function renderSnapshot() {
+    const host = BT.$('#imp-step');
+    if (!host || !imp) return;
+    const st = BT.state;
+    const { snap } = imp;
+    const isNew = imp.pid === '__new';
+    const fresh = isNew || !st.transactions.some((t) => t.pid === imp.pid);
+    const txs = isNew ? BT.snapshotTx(snap, '__tmp', imp.entry) : BT.snapshotTx(snap, imp.pid, imp.entry);
+    const sumV = snap.positions.reduce((a, p) => a + p.value, 0);
+    const sumC = snap.positions.reduce((a, p) => a + p.cost, 0);
+    const sumPV = snap.positions.reduce((a, p) => a + p.pv, 0);
+    const okTotal = snap.total == null || Math.abs(sumV + snap.cash - snap.total) < 2;
+    const unknown = snap.positions.filter((p) => !p.t || !BT.stock(p.t));
+    host.innerHTML = `
+      <h3>État de portefeuille ${e(snap.sgi || 'SGI')} au ${BT.dateLong(snap.date)}</h3>
+      <p class="small ${okTotal ? 'pos' : 'warn'}">${okTotal ? '✓' : '⚠'} ${snap.positions.length} ligne(s) lue(s) · actions ${BT.fmt(sumV)} F + trésorerie ${BT.fmt(snap.cash)} F = ${BT.fmt(sumV + snap.cash)} F${snap.total != null ? (okTotal ? ' — conforme au total du relevé' : ` — le relevé indique ${BT.fmt(snap.total)} F : vérifiez les lignes`) : ''}</p>
+      <div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>Titre</th><th>Désignation SGI</th><th class="num">Qté</th><th class="num">Coût moyen</th><th class="num">Coût global</th><th class="num">Cours</th><th class="num">Valeur</th><th class="num">+/- value</th></tr></thead>
+      <tbody>${snap.positions.map((p, i) => `<tr><td>${BT.stock(p.t) ? `<b>${p.t}</b>` : `<select data-sn="${i}"><option value="">? (nouveau titre ${e(p.t || '')})</option>${BT.stocks().map((x) => `<option>${x.t}</option>`).join('')}</select>`}</td><td class="small">${e(p.name)}</td><td class="num">${BT.fmt(p.qty)}</td><td class="num">${BT.fmt(p.avg)}</td><td class="num">${BT.fmt(p.cost)}</td><td class="num">${BT.fmt(p.price)}</td><td class="num">${BT.fmt(p.value)}</td><td class="num ${BT.cls(p.pv)}">${BT.signed(p.pv).replace(' F', '')}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="4">Total actions</td><td class="num">${BT.fmt(sumC)}</td><td></td><td class="num">${BT.fmt(sumV)}</td><td class="num ${BT.cls(sumPV)}">${BT.signed(sumPV).replace(' F', '')}</td></tr></tfoot></table></div>
+      ${unknown.length ? `<p class="small warn">⚠ ${unknown.length} titre(s) absent(s) de la liste BRVM de l'application : ils seront ajoutés automatiquement (ou choisissez le bon code ci-dessus).</p>` : ''}
+      <div class="grid-map">
+        <label>Portefeuille de destination<select id="sn-pf"><option value="__new" ${isNew ? 'selected' : ''}>+ Nouveau portefeuille « ${e(snap.sgi || 'SGI')} »</option>${BT.pfOptions(isNew ? '' : imp.pid)}</select></label>
+        ${fresh ? `<label>Date d'entrée des positions<input type="date" id="sn-date" value="${imp.entry}" max="${snap.date}"></label>` : ''}
+        <label class="check"><input type="checkbox" id="sn-px" ${imp.savePrices ? 'checked' : ''}> Enregistrer les cours du ${BT.dateLong(snap.date)}</label>
+      </div>
+      <p class="small muted">${fresh
+        ? `Les positions sont reprises au <b>coût moyen de la SGI</b> (frais inclus) : la plus-value affichée sera identique à celle du relevé. L'apport reconstitué correspond au coût des titres + la trésorerie. Indiquez une date d'entrée proche de vos premiers achats pour un rendement annualisé réaliste ; vos prochains relevés serviront à mettre le portefeuille à jour.`
+        : `Rapprochement avec le portefeuille existant : seules les différences avec l'état de la SGI sont enregistrées (titres achetés ou vendus depuis, trésorerie).`}</p>
+      <h3>Opérations qui seront enregistrées (${txs.length})</h3>
+      ${txs.length ? `<div class="tbl-wrap imp-list"><table class="tbl compact"><thead><tr><th>Date</th><th>Type</th><th>Titre</th><th class="num">Qté</th><th class="num">Prix</th><th class="num">Trésorerie</th><th>Note</th></tr></thead><tbody>${txs.map((t) => `<tr><td class="nowrap">${BT.dateLong(t.date)}</td><td><span class="tag t-${t.type}">${BT.TX_TYPES[t.type].label.split(' /')[0]}</span></td><td><b>${t.ticker}</b></td><td class="num">${t.qty ? BT.fmt(t.qty) : ''}</td><td class="num">${t.price ? BT.fmt(t.price, 2) : ''}</td><td class="num ${BT.cls(BT.txCash(t))}">${BT.signed(BT.txCash(t))}</td><td class="small note">${e(t.note)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="pos">✓ Le portefeuille correspond déjà à cet état : aucune opération à ajouter.</p>'}
+      <div class="row-end"><button class="btn" id="imp-cancel">Annuler</button><button class="btn primary" id="sn-go">${txs.length ? 'Importer l\'état de portefeuille' : 'Enregistrer les cours seulement'}</button></div>`;
+    BT.$('#sn-pf').onchange = (ev) => { imp.pid = ev.target.value; renderSnapshot(); };
+    if (BT.$('#sn-date')) BT.$('#sn-date').onchange = (ev) => { imp.entry = ev.target.value || snap.date; renderSnapshot(); };
+    BT.$('#sn-px').onchange = (ev) => { imp.savePrices = ev.target.checked; };
+    BT.$$('[data-sn]', host).forEach((sel) => sel.onchange = () => { const p = snap.positions[+sel.dataset.sn]; if (sel.value) { p.t = sel.value; renderSnapshot(); } });
+    BT.$('#imp-cancel').onclick = () => { imp = null; BT.render(); };
+    BT.$('#sn-go').onclick = () => {
+      let pid = imp.pid;
+      if (pid === '__new') {
+        pid = BT.uid();
+        st.portfolios.push({ id: pid, name: snap.sgi || 'Portefeuille SGI', parentId: null, sgi: snap.sgi || '', feeRate: 1.2, createdAt: BT.today() });
+      }
+      const pf = st.portfolios.find((p) => p.id === pid);
+      if (pf && !pf.sgi && snap.sgi) pf.sgi = snap.sgi;
+      // titres inconnus de l'application : ajoutés au référentiel
+      for (const p of snap.positions) {
+        if (!p.t) p.t = (p.name.replace(/[^A-Z]/gi, '').slice(0, 4) || 'XXXX').toUpperCase();
+        if (!BT.stock(p.t)) st.customStocks.push({ t: p.t, n: p.name, s: 'Autre', c: 'CI', p: p.price, d: 0 });
+      }
+      const list = BT.snapshotTx(snap, pid, imp.entry);
+      let seq = Date.now();
+      for (const t of list) { t.pid = pid; t.seq = seq++; st.transactions.push(t); }
+      if (imp.savePrices) {
+        const end = new Date(snap.date + 'T23:59:59Z').getTime();
+        for (const p of snap.positions) {
+          if (!(p.price > 0)) continue;
+          const cur = st.prices[p.t];
+          if (!cur || !cur.ts || cur.ts <= end) BT.recordPrice(p.t, p.price, { source: 'SGI', date: snap.date, ts: end, prev: null, change: 0 });
+          else (st.history[p.t] = st.history[p.t] || {})[snap.date] = p.price;
+        }
+      }
+      st.currentPid = pid;
+      BT.save(); imp = null;
+      BT.toast(list.length ? `État de portefeuille importé : ${list.length} opération(s).` : 'Cours du relevé enregistrés.', 'ok', 6000);
+      location.hash = '#/';
     };
   }
 
