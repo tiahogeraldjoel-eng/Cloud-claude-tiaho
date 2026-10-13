@@ -11,9 +11,9 @@
     root.innerHTML = `
       <div class="page-head"><h1>Import / Export</h1></div>
       <section class="grid-main">
-        <div class="card span2"><h2>1. Importer un relevé (SGI, Excel, CSV)</h2>
-          <p class="small muted">Exportez le relevé de compte titres ou l'historique des opérations depuis l'espace client de votre SGI (Excel .xlsx ou .csv), puis déposez-le ici. Vous pouvez aussi coller un tableau copié depuis Excel ou une page web. Rien n'est envoyé sur internet.</p>
-          <div class="drop" id="drop"><input type="file" id="file" accept=".csv,.xlsx,.xlsm,.txt,.tsv"><p><b>Déposez un fichier</b> ou cliquez pour choisir</p><small class="muted">.xlsx · .csv · .txt</small></div>
+        <div class="card span2"><h2>1. Importer un relevé (SGI : PDF, Excel, CSV)</h2>
+          <p class="small muted">Exportez le relevé de compte titres ou l'historique des opérations depuis l'espace client de votre SGI (PDF, Excel .xlsx ou .csv), puis déposez-le ici. Vous pouvez aussi coller un tableau copié depuis Excel ou une page web. Rien n'est envoyé sur internet.</p>
+          <div class="drop" id="drop"><input type="file" id="file" accept=".pdf,.csv,.xlsx,.xlsm,.txt,.tsv,application/pdf"><p><b>Déposez un fichier</b> ou cliquez pour choisir</p><small class="muted">.pdf · .xlsx · .csv · .txt</small></div>
           <details><summary>… ou coller un tableau</summary><textarea id="paste" rows="6" placeholder="Date;Opération;Titre;Quantité;Cours;Montant"></textarea><button class="btn" id="paste-go">Analyser</button></details>
           <p class="small"><button class="link" id="tpl">Télécharger le modèle CSV</button> — colonnes : Date, Type, Titre, Quantité, Cours, Frais, Montant, Note.</p>
           <div id="imp-step"></div>
@@ -31,9 +31,10 @@
       </section>`;
     const file = BT.$('#file'), drop = BT.$('#drop');
     const handle = async (f) => {
-      try { start(await BT.readFile(f), pid); } catch (err) { BT.toast(err.message, 'err', 7000); }
+      if (/\.pdf$/i.test(f.name)) BT.toast('Lecture du relevé PDF…');
+      try { start(await BT.readFile(f), pid); } catch (err) { BT.toast(err.message, 'err', 9000); }
     };
-    file.onchange = () => file.files[0] && handle(file.files[0]);
+    file.onchange = () => { if (file.files[0]) handle(file.files[0]); file.value = ''; };
     drop.ondragover = (ev) => { ev.preventDefault(); drop.classList.add('over'); };
     drop.ondragleave = () => drop.classList.remove('over');
     drop.ondrop = (ev) => { ev.preventDefault(); drop.classList.remove('over'); if (ev.dataTransfer.files[0]) handle(ev.dataTransfer.files[0]); };

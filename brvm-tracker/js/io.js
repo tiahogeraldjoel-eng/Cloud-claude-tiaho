@@ -110,8 +110,107 @@
     return rows.filter((r) => r.some((c) => String(c).trim()));
   };
 
+  /* ---------- Lecture de relevés PDF (pdf.js, chargé à la demande) ---------- */
+  let pdfjsReady = null;
+  function loadPdfjs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (!pdfjsReady) pdfjsReady = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'lib/pdf.min.js';
+      s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js'; resolve(window.pdfjsLib); };
+      s.onerror = () => { pdfjsReady = null; reject(new Error('Lecteur PDF indisponible (vérifiez la connexion au premier usage).')); };
+      document.head.appendChild(s);
+    });
+    return pdfjsReady;
+  }
+
+  const isDateCell = (c) => /^\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}$|^\d{4}-\d{2}-\d{2}$/.test(String(c).trim());
+  const isNumCell = (c) => /^[-+(]?\d[\d\s  .,]*\)?$/.test(String(c).trim());
+
+  // Reconstitue les lignes et colonnes d'un relevé PDF à partir de la position des mots
+  BT.readPdf = async function (buf) {
+    const pdfjsLib = await loadPdfjs();
+    let doc, password;
+    for (;;) {
+      try { doc = await pdfjsLib.getDocument({ data: new Uint8Array(buf.slice(0)), password }).promise; break; }
+      catch (err) {
+        if (err && err.name === 'PasswordException') {
+          password = window.prompt(err.code === 2 ? 'Mot de passe incorrect. Mot de passe du PDF :' : 'Ce relevé PDF est protégé. Mot de passe :');
+          if (password == null) throw new Error('Import annulé : mot de passe non fourni.');
+        } else throw new Error('PDF illisible : ' + (err && err.message || err));
+      }
+    }
+    const lines = []; // { cells: [{ x0, x1, t }] }
+    let chars = 0;
+    for (let n = 1; n <= doc.numPages; n++) {
+      const page = await doc.getPage(n);
+      const tc = await page.getTextContent();
+      const items = tc.items.filter((it) => it.str && it.str.trim()).map((it) => {
+        const h = Math.abs(it.transform[3]) || Math.abs(it.height) || 8;
+        return { x0: it.transform[4], x1: it.transform[4] + (it.width || it.str.length * h * 0.5), y: it.transform[5], h, t: it.str };
+      });
+      chars += items.reduce((a, it) => a + it.t.trim().length, 0);
+      items.sort((a, b) => b.y - a.y || a.x0 - b.x0);
+      const pageLines = [];
+      for (const it of items) {
+        const ln = pageLines.find((l) => Math.abs(l.y - it.y) <= Math.max(2, it.h * 0.45));
+        if (ln) ln.items.push(it); else pageLines.push({ y: it.y, items: [it] });
+      }
+      for (const l of pageLines.sort((a, b) => b.y - a.y)) {
+        l.items.sort((a, b) => a.x0 - b.x0);
+        const cells = [];
+        for (const it of l.items) {
+          const last = cells[cells.length - 1];
+          // mots proches = même cellule (les nombres « 1 000 000 » sont souvent découpés)
+          if (last && it.x0 - last.x1 < it.h * 0.45) { last.t += (it.x0 - last.x1 > it.h * 0.15 ? ' ' : '') + it.t; last.x1 = Math.max(last.x1, it.x1); }
+          else cells.push({ x0: it.x0, x1: it.x1, t: it.t });
+        }
+        cells.forEach((c) => { c.t = c.t.replace(/\s+/g, ' ').trim(); });
+        lines.push({ cells, page: n, y: l.y, h: Math.max(...l.items.map((it) => it.h)) });
+      }
+    }
+    if (chars < 20) throw new Error('Ce PDF ne contient pas de texte (document scanné ou photo). Exportez le relevé en Excel/CSV depuis l\'espace client de votre SGI, ou passez-le d\'abord dans un outil de reconnaissance de texte (OCR).');
+    const plain = lines.map((l) => l.cells.map((c) => c.t));
+    const hi = BT.findHeader(plain);
+    const header = lines[hi].cells;
+    const score = header.filter((c) => Object.values(BT.IMPORT_FIELDS).some((f) => f.re.test(norm(c.t)))).length;
+    if (score < 2) return plain; // pas d'en-tête reconnu : cellules brutes, la correspondance se règle à la main
+    const headerKey = header.map((c) => norm(c.t)).join('|');
+    const centers = header.map((c) => (c.x0 + c.x1) / 2);
+    const place = (cell) => {
+      let best = -1, ov = 0;
+      header.forEach((h, i) => {
+        const o = Math.min(cell.x1, h.x1 + 2) - Math.max(cell.x0, h.x0 - 2);
+        if (o > ov) { ov = o; best = i; }
+      });
+      if (best >= 0) return best;
+      // pas de chevauchement : colonne dont le centre est le plus proche
+      const cx = (cell.x0 + cell.x1) / 2;
+      return centers.reduce((bi, c, i) => (Math.abs(c - cx) < Math.abs(centers[bi] - cx) ? i : bi), 0);
+    };
+    const out = [header.map((c) => c.t)];
+    let prevLine = null;
+    for (const l of lines.slice(hi + 1)) {
+      if (l.cells.map((c) => norm(c.t)).join('|') === headerKey) continue; // en-tête répété sur chaque page
+      const row = header.map(() => '');
+      for (const c of l.cells) { const i = place(c); row[i] = row[i] ? row[i] + ' ' + c.t : c.t; }
+      const prev = out[out.length - 1];
+      // libellé sur deux lignes : la suite (juste dessous, sans date ni montant) est rattachée à l'opération précédente
+      const close = prevLine && prevLine.page === l.page && prevLine.y - l.y <= Math.max(prevLine.h, l.h) * 1.6;
+      if (close && out.length > 1 && !row.some(isDateCell) && prev.some(isDateCell) && l.cells.length <= 2 && !l.cells.some((c) => isNumCell(c.t))) {
+        row.forEach((v, i) => { if (v) prev[i] = prev[i] ? prev[i] + ' ' + v : v; });
+        prevLine = l;
+        continue;
+      }
+      out.push(row);
+      prevLine = l;
+    }
+    return out;
+  };
+
   BT.readFile = async function (file) {
     const name = file.name.toLowerCase();
+    if (name.endsWith('.pdf') || file.type === 'application/pdf') return BT.readPdf(await file.arrayBuffer());
     if (name.endsWith('.xlsx') || name.endsWith('.xlsm')) return BT.readXlsx(await file.arrayBuffer());
     if (name.endsWith('.xls')) throw new Error('Format .xls ancien non pris en charge : enregistrez le fichier en .xlsx ou .csv.');
     if (name.endsWith('.json')) throw new Error('Pour restaurer une sauvegarde .json, utilisez Paramètres → Restaurer.');
