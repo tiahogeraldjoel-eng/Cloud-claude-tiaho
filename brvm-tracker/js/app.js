@@ -137,7 +137,8 @@
     sel.value = st.currentPid;
     const ms = BT.marketStatus();
     const anyLive = BT.stocks().some((s) => s.live);
-    BT.$('#top-status').innerHTML = `<span class="dot ${ms.open ? 'on' : ms.pre ? 'pre' : ''}"></span>${ms.label}<span class="muted"> · cours ${anyLive ? 'mis à jour ' + BT.ago(st.lastFetch) : 'de référence (à actualiser)'}</span>`;
+    const lastTs = Math.max(st.lastFetch || 0, ...Object.values(st.prices).map((q) => q.ts || 0));
+    BT.$('#top-status').innerHTML = `<span class="dot ${ms.open ? 'on' : ms.pre ? 'pre' : ''}"></span>${ms.label}<span class="muted"> · cours ${anyLive ? 'mis à jour ' + BT.ago(lastTs || null) : 'de référence (à actualiser)'}</span>`;
     BT.$('#side-market').innerHTML = `<div class="muted small">${ms.label}</div>`;
     BT.$('#btn-hide').classList.toggle('active', !!st.settings.hideAmounts);
     BT.$('#btn-theme').textContent = document.documentElement.dataset.theme === 'dark' ? '☀' : '☾';

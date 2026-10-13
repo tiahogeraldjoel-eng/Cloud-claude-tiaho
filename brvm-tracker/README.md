@@ -16,6 +16,7 @@ Les données restent **dans votre navigateur** ; pensez à exporter une sauvegar
 | 3 portefeuilles en gratuit | Illimité |
 
 ## Améliorations
+- **État de portefeuille SGI** (PDF, ex. Coris Bourse) : les positions sont reprises au coût moyen de la SGI avec les cours du relevé et la trésorerie ; un relevé plus récent met le portefeuille à jour (achats, ventes et trésorerie ajustés automatiquement).
 - **Marché complet** (47 valeurs) : cours, variation, volume, dividende, rendement, tendance, favoris, filtres secteur/pays, plus fortes hausses/baisses, moyenne par secteur.
 - **Fiche titre** : historique des cours avec vos achats/ventes et votre PRU, limites de variation du jour (±7,5 %), point mort à la revente.
 - **Alertes** de cours, de variation, de plus/moins-value ou de rendement, avec notifications du navigateur.
