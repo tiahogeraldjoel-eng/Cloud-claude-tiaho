@@ -35,6 +35,9 @@ jobs:
           s=re.sub(r"const FILES = \[.*?\];", "const FILES = "+sys.argv[1]+";", s, flags=re.S)
           open('sw.js','w').write(s)
           PY
+      # BRVM Tracker Joe publié dans le même site, sous /brvm-tracker/
+      - name: Ajouter BRVM Tracker Joe
+        run: cp -r brvm-tracker studio-joe/brvm-tracker
       - uses: actions/upload-pages-artifact@v3
         with:
           path: studio-joe
