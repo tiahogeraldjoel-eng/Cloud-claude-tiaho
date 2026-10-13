@@ -101,6 +101,16 @@ def _pct(s: Optional[str]) -> Optional[float]:
             return None
     return None
 
+def _parse_shares_str(val) -> Optional[float]:
+    """'12,345,678' ou '12345678' → 12345678.0"""
+    if not val:
+        return None
+    try:
+        return float(re.sub(r"[,\s]", "", str(val)))
+    except Exception:
+        return None
+
+
 def _today() -> str:
     return date.today().isoformat()
 
@@ -269,7 +279,7 @@ def scrape_afx_fundamentals(symbol: str) -> Dict:
             elif "price/earn"         in label: result["per"]               = _price(val)
             elif "dividend per share" in label: result["dividend_per_share"]= _price(val)
             elif "dividend yield"     in label: result["dividend_yield"]    = _pct(val) or _price(val)
-            elif "shares outstanding" in label: result["shares_outstanding"]= val
+            elif "shares outstanding" in label: result["shares_outstanding"]= _parse_shares_str(val)
             elif "market capitaliz"   in label: result["market_cap_str"]   = val
 
     # ── Performances (div data-perf) ─────────────────────────────────────────

@@ -1006,6 +1006,9 @@ def api_fundamental(symbol: str):
         bv = fund_net["book_value"]
         if bv and bv > 0:
             fund_net["pbr"] = round(latest["close"] / bv, 2)
+    # Capitalisation boursière dynamique depuis shares_outstanding
+    if fund_net and latest and latest.get("close") and fund_net.get("shares_outstanding"):
+        fund_net["market_cap"] = latest["close"] * fund_net["shares_outstanding"]
     fund_net = _sanitize_dps(fund_net, (latest or {}).get("close"))
     return {
         "symbol": sym, "stock": stock,
@@ -1046,6 +1049,9 @@ def api_recommendation(symbol: str, profil: str = "mixte"):
         bv = fund_net["book_value"]
         if bv and bv > 0:
             fund_net["pbr"] = round(latest["close"] / bv, 2)
+    # Capitalisation boursière dynamique depuis shares_outstanding
+    if fund_net and latest and latest.get("close") and fund_net.get("shares_outstanding"):
+        fund_net["market_cap"] = latest["close"] * fund_net["shares_outstanding"]
     fund_net   = _sanitize_dps(fund_net, (latest or {}).get("close"))
     sentiment  = _get_sentiment_data()
 
@@ -1192,6 +1198,20 @@ def _get_sentiment_data() -> Optional[Dict]:
         return None
 
 
+def _compute_total_cap(all_stocks: list) -> float:
+    """Capitalisation boursière totale = Σ(cours × actions en circulation)."""
+    total = 0.0
+    for s in all_stocks:
+        cap = s.get("market_cap")
+        if cap:
+            total += cap
+            continue
+        f = db.get_fundamental(s.get("symbol",""))
+        if f and f.get("shares_outstanding") and s.get("close"):
+            total += s["close"] * f["shares_outstanding"]
+    return total
+
+
 # ─── MARCHÉ ───────────────────────────────────────────────────────────────────
 
 @app.get("/api/market/summary")
@@ -1221,7 +1241,7 @@ def api_market_summary():
         "top_gains":   sorted(with_var, key=lambda x: x["variation_pct"], reverse=True)[:5],
         "top_losses":  sorted(with_var, key=lambda x: x["variation_pct"])[:5],
         "top_volume":  sorted(with_vol, key=lambda x: x["volume"], reverse=True)[:5],
-        "total_cap":   sum(s.get("market_cap") or 0 for s in all_stocks),
+        "total_cap":   _compute_total_cap(all_stocks),
         "total_volume":sum(s.get("volume") or 0 for s in all_stocks),
         "stocks_count":len(all_stocks),
         "history":     market_hist[-30:],
@@ -1402,6 +1422,42 @@ def api_dividends():
             })
     results.sort(key=lambda x: x.get("dividend_yield") or 0, reverse=True)
     return {"dividends": results, "count": len(results)}
+
+
+@app.get("/api/market/earnings")
+def api_earnings():
+    """Classement BPA (EPS) de tous les titres avec données fondamentales."""
+    stocks  = db.get_all_stocks()
+    results = []
+    for s in stocks:
+        f = db.get_fundamental(s["symbol"])
+        l = db.get_latest_price(s["symbol"])
+        if not f:
+            continue
+        eps   = f.get("eps")
+        per   = f.get("per")
+        close = l.get("close") if l else None
+        bv    = f.get("book_value")
+        pbr   = round(close / bv, 2) if (close and bv) else None
+        so    = f.get("shares_outstanding")
+        market_cap = (close * so) if (close and so) else None
+        results.append({
+            "symbol":             s["symbol"],
+            "name":               s.get("name",""),
+            "sector":             s.get("sector",""),
+            "country":            s.get("country",""),
+            "close":              close,
+            "eps":                eps,
+            "per":                per,
+            "book_value":         bv,
+            "pbr":                pbr,
+            "market_cap":         market_cap,
+            "shares_outstanding": so,
+            "dividend_per_share": f.get("dividend_per_share"),
+            "div_status":         f.get("div_status","aucun"),
+        })
+    results.sort(key=lambda x: x.get("eps") or 0, reverse=True)
+    return {"earnings": results, "count": len(results)}
 
 
 # ─── ACTUALITÉS ───────────────────────────────────────────────────────────────

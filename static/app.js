@@ -8,7 +8,7 @@ const STATE = {
   techSymbol: null, fundSymbol: null,
   techDays: 365, sortField: 'symbol', sortAsc: true,
   sectorFilter: '', searchFilter: '',
-  chartMain: null, chartRsi: null, chartMacd: null,
+  chartMain: null, chartRsi: null, chartMacd: null, chartStoch: null, chartObv: null,
   noteSymbol: null,
   ptfLastResult: null, ptfLastFilename: null,
 };
@@ -465,6 +465,8 @@ async function loadTechnical(symbol) {
     renderCandleChart(prices, patterns);
     renderRsiChart(techD.technical);
     renderMacdChart(techD.technical);
+    renderStochChart(techD.technical);
+    renderObvChart(techD.technical);
     renderSignals(techD.technical?.signals||[]);
     renderCandlePatterns(patterns);
 
@@ -668,6 +670,40 @@ function renderMacdChart(technical) {
   ml.setData(md.map(d=>({time:d.date,value:d.value})));
   const sl=chart.addLineSeries({color:'#f97316',lineWidth:1,priceLineVisible:false,title:'Signal'});
   sl.setData(sg.map(d=>({time:d.date,value:d.value})));
+  chart.timeScale().fitContent();
+}
+
+function renderStochChart(technical) {
+  const el=document.getElementById('chart-stoch');
+  if(!el) return;
+  el.innerHTML='';
+  const k=(technical?.stoch?.k||[]).filter(d=>d.value!=null);
+  const d=(technical?.stoch?.d||[]).filter(d=>d.value!=null);
+  if(!k.length) return;
+  const chart=LightweightCharts.createChart(el,chartOpts(el.clientWidth, el.clientHeight || 120));
+  STATE.chartStoch=chart;
+  const ks=chart.addLineSeries({color:'#f59e0b',lineWidth:2,priceLineVisible:false,title:'%K'});
+  ks.setData(k.map(p=>({time:p.date,value:p.value})));
+  if(d.length){
+    const ds=chart.addLineSeries({color:'#f97316',lineWidth:1,priceLineVisible:false,title:'%D'});
+    ds.setData(d.map(p=>({time:p.date,value:p.value})));
+  }
+  ks.createPriceLine({price:80,color:'#ef4444',lineWidth:1,lineStyle:2,axisLabelVisible:true,title:'80'});
+  ks.createPriceLine({price:20,color:'#22c55e',lineWidth:1,lineStyle:2,axisLabelVisible:true,title:'20'});
+  chart.priceScale('right').applyOptions({minimum:0,maximum:100});
+  chart.timeScale().fitContent();
+}
+
+function renderObvChart(technical) {
+  const el=document.getElementById('chart-obv');
+  if(!el) return;
+  el.innerHTML='';
+  const data=(technical?.obv||[]).filter(d=>d.value!=null);
+  if(!data.length) return;
+  const chart=LightweightCharts.createChart(el,chartOpts(el.clientWidth, el.clientHeight || 120));
+  STATE.chartObv=chart;
+  const s=chart.addLineSeries({color:'#22d3ee',lineWidth:2,priceLineVisible:false,title:'OBV'});
+  s.setData(data.map(d=>({time:d.date,value:d.value})));
   chart.timeScale().fitContent();
 }
 
@@ -2276,10 +2312,11 @@ async function fetchAndRefreshFund(sym) {
 // ─── PSYCHOLOGIE DU MARCHÉ ────────────────────────────────────────────────────
 async function loadSentiment() {
   try {
-    const [sentD, divD, newsD] = await Promise.all([
+    const [sentD, divD, newsD, earnD] = await Promise.all([
       api('/api/market/sentiment'),
       api('/api/market/dividends').catch(()=>({dividends:[]})),
       api('/api/news?limit=30').catch(()=>({news:[]})),
+      api('/api/market/earnings').catch(()=>({earnings:[]})),
     ]);
     renderGauge(sentD.score);
     renderEuphoriaNarrative(sentD.score, sentD.components, divD.dividends||[]);
@@ -2292,7 +2329,8 @@ async function loadSentiment() {
     renderNews('psych-news', psychNews);
     renderDividendLeaders(divD.dividends||[]);
     renderDividendCalendar(divD.dividends||[]);
-    renderResultsTracker(divD.dividends||[]);
+    // Tracker BPA : tous les titres avec EPS (pas seulement ceux avec dividende)
+    renderResultsTracker(earnD.earnings||[], divD.dividends||[]);
     renderDividend2025Table(divD.dividends||[]);
   } catch(e) { console.error('Sentiment error:', e); }
 }
@@ -2658,15 +2696,19 @@ function renderDividendCalendar(divArr) {
 // ─── RÉSULTATS DES SOCIÉTÉS (BPA) ────────────────────────────────────────────
 // Le BPA (Bénéfice Par Action) de l'exercice N-1 est le principal catalyseur :
 // quand BPA fort + dividende fort pour le même exercice → euphorie de marché.
-function renderResultsTracker(divArr) {
+function renderResultsTracker(earnArr, divArr) {
   const el = document.getElementById('results-tracker');
   if(!el) return;
 
   const recentExerc = new Date().getFullYear() - 1;  // 2025
 
-  // Filtrer les sociétés qui ont un EPS renseigné
-  const withEps = (divArr||[]).filter(d => d.eps != null && d.eps > 0)
-                               .sort((a,b)=>(b.eps||0)-(a.eps||0));
+  // Construire une map div_status/dividend_yield par symbole depuis divArr
+  const divMap = {};
+  for(const d of (divArr||[])) divMap[d.symbol] = d;
+
+  // Filtrer les sociétés qui ont un EPS renseigné (depuis earnArr — tous les titres)
+  const withEps = (earnArr||[]).filter(d => d.eps != null && d.eps > 0)
+                                .sort((a,b)=>(b.eps||0)-(a.eps||0));
 
   if(!withEps.length) {
     el.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-4">
@@ -2681,9 +2723,10 @@ function renderResultsTracker(divArr) {
   el.innerHTML = withEps.slice(0,8).map(d => {
     const eps   = d.eps || 0;
     const pct   = Math.min(Math.round(eps / maxEps * 100), 100);
-    const yld   = d.dividend_yield ?? 0;
-    const ds    = d.div_status || 'aucun';
-    const ey    = d.div_exercice_year;
+    const divInfo = divMap[d.symbol] || d;
+    const yld   = divInfo.dividend_yield ?? d.dividend_yield ?? 0;
+    const ds    = divInfo.div_status || d.div_status || 'aucun';
+    const ey    = divInfo.div_exercice_year;
     // Euphorie = BPA solide + dividende de l'exercice récent annoncé/officiel
     const hasPipelineDiv = (ds === 'annoncé' || ds === 'officiel') && (!ey || ey >= recentExerc);
     const isEuphoria = eps > maxEps * 0.5 && yld >= 3.5 && hasPipelineDiv;
