@@ -10,7 +10,7 @@ Les données restent **dans votre navigateur** ; pensez à exporter une sauvegar
 | Plus-value **nette** (frais inclus), dividendes encaissés | PRU frais inclus (coût moyen pondéré), plus-values latentes et réalisées, dividendes nets |
 | Trésorerie séparée des actions | Dépôts, retraits, frais, intérêts → solde espèces chez la SGI |
 | Valeur totale, gain total, rendement annualisé, apports vs plus-values | Tableau de bord + rendement annualisé **XIRR** + décomposition du gain |
-| Import du relevé SGI | Import `.xlsx` / `.csv` / tableau collé, correspondance des colonnes automatique, détection du type d'opération par le libellé, doublons écartés |
+| Import du relevé SGI | Import **PDF** (y compris protégé par mot de passe), `.xlsx`, `.csv` ou tableau collé, correspondance des colonnes automatique, détection du type d'opération par le libellé, doublons écartés |
 | Exports Excel / PDF | Classeur Excel (synthèse, positions, opérations, dividendes), CSV, rapport imprimable en PDF |
 | Sous-portefeuilles, dividendes par sous-portefeuille | Portefeuilles imbriqués, un parent agrège ses enfants |
 | 3 portefeuilles en gratuit | Illimité |
@@ -33,10 +33,11 @@ Le bouton « Essayer avec un exemple » crée un portefeuille fictif pour décou
 
 ## Notes
 - Les cours et dividendes du référentiel (`js/data.js`) sont **indicatifs** : ils sont remplacés par les cours actualisés et chaque dividende se corrige dans la fiche du titre.
+- Relevés PDF : seuls les PDF contenant du texte sont lus ; un PDF scanné (image) doit d'abord passer par un outil de reconnaissance de texte (OCR), ou être remplacé par l'export Excel/CSV de la SGI.
 - Les taux d'IRVM par défaut sont à vérifier auprès de votre SGI.
 - Outil de suivi personnel : il ne constitue pas un conseil en investissement.
 
 ## Fichiers
 `index.html` · `css/app.css` · `js/data.js` (référentiel) · `js/store.js` (données locales) · `js/calc.js` (calculs) ·
 `js/charts.js` (graphiques SVG) · `js/io.js` (import/export) · `js/prices.js` (cours, alertes) · `js/app.js` (interface) ·
-`js/views-*.js` (pages) · `lib/jszip.min.js` (lecture/écriture Excel) · `sw.js` (hors connexion).
+`js/views-*.js` (pages) · `lib/jszip.min.js` (lecture/écriture Excel) · `lib/pdf*.js` (lecture des relevés PDF) · `sw.js` (hors connexion).
