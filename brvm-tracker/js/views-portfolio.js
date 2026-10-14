@@ -104,6 +104,7 @@
       const t = b.querySelector('#gf-target'), m = b.querySelector('#gf-monthly');
       const prev = () => { b.querySelector('#gf-prev').textContent = `Objectif : ${BT.fmt(BT.parseAmount(t.value))} F · versement : ${BT.fmt(BT.parseAmount(m.value))} F / mois`; };
       t.oninput = m.oninput = prev; prev();
+      t.onfocus = m.onfocus = (ev) => setTimeout(() => ev.target.select(), 0);
       b.querySelector('[data-cancel]').onclick = BT.closeModal;
       b.querySelector('#gf').onsubmit = (ev) => {
         ev.preventDefault();

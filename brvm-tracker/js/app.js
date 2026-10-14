@@ -305,7 +305,18 @@
     shell();
     window.addEventListener('hashchange', () => { BT.render(); window.scrollTo(0, 0); });
     let rt;
-    window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(BT.render, 200); });
+    // Redessiner seulement si la LARGEUR change (rotation, fenêtre) : sur téléphone, l'ouverture du clavier
+    // réduit la hauteur et un rendu complet ferait perdre la saisie en cours. Jamais pendant une saisie.
+    let lastW = window.innerWidth;
+    const typing = () => { const a = document.activeElement; return a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.closest('#view'); };
+    window.addEventListener('resize', () => {
+      clearTimeout(rt);
+      rt = setTimeout(() => {
+        if (Math.abs(window.innerWidth - lastW) < 2 || typing()) return;
+        lastW = window.innerWidth;
+        BT.render();
+      }, 250);
+    });
     BT.render();
     const st = BT.state;
     // actualisation automatique : au démarrage si les cours datent de plus de 30 min, puis toutes les 15 min en séance
