@@ -119,6 +119,7 @@ const YAHOO_REV = Object.fromEntries(Object.entries(YAHOO_MAP).map(([b,y]) => [y
 const KNOWN_STOCKS = {
   ABJC:  { name: 'Servair CI',                   avgVol:   551, refPrice:  3250,  liq:'M' },
   BICC:  { name: 'BICICI CI (BNP Paribas)',       avgVol:   180, refPrice:  5500,  liq:'L' },
+  BBGC:  { name: 'Bridge Bank Group CI',          avgVol:  5000, refPrice: 10_400,  liq:'M' }, // cotée depuis le 24/09/2026
   BICB:  { name: 'BIIC Bénin',                           avgVol:   200, refPrice:  8_405,  liq:'L' },
   BNBC:  { name: 'Bernabé CI',                    avgVol:  4650, refPrice:  1700,  liq:'M' },
   BOAB:  { name: 'Bank of Africa Bénin',          avgVol:   980, refPrice:  9_100,  liq:'M' },
