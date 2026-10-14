@@ -206,7 +206,7 @@
           <td class="num ${BT.cls(BT.txCash(t))}">${BT.signed(BT.txCash(t))}</td><td class="note">${e(t.note || '')}</td>
           ${st.currentPid === 'all' && st.portfolios.length > 1 ? `<td class="muted">${e(BT.portfolioName(t.pid))}</td>` : ''}</tr>`).join('')}</tbody></table></div>
         ${list.length > 300 && !(st.ui && st.ui.opMore) ? '<button class="btn" id="more">Afficher toutes les opérations</button>' : ''}
-        <div class="bulk" id="bulk" hidden><span id="bulk-n"></span><select id="bulk-pf"><option value="">Déplacer vers…</option>${BT.pfOptions('')}</select><button class="btn danger" id="bulk-del">Supprimer</button></div>`
+        <div class="bulk" id="bulk" hidden><span id="bulk-n"></span><select id="bulk-pf"><option value="">Déplacer vers…</option>${BT.pfOptions('')}</select><span class="bulk-date"><input type="date" id="bulk-date" max="${BT.today()}" aria-label="Nouvelle date"><button class="btn" id="bulk-date-go">Changer la date</button></span><button class="btn danger" id="bulk-del">Supprimer</button></div>`
         : '<p class="muted">Aucune opération. Ajoutez-en une ou importez votre relevé SGI.</p>'}</div>`;
     const setF = (k, v) => { st.ui = Object.assign(st.ui || {}, { opFilter: Object.assign({}, f, { [k]: v }) }); BT.save(); BT.render(); };
     BT.$('#f-type').onchange = (ev) => setF('type', ev.target.value);
@@ -230,6 +230,12 @@
     BT.$$('.sel').forEach((c) => c.onchange = bulk);
     if (BT.$('#sel-all')) BT.$('#sel-all').onchange = (ev) => { BT.$$('.sel').forEach((c) => { c.checked = ev.target.checked; }); bulk(); };
     if (BT.$('#bulk-del')) BT.$('#bulk-del').onclick = () => { const ids = new Set(bulk()); BT.confirm(`Supprimer ${ids.size} opération(s) ?`, () => { st.transactions = st.transactions.filter((t) => !ids.has(t.id)); BT.save(); BT.render(); }); };
+    if (BT.$('#bulk-date-go')) BT.$('#bulk-date-go').onclick = () => {
+      const ids = new Set(bulk()), d = BT.$('#bulk-date').value;
+      if (!BT.validDate(d)) return BT.toast('Choisissez une date complète entre 1998 et aujourd\'hui.', 'err');
+      st.transactions.forEach((t) => { if (ids.has(t.id)) t.date = d; });
+      BT.save(); BT.render(); BT.toast(`${ids.size} opération(s) datée(s) du ${BT.dateLong(d)}.`, 'ok');
+    };
     if (BT.$('#bulk-pf')) BT.$('#bulk-pf').onchange = (ev) => { const ids = new Set(bulk()); if (!ev.target.value) return; st.transactions.forEach((t) => { if (ids.has(t.id)) t.pid = ev.target.value; }); BT.save(); BT.render(); BT.toast(ids.size + ' opération(s) déplacée(s).', 'ok'); };
   };
 

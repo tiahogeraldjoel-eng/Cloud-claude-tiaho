@@ -29,6 +29,7 @@
     if (s < 86400) return `il y a ${Math.round(s / 3600)} h`;
     return `le ${BT.dateLong(new Date(ts).toISOString().slice(0, 10))}`;
   };
+  BT.validDate = (v, max) => /^\d{4}-\d{2}-\d{2}$/.test(v || '') && v >= '1998-01-01' && v <= (max || BT.today());
   BT.$ = (sel, root) => (root || document).querySelector(sel);
   BT.$$ = (sel, root) => [...(root || document).querySelectorAll(sel)];
 

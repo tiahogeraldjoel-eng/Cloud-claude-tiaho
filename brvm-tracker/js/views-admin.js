@@ -156,11 +156,21 @@
       ${txs.length ? `<div class="tbl-wrap imp-list"><table class="tbl compact"><thead><tr><th>Date</th><th>Type</th><th>Titre</th><th class="num">Qté</th><th class="num">Prix</th><th class="num">Trésorerie</th><th>Note</th></tr></thead><tbody>${txs.map((t) => `<tr><td class="nowrap">${BT.dateLong(t.date)}</td><td><span class="tag t-${t.type}">${BT.TX_TYPES[t.type].label.split(' /')[0]}</span></td><td><b>${t.ticker}</b></td><td class="num">${t.qty ? BT.fmt(t.qty) : ''}</td><td class="num">${t.price ? BT.fmt(t.price, 2) : ''}</td><td class="num ${BT.cls(BT.txCash(t))}">${BT.signed(BT.txCash(t))}</td><td class="small note">${e(t.note)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="pos">✓ Le portefeuille correspond déjà à cet état : aucune opération à ajouter.</p>'}
       <div class="row-end"><button class="btn" id="imp-cancel">Annuler</button><button class="btn primary" id="sn-go">${txs.length ? 'Importer l\'état de portefeuille' : 'Enregistrer les cours seulement'}</button></div>`;
     BT.$('#sn-pf').onchange = (ev) => { imp.pid = ev.target.value; renderSnapshot(); };
-    if (BT.$('#sn-date')) BT.$('#sn-date').onchange = (ev) => { imp.entry = ev.target.value || snap.date; renderSnapshot(); };
+    // la date n'est retenue (et l'aperçu recalculé) qu'une fois complète : sinon le premier chiffre
+    // de l'année (« 0002 ») serait pris pour une date et la saisie interrompue
+    if (BT.$('#sn-date')) BT.$('#sn-date').onchange = (ev) => {
+      const v = ev.target.value;
+      if (BT.validDate(v, snap.date)) { if (v !== imp.entry) { imp.entry = v; renderSnapshot(); } }
+    };
     BT.$('#sn-px').onchange = (ev) => { imp.savePrices = ev.target.checked; };
     BT.$$('[data-sn]', host).forEach((sel) => sel.onchange = () => { const p = snap.positions[+sel.dataset.sn]; if (sel.value) { p.t = sel.value; renderSnapshot(); } });
     BT.$('#imp-cancel').onclick = () => { imp = null; BT.render(); };
     BT.$('#sn-go').onclick = () => {
+      const dEl = BT.$('#sn-date');
+      if (dEl && dEl.value !== imp.entry) {
+        if (!BT.validDate(dEl.value, snap.date)) return BT.toast(`Date d'entrée invalide : choisissez une date entre le 1er janvier 1998 et le ${BT.dateLong(snap.date)}.`, 'err', 7000);
+        imp.entry = dEl.value;
+      }
       let pid = imp.pid;
       if (pid === '__new') {
         pid = BT.uid();
