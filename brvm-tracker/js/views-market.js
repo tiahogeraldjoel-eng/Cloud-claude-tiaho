@@ -278,6 +278,7 @@
       if (notify) BT.toast(`Objectif enregistré : ${BT.fmt(target)} F.`, 'ok');
     };
     BT.$('#goal-target').onchange = BT.$('#goal-monthly').onchange = () => saveGoal(false);
+    BT.$('#goal-target').onfocus = BT.$('#goal-monthly').onfocus = (ev) => setTimeout(() => ev.target.select(), 0);
     BT.$('#goal').onsubmit = (ev) => { ev.preventDefault(); saveGoal(true); };
     const pi = BT.$('#pi');
     const piRun = () => { const m = BT.parseNum(pi.m.value), y = BT.parseNum(pi.y.value) / 100; const need = y ? m * 12 / y : 0; const cur = sm.hasDeposits ? sm.total : sm.mv; BT.$('#pi-out').innerHTML = `<div class="bd-row"><span>Capital nécessaire</span><b>${BT.money(need)}</b></div><div class="bd-row"><span>Revenu actuel estimé / mois</span><span>${BT.money(sm.income / 12)}</span></div><div class="bd-row"><span>Progression</span><span>${need ? (Math.min(100, cur / need * 100)).toFixed(0) : 0} %</span></div>`; };
