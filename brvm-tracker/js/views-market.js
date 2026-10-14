@@ -48,6 +48,7 @@
           <td class="num ${BT.cls(s.change)}">${s.source === 'référence' ? '—' : BT.pct(s.change)}</td><td class="num hide-m">${s.volume ? BT.fmt(s.volume) : '—'}</td>
           <td class="num">${s.d ? BT.fmt(s.d) : '—'}</td><td class="num">${s.yield ? BT.pct(s.yield).replace('+', '') : '—'}</td>
           <td class="hide-m">${BT.sparkline(histVals(s.t))}</td></tr>`).join('')}</tbody></table></div>
+        <p class="muted small">Un titre manque (nouvelle introduction en bourse) ? <a class="link" href="#/parametres">Ajoutez-le dans Paramètres → Ajouter un titre</a>.</p>
         <p class="muted small">* cours de référence ou saisi à la main. Rendement = dernier dividende brut / cours. Les dividendes de référence sont indicatifs : vérifiez-les et corrigez-les dans la fiche du titre.</p></div>`;
     const setF = (k, v) => { st.ui = Object.assign(st.ui || {}, { mkt: Object.assign({}, f, { [k]: v }) }); BT.save(); BT.render(); };
     BT.$('#m-q').oninput = (ev) => { clearTimeout(V._mq); V._mq = setTimeout(() => { setF('q', ev.target.value); const i = BT.$('#m-q'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 250); };

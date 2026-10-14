@@ -22,6 +22,7 @@ BT.SECTORS = [
 // t: ticker, n: nom, s: secteur, c: pays, p: cours de référence, d: dividende brut par action (dernier connu, indicatif)
 BT.STOCKS_REF = [
   { t: 'ABJC', n: 'Servair Abidjan CI', s: 'Consommation discrétionnaire', c: 'CI', p: 2000, d: 120 },
+  { t: 'BBGC', n: 'Bridge Bank Group Côte d\'Ivoire', s: 'Services financiers', c: 'CI', p: 6750, d: 0 }, // cotée depuis le 24/09/2026 (prix d'introduction)
   { t: 'BICB', n: 'BIIC Bénin', s: 'Services financiers', c: 'BJ', p: 4900, d: 270 },
   { t: 'BICC', n: 'BICI Côte d\'Ivoire', s: 'Services financiers', c: 'CI', p: 17000, d: 880 },
   { t: 'BNBC', n: 'Bernabé CI', s: 'Consommation discrétionnaire', c: 'CI', p: 1500, d: 0 },
@@ -72,7 +73,7 @@ BT.STOCKS_REF = [
 
 // Anciens codes / alias rencontrés dans les relevés SGI et sur d'autres sources
 BT.TICKER_ALIASES = {
-  BOACI: 'BOAC', CBBF: 'CBIBF', ONAT: 'ONTBF', ORANGE: 'ORAC', SONATEL: 'SNTS',
+  BBGCI: 'BBGC', BRIDGE: 'BBGC', BOACI: 'BOAC', CBBF: 'CBIBF', ONAT: 'ONTBF', ORANGE: 'ORAC', SONATEL: 'SNTS',
   TOTAL: 'TTLC', SOLIBRA: 'SLBC', SGB: 'SGBC', SIB: 'SIBC', ECOBANK: 'ETIT',
 };
 
