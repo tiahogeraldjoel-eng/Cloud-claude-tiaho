@@ -73,7 +73,8 @@
   /* ---- Référentiel des titres (référence + corrections + cours en ligne) ---- */
   BT.stocks = function () {
     const st = BT.state;
-    const list = BT.STOCKS_REF.map((r) => Object.assign({}, r)).concat(st.customStocks.map((r) => Object.assign({}, r)));
+    const refSet = new Set(BT.STOCKS_REF.map((r) => r.t));
+    const list = BT.STOCKS_REF.map((r) => Object.assign({}, r)).concat(st.customStocks.filter((r) => !refSet.has(r.t)).map((r) => Object.assign({}, r)));
     const known = new Set(list.map((r) => r.t));
     // titres reçus de la source en ligne mais absents du référentiel
     for (const t of Object.keys(st.prices)) if (!known.has(t) && st.prices[t].name) list.push({ t, n: st.prices[t].name, s: 'Autre', c: 'CI', p: st.prices[t].price, d: 0 });
