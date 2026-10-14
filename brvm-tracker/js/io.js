@@ -1,6 +1,13 @@
 /* BRVM Tracker Joe — import (relevé SGI CSV / Excel / texte collé) et exports (Excel, CSV, JSON). */
 (function () {
   /* ---------- Nombres et dates au format français ---------- */
+  BT.parseAmount = function (v) {
+    const m = String(v ?? '').trim().toLowerCase().match(/^([\d\s  .,]+)\s*(milliards?|mds?|millions?|m|mille|k)?\.?\s*(f|fcfa|cfa|xof)?$/);
+    if (!m) return BT.parseNum(v);
+    const mult = !m[2] ? 1 : /^(milliard|md)/.test(m[2]) ? 1e9 : /^m(illion)?s?$/.test(m[2]) ? 1e6 : 1e3;
+    return Math.round(BT.parseNum(m[1]) * mult);
+  };
+
   BT.parseNum = function (v) {
     if (typeof v === 'number') return v;
     if (v == null) return 0;
