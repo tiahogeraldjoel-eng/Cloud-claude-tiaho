@@ -142,7 +142,9 @@ label > input, label > select { width: 100%; }
 .filters input[type=search] { flex: 1; min-width: 160px; }
 .bulk { position: sticky; bottom: 12px; display: flex; gap: 8px; align-items: center; background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 10px; padding: 8px 12px; margin-top: 10px; }
 .bulk[hidden] { display: none; }
-.bulk span { flex: 1; }
+.bulk { flex-wrap: wrap; }
+.bulk #bulk-n { flex: 1; }
+.bulk-date { display: inline-flex; gap: 6px; }
 
 /* ---------- Graphiques ---------- */
 .chart { position: relative; }
