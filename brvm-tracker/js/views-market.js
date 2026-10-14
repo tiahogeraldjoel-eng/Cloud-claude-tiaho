@@ -236,7 +236,7 @@
             <label class="check"><input type="checkbox" name="re" checked> Réinvestir les dividendes</label>
           </form><div id="sim-ch"></div><div id="sim-out" class="result"></div></div>
         <div class="card"><h2>Objectif de patrimoine</h2>
-          <form class="form" id="goal"><label>Montant visé (F)<input name="target" inputmode="decimal" value="${st.goals.target || ''}"></label><label>Versement mensuel prévu (F)<input name="monthly" inputmode="decimal" value="${st.goals.monthly || ''}"></label><button class="btn primary">Enregistrer</button></form>
+          <form class="form" id="goal"><label>Montant visé (F)<input id="goal-target" inputmode="text" autocomplete="off" value="${st.goals.target ? BT.fmt(st.goals.target) : ''}" placeholder="ex. 25 000 000 ou 25 millions"></label><label>Versement mensuel prévu (F)<input id="goal-monthly" inputmode="text" autocomplete="off" value="${st.goals.monthly ? BT.fmt(st.goals.monthly) : ''}"></label><button class="btn primary">Enregistrer</button></form>
           <h2 style="margin-top:18px">Revenu passif visé</h2>
           <form class="form" id="pi"><label>Dividendes nets voulus par mois (F)<input name="m" inputmode="decimal" value="100000"></label><label>Rendement net moyen (%)<input name="y" inputmode="decimal" value="7"></label></form><div id="pi-out" class="result"></div></div>
         <div class="card span3"><h2>Rééquilibrage</h2>
@@ -271,7 +271,14 @@
       BT.$('#sim-out').innerHTML = `<div class="grid3"><div class="bd-row"><span>Valeur finale</span><b>${BT.money(v)}</b></div><div class="bd-row"><span>Total versé</span><span>${BT.money(inv)}</span></div><div class="bd-row"><span>Gain</span><b class="pos">${BT.signed(v - inv)}</b></div><div class="bd-row"><span>Dividendes cumulés</span><span>${BT.money(divs)}</span></div><div class="bd-row"><span>Dividendes / an à la fin</span><b>${BT.money(v * d)}</b></div><div class="bd-row"><span>Multiplicateur</span><span>× ${(v / Math.max(1, inv)).toFixed(2).replace('.', ',')}</span></div></div><p class="muted small">Projection théorique à rendement constant : les marchés ne progressent pas de façon régulière.</p>`;
     };
     sim.addEventListener('input', simRun); simRun();
-    BT.$('#goal').onsubmit = (ev) => { ev.preventDefault(); st.goals = { target: BT.parseNum(ev.target.target.value), monthly: BT.parseNum(ev.target.monthly.value) }; BT.save(); BT.toast('Objectif enregistré.', 'ok'); };
+    const saveGoal = (notify) => {
+      const target = BT.parseAmount(BT.$('#goal-target').value), monthly = BT.parseAmount(BT.$('#goal-monthly').value);
+      if (!(target > 0)) { if (notify) BT.toast('Indiquez un montant visé, par exemple 25 000 000.', 'err'); return; }
+      st.goals = { target, monthly }; BT.save(true);
+      if (notify) BT.toast(`Objectif enregistré : ${BT.fmt(target)} F.`, 'ok');
+    };
+    BT.$('#goal-target').onchange = BT.$('#goal-monthly').onchange = () => saveGoal(false);
+    BT.$('#goal').onsubmit = (ev) => { ev.preventDefault(); saveGoal(true); };
     const pi = BT.$('#pi');
     const piRun = () => { const m = BT.parseNum(pi.m.value), y = BT.parseNum(pi.y.value) / 100; const need = y ? m * 12 / y : 0; const cur = sm.hasDeposits ? sm.total : sm.mv; BT.$('#pi-out').innerHTML = `<div class="bd-row"><span>Capital nécessaire</span><b>${BT.money(need)}</b></div><div class="bd-row"><span>Revenu actuel estimé / mois</span><span>${BT.money(sm.income / 12)}</span></div><div class="bd-row"><span>Progression</span><span>${need ? (Math.min(100, cur / need * 100)).toFixed(0) : 0} %</span></div>`; };
     pi.addEventListener('input', piRun); piRun();

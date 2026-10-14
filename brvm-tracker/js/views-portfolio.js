@@ -71,7 +71,7 @@
           <h2>Objectif de patrimoine</h2>
           <div class="goal"><div class="goal-bar"><i style="width:${prog}%"></i></div><div class="row-between"><b>${BT.money(sm.hasDeposits ? sm.total : sm.mv)}</b><span class="muted">sur ${BT.money(goal)} · ${prog.toFixed(0)} %</span></div></div>
           <p class="muted small">${goalText(sm, goal)}</p>
-          <a href="#/outils" class="link">Modifier l'objectif →</a>
+          <button class="link" id="goal-edit">Modifier l'objectif →</button>
         </div>
         <div class="card">
           <h2>Mouvements du jour</h2>
@@ -88,9 +88,32 @@
       </section>`;
     drawValue(period);
     drawAlloc('t', sm);
+    BT.$('#goal-edit').onclick = BT.goalForm;
     BT.$$('#period button').forEach((b) => b.onclick = () => { st.ui = Object.assign(st.ui || {}, { period: b.dataset.p }); BT.save(); BT.$$('#period button').forEach((x) => x.classList.toggle('on', x === b)); drawValue(b.dataset.p); });
     BT.$$('#alloc button').forEach((b) => b.onclick = () => { BT.$$('#alloc button').forEach((x) => x.classList.toggle('on', x === b)); drawAlloc(b.dataset.a, sm); });
     bindGo(root);
+  };
+
+  BT.goalForm = function () {
+    const st = BT.state;
+    BT.modal('Objectif de patrimoine', `<form class="form" id="gf">
+      <label>Montant visé (F)<input id="gf-target" inputmode="text" autocomplete="off" value="${st.goals.target ? BT.fmt(st.goals.target) : ''}" placeholder="ex. 25 000 000 ou 25 millions"></label>
+      <label>Versement mensuel prévu (F)<input id="gf-monthly" inputmode="text" autocomplete="off" value="${st.goals.monthly ? BT.fmt(st.goals.monthly) : ''}" placeholder="ex. 100 000"></label>
+      <div class="small muted" id="gf-prev"></div>
+      <div class="row-end"><button type="button" class="btn" data-cancel>Annuler</button><button class="btn primary">Enregistrer</button></div></form>`, (b) => {
+      const t = b.querySelector('#gf-target'), m = b.querySelector('#gf-monthly');
+      const prev = () => { b.querySelector('#gf-prev').textContent = `Objectif : ${BT.fmt(BT.parseAmount(t.value))} F · versement : ${BT.fmt(BT.parseAmount(m.value))} F / mois`; };
+      t.oninput = m.oninput = prev; prev();
+      b.querySelector('[data-cancel]').onclick = BT.closeModal;
+      b.querySelector('#gf').onsubmit = (ev) => {
+        ev.preventDefault();
+        const target = BT.parseAmount(t.value);
+        if (!(target > 0)) return BT.toast('Indiquez un montant visé, par exemple 25 000 000.', 'err');
+        st.goals = { target, monthly: BT.parseAmount(m.value) };
+        BT.save(true); BT.closeModal(); BT.render();
+        BT.toast(`Objectif enregistré : ${BT.fmt(target)} F.`, 'ok');
+      };
+    });
   };
 
   function goalText(sm, goal) {
