@@ -1,0 +1,400 @@
+<meta charset="UTF-8">
+<title>BOC_HEBDO — W36 | 31 août – 4 septembre 2026</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 14px; background: #f9f9f9; color: #24292f; margin: 0; padding: 0; }
+  .container { max-width: 1000px; margin: 0 auto; padding: 24px 20px; background: #fff; }
+  h1 { color: #0b3d91; border-bottom: 3px solid #0b3d91; padding-bottom: 8px; font-size: 1.5em; margin-bottom: 6px; }
+  h2 { color: #0b3d91; border-left: 5px solid #0b3d91; padding-left: 10px; margin-top: 32px; font-size: 1.15em; }
+  h3 { color: #24292f; font-size: 1em; margin-top: 18px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+  th { background: #0b3d91; color: #fff; padding: 7px 10px; text-align: left; }
+  td { padding: 6px 10px; border-bottom: 1px solid #e0e0e0; }
+  tr:nth-child(even) td { background: #f6f8fa; }
+  .pos { color: #1a7f37; font-weight: 700; }
+  .neg { color: #cf222e; font-weight: 700; }
+  .neut { color: #57606a; font-weight: 700; }
+  .acheter { background: #1a7f37; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .alleger { background: #e36209; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .vendre { background: #8b0000; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .attendre { background: #bf8700; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .eviter { background: #cf222e; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .surveiller { background: #0b3d91; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .conserver { background: #57606a; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .maintenir { background: #57606a; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .nrp { background: #6e40c9; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .biais-hausse { background: #1a7f37; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-vente { background: #cf222e; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-neutre { background: #57606a; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .kpi-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0 24px 0; }
+  .kpi { background: #eef3fb; border: 1px solid #cdd9ea; border-radius: 6px; padding: 12px 18px; text-align: center; min-width: 120px; flex: 1; }
+  .kpi .val { font-size: 1.5em; font-weight: 800; color: #0b3d91; }
+  .kpi .val.pos { color: #1a7f37; }
+  .kpi .val.neg { color: #cf222e; }
+  .kpi .lbl { font-size: 11px; color: #57606a; text-transform: uppercase; letter-spacing: .04em; margin-top: 4px; }
+  .medal-gold { background: #ffd700; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-silver { background: #c0c0c0; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-bronze { background: #cd7f32; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-4 { background: #57606a; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-5 { background: #57606a; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .stock-acheter { border-left: 4px solid #1a7f37; background: #f0faf3; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-vendre { border-left: 4px solid #8b0000; background: #fff0f0; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-alleger { border-left: 4px solid #e36209; background: #fff5ec; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-eviter { border-left: 4px solid #cf222e; background: #fdecea; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .signal-rot { background: #f0f4ff; border: 2px solid #0b3d91; border-radius: 6px; padding: 12px 16px; margin: 12px 0; }
+  .signal-alert { background: #fff8e1; border: 2px solid #bf8700; border-radius: 6px; padding: 10px 14px; margin: 10px 0; }
+  .signal-exdiv { background: #fff3cd; border-left: 4px solid #e36209; padding: 8px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; font-size: 13px; }
+  .sub { font-size: 13px; color: #57606a; margin: 4px 0 14px 0; }
+  .disclaimer { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; padding: 12px 16px; margin-top: 32px; font-size: 12px; color: #57606a; }
+  .week-header { font-size: 13px; color: #57606a; margin-bottom: 8px; }
+  .urgent { color: #cf222e; font-weight: 700; }
+</style>
+
+<div class="container">
+
+<h1>BOC_HEBDO &mdash; Synth&egrave;se Hebdomadaire BRVM<br>
+<span style="font-size:0.75em;font-weight:400;">W36 | 31 ao&ucirc;t &ndash; 4 septembre 2026 | BOC N&deg;163 &agrave; N&deg;167</span></h1>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="val pos">+3,33 %</div><div class="lbl">Composite hebdo</div></div>
+  <div class="kpi"><div class="val pos">+58,67 %</div><div class="lbl">YTD Composite</div></div>
+  <div class="kpi"><div class="val">548,60</div><div class="lbl">Composite vendredi</div></div>
+  <div class="kpi"><div class="val">2 / 5</div><div class="lbl">S&eacute;ances acheteuses</div></div>
+  <div class="kpi"><div class="val">18,24</div><div class="lbl">PER moyen march&eacute;</div></div>
+</div>
+
+<!-- SECTION 1 -->
+<h2>Section 1 &mdash; Bilan indices de la semaine</h2>
+
+<table>
+  <tr><th>S&eacute;ance</th><th>BOC N&deg;</th><th>Composite</th><th>Var. jour</th><th>Biais (H/B/I)</th></tr>
+  <tr><td>Lun 31/08</td><td>163</td><td>530,92</td><td><span class="pos">+0,16 %</span></td><td><span class="biais-neutre">NEUTRE</span> 21H/20B/6I</td></tr>
+  <tr><td>Mar 01/09</td><td>164</td><td>537,25</td><td><span class="pos">+1,19 %</span></td><td><span class="biais-hausse">ACHETEUR</span> 31H/11B/5I</td></tr>
+  <tr><td>Mer 02/09</td><td>165</td><td>537,67</td><td><span class="pos">+0,08 %</span></td><td><span class="biais-vente">VENDEUR</span> 18H/22B/7I</td></tr>
+  <tr><td>Jeu 03/09</td><td>166</td><td>546,13</td><td><span class="pos">+1,57 %</span></td><td><span class="biais-hausse">ACHETEUR</span> 26H/13B/8I</td></tr>
+  <tr><td>Ven 04/09</td><td>167</td><td>548,60</td><td><span class="pos">+0,45 %</span></td><td><span class="biais-neutre">NEUTRE</span> 17H/21B/9I</td></tr>
+  <tr style="background:#eef3fb;font-weight:700;"><td>Performance hebdo</td><td>&mdash;</td><td><span class="pos">+3,33 %</span></td><td>530,92 &rarr; 548,60</td><td>2A / 2N / 1V</td></tr>
+</table>
+
+<p><strong>BRVM 30 :</strong> 255,88 &rarr; 265,30 = <span class="pos">+3,68 %</span> &nbsp;|&nbsp; <strong>Prestige :</strong> 194,71 &rarr; 199,81 = <span class="pos">+2,62 %</span> &nbsp;|&nbsp; <strong>Principal :</strong> 389,96 &rarr; 403,16 = <span class="pos">+3,38 %</span></p>
+
+<div class="signal-alert">
+  <strong>[!] Divergence indice/breadth du vendredi :</strong> Composite +0,45 % sur 17H/21B — les indices sont soutenu artificiellement par SICC (+7,50 % sur 106 titres) et SAFC (+4,66 %). La majorit&eacute; des titres recule. <strong>Cl&ocirc;ture de semaine en trompe-l&rsquo;&oelig;il.</strong>
+</div>
+
+<p>La semaine marque un <strong>renversement du secteur Consommation de Base</strong> : dominant du lundi au jeudi (+2,06 % chaque s&eacute;ance), il se retourne en baisse (-0,64 %) vendredi — signal d&rsquo;essoufflement. La rotation obligataire du jeudi (BOC166, +10 873 % de volume, 1,5 GFCFA) est un signal institutionnel d&eacute;fensif ponctuel.</p>
+
+<!-- SECTION 2 -->
+<h2>Section 2 &mdash; Top 5 actions les plus performantes (lun &rarr; ven)</h2>
+
+<table>
+  <tr><th>Rang</th><th>Titre</th><th>Symbole</th><th>Cours lundi</th><th>Cours vendredi</th><th>Perf. hebdo</th><th>Commentaire</th></tr>
+  <tr>
+    <td><span class="medal-gold">#1</span></td>
+    <td>BIIC BN</td><td>BICB</td><td>8 900 F</td><td>10 400 F</td>
+    <td><span class="pos">+16,85 %</span></td>
+    <td>4 s&eacute;ances de hausse consec. — re-rating institutionnel valid&eacute; par volume massif (51 213 titres mardi)</td>
+  </tr>
+  <tr>
+    <td><span class="medal-silver">#2</span></td>
+    <td>Coris Bank Int.</td><td>CBIBF</td><td>29 630 F</td><td>33 450 F</td>
+    <td><span class="pos">+12,89 %</span></td>
+    <td>Accumulation institutionnelle profonde — 3 s&eacute;ances de fort volume, PER pass&eacute; &agrave; 16,34</td>
+  </tr>
+  <tr>
+    <td><span class="medal-bronze">#3</span></td>
+    <td>SOGB CI</td><td>SOGC</td><td>8 250 F</td><td>8 800 F</td>
+    <td><span class="pos">+6,67 %</span></td>
+    <td>Progression r&eacute;guli&egrave;re — fondamentaux intacts (Rdt 5,70 %), PER pass&eacute; &agrave; 15,22</td>
+  </tr>
+  <tr>
+    <td><span class="medal-4">#4</span></td>
+    <td>Sonatel SN</td><td>SNTS</td><td>36 600 F</td><td>38 500 F</td>
+    <td><span class="pos">+5,19 %</span></td>
+    <td>Tendance haussière douce — franchissement des 38 000 F jeudi (+13,24 % vs PR 34 000 F)</td>
+  </tr>
+  <tr>
+    <td><span class="medal-5">#5</span></td>
+    <td>SGB CI</td><td>SGBC</td><td>38 000 F</td><td>38 500 F</td>
+    <td><span class="pos">+1,32 %</span></td>
+    <td>Progression constante toute la semaine — <span class="urgent">retournement vendeur brutal vendredi (366:1)</span> — VENDRE</td>
+  </tr>
+</table>
+
+<div class="signal-alert">
+  <strong>SAPH CI (SPHC) — hors classement :</strong> +7,37 % de lundi (9 500 F) &agrave; jeudi (10 200 F) avec 3 s&eacute;ances de hausse cons&eacute;cutives. Cours vendredi non disponible dans le BOC 167. Si le cours vendredi est proche de 10 200 F, SPHC se placerait entre le rang 2 et 3.
+</div>
+
+<!-- SECTION 3 -->
+<h2>Section 3 &mdash; Top 5 recommandations ACHETER (semaine suivante)</h2>
+
+<div class="stock-acheter">
+  <strong><span class="medal-gold">#1</span> ORAGROUP TOGO (ORGT) &mdash; <span class="acheter">ACHETER</span> &mdash; Score 8/10</strong>
+  <table style="margin:8px 0;">
+    <tr><th>Cours vendredi</th><th>PER</th><th>Rendement net PP</th><th>Carnet vendredi</th><th>Cours cible entr&eacute;e</th></tr>
+    <tr><td>3 335 F</td><td><span class="pos">10,70</span> (zone excellente)</td><td>1,78 %</td><td><span class="pos">200A / 12V &rarr; 16,7:1 A</span></td><td><strong>&le; 3 335 F</strong> (stop 3 195 F)</td></tr>
+  </table>
+  <p style="margin:4px 0;">Meilleur rapport valorisation/carnet de la cl&ocirc;ture de semaine hors bulles. Momentum +4,22 % valid&eacute; par volume (3 792 titres). Signal &agrave; confirmer sur BOC168 (lundi) avant engagement important.</p>
+</div>
+
+<div class="stock-acheter">
+  <strong><span class="medal-silver">#2</span> SITAB CI (STBC) &mdash; <span class="conserver">CONSERVER</span> porteurs / <span class="nrp">NE PAS RE-ENTRER</span> ex-vendeurs &mdash; Score moyen 7,2/10</strong>
+  <table style="margin:8px 0;">
+    <tr><th>Cours vendredi</th><th>PER</th><th>Rendement net PP</th><th>Carnet vendredi</th><th>Scores semaine</th></tr>
+    <tr><td>22 100 F (vs 22 500 F lundi)</td><td><span class="pos">10,88</span></td><td><span class="pos">7,72 %</span> (meilleur du march&eacute;)</td><td>146A / 51V &rarr; 2,9:1A</td><td>8/8/7/7/6 &rarr; moy 7,2/10</td></tr>
+  </table>
+  <p style="margin:4px 0;">R&eacute;f&eacute;rence fondamentale de la semaine. Porteurs : <span class="conserver">CONSERVER</span>. Ex-vendeurs : seuil de re-entr&eacute;e &lt; <strong>21 535 F</strong> (cours actuel 22 100 F &gt; seuil &rarr; <span class="nrp">NE PAS RE-ENTRER</span>).</p>
+</div>
+
+<div class="stock-acheter">
+  <strong><span class="medal-bronze">#3</span> BOA S&eacute;n&eacute;gal (BOAS) &mdash; <span class="acheter">ACHETER</span> (apr&egrave;s absorption carnet) &mdash; Score moyen 6,6/10</strong>
+  <table style="margin:8px 0;">
+    <tr><th>Cours vendredi</th><th>PER</th><th>Rendement net PP</th><th>Carnet vendredi</th><th>Scores semaine</th></tr>
+    <tr><td>8 240 F</td><td><span class="pos">13,54</span></td><td><span class="pos">5,46 %</span></td><td>102A / 236V (surveiller)</td><td>7/7/7/7/5 &rarr; moy 6,6/10</td></tr>
+  </table>
+  <p style="margin:4px 0;">Double crit&egrave;re PER/Rdt valid&eacute; toute la semaine. Entr&eacute;e conditionn&eacute;e &agrave; l&rsquo;absorption du carnet vendeur vendredi (102A vs 236V). Surveiller lundi matin.</p>
+</div>
+
+<div class="stock-acheter">
+  <strong><span class="medal-4">#4</span> BOA BF (BOABF) &mdash; <span class="surveiller">SURVEILLER</span> avec biais acheteur conditionnel</strong>
+  <table style="margin:8px 0;">
+    <tr><th>Carnet vendredi</th><th>Carnet jeudi</th><th>PER</th><th>Signal semaine</th></tr>
+    <tr><td><span class="pos">190A / 23V &rarr; 8,3:1 A</span></td><td>2A / 543V &rarr; 271,5:1 V</td><td>20,55 (hors zone)</td><td>ALLÉGER du BOC163 au BOC166 &rarr; renversement vendredi</td></tr>
+  </table>
+  <p style="margin:4px 0;">Retournement spectaculaire apr&egrave;s 4 s&eacute;ances de d&eacute;gagement institutionnel. PER 20,55 reste hors zone cible. <strong>Attendre BOC168 (lundi)</strong> pour confirmer la durabilit&eacute; du renversement avant toute entr&eacute;e.</p>
+</div>
+
+<div class="stock-acheter">
+  <strong><span class="medal-5">#5</span> LOTERIE NATIONALE B&Eacute;NIN (LNBB) &mdash; <span class="attendre">ATTENDRE</span> (profil d&eacute;fensif)</strong>
+  <table style="margin:8px 0;">
+    <tr><th>Cours vendredi</th><th>PER</th><th>Rendement net PP</th><th>Carnet vendredi</th></tr>
+    <tr><td>4 050 F</td><td>17,52 (l&eacute;g. hors zone)</td><td>4,05 %</td><td><span class="pos">1 753A / 494V &rarr; 3,5:1 A</span></td></tr>
+  </table>
+  <p style="margin:4px 0;">Profil d&eacute;fensif, carnet acheteur r&eacute;gulier. PER l&eacute;g&egrave;rement au-dessus de la zone cible. Int&eacute;ressant si correction vers 3 900-4 000 F.</p>
+</div>
+
+<!-- SECTION 4 -->
+<h2>Section 4 &mdash; Top 5 recommandations VENDRE / ALL&Eacute;GER (semaine suivante)</h2>
+
+<table>
+  <tr><th>Titre</th><th>Symbole</th><th>Action</th><th>Cours vendredi</th><th>Justification</th><th>Risque si on reste</th></tr>
+  <tr>
+    <td><strong>SGB CI</strong></td><td>SGBC</td>
+    <td><span class="vendre">VENDRE</span></td>
+    <td>38 500 F</td>
+    <td>Mur vendeur 2 562V vs 7A (<strong>366:1</strong>) — 2e s&eacute;ance — signal institutionnel massif</td>
+    <td class="neg">Correction vers 36 000&ndash;37 000 F</td>
+  </tr>
+  <tr>
+    <td><strong>PALM CI</strong></td><td>PALC</td>
+    <td><span class="vendre">VENDRE</span></td>
+    <td>9 000 F</td>
+    <td>Mur vendeur 516V vs 4A (<strong>129:1</strong>) + baisse -2,17 % + catalyseur ex-div &eacute;puis&eacute;</td>
+    <td class="neg">Poursuite de la correction</td>
+  </tr>
+  <tr>
+    <td><strong>SOLIBRA CI</strong></td><td>SLBC</td>
+    <td><span class="vendre">VENDRE</span></td>
+    <td>37 250 F</td>
+    <td>Mur vendeur 1 472V vs 53A (27,8:1) + baisse -1,95 % + ex-div &eacute;puis&eacute;</td>
+    <td class="neg">D&eacute;crochage institutionnel</td>
+  </tr>
+  <tr>
+    <td><strong>NEI-CEDA CI</strong></td><td>NEIC</td>
+    <td><span class="alleger">ALL&Eacute;GER</span></td>
+    <td>3 000 F</td>
+    <td><span class="urgent">Ex-div 9/09 (mardi prochain)</span> &mdash; drop m&eacute;canique ~140 F &mdash; carnet vendeur 27,6:1</td>
+    <td class="neg">Drop m&eacute;canique in&eacute;vitable</td>
+  </tr>
+  <tr>
+    <td><strong>ONATEL BF</strong></td><td>ONTBF</td>
+    <td><span class="alleger">ALL&Eacute;GER</span></td>
+    <td>2 920 F</td>
+    <td>Retournement brutal : 3 286V vs 264A (12,4:1) apr&egrave;s avoir &eacute;t&eacute; ACHETER BOC163&ndash;166</td>
+    <td class="neg">Pression baissière non r&eacute;solue</td>
+  </tr>
+</table>
+
+<div class="stock-alleger">
+  <strong>Note BIIC BN (BICB) &mdash; <span class="alleger">ALL&Eacute;GER 50 %</span> (hors tableau principal)</strong><br>
+  Objectif +15 % d&eacute;pass&eacute; : +16,85 % en 1 semaine (8 900 &rarr; 10 400 F). R&egrave;gle de prise de profit d&eacute;clench&eacute;e. Conserver 50 % de la position pour capter l&rsquo;&eacute;ventuelle continuation (carnet 242:1 acheteur le vendredi — &eacute;lan intact mais objectif atteint).<br>
+  <strong>Note SODECI (SDCC) &mdash; <span class="alleger">ALL&Eacute;GER</span> avant le 15/09 :</strong> Ex-div 15/09 &rarr; drop m&eacute;canique ~462 F (dividende net PP). Carnet d&eacute;j&agrave; vendeur 65,8:1.
+</div>
+
+<div class="signal-alert">
+  <strong>[!] Alerte SGBC :</strong> La SGB CI &eacute;tait recommand&eacute;e <span class="acheter">ACHETER</span> avec un score de <strong>8/10 pendant 4 s&eacute;ances cons&eacute;cutives</strong> (PER 11,82, Rdt 6 %). Le retournement brutal du vendredi (366:1 vendeur) illustre le risque d&rsquo;un bloc institutionnel qui inverse une tendance en une s&eacute;ance. <strong>Les porteurs doivent sortir sans attendre.</strong>
+</div>
+
+<!-- SECTION 5 -->
+<h2>Section 5 &mdash; Actions &agrave; &Eacute;VITER (semaine suivante)</h2>
+
+<table>
+  <tr><th>Titre</th><th>Symbole</th><th>Raison</th><th>Risque chiffr&eacute;</th></tr>
+  <tr><td>NEI-CEDA CI</td><td>NEIC</td><td>Ex-div 9/09 &rarr; drop m&eacute;canique imminent</td><td class="neg">-140 F (-4,7 %) sur le cours</td></tr>
+  <tr><td>SODECI</td><td>SDCC</td><td>Ex-div 15/09 &rarr; drop m&eacute;canique</td><td class="neg">-462 F (-3,4 %) sur le cours</td></tr>
+  <tr><td>SMB CI</td><td>SMBC</td><td>Ex-div 17/09 &rarr; drop m&eacute;canique</td><td class="neg">-704 F (-4,0 %) sur le cours</td></tr>
+  <tr><td>SICOR CI</td><td>SICC</td><td>PER <strong>1 919</strong> &mdash; bulle absolue (106 titres la semaine)</td><td class="neg">D&eacute;crochage violent possible &agrave; tout moment</td></tr>
+  <tr><td>BERNAB&Eacute; CI</td><td>BNBC</td><td>PER <strong>645</strong> &mdash; bulle structurelle permanente</td><td class="neg">Valorisation sans fondement &eacute;conomique</td></tr>
+  <tr><td>UNILEVER CI</td><td>UNLC</td><td>PER <strong>779</strong> &mdash; bulle sp&eacute;culative permanente</td><td class="neg">13 titres &eacute;chang&eacute;s sur la semaine enti&egrave;re</td></tr>
+  <tr><td>SAFCA CI</td><td>SAFC</td><td>PER <strong>102</strong> &mdash; sp&eacute;culatiF, +4,66 % vendredi sur volume &eacute;lev&eacute;</td><td class="neg">Pas de valeur fondamentale — risque de d&eacute;crochage</td></tr>
+  <tr><td>AGL CI</td><td>SDSC</td><td>PER <strong>222</strong> &mdash; seuil anti-retour 2 431 F</td><td class="neg">NE PAS RE-ENTRER pour ex-vendeurs (&gt; 2 431 F)</td></tr>
+  <tr><td>SGB CI</td><td>SGBC</td><td>Mur vendeur 366:1 &mdash; retournement institutionnel brutal</td><td class="neg">Correction probable -5 % &agrave; -10 %</td></tr>
+  <tr><td>ONATEL BF</td><td>ONTBF</td><td>Mur vendeur 12,4:1 &mdash; retournement soudain apr&egrave;s ACHETER</td><td class="neg">Pression baissière non r&eacute;solue</td></tr>
+</table>
+
+<!-- SECTION 6 -->
+<h2>Section 6 &mdash; Signaux structurels de la semaine</h2>
+
+<div class="signal-rot">
+  <h3 style="margin-top:0;color:#0b3d91;">Signal 1 &mdash; Distorsion ETIT syst&eacute;mique (persistante)</h3>
+  <p>ECOBANK TRANSNATIONAL (ETIT) a repr&eacute;sent&eacute; <strong>69,8 % du volume total du vendredi</strong> (757 620 titres sur 1 084 599) &agrave; 70 F/titre pour seulement 53 MFCFA de valeur. Cette distorsion syst&eacute;mique est pr&eacute;sente &agrave; chaque s&eacute;ance : le volume r&eacute;el hors ETIT &eacute;tait de <strong>326 979 titres</strong> vendredi, soit -70 % vs le volume affich&eacute;. <strong>Toujours retrancher ETIT des statistiques de volume.</strong></p>
+</div>
+
+<div class="signal-rot">
+  <h3 style="margin-top:0;color:#0b3d91;">Signal 2 &mdash; Re-rating BICB (+16,85 % en 4 s&eacute;ances)</h3>
+  <p>BIIC BN est pass&eacute; de 8 900 F (lundi) &agrave; 10 400 F (vendredi) avec des volumes cumulatifs importants (51 213 mardi, 39 046 jeudi). Mouvement institutionnel r&eacute;el sur un titre sous-valoris&eacute;. L&rsquo;objectif de +15 % &eacute;tant d&eacute;pass&eacute;, la prise de profit partielle est maintenant la d&eacute;cision rationnelle.</p>
+</div>
+
+<div class="signal-rot">
+  <h3 style="margin-top:0;color:#cf222e;">Signal 3 &mdash; Retournement inattendu SGBC (risque hebdo majeur)</h3>
+  <p>SGB CI a &eacute;t&eacute; recommand&eacute; <span class="acheter">ACHETER</span> pendant 4 s&eacute;ances (score 8/10, PER 11,82). Vendredi, le carnet passe &agrave; <strong>366:1 vendeur</strong> (2 562V vs 7A) sans avertissement. Ce retournement illustre le risque des carnets institutionnels : un bloc d&rsquo;ordres peut inverser la dynamique d&rsquo;un titre en une s&eacute;ance. Signal de vigilance accru sur tous les titres en progression r&eacute;guli&egrave;re.</p>
+</div>
+
+<div class="signal-rot">
+  <h3 style="margin-top:0;color:#0b3d91;">Signal 4 &mdash; Rotation obligataire (jeudi BOC166)</h3>
+  <p>Volume obligataire du jeudi : <strong>+10 873 %</strong> &agrave; 1,5 GFCFA. Cot ation prochaine de 4 nouvelles obligations de l&rsquo;&Eacute;tat du S&eacute;n&eacute;gal (EOS.O34-37) le 8 septembre. Les institutionnels arbitrent partiellement entre actions et titres de cr&eacute;ance d&rsquo;&Eacute;tat. Signal de prudence sur les actions &agrave; PER &eacute;lev&eacute;.</p>
+</div>
+
+<!-- SECTION 7 -->
+<h2>Section 7 &mdash; Agenda catalyseurs (W37 : 7&ndash;11 septembre 2026)</h2>
+
+<table>
+  <tr><th>Date</th><th>Titre</th><th>Symbole</th><th>&Eacute;v&eacute;nement</th><th>Impact anticip&eacute;</th></tr>
+  <tr>
+    <td>7/09 (lun)</td><td>NESTL&Eacute; CI</td><td>NTLC</td>
+    <td>Paiement dividende (ex-div 4/09 pass&eacute;) &mdash; 369,60 F net PP</td>
+    <td><span class="attendre">ATTENDRE</span> &mdash; cours en zone d&rsquo;ajustement post-ex-div</td>
+  </tr>
+  <tr>
+    <td>8/09 (mar)</td><td>March&eacute; obligataire</td><td>&mdash;</td>
+    <td>1&egrave;re cotation 4 obligations EOS (S&eacute;n&eacute;gal) : EOS.O34&ndash;O37</td>
+    <td><span class="surveiller">SURVEILLER</span> &mdash; absorption institutionnelle, possible rotation depuis actions</td>
+  </tr>
+  <tr style="background:#fff3cd;">
+    <td><strong>9/09 (mer)</strong></td><td><strong>NEI-CEDA CI</strong></td><td><strong>NEIC</strong></td>
+    <td><strong>EX-DIVIDENDE</strong> &mdash; div brut 159,54 F, net PP <strong>140,40 F</strong></td>
+    <td><span class="eviter">&Eacute;VITER</span> &mdash; drop m&eacute;canique ~140 F (-4,7 %) in&eacute;vitable</td>
+  </tr>
+  <tr>
+    <td>10/09 (jeu)</td><td>NEI-CEDA CI</td><td>NEIC</td>
+    <td>Paiement dividende &mdash; 140,40 F net PP</td>
+    <td><span class="attendre">ATTENDRE</span> &mdash; cours en ajustement post-drop</td>
+  </tr>
+  <tr style="background:#fff3cd;">
+    <td><strong>15/09 (mer)</strong></td><td><strong>SODECI</strong></td><td><strong>SDCC</strong></td>
+    <td><strong>EX-DIVIDENDE</strong> &mdash; div brut 525 F, net PP <strong>462 F</strong></td>
+    <td><span class="eviter">&Eacute;VITER</span> / <span class="alleger">ALL&Eacute;GER avant</span> &mdash; drop ~462 F</td>
+  </tr>
+  <tr style="background:#fff3cd;">
+    <td><strong>17/09 (ven)</strong></td><td><strong>SMB CI</strong></td><td><strong>SMBC</strong></td>
+    <td><strong>EX-DIVIDENDE</strong> &mdash; div brut 800 F, net PP <strong>704 F</strong></td>
+    <td><span class="alleger">ALL&Eacute;GER avant</span> si porteur &mdash; drop ~704 F (-4 %)</td>
+  </tr>
+</table>
+
+<!-- SECTION 8 -->
+<h2>Section 8 &mdash; Plan d&rsquo;action (semaine W37)</h2>
+
+<table>
+  <tr><th>Action</th><th>Titre</th><th>Symbole</th><th>Cours cible</th><th>Timing</th><th>Justification</th></tr>
+  <tr>
+    <td><span class="acheter">ACHETER</span></td><td>ORAGROUP TOGO</td><td>ORGT</td>
+    <td>&le; 3 335 F</td><td>Lundi 7/09 (confirmer carnet)</td>
+    <td>Score 8/10, PER 10,70, carnet 16,7:1 acheteur</td>
+  </tr>
+  <tr>
+    <td><span class="acheter">ACHETER</span></td><td>BOA S&eacute;n&eacute;gal</td><td>BOAS</td>
+    <td>&le; 8 240 F</td><td>Apr&egrave;s absorption carnet</td>
+    <td>PER 13,54, Rdt 5,46 %, fondamentaux solides</td>
+  </tr>
+  <tr>
+    <td><span class="attendre">ATTENDRE</span></td><td>Loterie B&eacute;nin</td><td>LNBB</td>
+    <td>&le; 4 050 F</td><td>Court terme</td>
+    <td>Carnet 3,5:1A, profil d&eacute;fensif, PER l&eacute;g. hors zone</td>
+  </tr>
+  <tr>
+    <td><span class="surveiller">SURVEILLER</span></td><td>BOA BF</td><td>BOABF</td>
+    <td>&mdash;</td><td>Lundi matin</td>
+    <td>Renversement 8,3:1A — confirmer sur BOC168</td>
+  </tr>
+  <tr>
+    <td><span class="conserver">CONSERVER</span></td><td>SITAB CI</td><td>STBC</td>
+    <td>22 100 F</td><td>Porteurs uniquement</td>
+    <td>PER 10,88, Rdt 7,72 % — seuil NRP 21 535 F</td>
+  </tr>
+  <tr>
+    <td><span class="maintenir">MAINTENIR</span></td><td>Sonatel SN</td><td>SNTS</td>
+    <td>38 500 F</td><td>Horizon 20 ans</td>
+    <td>PR 34 000 F, +13,24 % latent &mdash; ne pas sortir</td>
+  </tr>
+  <tr>
+    <td><span class="alleger">ALL&Eacute;GER</span></td><td>BIIC BN</td><td>BICB</td>
+    <td>10 400 F</td><td>Immédiat (lundi)</td>
+    <td>Objectif +15 % d&eacute;pass&eacute; (+16,85 %) &mdash; prise de profit 50 %</td>
+  </tr>
+  <tr style="background:#fff3cd;">
+    <td><span class="alleger">ALL&Eacute;GER</span></td><td>NEI-CEDA CI</td><td>NEIC</td>
+    <td>&gt; 3 000 F</td><td><strong class="urgent">Avant 9/09 URGENT</strong></td>
+    <td>Ex-div 9/09 &rarr; drop ~140 F in&eacute;vitable</td>
+  </tr>
+  <tr>
+    <td><span class="alleger">ALL&Eacute;GER</span></td><td>SODECI</td><td>SDCC</td>
+    <td>&gt; 13 500 F</td><td>Avant 15/09</td>
+    <td>Ex-div 15/09 &rarr; drop ~462 F in&eacute;vitable</td>
+  </tr>
+  <tr>
+    <td><span class="alleger">ALL&Eacute;GER</span></td><td>ONATEL BF</td><td>ONTBF</td>
+    <td>2 920 F</td><td>Immédiat</td>
+    <td>Retournement 12,4:1V &mdash; signal de sortie</td>
+  </tr>
+  <tr style="background:#fff0f0;">
+    <td><span class="vendre">VENDRE</span></td><td>SGB CI</td><td>SGBC</td>
+    <td>38 500 F</td><td><strong class="urgent">URGENT lundi</strong></td>
+    <td>Mur vendeur 366:1 &mdash; retournement institutionnel</td>
+  </tr>
+  <tr style="background:#fff0f0;">
+    <td><span class="vendre">VENDRE</span></td><td>PALM CI</td><td>PALC</td>
+    <td>9 000 F</td><td><strong class="urgent">URGENT lundi</strong></td>
+    <td>Mur vendeur 129:1, catalyseur &eacute;puis&eacute;</td>
+  </tr>
+  <tr style="background:#fff0f0;">
+    <td><span class="vendre">VENDRE</span></td><td>SOLIBRA CI</td><td>SLBC</td>
+    <td>37 250 F</td><td><strong class="urgent">URGENT lundi</strong></td>
+    <td>Mur vendeur 27,8:1, catalyseur &eacute;puis&eacute;</td>
+  </tr>
+  <tr>
+    <td><span class="eviter">&Eacute;VITER</span></td><td>NEI-CEDA CI</td><td>NEIC</td>
+    <td>&mdash;</td><td>Post-9/09</td>
+    <td>Drop ex-div + carnet vendeur 27,6:1</td>
+  </tr>
+  <tr>
+    <td><span class="eviter">&Eacute;VITER</span></td><td>SODECI</td><td>SDCC</td>
+    <td>&mdash;</td><td>Post-15/09</td>
+    <td>Drop ex-div 462 F pr&eacute;visible</td>
+  </tr>
+  <tr>
+    <td><span class="eviter">&Eacute;VITER</span></td><td>SMB CI</td><td>SMBC</td>
+    <td>&mdash;</td><td>Avant ex-div 17/09</td>
+    <td>Drop ~704 F &mdash; porteurs : d&eacute;cision &agrave; prendre</td>
+  </tr>
+  <tr>
+    <td><span class="eviter">&Eacute;VITER</span></td><td>SICOR CI / BNBC / UNLC</td><td>&mdash;</td>
+    <td>&mdash;</td><td>Permanent</td>
+    <td>Bulles structurelles (PER &gt; 645)</td>
+  </tr>
+</table>
+
+<div class="disclaimer">
+  <strong>Disclaimer :</strong> Ce rapport est produit &agrave; des fins p&eacute;dagogiques et d&rsquo;aide &agrave; la d&eacute;cision, synth&eacute;tisant les donn&eacute;es des BOC N&deg;163 &agrave; 167 (BRVM, semaine du 31 ao&ucirc;t au 4 septembre 2026). Il ne constitue pas un conseil personnalis&eacute; en investissement. Les donn&eacute;es proviennent exclusivement des rapports BOC_REVU quotidiens correspondants. Tout investissement comporte des risques de perte en capital. Les performances pass&eacute;es ne pr&eacute;jugent pas des performances futures. Les d&eacute;cisions d&rsquo;investissement rel&egrave;vent de la seule responsabilit&eacute; de l&rsquo;investisseur.
+  </div>
+
+</div>

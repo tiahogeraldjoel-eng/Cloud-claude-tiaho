@@ -1,0 +1,379 @@
+<meta charset="UTF-8">
+<title>BOC_HEBDO — Semaine W30 — 20 au 24 juillet 2026</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #24292f; margin: 0; padding: 20px 32px; background: #fff; }
+  h1 { color: #0b3d91; font-size: 1.5em; border-bottom: 3px solid #0b3d91; padding-bottom: 8px; margin-top: 24px; }
+  h2 { color: #0b3d91; font-size: 1.15em; border-left: 4px solid #0b3d91; padding-left: 10px; margin-top: 20px; }
+  h3 { color: #0b3d91; font-size: 1.0em; margin-top: 16px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 12px; }
+  th { background: #0b3d91; color: #fff; padding: 7px 10px; text-align: left; }
+  td { padding: 6px 10px; border-bottom: 1px solid #e1e4e8; }
+  tr:nth-child(even) td { background: #f6f8fa; }
+  tr:nth-child(odd) td { background: #fff; }
+  .pos { color: #1a7f37; font-weight: 700; }
+  .neg { color: #cf222e; font-weight: 700; }
+  .warn { color: #bf8700; font-weight: 700; }
+  .acheter  { background: #1a7f37; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .alleger  { background: #e36209; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .vendre   { background: #8b0000; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .attendre { background: #bf8700; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .eviter   { background: #cf222e; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .surveiller { background: #0b3d91; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .conserver  { background: #57606a; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .kpi-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0 24px 0; }
+  .kpi { background: #eef3fb; border: 1px solid #cdd9ea; border-radius: 6px; padding: 10px 16px; text-align: center; min-width: 110px; flex: 1; }
+  .kpi .val { font-size: 1.45em; font-weight: 800; color: #0b3d91; }
+  .kpi .val.pos { color: #1a7f37; }
+  .kpi .val.neg { color: #cf222e; }
+  .kpi .lbl { font-size: 10px; color: #57606a; text-transform: uppercase; letter-spacing: .04em; margin-top: 3px; }
+  .stock-acheter { border-left: 4px solid #1a7f37; background: #f0faf3; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-eviter  { border-left: 4px solid #cf222e; background: #fdecea; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-vendre  { border-left: 4px solid #8b0000; background: #fff0f0; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-alleger { border-left: 4px solid #e36209; background: #fff5ec; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .alert-box { border-left: 4px solid #cf222e; background: #fdecea; padding: 10px 14px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .info-box  { border-left: 4px solid #bf8700; background: #fff8e1; padding: 10px 14px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .success-box { border-left: 4px solid #1a7f37; background: #f0faf3; padding: 10px 14px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .signal-rot { background: #f0f4ff; border: 2px solid #0b3d91; border-radius: 6px; padding: 12px 16px; margin: 12px 0; }
+  .medal-gold   { background: #ffd700; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-silver { background: #c0c0c0; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-bronze { background: #cd7f32; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-4, .medal-5 { background: #57606a; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .biais-hausse { background: #1a7f37; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-vente  { background: #cf222e; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-neutre { background: #57606a; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-mixte  { background: #bf8700; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .disclaimer { border: 1px solid #cdd9ea; background: #f6f8fa; padding: 12px 16px; border-radius: 6px; font-size: 11px; color: #57606a; margin-top: 24px; }
+  strong { font-weight: 700; }
+</style>
+
+<h1>BOC_HEBDO &#8212; Synth&#232;se Hebdomadaire BRVM &#8212; Semaine W30 (20&#8211;24 juillet 2026)</h1>
+<p><strong>5 s&#233;ances analys&#233;es :</strong> BOC N&#xB0;135 (lundi 20/07) au N&#xB0;139 (vendredi 24/07)</p>
+
+<div class="kpi-row">
+  <div class="kpi">
+    <div class="val pos">+2.29%</div>
+    <div class="lbl">Perf. Composite W30</div>
+  </div>
+  <div class="kpi">
+    <div class="val pos">+40.08%</div>
+    <div class="lbl">YTD (cl&#244;ture vendredi)</div>
+  </div>
+  <div class="kpi">
+    <div class="val">484.32</div>
+    <div class="lbl">Composite vendredi</div>
+  </div>
+  <div class="kpi">
+    <div class="val pos">3 / 5</div>
+    <div class="lbl">Sessions positives</div>
+  </div>
+  <div class="kpi">
+    <div class="val neg">VENDEUR</div>
+    <div class="lbl">Biais cl&#244;ture</div>
+  </div>
+</div>
+
+<h2>Section 1 &#8212; Bilan indices de la semaine</h2>
+
+<table>
+  <thead><tr><th>S&#233;ance</th><th>BOC N&#xB0;</th><th>Composite</th><th>Var. jour</th><th>Biais (H/B)</th></tr></thead>
+  <tbody>
+    <tr><td>Lundi 20/07</td><td>135</td><td>473.48</td><td class="neg">-1.06%</td><td><span class="biais-vente">VENDEUR</span> 18H/27B</td></tr>
+    <tr><td>Mardi 21/07</td><td>136</td><td>471.83</td><td class="neg">-0.35%</td><td><span class="biais-mixte">NEUTRE/ACH</span> 24H/17B</td></tr>
+    <tr><td>Mercredi 22/07</td><td>137</td><td>475.57</td><td class="pos">+0.79%</td><td><span class="biais-hausse">ACHETEUR</span> 23H/13B</td></tr>
+    <tr><td>Jeudi 23/07</td><td>138</td><td>481.64</td><td class="pos">+1.28%</td><td><span class="biais-hausse">ACHETEUR</span> 24H/15B</td></tr>
+    <tr><td>Vendredi 24/07</td><td>139</td><td>484.32</td><td class="pos">+0.56%</td><td><span class="biais-vente">VENDEUR</span> 18H/24B</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Performance hebdomadaire Composite : <span class="pos">+2.29%</span></strong> (473.48 &#8594; 484.32) | YTD vendredi : <span class="pos">+40.08%</span> | Sessions positives : 3/5</p>
+
+<div class="info-box">
+  <strong>[!] Divergence indice/breadth en cl&#244;ture de semaine :</strong> La semaine W30 s&#39;est construite en &#171;V&#187; (lundi-mardi sous pression, mercredi-vendredi en rebond). Mais vendredi, le Composite affiche +0.56% pendant que 24 titres baissent contre seulement 18 en hausse. La hausse de l&#39;indice est port&#233;e par quelques m&#233;ga-capitalisations &#8212; la majorit&#233; du march&#233; recule. Le biais de cl&#244;ture de W30 est <strong>VENDEUR</strong>. Signal d&#39;avertissement pour W31.
+</div>
+
+<hr>
+
+<h2>Section 2 &#8212; Top 5 actions les plus performantes</h2>
+<p><em>Performance hebdomadaire : cours lundi BOC 135 &#8594; cours vendredi BOC 139</em></p>
+
+<table>
+  <thead><tr><th>Rang</th><th>Titre</th><th>Symbole</th><th>Cours lundi</th><th>Cours vendredi</th><th>Perf. hebdo</th><th>Commentaire</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="medal-gold">#1</span></td>
+      <td><strong>Onatel BF</strong></td><td>ONTBF</td>
+      <td>2 675 F</td><td>2 800 F</td>
+      <td class="pos"><strong>+4.67%</strong></td>
+      <td>Absorption progressive du mur vendeur 2 382:1 (lundi) &#8212; retournement confirm&#233; sur 5 s&#233;ances</td>
+    </tr>
+    <tr>
+      <td><span class="medal-silver">#2</span></td>
+      <td><strong>BOA CI</strong></td><td>BOAC</td>
+      <td>9 790 F</td><td>10 200 F</td>
+      <td class="pos"><strong>+4.19%</strong></td>
+      <td class="warn">Progression r&#233;guli&#232;re mer/jeu, MAIS retournement carnet vendeur vendredi (47:1) &#8212; momentum &#233;puis&#233;</td>
+    </tr>
+    <tr>
+      <td><span class="medal-bronze">#3</span></td>
+      <td><strong>BOA S&#233;n&#233;gal</strong></td><td>BOAS</td>
+      <td>7 550 F</td><td>7 845 F</td>
+      <td class="pos"><strong>+3.91%</strong></td>
+      <td class="pos">Seul titre du Top 5 &#224; terminer avec carnet acheteur (4.1:1) vendredi &#8212; signal le plus propre</td>
+    </tr>
+    <tr>
+      <td><span class="medal-4">#4</span></td>
+      <td><strong>NSIA Banque CI</strong></td><td>NSBC</td>
+      <td>22 560 F</td><td>23 400 F</td>
+      <td class="pos"><strong>+3.72%</strong></td>
+      <td>Positionnement pr&#233;-ex-div (div 768.16 F brut, paiement 04/08) &#8212; carnet retourn&#233; vendeur vendredi</td>
+    </tr>
+    <tr>
+      <td><span class="medal-5">#5</span></td>
+      <td><strong>Orange CI</strong></td><td>ORAC</td>
+      <td>16 150 F</td><td>16 725 F</td>
+      <td class="pos"><strong>+3.56%</strong></td>
+      <td class="warn">Hausse confirm&#233;e mais carnet 26.6:1 vendeur vendredi &#8212; signal de distribution d&#233;guis&#233;e</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="success-box">
+  <strong>Mention sp&#233;ciale &#8212; BIIC BN (BICB) : +7.48% sur 2 s&#233;ances</strong> (jeudi 7 085 F &#8594; vendredi 7 615 F &#8212; performance record de la semaine sur 2 jours). Anomalie post-ex-div exceptionnelle : le cours a progress&#233; malgr&#233; le d&#233;tachement du dividende 254.6 F net. Carnet vendredi : 14 702 acheteurs &#171;March&#233;&#187; / 0 vendeur. &#192; distinguer des autres performeurs : spike concentr&#233; sur 2 s&#233;ances, pas de donn&#233;e lundi&#8594;vendredi.
+</div>
+
+<div class="alert-box">
+  <strong>[!] Avertissement BOAC et ORAC :</strong> Malgr&#233; leur pr&#233;sence dans le Top 5, ces deux titres cl&#244;turent avec des carnets vendeurs lourds (47:1 et 26.6:1). La performance hebdomadaire reflète la progression en milieu de semaine &#8212; pas la dynamique de vendredi. Les porteurs doivent agir (voir Section 4).
+</div>
+
+<hr>
+
+<h2>Section 3 &#8212; Top 5 recommandations ACHETER (semaine W31)</h2>
+
+<div class="stock-acheter">
+  <span class="medal-gold">#1</span> <strong>BOA S&#233;n&#233;gal (BOAS) &#8212; <span class="acheter">ACHETER</span></strong><br>
+  Score moyen W30 : <strong>6.0/10</strong> (BOC135=4, BOC139=8) | PER : 12.89 | Rdt : 5.74% | Cours vendredi : 7 845 F<br>
+  Carnet vendredi : 45A / 11V &#8594; <strong class="pos">4.1:1 ACHETEUR</strong> &#8212; signal le plus propre de la cl&#244;ture.<br>
+  Momentum authentique et croissant sur la semaine (+3.91%). Volume 62M FCFA jeudi confirme l&#39;int&#233;r&#234;t institutionnel.<br>
+  <strong>Cours cible entr&#233;e :</strong> 7 800&#8211;7 845 F &#8212; Lundi 27/07 ouverture. Conviction : <strong class="pos">HAUTE</strong>.
+</div>
+
+<div class="stock-acheter">
+  <span class="medal-silver">#2</span> <strong>Coris Bank International (CBIBF) &#8212; <span class="acheter">ACHETER</span></strong><br>
+  Score moyen W30 : <strong>4.63/10</strong> (4 s&#233;ances) / <strong>Score vendredi : 7.5/10</strong> | PER : 13.19 | Cours vendredi : 27 000 F<br>
+  Carnet vendredi : 79A / 1V &#8594; <strong class="pos">79:1 ACHETEUR</strong> &#8212; signal de demande institutionnelle ultra-concentr&#233;e.<br>
+  Retournement complet depuis le mur vendeur 19.25:1 du lundi (BOC 135) &#8594; 79:1 acheteur vendredi.<br>
+  <strong>Cours cible entr&#233;e :</strong> &#8804; 27 000 F &#8212; absorption totale de l&#39;offre probable. Conviction : <strong class="pos">HAUTE</strong>.
+</div>
+
+<div class="stock-acheter">
+  <span class="medal-bronze">#3</span> <strong>NSIA Banque CI (NSBC) &#8212; <span class="acheter">ACHETER</span> URGENT avant le 30/07</strong><br>
+  Score moyen W30 : <strong>7.13/10</strong> (4 s&#233;ances) | PER : 14.22 | Dividende brut : 768.16 F (paiement 04/08) | Cours : 23 400 F<br>
+  Dernier achat &#233;ligible dividende ~30/07. Rendement court terme : ~3.3% sur 7 jours.<br>
+  Carnet vendredi 14.1:1 vendeur &#8212; mais la fen&#234;tre d&#39;ex-div prime sur le signal carnet.<br>
+  <strong>Cours cible entr&#233;e :</strong> &#8804; 23 200 F &#8212; lundi-mardi 27-28/07. Conviction : <strong>MOYENNE-HAUTE</strong> (urgence temporelle).
+</div>
+
+<div class="stock-acheter">
+  <span style="background:#57606a;color:#fff;padding:1px 8px;border-radius:3px;font-weight:700;">#4</span> <strong>Sonatel SN (SNTS) &#8212; <span class="surveiller">SURVEILLER</span> / Potentiel post-r&#233;sultats</strong><br>
+  Score moyen W30 : <strong>6.20/10</strong> (5 s&#233;ances) | PER : 7.62 &#8212; titre le plus sous-valoris&#233; de la cote | Rdt : 5.52% | Cours : 31 495 F<br>
+  R&#233;sultats H1 2026 publi&#233;s vendredi 24/07. R&#233;action neutre (-0.96%) &#8212; digestion en cours.<br>
+  <strong>Cours cible entr&#233;e :</strong> &lt; 31 500 F apr&#232;s confirmation absence de Profit Warning. Conviction : <strong>MOYENNE</strong>.
+</div>
+
+<div class="stock-acheter">
+  <span style="background:#57606a;color:#fff;padding:1px 8px;border-radius:3px;font-weight:700;">#5</span> <strong>SOGB CI (SOGC) &#8212; <span class="surveiller">SURVEILLER</span> / Ex-div captable, timing d&#233;licat</strong><br>
+  Score moyen W30 : <strong>8.33/10</strong> (3 s&#233;ances &#8212; meilleur score moyen de la semaine sur &ge;3 s&#233;ances) | PER : 14.21 | Dividende brut : 570 F (paiement 06/08)<br>
+  Carnet vendredi : 4A / 252V &#8594; <strong class="neg">63:1 VENDEUR</strong> &#8212; retournement brutal depuis BOC 138 (7:1 acheteur).<br>
+  Dernier achat &#233;ligible dividende ~01/08. Fen&#234;tre ouverte mais entr&#233;e conditionn&#233;e au rééquilibrage du carnet.<br>
+  <strong>Cours cible entr&#233;e :</strong> &lt; 8 100 F avec carnet &lt; 10:1 vendeur. Conviction : <strong class="warn">CONDITIONNELLE</strong>.
+</div>
+
+<hr>
+
+<h2>Section 4 &#8212; Top 5 recommandations VENDRE / ALL&#201;GER (semaine W31)</h2>
+<p><em>Pour les porteurs de ces titres uniquement.</em></p>
+
+<div class="stock-vendre">
+  <span class="medal-gold">#1</span> <strong>SMB CI (SMBC) &#8212; <span class="vendre">VENDRE</span></strong> &#8212; Cours vendredi : 16 000 F<br>
+  Exit institutionnel <strong>3 s&#233;ances cons&#233;cutives</strong> (BOC 137&#8211;139). Ratio BOC 139 : 435:1 (17 864 vendeurs / 41 acheteurs). Score moyen W30 : 2.0/10.<br>
+  <strong class="neg">Risque : Chute -5% &#224; -10% imminente</strong> si les acheteurs marginaux se retirent. Perte de capital certaine pour les porteurs inactifs.<br>
+  <strong>Action : SORTIE TOTALE LUNDI 27/07 &#192; L&#39;OUVERTURE.</strong>
+</div>
+
+<div class="stock-vendre">
+  <span class="medal-silver">#2</span> <strong>BOA BF (BOABF) &#8212; <span class="vendre">VENDRE</span></strong> &#8212; Cours ~7 200 F<br>
+  Signal VENDRE depuis BOC 135. Score moyen W30 : 3.67/10 (BOC 135=1, BOC 136=6, BOC 137=4). Mur vendeur institutionnel persistant, baisse -3.47% lundi.<br>
+  <strong class="neg">Risque : Acc&#233;l&#233;ration vers 6 700&#8211;6 500 F</strong> si le support 7 000 F cède.<br>
+  <strong>Action : SORTIE TOTALE DÈS LUNDI.</strong>
+</div>
+
+<div class="stock-alleger">
+  <span class="medal-bronze">#3</span> <strong>Ecobank CI (ECOC) &#8212; <span class="alleger">ALL&#201;GER</span></strong> &#8212; Cours vendredi : 16 245 F<br>
+  Distribution institutionnelle d&#233;guis&#233;e 2 s&#233;ances cons&#233;cutives (BOC 138 : 6 157:1 &#8594; BOC 139 : 81:1). Cours en hausse / carnet vendeur dominant.<br>
+  <strong class="warn">Risque : Correction vers 15 200&#8211;15 500 F.</strong> R&#233;duire la position de 50% lundi.<br>
+  Conserver le solde avec stop &#224; 15 500 F.
+</div>
+
+<div class="stock-alleger">
+  <span style="background:#57606a;color:#fff;padding:1px 8px;border-radius:3px;font-weight:700;">#4</span> <strong>BOA CI (BOAC) &#8212; <span class="alleger">ALL&#201;GER</span></strong> &#8212; Cours vendredi : 10 200 F<br>
+  Retournement carnet BOC 138 (36:1 acheteur) &#8594; BOC 139 (47:1 vendeur) pendant que le cours progressait +2%. Distribution silencieuse confirm&#233;e.<br>
+  <strong class="warn">Risque : Retour vers 9 700&#8211;9 900 F en W31.</strong> R&#233;duire la position de 50% lundi.
+</div>
+
+<div class="stock-alleger">
+  <span style="background:#57606a;color:#fff;padding:1px 8px;border-radius:3px;font-weight:700;">#5</span> <strong>SIB CI (SIBC) &#8212; <span class="alleger">ALL&#201;GER</span></strong> &#8212; Cours vendredi : 8 900 F<br>
+  Distribution post-ex-div (ex-date 24/07). Carnet vendredi : 579:1 vendeur (1 acheteur / 579 vendeurs). Catalyseur &#233;puis&#233;.<br>
+  <strong class="warn">Risque : Drop post-ex-div non encore absorb&#233; &#8212; correction -3% &#224; -5% probable.</strong> R&#233;duire 50% en d&#233;but de W31.
+</div>
+
+<hr>
+
+<h2>Section 5 &#8212; Actions &#224; &#201;VITER (semaine W31)</h2>
+
+<table>
+  <thead><tr><th>Titre</th><th>Symbole</th><th>Raison</th><th>Risque chiffr&#233;</th></tr></thead>
+  <tbody>
+    <tr><td class="neg"><strong>Unilever CI</strong></td><td>UNLC</td><td class="neg">Bulle permanente &#8212; PER 745.76</td><td class="neg">D&#233;connexion fondamentale totale</td></tr>
+    <tr><td class="neg"><strong>Bernab&#233; CI</strong></td><td>BNBC</td><td class="neg">Bulle permanente &#8212; PER 589.15</td><td class="neg">Aucune valeur intrins&#232;que &#224; ce cours</td></tr>
+    <tr><td class="neg"><strong>BOA NG</strong></td><td>BOAN</td><td class="neg">Bulle s&#233;v&#232;re &#8212; PER 269.36</td><td class="neg">Illiquidit&#233; + PER 18&#215; la valeur cible</td></tr>
+    <tr><td class="neg"><strong>SAFCA CI</strong></td><td>SAFC</td><td class="neg">PER 55.02 + dilution imminente (11/08)</td><td class="neg">+3 750 000 nouvelles actions = dilution ~53% &#8212; risque -20% &#224; -30% post-admission</td></tr>
+    <tr><td class="neg"><strong>CFAO Motors CI</strong></td><td>CFAC</td><td class="neg">PER 36.20 + mur vendeur 58:1</td><td class="neg">2 326 vendeurs r&#233;siduels &#8212; pression continue</td></tr>
+    <tr><td class="neg"><strong>AGL CI</strong></td><td>SDSC</td><td class="neg">R&#232;gle anti-aller-retour (seuil 2 431 F)</td><td class="neg">Cours 2 760 F &gt;&gt; seuil &#8594; r&#233;entr&#233;e impossible sans perte nette pour ex-porteurs</td></tr>
+    <tr><td class="warn"><strong>BIIC BN</strong></td><td>BICB</td><td class="warn">Ex-div consomm&#233;, spike +15% en 2 jours</td><td class="warn">Risque de correction naturelle apr&#232;s progression concentr&#233;e</td></tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h2>Section 6 &#8212; Signal structurel de la semaine</h2>
+
+<div class="signal-rot">
+  <h3>Signal principal : Accumulation institutionnelle massive sur obligations souveraines s&#233;n&#233;galaises</h3>
+  <p>Trois m&#233;ga-transactions cons&#233;cutives sur &#233;missions S&#233;n&#233;gal :</p>
+  <ul>
+    <li><strong>BOC 137 (mercredi 22/07)</strong> : EOS.O28 &#8212; ~1 000 000 000 FCFA</li>
+    <li><strong>BOC 138 (jeudi 23/07)</strong> : EOS.O27 &#8212; 594 000 000 FCFA</li>
+    <li><strong>BOC 139 (vendredi 24/07)</strong> : EOS.O27 &#8212; 442 655 400 FCFA</li>
+  </ul>
+  <p><strong>Total semaine : ~2 milliards FCFA</strong> sur dette souveraine s&#233;n&#233;galaise (S&#233;n&#233;gal 6.60% 2025-2030 et 6.75% 2025-2032). Trois jours cons&#233;cutifs sur le m&#234;me &#233;metteur signale une strat&#233;gie institutionnelle de long terme (fonds de pension, assureur, gestionnaire d&#39;actifs).</p>
+  <p>Parall&#232;lement, <strong>FSNLC.O1 (SENELEC 8.15%)</strong> a vu son mur vendeur enti&#232;rement absorb&#233; sur 2 s&#233;ances (BOC 138-139) &#8212; signal haussier oblig&#233;. Mais apparition d&#39;un nouveau mur vendeur sur <strong>EOS.O24</strong> vendredi : 22 273 titres @ 9 800 F = 218 M FCFA. Divergence intra-sectorielle &#224; surveiller en W31.</p>
+</div>
+
+<div class="info-box">
+  <strong>[!] Signal secondaire &#8212; Distorsion ETIT syst&#233;mique persistante :</strong><br>
+  Sur les 5 s&#233;ances de W30, ETIT a repr&#233;sent&#233; en moyenne <strong>91&#8211;93% du volume en unit&#233;s mais seulement 9&#8211;10% de la valeur transig&#233;e</strong>. Cette distorsion m&#233;canique invalide tout ratio volume/valeur calcul&#233; sans exclusion d&#39;ETIT. Toutes les analyses BOC_REVU de W30 ont appliqu&#233; l&#39;exclusion syst&#233;matique.
+</div>
+
+<div class="alert-box">
+  <strong>[!] Signal tertiaire &#8212; Retournements institutionnels simultan&#233;s vendredi :</strong><br>
+  BOAC et SOGC ont tous deux bascul&#233; de carnet acheteur dominant (BOC 138) &#224; carnet vendeur dominant (BOC 139) <strong>le m&#234;me jour</strong>, accompagn&#233;s de hausses de cours de +2% et -0.96% respectivement. Coordination institutionnelle &#8212; signal de rotation sectorielle potentielle hors des financi&#232;res &#224; surveiller en W31.
+</div>
+
+<hr>
+
+<h2>Section 7 &#8212; Agenda catalyseurs (semaine W31 : 27 juillet &#8211; 01 ao&#251;t 2026)</h2>
+
+<table>
+  <thead><tr><th>Date</th><th>Titre</th><th>Symbole</th><th>&#201;v&#233;nement</th><th>Impact anticip&#233;</th></tr></thead>
+  <tbody>
+    <tr><td>~29/07</td><td>LNB</td><td>LNBB</td><td>Dernier achat &#233;ligible dividende 164.17 F net (paiement 03/08)</td><td><span class="attendre">ATTENDRE</span> signal carnet</td></tr>
+    <tr><td><strong>~30/07</strong></td><td><strong>NSIA Banque CI</strong></td><td>NSBC</td><td><strong>DERNIER ACHAT</strong> &#233;ligible dividende 768.16 F brut (paiement 04/08)</td><td><span class="acheter">ACHETER</span> URGENT</td></tr>
+    <tr><td>01/08</td><td>SOGB CI</td><td>SOGC</td><td>Dernier achat &#233;ligible dividende 570 F brut (paiement 06/08)</td><td><span class="surveiller">SURVEILLER</span> carnet</td></tr>
+    <tr><td>Semaine W31</td><td>Sonatel SN</td><td>SNTS</td><td>Digestion r&#233;sultats H1 2026 &#8212; signal directionnel attendu</td><td><span class="surveiller">SURVEILLER</span></td></tr>
+    <tr><td>11/08</td><td>SAFCA CI</td><td>SAFC</td><td>Admission 3 750 000 actions nouvelles &#224; la cote (Avis 220-2026)</td><td><span class="eviter">&#201;VITER</span> &#8212; dilution ~53%</td></tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h2>Section 8 &#8212; Plan d&#39;action (semaine W31)</h2>
+
+<table>
+  <thead><tr><th>Urgence</th><th>Action</th><th>Titre</th><th>Symbole</th><th>Cours cible</th><th>Timing</th><th>Justification</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="neg"><strong>URGENT</strong></td><td><span class="vendre">VENDRE</span></td><td><strong>SMB CI</strong></td><td>SMBC</td>
+      <td>16 000 F</td><td>Lundi 27/07</td>
+      <td class="neg">Exit institutionnel 435:1 &#8212; 3&#232;me s&#233;ance &#8212; sortie totale imm&#233;diate</td>
+    </tr>
+    <tr>
+      <td class="neg"><strong>URGENT</strong></td><td><span class="vendre">VENDRE</span></td><td><strong>BOA BF</strong></td><td>BOABF</td>
+      <td>~7 200 F</td><td>Lundi 27/07</td>
+      <td class="neg">Mur vendeur persistant depuis W29, signal VENDRE depuis BOC 135</td>
+    </tr>
+    <tr>
+      <td class="pos"><strong>URGENT</strong></td><td><span class="acheter">ACHETER</span></td><td><strong>NSIA Banque CI</strong></td><td>NSBC</td>
+      <td>&#8804; 23 200 F</td><td>Avant 30/07</td>
+      <td class="pos">Dividende 768 F brut captable &#8212; fen&#234;tre se ferme fin de semaine</td>
+    </tr>
+    <tr>
+      <td class="pos"><strong>HAUTE</strong></td><td><span class="acheter">ACHETER</span></td><td><strong>BOA S&#233;n&#233;gal</strong></td><td>BOAS</td>
+      <td>7 800&#8211;7 845 F</td><td>Lundi 27/07</td>
+      <td class="pos">Signal carnet le plus propre (4.1:1 acheteur), momentum authentique</td>
+    </tr>
+    <tr>
+      <td class="pos"><strong>HAUTE</strong></td><td><span class="acheter">ACHETER</span></td><td><strong>Coris Bank</strong></td><td>CBIBF</td>
+      <td>&#8804; 27 000 F</td><td>Lundi 27/07</td>
+      <td class="pos">Carnet 79:1 acheteur &#8212; demande institutionnelle concentr&#233;e</td>
+    </tr>
+    <tr>
+      <td class="warn"><strong>HAUTE</strong></td><td><span class="alleger">ALL&#201;GER</span></td><td><strong>Ecobank CI</strong></td><td>ECOC</td>
+      <td>16 245 F</td><td>Lundi 27/07</td>
+      <td class="warn">Distribution 81:1 &#8212; r&#233;duire position de 50%</td>
+    </tr>
+    <tr>
+      <td class="warn"><strong>HAUTE</strong></td><td><span class="alleger">ALL&#201;GER</span></td><td><strong>BOA CI</strong></td><td>BOAC</td>
+      <td>10 200 F</td><td>Lundi 27/07</td>
+      <td class="warn">Retournement carnet 36:1&#8594;47:1 &#8212; r&#233;duire de 50%</td>
+    </tr>
+    <tr>
+      <td><strong>NORMALE</strong></td><td><span class="alleger">ALL&#201;GER</span></td><td>SIB CI</td><td>SIBC</td>
+      <td>8 900 F</td><td>D&#233;but W31</td>
+      <td>Distribution post-ex-div 579:1 &#8212; r&#233;duire position</td>
+    </tr>
+    <tr>
+      <td><strong>NORMALE</strong></td><td><span class="surveiller">SURVEILLER</span></td><td>SOGB CI</td><td>SOGC</td>
+      <td>&lt; 8 100 F</td><td>Avant 01/08</td>
+      <td>Ex-div 06/08 captable &#8212; attendre carnet &lt; 10:1 vendeur</td>
+    </tr>
+    <tr>
+      <td><strong>NORMALE</strong></td><td><span class="surveiller">SURVEILLER</span></td><td>BIIC BN</td><td>BICB</td>
+      <td>7 615 F</td><td>&#8212;</td>
+      <td>Anomalie post-ex-div &#8212; accumuler progressivement si carnet tient</td>
+    </tr>
+    <tr>
+      <td><strong>NORMALE</strong></td><td><span class="surveiller">SURVEILLER</span></td><td>Sonatel SN</td><td>SNTS</td>
+      <td>&lt; 31 500 F</td><td>Post-r&#233;sultats H1</td>
+      <td>PER 7.62 le plus attractif &#8212; attendre signal directionnel</td>
+    </tr>
+    <tr>
+      <td><strong>BASSE</strong></td><td><span class="attendre">ATTENDRE</span></td><td>Palm CI</td><td>PALC</td>
+      <td>&lt; 8 500 F</td><td>&#8212;</td>
+      <td>PER 8.67 attractif mais carnet 28.9:1 vendeur &#8212; attendre r&#233;&#233;quilibrage</td>
+    </tr>
+    <tr>
+      <td><strong>PERMANENTE</strong></td><td><span class="eviter">&#201;VITER</span></td><td>AGL CI</td><td>SDSC</td>
+      <td>&#8212;</td><td>&#8212;</td>
+      <td>Anti-aller-retour (seuil 2 431 F), cours 2 760 F &gt;&gt; seuil</td>
+    </tr>
+    <tr>
+      <td><strong>PERMANENTE</strong></td><td><span class="conserver">CONSERVER</span></td><td>SITAB CI</td><td>STBC</td>
+      <td>23 190 F</td><td>&#8212;</td>
+      <td>Anti-aller-retour (seuil 21 535 F) &#8212; porteurs conservent, anciens porteurs n&#39;entrent pas</td>
+    </tr>
+    <tr>
+      <td><strong>PERMANENTE</strong></td><td><span class="eviter">&#201;VITER</span></td><td>UNLC / BNBC</td><td>&#8212;</td>
+      <td>&#8212;</td><td>&#8212;</td>
+      <td>Bulles permanentes PER &gt; 500 &#8212; aucun fondamental</td>
+    </tr>
+    <tr>
+      <td><strong>PERMANENTE</strong></td><td><span class="eviter">&#201;VITER</span></td><td>SAFCA CI</td><td>SAFC</td>
+      <td>&#8212;</td><td>Avant 11/08</td>
+      <td>Dilution ~53% flottant &#8212; ne pas entrer avant l&#39;admission</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="disclaimer">
+  <strong>Disclaimer l&#233;gal :</strong> Ce document est produit &#224; titre p&#233;dagogique et informatif uniquement. Il ne constitue pas un conseil personnalis&#233; en investissement au sens de la r&#233;glementation en vigueur. Les donn&#233;es utilis&#233;es proviennent exclusivement des Bulletins Officiels de la Cote N&#xB0;135 &#224; 139 de la BRVM (semaine du 20 au 24 juillet 2026). Les performances pass&#233;es ne garantissent pas les performances futures. Tout investissement en bourse comporte des risques de perte en capital. L&#39;investisseur est seul responsable de ses d&#233;cisions d&#39;investissement.
+</div>

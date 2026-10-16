@@ -1,0 +1,546 @@
+<meta charset="UTF-8">
+<title>BOC_REVU N°135 — 20 juillet 2026</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #24292f; background: #fff; margin: 0; padding: 20px 32px; max-width: 1100px; margin: 0 auto; }
+  h1 { color: #0b3d91; border-bottom: 3px solid #0b3d91; padding-bottom: 8px; font-size: 1.6em; }
+  h2 { color: #0b3d91; border-left: 5px solid #0b3d91; padding-left: 10px; font-size: 1.15em; margin-top: 28px; }
+  h3 { color: #24292f; font-size: 1.0em; margin-top: 16px; }
+  .meta { color: #57606a; font-size: 12px; margin-bottom: 18px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 12px; }
+  th { background: #0b3d91; color: #fff; padding: 7px 10px; text-align: left; }
+  td { padding: 6px 10px; border-bottom: 1px solid #e1e4e8; }
+  tr:nth-child(even) td { background: #f6f8fa; }
+  tr:hover td { background: #eef3fb; }
+  .pos { color: #1a7f37; font-weight: 700; }
+  .neg { color: #cf222e; font-weight: 700; }
+  .neutre { color: #57606a; font-weight: 700; }
+  .warn { color: #bf8700; font-weight: 800; }
+  /* Badges recommandation */
+  .acheter  { background: #1a7f37; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+  .alleger  { background: #e36209; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+  .vendre   { background: #8b0000; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+  .attendre { background: #bf8700; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+  .eviter   { background: #cf222e; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+  .surveiller { background: #0b3d91; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+  .conserver  { background: #1a7f37; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+  .noreenter  { background: #8b0000; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+  /* Biais badge */
+  .biais-vendeur { background: #cf222e; color: #fff; padding: 3px 12px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .biais-acheteur { background: #1a7f37; color: #fff; padding: 3px 12px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  /* Blocs action */
+  .bloc-action { border-left: 4px solid #1a7f37; background: #f0faf3; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .bloc-vendre { border-left: 4px solid #8b0000; background: #fff0f0; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .bloc-alleger { border-left: 4px solid #e36209; background: #fff5ec; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .bloc-surveiller { border-left: 4px solid #0b3d91; background: #f0f4ff; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .bloc-attendre { border-left: 4px solid #bf8700; background: #fffbea; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .bloc-eviter { border-left: 4px solid #cf222e; background: #fdecea; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .bloc-antiretour { border-left: 4px solid #bf8700; background: #fffbea; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  /* Top3 */
+  .top3 { display: flex; gap: 12px; flex-wrap: wrap; margin: 14px 0; }
+  .top3-item { background: #f0faf3; border: 2px solid #1a7f37; border-radius: 6px; padding: 12px 16px; flex: 1; min-width: 200px; }
+  .top3-num { font-size: 1.4em; font-weight: 800; color: #1a7f37; }
+  /* Risques */
+  .risques { background: #fdecea; border: 2px solid #cf222e; border-radius: 6px; padding: 12px 16px; margin: 12px 0; }
+  .risques li { color: #cf222e; font-weight: 600; margin: 4px 0; }
+  /* KPI row */
+  .kpi-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 16px 0; }
+  .kpi { background: #eef3fb; border: 1px solid #cdd9ea; border-radius: 6px; padding: 10px 16px; text-align: center; flex: 1; min-width: 110px; }
+  .kpi .val { font-size: 1.5em; font-weight: 800; color: #0b3d91; }
+  .kpi .val.pos { color: #1a7f37; }
+  .kpi .val.neg { color: #cf222e; }
+  .kpi .lbl { font-size: 10px; color: #57606a; text-transform: uppercase; letter-spacing: .04em; }
+  .note { background: #fff8c5; border-left: 4px solid #bf8700; padding: 8px 12px; border-radius: 0 4px 4px 0; margin: 8px 0; font-size: 12px; }
+  .disclaimer { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; padding: 12px 16px; margin-top: 32px; font-size: 11px; color: #57606a; }
+  /* Medals */
+  .medal-gold   { background: #ffd700; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-silver { background: #c0c0c0; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-bronze { background: #cd7f32; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  td.score-high { font-weight: 800; color: #1a7f37; }
+  td.score-mid  { font-weight: 700; color: #bf8700; }
+  td.score-low  { color: #cf222e; }
+  .overflow-x { overflow-x: auto; }
+</style>
+
+<h1>BOC_REVU &mdash; N&deg;135 &mdash; Lundi 20 juillet 2026</h1>
+<p class="meta"><strong>March&eacute; :</strong> BRVM &nbsp;|&nbsp; <strong>S&eacute;ance :</strong> Lundi 20 juillet 2026 &nbsp;|&nbsp; <strong>BOC N&deg; :</strong> 135 &nbsp;|&nbsp; <strong>Biais :</strong> <span class="biais-vendeur">VENDEUR</span></p>
+
+<!-- KPI row -->
+<div class="kpi-row">
+  <div class="kpi"><div class="val neg">473.48</div><div class="lbl">Composite</div></div>
+  <div class="kpi"><div class="val neg">-1.06%</div><div class="lbl">Variation jour</div></div>
+  <div class="kpi"><div class="val pos">+36.94%</div><div class="lbl">YTD</div></div>
+  <div class="kpi"><div class="val">14.41</div><div class="lbl">PER march&eacute;</div></div>
+  <div class="kpi"><div class="val neg">18H / 27B</div><div class="lbl">Hausses / Baisses</div></div>
+  <div class="kpi"><div class="val">1,133M</div><div class="lbl">Valeur transig&eacute;e (FCFA)</div></div>
+</div>
+
+<!-- ================================================ -->
+<h2>&Eacute;tape 1 &mdash; Vue d&apos;ensemble du march&eacute;</h2>
+
+<h3>Indices g&eacute;n&eacute;raux</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Indice</th><th>Niveau</th><th>Variation jour</th><th>YTD</th></tr>
+  <tr><td>BRVM Composite</td><td>473.48</td><td class="neg">-1.06%</td><td class="pos">+36.94%</td></tr>
+  <tr><td>BRVM 30</td><td>225.24</td><td class="neg">-1.08%</td><td>&mdash;</td></tr>
+  <tr><td>BRVM Prestige</td><td>174.61</td><td class="neg">-0.25%</td><td>&mdash;</td></tr>
+  <tr><td>BRVM Principal</td><td>355.38</td><td class="neg">-2.06%</td><td>&mdash;</td></tr>
+</table>
+</div>
+
+<h3>Classement sectoriel par force (Valorisation + Momentum)</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Rang</th><th>Secteur</th><th>Variation</th><th>PER</th><th>Lecture</th></tr>
+  <tr><td><strong style="color:#1a7f37;">#1</strong></td><td>T&eacute;l&eacute;coms</td><td class="neutre">-0.03%</td><td>10.72</td><td>Meilleure valorisation + r&eacute;sistance d&eacute;fensive</td></tr>
+  <tr><td>#2</td><td>Services publics</td><td class="pos">+1.30%</td><td>21.08</td><td>Bon momentum, PER &eacute;lev&eacute; mais tenu</td></tr>
+  <tr><td>#3</td><td>Industriels</td><td class="pos">+0.88%</td><td>21.96</td><td>Dynamique positive, PER tendu</td></tr>
+  <tr><td>#4</td><td>Consommation de base</td><td class="neg">-1.34%</td><td>10.38</td><td>Valorisation excellente, pression vendeuse mod&eacute;r&eacute;e</td></tr>
+  <tr><td>#5</td><td>&Eacute;nergie</td><td class="neg">-1.64%</td><td>17.74</td><td>Recul mod&eacute;r&eacute;</td></tr>
+  <tr><td><strong style="color:#cf222e;">#6</strong></td><td>Services financiers</td><td class="neg">-2.07%</td><td>15.61</td><td><strong>Secteur le plus faible</strong> &mdash; pression g&eacute;n&eacute;ralis&eacute;e sur les bancaires</td></tr>
+  <tr><td style="color:#bf8700;">N/C</td><td>Consommation discr&eacute;tionnaire</td><td class="pos">+2.74%</td><td style="color:#cf222e;font-weight:700;">41.19</td><td><span style="color:#bf8700;">[!]</span> Momentum trompeur &mdash; PER 41 = zone bulle (exclu du top)</td></tr>
+</table>
+</div>
+
+<p><strong>Secteur le plus solide :</strong> <strong style="color:#1a7f37;">T&eacute;l&eacute;coms</strong> &mdash; PER 10.72 (meilleure valorisation sectorielle) + r&eacute;sistance quasi-stable en s&eacute;ance baissière.</p>
+<p><strong>Secteur le plus faible :</strong> <strong style="color:#cf222e;">Services financiers</strong> &mdash; -2.07% avec pression vendeuse g&eacute;n&eacute;ralis&eacute;e sur les valeurs bancaires.</p>
+<p><strong>Biais de march&eacute; :</strong> <span class="biais-vendeur">VENDEUR</span> &mdash; 27 titres en baisse vs 18 en hausse. Indice Principal &agrave; -2.06%. Ouverture de semaine W30 sous pression, prolongeant la consolidation de fin de W29.</p>
+
+<!-- ================================================ -->
+<h2>&Eacute;tape 2 &mdash; Filtrage des actions</h2>
+
+<h3>2A. Valorisation &mdash; PER cible 8&ndash;15, Rdt &ge; 5 %</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Titre</th><th>Symbole</th><th>Cours</th><th>PER</th><th>Rdt div.</th><th>Filtre</th><th>Commentaire</th></tr>
+  <tr><td>AGL</td><td>SDSC</td><td>2&nbsp;820 F</td><td style="color:#1a7f37;font-weight:700;">7.29</td><td>3.26%</td><td><span style="color:#1a7f37;font-weight:800;">&#10003;</span> PER / <span style="color:#cf222e;font-weight:800;">&#10007;</span> Rdt</td><td>PER excellent &mdash; Rdt sous seuil ; fondamentaux solides</td></tr>
+  <tr><td>SONATEL</td><td>SNTS</td><td>32&nbsp;000 F</td><td style="color:#1a7f37;font-weight:700;">7.74</td><td class="pos">5.44%</td><td><span style="color:#1a7f37;font-weight:800;">&#10003;</span> <span style="color:#1a7f37;font-weight:800;">&#10003;</span></td><td>Double crit&egrave;re atteint &mdash; valorisation de r&eacute;f&eacute;rence BRVM</td></tr>
+  <tr><td>PALM CI</td><td>PALM</td><td>8&nbsp;680 F</td><td style="color:#1a7f37;font-weight:700;">8.65</td><td class="pos">5.08%</td><td><span style="color:#1a7f37;font-weight:800;">&#10003;</span> <span style="color:#1a7f37;font-weight:800;">&#10003;</span></td><td>Zone id&eacute;ale &mdash; carnet d&eacute;favorable &agrave; court terme</td></tr>
+  <tr><td>BOA CI</td><td>BOAC</td><td>9&nbsp;790 F</td><td>11.02</td><td class="pos">6.10%</td><td><span style="color:#1a7f37;font-weight:800;">&#10003;</span> <span style="color:#1a7f37;font-weight:800;">&#10003;</span></td><td>Fondamentaux sains &mdash; signal carnet pr&eacute;occupant</td></tr>
+  <tr><td>SITAB CI</td><td>STBC</td><td>23&nbsp;495 F</td><td>11.57</td><td class="pos" style="color:#1a7f37;font-weight:800;">8.92%</td><td><span style="color:#1a7f37;font-weight:800;">&#10003;</span> <span style="color:#1a7f37;font-weight:800;">&#10003;</span></td><td><span style="color:#bf8700;font-weight:800;">[!]</span> Meilleur Rdt du filtre &mdash; r&egrave;gle anti-aller-retour active</td></tr>
+  <tr><td>BOA S&eacute;n&eacute;gal</td><td>BOAS</td><td>7&nbsp;550 F</td><td>12.41</td><td class="pos">5.96%</td><td><span style="color:#1a7f37;font-weight:800;">&#10003;</span> <span style="color:#1a7f37;font-weight:800;">&#10003;</span></td><td>Fondamentaux corrects &mdash; carnet retourn&eacute; vendeur</td></tr>
+  <tr><td>ONATEL BF</td><td>ONTBF</td><td>2&nbsp;675 F</td><td>12.53</td><td class="pos">5.43%</td><td><span style="color:#1a7f37;font-weight:800;">&#10003;</span> <span style="color:#1a7f37;font-weight:800;">&#10003;</span></td><td>Valorisation acceptable &mdash; mur vendeur 2&nbsp;382:1</td></tr>
+  <tr><td>Ecobank CI</td><td>ECOC</td><td>15&nbsp;715 F</td><td>13.63</td><td>4.97%</td><td><span style="color:#1a7f37;font-weight:800;">&#10003;</span> <span style="color:#1a7f37;font-weight:800;">&#10003;</span></td><td>Rdt limite &mdash; carnet acheteur 4.12:1</td></tr>
+  <tr><td>CBI BF (CORIS)</td><td>CBIBF</td><td>27&nbsp;500 F</td><td>13.44</td><td>3.27%</td><td><span style="color:#1a7f37;font-weight:800;">&#10003;</span> PER / <span style="color:#cf222e;font-weight:800;">&#10007;</span> Rdt</td><td><span style="color:#cf222e;">Rdt hors filtre</span> &mdash; carnet vendeur dominant</td></tr>
+  <tr><td>ORANGE CI</td><td>ORAC</td><td>16&nbsp;150 F</td><td>14.50</td><td>4.36%</td><td><span style="color:#1a7f37;font-weight:800;">&#10003;</span> PER / <span style="color:#cf222e;font-weight:800;">&#10007;</span> Rdt</td><td>PER limite, Rdt insuffisant, faible liquidit&eacute;</td></tr>
+</table>
+</div>
+
+<h3>Titres chers &agrave; &eacute;viter &mdash; <span style="color:#cf222e;">Risque de bulle</span></h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Titre</th><th>Symbole</th><th>PER</th><th>Variation</th><th>Risque</th></tr>
+  <tr><td style="color:#cf222e;font-weight:700;">BERNABE CI</td><td>BNBC</td><td style="color:#cf222e;font-weight:800;">590.63</td><td class="pos">+6.13%</td><td>Bulle extr&ecirc;me &mdash; PER absurde, momentum artificiel sans ancrage fondamental</td></tr>
+  <tr><td style="color:#cf222e;font-weight:700;">Soci&eacute;t&eacute; Ivoirienne de Ciment</td><td>SICC</td><td style="color:#cf222e;font-weight:800;">69.70</td><td class="pos">+5.66%</td><td>PER disproportionn&eacute;, rall ye sans fondamentaux</td></tr>
+  <tr><td style="color:#cf222e;font-weight:700;">CFAO MOTORS CI</td><td>CFAC</td><td style="color:#cf222e;font-weight:800;">36.63</td><td class="pos">+6.25%</td><td>Valorisation d&eacute;connect&eacute;e de la r&eacute;alit&eacute; b&eacute;n&eacute;ficiaire</td></tr>
+  <tr><td>BOA BF</td><td>BOABF</td><td style="color:#bf8700;font-weight:700;">15.88</td><td class="neg">-3.47%</td><td>Hors filtre + mur vendeur massif &mdash; confirmation <span class="vendre">VENDRE</span></td></tr>
+  <tr><td>SIB CI</td><td>SIBC</td><td style="color:#bf8700;">15.84</td><td class="pos">+0.51%</td><td>L&eacute;g&egrave;rement hors filtre &mdash; seul l&apos;ex-div J-11 justifie une surveillance courte</td></tr>
+</table>
+</div>
+
+<h3>2B. Momentum &mdash; Plus fortes variations crois&eacute;es avec les volumes</h3>
+<p><strong>Hausses valid&eacute;es par volume :</strong></p>
+<div class="overflow-x">
+<table>
+  <tr><th>Titre</th><th>Variation</th><th>Volume (titres)</th><th>Valeur transig&eacute;e</th><th>Lecture</th></tr>
+  <tr><td>SDSC</td><td class="pos">+3.68%</td><td>13&nbsp;205</td><td>37&nbsp;075&nbsp;085 F</td><td><span style="color:#1a7f37;font-weight:800;">&#10003;</span> Signal valid&eacute; par volume &mdash; momentum r&eacute;el</td></tr>
+  <tr><td>UNXC</td><td class="pos">+1.36%</td><td>17&nbsp;654</td><td>32&nbsp;903&nbsp;025 F</td><td><span style="color:#1a7f37;font-weight:800;">&#10003;</span> Volume dominant + carnet 26.1:1 ACH &mdash; signal solide</td></tr>
+  <tr><td>SIBC</td><td class="pos">+0.51%</td><td>6&nbsp;896</td><td>60&nbsp;437&nbsp;060 F</td><td>Volume &eacute;lev&eacute; autour de l&apos;ex-div annonc&eacute;</td></tr>
+  <tr><td>BOAC</td><td class="pos">+0.46%</td><td>3&nbsp;398</td><td>33&nbsp;169&nbsp;845 F</td><td><span style="color:#bf8700;font-weight:800;">[!]</span> Hausse mais carnet retourn&eacute; 371:1 VEN &mdash; signal mitig&eacute;</td></tr>
+</table>
+</div>
+<p><strong>Hausses non valid&eacute;es (bulles &agrave; exclure) :</strong></p>
+<div class="overflow-x">
+<table>
+  <tr><th>Titre</th><th>Variation</th><th>PER</th><th>Lecture</th></tr>
+  <tr><td style="color:#cf222e;">CFAC</td><td class="pos">+6.25%</td><td style="color:#cf222e;font-weight:700;">36.63</td><td><span class="eviter">ÉVITER</span> &mdash; bulle</td></tr>
+  <tr><td style="color:#cf222e;">BNBC</td><td class="pos">+6.13%</td><td style="color:#cf222e;font-weight:700;">590.63</td><td><span class="eviter">ÉVITER</span> &mdash; bulle extr&ecirc;me</td></tr>
+  <tr><td style="color:#cf222e;">SICC</td><td class="pos">+5.66%</td><td style="color:#cf222e;font-weight:700;">69.70</td><td><span class="eviter">ÉVITER</span> &mdash; bulle</td></tr>
+</table>
+</div>
+<p><strong>Baisses significatives :</strong></p>
+<div class="overflow-x">
+<table>
+  <tr><th>Titre</th><th>Variation</th><th>Volume</th><th>Lecture</th></tr>
+  <tr><td>ETIT</td><td class="neg">-7.35%</td><td>Distorsion syst&eacute;mique</td><td>Carnet 1&nbsp;703&nbsp;024 VEN &mdash; anomalie exclue</td></tr>
+  <tr><td>SEMC</td><td class="neg">-6.00%</td><td>N/D</td><td>&Agrave; confirmer</td></tr>
+  <tr><td>NSBC</td><td class="neg">-4.61%</td><td>1&nbsp;203</td><td>Signal vendeur confirm&eacute; par volume</td></tr>
+  <tr><td>BOABF</td><td class="neg">-3.47%</td><td>1&nbsp;991</td><td>Signal vendeur confirm&eacute; &mdash; <span class="vendre">VENDRE</span></td></tr>
+  <tr><td>CBIBF</td><td class="neg">-3.47%</td><td>598</td><td>Signal vendeur confirm&eacute; &mdash; <span class="alleger">ALLÉGER</span></td></tr>
+</table>
+</div>
+
+<h3>2C. Catalyseurs d&eacute;tect&eacute;s</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Titre</th><th>&Eacute;v&eacute;nement</th><th>Date pr&eacute;vue</th><th>Impact anticip&eacute;</th></tr>
+  <tr><td>CIE CI</td><td>D&eacute;tachement dividende 234 F net/action (IRVM 12%/10%)</td><td>28/07/2026</td><td>Opportunit&eacute; courte dur&eacute;e pour porteurs (J-8)</td></tr>
+  <tr><td>SIB CI (SIBC)</td><td>D&eacute;tachement dividende 425 F/action (IRVM 12%/10%)</td><td>31/07/2026</td><td>Rdt attractif sur 11 jours &mdash; surveiller timing</td></tr>
+  <tr><td>BICB</td><td>D&eacute;tachement dividende 254.6 F net/action</td><td>31/07/2026</td><td>&Agrave; surveiller selon cours d&apos;entr&eacute;e</td></tr>
+  <tr><td>SOLB (SOLIBRA)</td><td>D&eacute;tachement dividende 2&nbsp;127 F net/action</td><td>30/07/2026</td><td>Signal majeur pour porteurs actuels</td></tr>
+  <tr><td>LNB</td><td>D&eacute;tachement dividende 164.17 F net/action</td><td>03/08/2026</td><td>J-14 &mdash; anticiper</td></tr>
+  <tr><td>VECO (VIVO Energy CI)</td><td>Publication rapport d&apos;activit&eacute;s Q2 2026</td><td>&mdash;</td><td>Surveiller surprise positive ou profit warning</td></tr>
+</table>
+</div>
+
+<h3>2D. Recommandations de vente</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Titre</th><th>Action</th><th>Cours</th><th>D&eacute;clencheur principal</th><th>Justification</th></tr>
+  <tr><td>BOABF</td><td><span class="vendre">VENDRE</span></td><td>6&nbsp;950 F</td><td>Mur vendeur institutionnel persistant</td><td>8&nbsp;830 VEN @ 7&nbsp;000 F (ratio 24.8:1), -3.47%, PER hors filtre &mdash; sortie totale</td></tr>
+  <tr><td>CBIBF</td><td><span class="alleger">ALLÉGER</span></td><td>27&nbsp;500 F</td><td>Retournement carnet vente dominante</td><td>308 VEN @ 27&nbsp;500 F (ratio 19.25:1), -3.47% &mdash; r&eacute;duire de 50%</td></tr>
+  <tr><td>BOAC</td><td><span class="alleger">ALLÉGER</span></td><td>9&nbsp;790 F</td><td>Mur vendeur institutionnel massif</td><td>371 VEN @ 9&nbsp;790 F (ratio 371:1) malgr&eacute; +0.46% &mdash; distribution silencieuse</td></tr>
+  <tr><td>STBC</td><td><span class="conserver">CONSERVER</span> / <span class="noreenter">NE PAS RE-ENTRER</span></td><td>23&nbsp;495 F</td><td>R&egrave;gle anti-aller-retour</td><td>Vente pr&eacute;c. @ 22&nbsp;235 F &rarr; seuil 21&nbsp;535 F. Cours 23&nbsp;495 F &gt; seuil</td></tr>
+  <tr><td>BOAS</td><td><span class="attendre">ATTENDRE</span></td><td>7&nbsp;550 F</td><td>Retournement carnet ACH &rarr; VEN</td><td>121 VEN @ 7&nbsp;650 F (ratio 20.2:1) &mdash; ne pas entrer</td></tr>
+</table>
+</div>
+
+<!-- ================================================ -->
+<h2>&Eacute;tape 3 &mdash; S&eacute;lection des actions cl&eacute;s</h2>
+
+<div class="bloc-antiretour">
+  <strong>SITAB CI (STBC) &mdash; <span class="conserver">CONSERVER</span> &nbsp;/&nbsp; <span class="noreenter">NE PAS RE-ENTRER</span></strong><br>
+  Cl&ocirc;ture &agrave; 23&nbsp;495 F (-1.69%, 424 titres). PER 11.57, Rdt 8.92% &mdash; excellente valorisation. Carnet retourn&eacute; : 52 VEN @ 23&nbsp;495 F vs 5 ACH @ 23&nbsp;010 F (ratio 10.4:1). R&egrave;gle anti-aller-retour : vente pr&eacute;c&eacute;dente @ 22&nbsp;235 F &rarr; seuil break-even 21&nbsp;535 F (= 22&nbsp;235 &times; 0.9685). Cours actuel 23&nbsp;495 F est 9.1% au-dessus du seuil &mdash; tout rachat g&eacute;n&egrave;re une perte nette garantie.<br>
+  <span style="color:#1a7f37;font-weight:700;">Porteurs :</span> CONSERVER &mdash; surveiller rebond &gt; 23&nbsp;900 F. &nbsp;|&nbsp; <span style="color:#8b0000;font-weight:700;">Ex-vendeurs :</span> NE PAS RE-ENTRER.
+</div>
+
+<div class="bloc-surveiller">
+  <strong>SONATEL (SNTS) &mdash; <span class="surveiller">SURVEILLER</span></strong><br>
+  Tient 32&nbsp;000 F (0.00%) avec 119&nbsp;907&nbsp;030 F transig&eacute;s sur 3&nbsp;745 titres &mdash; valeur dominante de la s&eacute;ance. Flux institutionnel massif sur titre stable = accumulation professionnelle malgr&eacute; biais vendeur g&eacute;n&eacute;ral. PER 7.74, Rdt 5.44%. Carnet : 94 VEN @ 32&nbsp;000 F vs 20 ACH @ 31&nbsp;955 F (4.7:1 VEN) &mdash; r&eacute;sistance mod&eacute;r&eacute;e. Cours d&apos;accumulation : 31&nbsp;955&ndash;32&nbsp;000 F.
+</div>
+
+<div class="bloc-alleger">
+  <strong>BOA CI (BOAC) &mdash; <span class="alleger">ALLÉGER</span></strong><br>
+  +0.46% &agrave; 9&nbsp;790 F (3&nbsp;398 titres, 33&nbsp;169&nbsp;845 F). Carnet r&eacute;siduel : 371 VEN @ 9&nbsp;790 F vs 1 ACH @ 9&nbsp;785 F &mdash; <strong>ratio 371:1</strong>. Caract&eacute;ristique d&apos;une distribution institutionnelle silencieuse : les gros porteurs utilisent la liquidit&eacute; pour alléger. Fondamentaux bons (PER 11.02, Rdt 6.10%) mais le signal de carnet est trop fort pour &ecirc;tre ignor&eacute;. R&eacute;duire de 50%.
+</div>
+
+<div class="bloc-attendre">
+  <strong>BOA S&eacute;n&eacute;gal (BOAS) &mdash; <span class="attendre">ATTENDRE</span></strong><br>
+  -1.95% &agrave; 7&nbsp;550 F (4&nbsp;016 titres). Carnet retourn&eacute; : 121 VEN @ 7&nbsp;650 F vs 6 ACH @ 7&nbsp;550 F (20.2:1 VEN). Apr&egrave;s la dynamique acheteuse W29, ce retournement signale l&apos;&eacute;puisement du mouvement. PER 12.41, Rdt 5.96% justifient la conservation d&apos;une position existante. Toute entr&eacute;e nouvelle est pr&eacute;matur&eacute;e.
+</div>
+
+<div class="bloc-vendre">
+  <strong>BOA BF (BOABF) &mdash; <span class="vendre">VENDRE</span></strong><br>
+  -3.47% &agrave; 6&nbsp;950 F (1&nbsp;991 titres). Carnet : 8&nbsp;830 VEN @ 7&nbsp;000 F vs 356 ACH @ 6&nbsp;950 F &mdash; <strong>ratio 24.8:1</strong>. Mur institutionnel massif, PER 15.88 hors filtre. Risque : si le support 6&nbsp;950 F c&egrave;de, acc&eacute;l&eacute;ration vers 6&nbsp;700&ndash;6&nbsp;500 F. Sortie totale imm&eacute;diate.
+</div>
+
+<div class="bloc-alleger">
+  <strong>CBI BF / CORIS (CBIBF) &mdash; <span class="alleger">ALLÉGER</span></strong><br>
+  -3.47% &agrave; 27&nbsp;500 F (598 titres). Carnet : 308 VEN @ 27&nbsp;500 F vs 16 ACH @ 27&nbsp;250 F (19.25:1 VEN). Rdt 3.27% insuffisant sous cette pression. R&eacute;duire de 50%, stop sur le solde &agrave; 26&nbsp;500 F.
+</div>
+
+<div class="bloc-surveiller">
+  <strong>AGL / Africa Global Logistics (SDSC) &mdash; <span class="surveiller">SURVEILLER</span></strong><br>
+  Meilleure performance fondamentale : +3.68% &agrave; 2&nbsp;820 F sur 13&nbsp;205 titres (37&nbsp;075&nbsp;085 F). PER 7.29 &mdash; aucun risque de bulle. Carnet post-s&eacute;ance : 271 VEN @ 2&nbsp;825 F vs 18 ACH @ 2&nbsp;820 F (15.1:1 VEN) &mdash; prises de profit imm&eacute;diates apr&egrave;s la hausse. <strong>Strat&eacute;gie d&apos;entr&eacute;e :</strong> fraction&eacute;e sur repli. 1re tranche &lt; 2&nbsp;760 F, 2e tranche &agrave; 2&nbsp;780&ndash;2&nbsp;800 F. Objectif MT : 3&nbsp;000&ndash;3&nbsp;100 F.<br>
+  <em>Note anti-aller-retour :</em> si la position pr&eacute;c&eacute;dente sur SDSC a &eacute;t&eacute; cl&ocirc;tur&eacute;e &agrave; un cours &gt; 2&nbsp;912 F (= 2&nbsp;820 / 0.9685), la r&egrave;gle ne bloque pas l&apos;entr&eacute;e. V&eacute;rifier individuellement.
+</div>
+
+<div class="bloc-attendre">
+  <strong>PALM CI (PALM) &mdash; <span class="attendre">ATTENDRE</span></strong><br>
+  -0.12% &agrave; 8&nbsp;680 F (1&nbsp;914 titres). PER 8.65, Rdt 5.08% &mdash; structurellement solide. Carnet : 70 VEN @ 8&nbsp;680 F vs 1 ACH @ 8&nbsp;555 F (70:1 VEN). Ce mur bloque tout mouvement haussier. Attendre un repli vers 8&nbsp;500&ndash;8&nbsp;555 F.
+</div>
+
+<div class="bloc-surveiller">
+  <strong>SIB CI (SIBC) &mdash; <span class="surveiller">SURVEILLER</span> &mdash; Ex-dividende J-11</strong><br>
+  +0.51% &agrave; 8&nbsp;805 F (6&nbsp;896 titres, 60&nbsp;437&nbsp;060 F). Dividende 425 F/action d&eacute;tach&eacute; le 31/07/2026 (J-11). Rdt sur ce seul dividende : 4.83% sur 11 jours. PER 15.84 (hors filtre idéal). Carnet quasi neutre (46 ACH vs 43 VEN). Opportunit&eacute; court terme &mdash; sortir <strong>avant</strong> l&apos;ex-date.
+</div>
+
+<div class="bloc-action">
+  <strong>Ecobank CI (ECOC) &mdash; <span class="acheter">ACHETER</span></strong><br>
+  -1.78% &agrave; 15&nbsp;715 F (4&nbsp;603 titres, 69&nbsp;173&nbsp;820 F). Carnet : 206 ACH @ 15&nbsp;715 F vs 50 VEN @ 15&nbsp;800 F &mdash; <strong>ratio 4.12:1 ACH</strong>. Meilleur signal acheteur bancaire de la s&eacute;ance. PER 13.63, Rdt 4.97%. Dip buying structur&eacute; sur repli. Cours d&apos;entr&eacute;e : &le; 15&nbsp;715 F &agrave; la prochaine s&eacute;ance.
+</div>
+
+<div class="bloc-eviter">
+  <strong>NSIA Banque CI (NSBC) &mdash; <span class="eviter">ÉVITER</span></strong><br>
+  -4.61% &agrave; 22&nbsp;560 F (1&nbsp;203 titres). Carnet : 25 VEN @ 23&nbsp;600 F vs 3 ACH @ 22&nbsp;560 F. Rdt 2.96% insuffisant. &Agrave; &eacute;viter jusqu&apos;&agrave; stabilisation.
+</div>
+
+<div class="bloc-eviter">
+  <strong>ONATEL BF (ONTBF) &mdash; <span class="eviter">ÉVITER</span></strong><br>
+  Flat &agrave; 2&nbsp;675 F (1&nbsp;921 titres). Carnet : 35&nbsp;744 VEN @ 2&nbsp;675 F vs 15 ACH @ 2&nbsp;670 F &mdash; <strong>ratio 2&nbsp;382:1</strong>. Mur institutionnel parmi les plus importants de la BRVM. PER 12.53, Rdt 5.43% corrects mais aucun argument ne justifie d&apos;entrer face &agrave; ce mur.
+</div>
+
+<div class="bloc-surveiller">
+  <strong>BOA B&eacute;nin (BOAB) &mdash; <span class="surveiller">SURVEILLER</span></strong><br>
+  -1.15% &agrave; 8&nbsp;600 F (3&nbsp;817 titres, 33&nbsp;029&nbsp;570 F). Carnet : 371 ACH @ 8&nbsp;600 F vs 16 VEN @ 8&nbsp;655 F &mdash; <strong>ratio 23.2:1 ACH</strong>. Rdt 6.80% attractif. PER 17.35 (hors filtre, compens&eacute; par le Rdt). Signal acheteur fort &agrave; confirmer J+1. Entr&eacute;e fraction&eacute;e 8&nbsp;550&ndash;8&nbsp;600 F si signal confirm&eacute;.
+</div>
+
+<div class="bloc-attendre">
+  <strong>ORANGE CI (ORAC) &mdash; <span class="attendre">ATTENDRE</span></strong><br>
+  -0.06% &agrave; 16&nbsp;150 F sur 423 titres seulement. PER 14.50, Rdt 4.36%. Fondamentalement solide mais liquidit&eacute; insuffisante. ATTENDRE am&eacute;lioration de la liquidit&eacute;.
+</div>
+
+<div class="bloc-eviter">
+  <strong>BERNABE CI (BNBC) &mdash; <span class="eviter">ÉVITER</span> &nbsp;|&nbsp; CFAO MOTORS (CFAC) &mdash; <span class="eviter">ÉVITER</span></strong><br>
+  BNBC : +6.13% sur PER 590.63 &mdash; bulle extr&ecirc;me. CFAC : +6.25% sur PER 36.63 &mdash; valorisation d&eacute;connect&eacute;e. Ne pas suivre.
+</div>
+
+<!-- ================================================ -->
+<h2>&Eacute;tape 4 &mdash; Scoring (/10)</h2>
+<div class="overflow-x">
+<table>
+  <tr><th>Titre</th><th>Symbole</th><th>Valorisation /3</th><th>Momentum /3</th><th>Catalyseur /4</th><th>Total /10</th><th>Recommandation</th></tr>
+  <tr>
+    <td>SONATEL</td><td>SNTS</td>
+    <td class="score-high" style="text-align:center;">3</td>
+    <td class="score-mid" style="text-align:center;">2</td>
+    <td class="score-mid" style="text-align:center;">2</td>
+    <td class="score-high" style="text-align:center;">7/10</td>
+    <td><span class="surveiller">SURVEILLER</span></td>
+  </tr>
+  <tr>
+    <td>Ecobank CI</td><td>ECOC</td>
+    <td class="score-mid" style="text-align:center;">2</td>
+    <td class="score-mid" style="text-align:center;">2</td>
+    <td style="text-align:center;color:#1a7f37;font-weight:700;">3</td>
+    <td class="score-high" style="text-align:center;">7/10</td>
+    <td><span class="acheter">ACHETER</span></td>
+  </tr>
+  <tr>
+    <td>SIB CI</td><td>SIBC</td>
+    <td class="score-low" style="text-align:center;">1</td>
+    <td class="score-mid" style="text-align:center;">2</td>
+    <td style="text-align:center;color:#1a7f37;font-weight:800;">4</td>
+    <td class="score-high" style="text-align:center;">7/10</td>
+    <td><span class="surveiller">SURVEILLER</span> (ex-div)</td>
+  </tr>
+  <tr>
+    <td>AGL / SDSC</td><td>SDSC</td>
+    <td class="score-high" style="text-align:center;">3</td>
+    <td class="score-mid" style="text-align:center;">2</td>
+    <td class="score-low" style="text-align:center;">1</td>
+    <td class="score-mid" style="text-align:center;">6/10</td>
+    <td><span class="surveiller">SURVEILLER</span></td>
+  </tr>
+  <tr>
+    <td>BOA CI</td><td>BOAC</td>
+    <td class="score-high" style="text-align:center;">3</td>
+    <td class="score-low" style="text-align:center;">1</td>
+    <td class="score-mid" style="text-align:center;">2</td>
+    <td class="score-mid" style="text-align:center;">6/10</td>
+    <td><span class="alleger">ALLÉGER</span></td>
+  </tr>
+  <tr>
+    <td>PALM CI</td><td>PALM</td>
+    <td class="score-high" style="text-align:center;">3</td>
+    <td class="score-low" style="text-align:center;">1</td>
+    <td class="score-low" style="text-align:center;">1</td>
+    <td style="text-align:center;font-weight:700;">5/10</td>
+    <td><span class="attendre">ATTENDRE</span></td>
+  </tr>
+  <tr>
+    <td>BOA B&eacute;nin</td><td>BOAB</td>
+    <td class="score-low" style="text-align:center;">1</td>
+    <td class="score-mid" style="text-align:center;">2</td>
+    <td class="score-mid" style="text-align:center;">2</td>
+    <td style="text-align:center;font-weight:700;">5/10</td>
+    <td><span class="surveiller">SURVEILLER</span></td>
+  </tr>
+  <tr>
+    <td>SITAB CI</td><td>STBC</td>
+    <td class="score-mid" style="text-align:center;">2</td>
+    <td class="score-low" style="text-align:center;">1</td>
+    <td class="score-low" style="text-align:center;">1</td>
+    <td style="text-align:center;color:#bf8700;font-weight:700;">4/10</td>
+    <td><span class="conserver">CONSERVER</span> / <span class="noreenter">NE PAS RE-ENTRER</span></td>
+  </tr>
+  <tr>
+    <td>BOA S&eacute;n&eacute;gal</td><td>BOAS</td>
+    <td class="score-mid" style="text-align:center;">2</td>
+    <td class="score-low" style="text-align:center;">1</td>
+    <td class="score-low" style="text-align:center;">1</td>
+    <td style="text-align:center;color:#bf8700;font-weight:700;">4/10</td>
+    <td><span class="attendre">ATTENDRE</span></td>
+  </tr>
+  <tr>
+    <td>CBI BF (CORIS)</td><td>CBIBF</td>
+    <td class="score-low" style="text-align:center;">1</td>
+    <td style="text-align:center;color:#cf222e;font-weight:700;">0</td>
+    <td class="score-low" style="text-align:center;">1</td>
+    <td class="score-low" style="text-align:center;">2/10</td>
+    <td><span class="alleger">ALLÉGER</span></td>
+  </tr>
+  <tr>
+    <td>BOA BF</td><td>BOABF</td>
+    <td class="score-low" style="text-align:center;">1</td>
+    <td style="text-align:center;color:#cf222e;font-weight:700;">0</td>
+    <td style="text-align:center;color:#cf222e;font-weight:700;">0</td>
+    <td class="score-low" style="text-align:center;">1/10</td>
+    <td><span class="vendre">VENDRE</span></td>
+  </tr>
+</table>
+</div>
+<p style="font-size:11px;color:#57606a;"><em>L&eacute;gende : Valorisation /3 = PER 8&ndash;15 + Rdt &ge; 5% &mdash; Momentum /3 = hausse + volume valid&eacute; + carnet ACH &mdash; Catalyseur /4 = ex-div, AG, publication</em></p>
+
+<!-- ================================================ -->
+<h2>&Eacute;tape 5 &mdash; Validation par le march&eacute;</h2>
+
+<h3>Volumes et valeurs transig&eacute;es</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Titre</th><th>Volume (titres)</th><th>Valeur transig&eacute;e (FCFA)</th><th>Signal</th></tr>
+  <tr><td><strong>SNTS</strong></td><td>3&nbsp;745</td><td><strong>119&nbsp;907&nbsp;030</strong></td><td class="pos">Valeur dominante &mdash; activit&eacute; institutionnelle</td></tr>
+  <tr><td>ECOC</td><td>4&nbsp;603</td><td>69&nbsp;173&nbsp;820</td><td class="pos">Dip buying avant dividende structurel</td></tr>
+  <tr><td>SIBC</td><td>6&nbsp;896</td><td>60&nbsp;437&nbsp;060</td><td>Volume &eacute;lev&eacute; autour ex-div</td></tr>
+  <tr><td>SDSC</td><td>13&nbsp;205</td><td>37&nbsp;075&nbsp;085</td><td class="pos">Volume confirmant le momentum +3.68%</td></tr>
+  <tr><td>BOAC</td><td>3&nbsp;398</td><td>33&nbsp;169&nbsp;845</td><td class="warn">Volume normal, carnet pr&eacute;occupant</td></tr>
+  <tr><td>BOAB</td><td>3&nbsp;817</td><td>33&nbsp;029&nbsp;570</td><td class="pos">Volume correct, carnet ACH</td></tr>
+  <tr><td>UNXC</td><td>17&nbsp;654</td><td>32&nbsp;903&nbsp;025</td><td class="pos">Volume dominant en titres, carnet 26:1 ACH</td></tr>
+  <tr><td>BOAS</td><td>4&nbsp;016</td><td>30&nbsp;637&nbsp;800</td><td class="neg">Volume normal, biais baissier</td></tr>
+  <tr><td>NSBC</td><td>1&nbsp;203</td><td>28&nbsp;133&nbsp;585</td><td class="neg">Baisse confirm&eacute;e par volume</td></tr>
+  <tr><td>PALM</td><td>1&nbsp;914</td><td>16&nbsp;515&nbsp;025</td><td>Volume faible</td></tr>
+  <tr><td>CBIBF</td><td>598</td><td>16&nbsp;613&nbsp;585</td><td class="neg">Baisse sur volume tr&egrave;s faible</td></tr>
+  <tr><td>BOABF</td><td>1&nbsp;991</td><td>13&nbsp;967&nbsp;635</td><td class="neg">Baisse, volume mod&eacute;r&eacute;</td></tr>
+  <tr><td><strong>TOTAL MARCH&Eacute;</strong></td><td><strong>2&nbsp;228&nbsp;301</strong></td><td><strong>1&nbsp;133&nbsp;069&nbsp;792</strong></td><td>&mdash;</td></tr>
+</table>
+</div>
+
+<h3>Divergences cl&eacute;s</h3>
+<ol>
+  <li><strong>SNTS (119M FCFA) avec variation 0.00%</strong> : flux institutionnel massif sur titre stable = accumulation ou maintien de position. Aucune panique institutionnelle.</li>
+  <li><strong>ECOC (-1.78%) avec carnet ACH 4.12:1</strong> : la baisse en s&eacute;ance est rachet&eacute;e &agrave; la cl&ocirc;ture &mdash; dip buying structur&eacute;.</li>
+  <li><strong>SDSC (+3.68%, 13&nbsp;205 titres)</strong> : mouvement valid&eacute; en volume, pas un artefact de microliquidit&eacute;.</li>
+  <li><strong>BOAC (+0.46%) avec mur VEN 371:1</strong> : divergence typique de distribution institutionnelle silencieuse.</li>
+  <li><span style="color:#cf222e;font-weight:700;">ETIT distorsion syst&eacute;mique</span> : 1&nbsp;703&nbsp;024 VEN @ March&eacute; &mdash; anomalie permanente exclue de toute statistique globale.</li>
+</ol>
+
+<h3>Compartiment obligataire</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>&Eacute;mission</th><th>Volume</th><th>Valeur (FCFA)</th><th>Commentaire</th></tr>
+  <tr><td>FSNLC.01 (FCTC SENELEC 8.15%)</td><td>200</td><td>1&nbsp;900&nbsp;000</td><td>Titre dominant du compartiment</td></tr>
+  <tr><td>TPCI.O80</td><td>217</td><td>2&nbsp;167&nbsp;000</td><td>Flux classique bons du Tr&eacute;sor CI</td></tr>
+  <tr><td><strong>Total</strong></td><td><strong>429</strong></td><td><strong>4&nbsp;146&nbsp;900</strong></td><td>Niveau bas &mdash; retour &agrave; la normale post-W29</td></tr>
+</table>
+</div>
+<p>March&eacute; obligataire sans signal directionnel fort ce lundi. Niveau bas apr&egrave;s les flux importants de fin de W29. FSNLC.01 (SENELEC 8.15%) reste la r&eacute;f&eacute;rence.</p>
+
+<!-- ================================================ -->
+<h2>&Eacute;tape 6 &mdash; Quantit&eacute;s r&eacute;siduelles (carnet d&apos;ordres)</h2>
+<div class="overflow-x">
+<table>
+  <tr><th>Titre</th><th>Qt&eacute; ACH</th><th>Cours ACH</th><th>Qt&eacute; VEN</th><th>Cours VEN</th><th>Ratio</th><th>Signal</th></tr>
+  <tr style="background:#f0faf3;">
+    <td><strong>UNXC</strong></td><td style="text-align:right;">2&nbsp;560</td><td>1&nbsp;865 F</td><td style="text-align:right;">98</td><td>1&nbsp;870 F</td>
+    <td><strong style="color:#1a7f37;">26.1:1 ACH</strong></td><td class="pos">Fort signal acheteur</td>
+  </tr>
+  <tr style="background:#f0faf3;">
+    <td><strong>BOAB</strong></td><td style="text-align:right;">371</td><td>8&nbsp;600 F</td><td style="text-align:right;">16</td><td>8&nbsp;655 F</td>
+    <td><strong style="color:#1a7f37;">23.2:1 ACH</strong></td><td class="pos">Signal acheteur solide</td>
+  </tr>
+  <tr style="background:#f0faf3;">
+    <td>ECOC</td><td style="text-align:right;">206</td><td>15&nbsp;715 F</td><td style="text-align:right;">50</td><td>15&nbsp;800 F</td>
+    <td><strong style="color:#1a7f37;">4.12:1 ACH</strong></td><td class="pos">Accumulation</td>
+  </tr>
+  <tr>
+    <td>SIBC</td><td style="text-align:right;">46</td><td>8&nbsp;805 F</td><td style="text-align:right;">43</td><td>8&nbsp;840 F</td>
+    <td>1.07:1 ACH</td><td>Quasi neutre</td>
+  </tr>
+  <tr>
+    <td>SNTS</td><td style="text-align:right;">20</td><td>31&nbsp;955 F</td><td style="text-align:right;">94</td><td>32&nbsp;000 F</td>
+    <td class="neg">4.70:1 VEN</td><td>R&eacute;sistance mod&eacute;r&eacute;e &agrave; 32&nbsp;000 F</td>
+  </tr>
+  <tr>
+    <td>STBC</td><td style="text-align:right;">5</td><td>23&nbsp;010 F</td><td style="text-align:right;">52</td><td>23&nbsp;495 F</td>
+    <td class="neg">10.4:1 VEN</td><td>Retournement vendeur &mdash; carnet d&eacute;grad&eacute;</td>
+  </tr>
+  <tr>
+    <td>NSBC</td><td style="text-align:right;">3</td><td>22&nbsp;560 F</td><td style="text-align:right;">25</td><td>23&nbsp;600 F</td>
+    <td class="neg">8.33:1 VEN</td><td>Pression vendeuse</td>
+  </tr>
+  <tr>
+    <td>SDSC</td><td style="text-align:right;">18</td><td>2&nbsp;820 F</td><td style="text-align:right;">271</td><td>2&nbsp;825 F</td>
+    <td class="neg">15.1:1 VEN</td><td>Mur post-hausse</td>
+  </tr>
+  <tr>
+    <td>BOAS</td><td style="text-align:right;">6</td><td>7&nbsp;550 F</td><td style="text-align:right;">121</td><td>7&nbsp;650 F</td>
+    <td class="neg">20.2:1 VEN</td><td>Retournement ACH &rarr; VEN</td>
+  </tr>
+  <tr>
+    <td>CBIBF</td><td style="text-align:right;">16</td><td>27&nbsp;250 F</td><td style="text-align:right;">308</td><td>27&nbsp;500 F</td>
+    <td class="neg">19.25:1 VEN</td><td>Sortie institutionnelle</td>
+  </tr>
+  <tr>
+    <td>PALM</td><td style="text-align:right;">1</td><td>8&nbsp;555 F</td><td style="text-align:right;">70</td><td>8&nbsp;680 F</td>
+    <td class="neg">70:1 VEN</td><td>Mur vendeur fort</td>
+  </tr>
+  <tr style="background:#fff0f0;">
+    <td><strong>BOABF</strong></td><td style="text-align:right;">356</td><td>6&nbsp;950 F</td><td style="text-align:right;"><strong>8&nbsp;830</strong></td><td>7&nbsp;000 F</td>
+    <td><strong style="color:#8b0000;">24.8:1 VEN</strong></td><td><span class="vendre">VENDRE</span> &mdash; mur institutionnel</td>
+  </tr>
+  <tr style="background:#fff0f0;">
+    <td><strong>BOAC</strong></td><td style="text-align:right;">1</td><td>9&nbsp;785 F</td><td style="text-align:right;"><strong>371</strong></td><td>9&nbsp;790 F</td>
+    <td><strong style="color:#8b0000;">371:1 VEN</strong></td><td><span class="alleger">ALLÉGER</span> &mdash; distribution</td>
+  </tr>
+  <tr style="background:#fff0f0;">
+    <td><strong>ONTBF</strong></td><td style="text-align:right;">15</td><td>2&nbsp;670 F</td><td style="text-align:right;"><strong>35&nbsp;744</strong></td><td>2&nbsp;675 F</td>
+    <td><strong style="color:#8b0000;">2&nbsp;382:1 VEN</strong></td><td><span class="eviter">ÉVITER</span> &mdash; mur catastrophique</td>
+  </tr>
+  <tr style="color:#57606a;font-style:italic;">
+    <td>ETIT</td><td style="text-align:right;">0</td><td>&mdash;</td><td style="text-align:right;">1&nbsp;703&nbsp;024</td><td>March&eacute;</td>
+    <td>&mdash;</td><td>Distorsion syst&eacute;mique exclue</td>
+  </tr>
+</table>
+</div>
+
+<p><strong>Synth&egrave;se :</strong> Signaux acheteurs forts : UNXC (26.1:1) et BOAB (23.2:1). Murs critiques : ONTBF (2&nbsp;382:1), BOAC (371:1), BOABF (24.8:1). Retournements r&eacute;cents : STBC et BOAS apr&egrave;s dynamiques acheteuses W29 &mdash; pas d&apos;achat sans confirmation.</p>
+
+<!-- ================================================ -->
+<h2>&Eacute;tape 7 &mdash; Conclusion strat&eacute;gique</h2>
+
+<h3>Top 3 des opportunit&eacute;s globales</h3>
+<div class="top3">
+  <div class="top3-item">
+    <div class="top3-num"><span class="medal-gold">#1</span> ECOC</div>
+    <strong>Ecobank CI &mdash; <span class="acheter">ACHETER</span></strong><br>
+    Carnet 4.12:1 ACH + Rdt 4.97% + repli -1.78% = point d&apos;entr&eacute;e favorable.<br>
+    Cours cible : &le; 15&nbsp;715 F
+  </div>
+  <div class="top3-item">
+    <div class="top3-num"><span class="medal-silver">#2</span> SNTS</div>
+    <strong>SONATEL &mdash; <span class="surveiller">SURVEILLER</span></strong><br>
+    PER 7.74, Rdt 5.44%, 119M FCFA flux institutionnel.<br>
+    Accumulation : 31&nbsp;955&ndash;32&nbsp;000 F
+  </div>
+  <div class="top3-item">
+    <div class="top3-num"><span class="medal-bronze">#3</span> SDSC</div>
+    <strong>AGL &mdash; <span class="surveiller">SURVEILLER</span></strong><br>
+    PER 7.29, +3.68% valid&eacute; par volume.<br>
+    Entr&eacute;e fraction&eacute;e sur repli &lt; 2&nbsp;780 F
+  </div>
+</div>
+
+<h3>Risques identifi&eacute;s &agrave; court terme</h3>
+<div class="risques">
+<ul>
+  <li>Biais vendeur persistant : 27 baisses vs 18 hausses &mdash; poursuite possible sur les prochaines s&eacute;ances</li>
+  <li>BOABF en d&eacute;route : mur 8&nbsp;830 VEN @ 7&nbsp;000 F &mdash; si support 6&nbsp;950 F c&egrave;de, risque acc&eacute;l&eacute;ration vers 6&nbsp;700&ndash;6&nbsp;500 F</li>
+  <li>Distorsion ETIT : 1&nbsp;703&nbsp;024 VEN permanents &mdash; lecture filtr&eacute;e obligatoire</li>
+  <li>Ex-dividendes imminents : SIBC (31/07) et CIE CI (28/07) &mdash; drop m&eacute;canique post-d&eacute;tachement</li>
+  <li>Mur ONTBF : 35&nbsp;744 VEN (2&nbsp;382:1) &mdash; signal de sortie institutionnelle pr&eacute;occupant</li>
+  <li>BOAC distribution silencieuse : 371:1 VEN malgr&eacute; +0.46% &mdash; risque d&apos;acc&eacute;l&eacute;ration si non absorb&eacute;</li>
+</ul>
+</div>
+
+<h3>Plan d&apos;action imm&eacute;diat</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Titre</th><th>Action</th><th>Cours</th><th>Timing</th><th>Justification</th></tr>
+  <tr><td>ECOC</td><td><span class="acheter">ACHETER</span></td><td>&le; 15&nbsp;715 F</td><td>Prochaine s&eacute;ance</td><td>Carnet 4.12:1 ACH + Rdt 4.97% + dip buying</td></tr>
+  <tr><td>SDSC</td><td><span class="surveiller">SURVEILLER</span></td><td>&lt; 2&nbsp;780 F (repli)</td><td>Cette semaine</td><td>Mur VEN 15.1:1 post-hausse &mdash; entr&eacute;e fraction&eacute;e</td></tr>
+  <tr><td>SNTS</td><td><span class="surveiller">SURVEILLER</span></td><td>31&nbsp;955&ndash;32&nbsp;000 F</td><td>Cette semaine</td><td>Actif institutionnel de r&eacute;f&eacute;rence, PER 7.74</td></tr>
+  <tr><td>BOAB</td><td><span class="surveiller">SURVEILLER</span></td><td>8&nbsp;600 F</td><td>Cette semaine</td><td>Carnet 23.2:1 ACH &mdash; confirmer &agrave; la prochaine s&eacute;ance</td></tr>
+  <tr><td>SIBC</td><td><span class="surveiller">SURVEILLER</span></td><td>&le; 8&nbsp;805 F</td><td>Avant 31/07</td><td>Capture dividende 425 F &mdash; sortir avant ex-date</td></tr>
+  <tr><td>BOABF</td><td><span class="vendre">VENDRE</span></td><td>6&nbsp;950 F</td><td>Imm&eacute;diat</td><td>Mur 8&nbsp;830 VEN (24.8:1) &mdash; sortie totale</td></tr>
+  <tr><td>CBIBF</td><td><span class="alleger">ALLÉGER</span></td><td>27&nbsp;500 F</td><td>Imm&eacute;diat</td><td>Ratio 19.25:1 VEN &mdash; r&eacute;duire de 50%</td></tr>
+  <tr><td>BOAC</td><td><span class="alleger">ALLÉGER</span></td><td>9&nbsp;790 F</td><td>Cette semaine</td><td>Mur 371:1 VEN &mdash; distribution institutionnelle</td></tr>
+  <tr><td>BOAS</td><td><span class="attendre">ATTENDRE</span></td><td>7&nbsp;550 F</td><td>Semaine prochaine</td><td>Carnet retourn&eacute; 20.2:1 VEN &mdash; stabilisation requise</td></tr>
+  <tr><td>PALM</td><td><span class="attendre">ATTENDRE</span></td><td>8&nbsp;555&ndash;8&nbsp;680 F</td><td>&mdash;</td><td>Mur 70:1 VEN &mdash; repli sous 8&nbsp;555 F d&apos;abord</td></tr>
+  <tr><td>STBC</td><td><span class="conserver">CONSERVER</span> / <span class="noreenter">NE PAS RE-ENTRER</span></td><td>23&nbsp;495 F</td><td>&mdash;</td><td>Anti-aller-retour : cours 23&nbsp;495 F &gt; seuil 21&nbsp;535 F</td></tr>
+  <tr><td>ONTBF</td><td><span class="eviter">ÉVITER</span></td><td>2&nbsp;675 F</td><td>&mdash;</td><td>Mur 35&nbsp;744 VEN (2&nbsp;382:1) &mdash; risque structurel</td></tr>
+</table>
+</div>
+
+<div class="disclaimer">
+  <strong>Disclaimer :</strong> Ce document est produit &agrave; titre p&eacute;dagogique et d&apos;aide &agrave; la d&eacute;cision. Il ne constitue pas un conseil personnalis&eacute; en investissement au sens de la r&eacute;glementation financi&egrave;re en vigueur. Les performances pass&eacute;es ne pr&eacute;jugent pas des performances futures. Tout investissement comporte un risque de perte en capital. L&apos;investisseur est seul responsable de ses d&eacute;cisions de placement.
+</div>
