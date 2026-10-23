@@ -27,11 +27,14 @@ HORIZON_CALIBRATION = "1 mois"
 MIN_CALIBRATION = 10      # prédictions mûres nécessaires avant d'afficher un taux de réussite
 COLS = ["date", "ticker", "verdict", "rang", "score", "cours", "composite", "objectif",
         "seuil_sortie", "rendement_pct", "source"]
-# Fractionnements d'actions : (date de la première séance au nouveau cours, nombre d'actions
+# Fractionnements d'actions : (date du premier BOC dont le cours de référence est au nouveau
+# nominal, nombre d'actions
 # nouvelles pour une ancienne). Sans cet ajustement, la division du cours ferait apparaître
 # une chute fictive d'environ -90 % dans l'évaluation.
 SPLITS = {
-    "SNTS": [("2026-10-26", 10)],   # Sonatel : 10 pour 1, avis BRVM 304-2026
+    # Sonatel : 10 pour 1, effectif le 26/10/2026 ; le BOC du 23/10 publie déjà la valeur
+    # théorique (4 385 FCFA, avis BRVM 309-2026) comme cours de référence.
+    "SNTS": [("2026-10-23", 10)],
 }
 SAUT_SUSPECT = 0.5   # variation d'une séance à l'autre > 50 % : impossible sous le plafond de ±7,5 %
 
