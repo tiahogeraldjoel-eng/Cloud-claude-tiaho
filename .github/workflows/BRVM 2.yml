@@ -1,0 +1,83 @@
+name: "BRVM Intelligence - Pipeline de Certification et Build"
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'BRVMIntelligence/**'
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: # Permet le déclenchement manuel pour les tests
+
+env:
+  WORKING_DIRECTORY: "BRVMIntelligence"
+  JAVA_VERSION: "17"
+  JAVA_DISTRO: "temurin"
+
+jobs:
+  quality-and-build:
+    name: "Analyse, Contrôle et Compilation"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: "Clonage du code source"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Récupère tout l'historique pour une meilleure analyse
+
+      - name: "Configuration de l'environnement Java"
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRO }}
+          cache: 'gradle'
+
+      - name: "Initialisation des droits Gradlew"
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: chmod +x gradlew
+
+      - name: "Configuration de l'environnement Firebase (Stub)"
+        # Création dynamique pour éviter les échecs de build liés aux dépendances Google
+        run: |
+          mkdir -p ${{ env.WORKING_DIRECTORY }}/app/
+          cat << 'EOF' > ${{ env.WORKING_DIRECTORY }}/app/google-services.json
+          {
+            "project_info": { "project_number": "123456789", "project_id": "brvm-intelligence-ci" },
+            "client": [ {
+              "client_info": { "mobilesdk_app_id": "1:123456789:android:000000", "android_client_info": { "package_name": "com.brvm.intelligence" } },
+              "api_key": [ { "current_key": "CI_STUB_KEY" } ],
+              "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
+            } ],
+            "configuration_version": "1"
+          }
+          EOF
+
+      - name: "Vérification statique du code (Lint)"
+        # Cette étape garantit que le code est propre avant de perdre du temps à compiler
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: ./gradlew lintDebug --no-daemon
+
+      - name: "Exécution des tests unitaires"
+        # Crucial pour valider vos formules PER/MACD avant la génération de l'APK
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: "Compilation de l'APK Debug"
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        # --stacktrace et --info permettent de voir exactement ce qui manque au moteur d'analyse
+        run: ./gradlew assembleDebug --stacktrace --info --no-daemon
+
+      - name: "Préparation de l'Artéfact"
+        # Renommage de l'APK avec un timestamp pour un meilleur suivi
+        run: |
+          APK_PATH="${{ env.WORKING_DIRECTORY }}/app/build/outputs/apk/debug/app-debug.apk"
+          TIMESTAMP=$(date +%Y%m%d_%H%M)
+          cp $APK_PATH "BRVM_Intelligence_v${TIMESTAMP}_debug.apk"
+
+      - name: "Archivage de la version de développement"
+        uses: actions/upload-artifact@v4
+        with:
+          name: brvm-intelligence-apk-build
+          path: "BRVM_Intelligence_*.apk"
+          retention-days: 14
