@@ -3,23 +3,25 @@
 // Données : intégrées + simulation + scraping optionnel en arrière-plan
 
 // Ordre de chargement garanti via les balises <script> dans index.html :
-// 1. brvm-stocks.js   → BRVM_STOCKS, BRVM_MARKET_DATA, BRVM_INDICES
-// 2. fetcher.js       → BRVMFetcher (4 niveaux fallback)
-// 3. fundamental.js   → BRVMFundamental
-// 4. technical.js     → BRVMTechnical
-// 5. psychological.js → BRVMPsychological
-// 6. scoring.js       → BRVMScoring
-// 7. pdf-generator.js → BRVMReport
-// 8. charts.js        → BRVMCharts
-// 9. app-core.js      → BRVMApp (contrôleur principal)
-// 10. app-ui.js       → BRVMUI (rendu dashboard + analyses)
-// 11. app-portfolio.js → BRVMPortfolio
-// 12. app.js          → ce fichier (init + guards)
+// 1. brvm-stocks.js    → BRVM_STOCKS, BRVM_MARKET_DATA, BRVM_INDICES
+// 2. fetcher.js        → BRVMFetcher (4 niveaux fallback)
+// 3. fundamental.js    → BRVMFundamental
+// 4. technical.js      → BRVMTechnical
+// 5. psychological.js  → BRVMPsychological
+// 6. scoring.js        → BRVMScoring
+// 7. pdf-generator.js  → BRVMReport
+// 8. charts.js         → BRVMCharts
+// 9. graphify.js       → BRVMGraphify (plugin visualisations avancées)
+// 10. app-core.js      → BRVMApp (contrôleur principal)
+// 11. app-ui.js        → BRVMUI (rendu dashboard + analyses)
+// 12. app-portfolio.js → BRVMPortfolio
+// 13. app.js           → ce fichier (init + guards)
 
 (function bootstrap() {
   // Vérification intégrité modules
   const required = ['BRVMFetcher','BRVMFundamental','BRVMTechnical','BRVMPsychological',
-                     'BRVMScoring','BRVMReport','BRVMCharts','BRVMApp','BRVMUI','BRVMPortfolio'];
+                     'BRVMScoring','BRVMReport','BRVMCharts','BRVMApp','BRVMUI','BRVMPortfolio',
+                     'BRVMGraphify'];
   const missing = required.filter(m => typeof window[m] === 'undefined');
   if (missing.length) {
     console.warn('Modules manquants:', missing);

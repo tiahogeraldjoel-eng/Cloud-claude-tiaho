@@ -123,6 +123,7 @@
       <button class="tab-btn" onclick="BRVMApp.showTab('technical')">Technique</button>
       <button class="tab-btn" onclick="BRVMApp.showTab('psychological')">Psychologique</button>
       <button class="tab-btn" onclick="BRVMApp.showTab('verdict')">Verdict</button>
+      <button class="tab-btn graphify-tab" onclick="BRVMApp.showTab('graphify')">📊 Graphify</button>
     </div>
 
     <!-- Fundamental Tab -->
@@ -146,6 +147,11 @@
     <!-- Verdict Tab -->
     <div id="tab-verdict" class="tab-content">
       <div class="verdict-section" id="verdictContent"></div>
+    </div>
+
+    <!-- Graphify Tab -->
+    <div id="tab-graphify" class="tab-content">
+      <div id="graphifyContent"></div>
     </div>
   </div>
 
@@ -383,6 +389,7 @@
 <script src="js/analysis/scoring.js"></script>
 <script src="js/reports/pdf-generator.js"></script>
 <script src="js/ui/charts.js"></script>
+<script src="js/plugins/graphify.js"></script>
 <script src="js/app-core.js"></script>
 <script src="js/app-ui.js"></script>
 <script src="js/app-portfolio.js"></script>

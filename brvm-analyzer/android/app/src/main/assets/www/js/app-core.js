@@ -49,6 +49,14 @@ const BRVMApp = (() => {
     if (tabName === 'technical' && _currentTicker) {
       BRVMCharts.drawPriceChart('priceChart', _stocks[_currentTicker]);
     }
+    if (tabName === 'graphify' && _currentTicker) {
+      const el = document.getElementById('graphifyContent');
+      if (el && !el.dataset.rendered) {
+        el.innerHTML = BRVMGraphify.buildPanel();
+        el.dataset.rendered = '1';
+      }
+      BRVMGraphify.render('graphify', _stocks[_currentTicker]);
+    }
   }
 
   // ── Chargement données ──────────────────────────────────────────
@@ -118,6 +126,9 @@ const BRVMApp = (() => {
     if (!stock) return;
     navigate('analysis');
     document.getElementById('analysisTitle').textContent = ticker;
+    // Reset graphify panel so it re-renders for new stock
+    const gEl = document.getElementById('graphifyContent');
+    if (gEl) { gEl.innerHTML = ''; delete gEl.dataset.rendered; }
     BRVMUI.renderStockHeader(stock);
     BRVMUI.renderScoreOverview(stock, _profile);
     BRVMUI.renderFundamental(stock);
