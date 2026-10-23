@@ -1,0 +1,30 @@
+{
+  "skill_name": "brvm-tactique",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "J'ai vendu SDSC à 2 510 F il y a 3 semaines. Le BOC d'aujourd'hui indique un cours de 2 770 F avec un carnet 94:1 vendeur et 562 titres côté vente. Est-ce que je peux racheter ?",
+      "expected_output": "Application de la règle anti-aller-retour (seuil = 2 510 × 0.9685 = 2 431 F). Cours 2 770 F >> seuil 2 431 F → NE PAS RE-ENTRER. Confirmation par le carnet 94:1 vendeur qui valide l'ÉVITER."
+    },
+    {
+      "id": 2,
+      "prompt": "Carnet STAC : BOC hier = 6A / 8413V (ratio 1402:1 vendeur). BOC aujourd'hui = 150A / 88V (ratio 1.7:1 acheteur). Le cours est à 3 000 F (+0.33%). Que faire ?",
+      "expected_output": "Identification du signal de recovery : retournement brutal du carnet de 1402:1 vendeur à 1.7:1 acheteur. Recommandation SURVEILLER pendant 2-3 séances de confirmation avant de réentrer."
+    },
+    {
+      "id": 3,
+      "prompt": "BIIC BN cours 7 085 F (+7.43%), dividende net 254.6 F payable le 31/07, carnet 21 231 titres côté achat 'marché'. Nous sommes le 23 juillet. Faut-il acheter ?",
+      "expected_output": "Module 4 : date paiement 31/07, dernier achat éligible = 24/07 (demain, urgence URGENT). Module 1 : carnet ultra-acheteur 21 231 titres 'marché' = signal de force maximum. Rendement dividende ~3.59%. Recommandation ACHETER avant clôture du 24/07."
+    },
+    {
+      "id": 4,
+      "prompt": "Volume total BOC : 3 959 294 titres pour 1 301 997 599 FCFA. ETIT : 3 805 473 titres à 75 F. Quel est le volume qualitatif du marché ? Y a-t-il une distorsion ?",
+      "expected_output": "ETIT = 3 805 473 × 75 = 285 410 475 FCFA. Part ETIT : 96.2% du volume en unités / ~21.9% de la valeur. Volume hors ETIT : 153 821 titres / 1 016 587 124 FCFA. Distorsion systémique confirmée — ETIT exclu de toutes les analyses momentum."
+    },
+    {
+      "id": 5,
+      "prompt": "ECOC BOC 137 : 742A / 35V (ratio 21:1 acheteur), cours +0.5%. ECOC BOC 138 : 5A / 1270V (ratio 254:1 vendeur), cours +1.18%. Que signifie cette évolution ?",
+      "expected_output": "Signal de distribution déguisée : cours en hausse mais carnet en retournement brutal vers vendeur dominant. Un institutionnel distribue sa position en profitant de la hausse pour attirer des acheteurs retail. Recommandation ALLÉGER 50% de la position pour les porteurs."
+    }
+  ]
+}

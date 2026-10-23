@@ -1,0 +1,273 @@
+<meta charset="UTF-8">
+<title>BOC_HEBDO — Semaine W31 — 28 au 31 juillet 2026</title>
+<style>
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; color: #24292f; background: #ffffff; margin: 0; padding: 20px 32px; }
+  h1 { color: #0b3d91; border-bottom: 3px solid #0b3d91; padding-bottom: 8px; font-size: 1.7em; }
+  h2 { color: #0b3d91; border-bottom: 1px solid #cdd9ea; padding-bottom: 4px; margin-top: 30px; font-size: 1.25em; }
+  h3 { color: #0b3d91; margin-top: 18px; font-size: 1.05em; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+  th { background: #0b3d91; color: #fff; padding: 8px 10px; text-align: left; }
+  td { padding: 7px 10px; border-bottom: 1px solid #e1e4e8; }
+  tr:nth-child(even) td { background: #f6f8fa; }
+  tr:hover td { background: #eef3fb; }
+  blockquote { background: #fff8dc; border-left: 4px solid #bf8700; padding: 10px 16px; margin: 12px 0; border-radius: 0 4px 4px 0; }
+  .kpi-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 16px 0 24px 0; }
+  .kpi { background: #eef3fb; border: 1px solid #cdd9ea; border-radius: 6px; padding: 12px 18px; text-align: center; min-width: 120px; flex: 1; }
+  .kpi .val { font-size: 1.5em; font-weight: 800; color: #0b3d91; }
+  .kpi .val.pos { color: #1a7f37; }
+  .kpi .val.neg { color: #cf222e; }
+  .kpi .val.warn { color: #bf8700; }
+  .kpi .lbl { font-size: 11px; color: #57606a; text-transform: uppercase; letter-spacing: .04em; margin-top: 4px; }
+  .acheter  { background: #1a7f37; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .alleger  { background: #e36209; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .vendre   { background: #8b0000; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .attendre { background: #bf8700; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .eviter   { background: #cf222e; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .surveiller { background: #0b3d91; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .pos { color: #1a7f37; font-weight: 700; }
+  .neg { color: #cf222e; font-weight: 700; }
+  .warn { color: #bf8700; font-weight: 700; }
+  .stock-acheter { border-left: 4px solid #1a7f37; background: #f0faf3; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-vendre  { border-left: 4px solid #8b0000; background: #fff0f0; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-alleger { border-left: 4px solid #e36209; background: #fff5ec; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-eviter { border-left: 4px solid #cf222e; background: #fdecea; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-surveiller { border-left: 4px solid #0b3d91; background: #f0f4ff; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .medal-gold   { background: #ffd700; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-silver { background: #c0c0c0; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-bronze { background: #cd7f32; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-4 { background: #57606a; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-5 { background: #57606a; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .signal-rot { background: #f0f4ff; border: 2px solid #0b3d91; border-radius: 6px; padding: 12px 16px; margin: 12px 0; }
+  .alert-box { background: #fdecea; border: 2px solid #cf222e; border-radius: 6px; padding: 12px 16px; margin: 12px 0; }
+  .biais-hausse { background: #1a7f37; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-vente  { background: #cf222e; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-neutre { background: #57606a; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .disclaimer { font-size: 11px; color: #57606a; border-top: 1px solid #e1e4e8; margin-top: 30px; padding-top: 10px; }
+  .note-box { background: #fff8dc; border: 1px solid #bf8700; border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-size: 13px; }
+</style>
+
+<h1>BOC_HEBDO — Synthèse Hebdomadaire BRVM<br><span style="font-size:0.7em;font-weight:400;">Semaine W31 — 4 séances | 28 au 31 juillet 2026</span></h1>
+
+<div class="note-box">
+  <span style="color:#bf8700;font-weight:800;">[!]</span> <strong>Semaine incomplète — 4 séances :</strong> BOC-140 (lundi 27 juillet 2026) absent du dépôt. Analyse basée sur BOC N°141 (28/07), N°142 (29/07), N°143 (30/07) et N°144 (31/07).
+</div>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="val neg">-0,01 %</div><div class="lbl">Composite semaine (mar. → ven.)</div></div>
+  <div class="kpi"><div class="val pos">+39,60 %</div><div class="lbl">YTD clôture vendredi</div></div>
+  <div class="kpi"><div class="val">482,65</div><div class="lbl">Composite vendredi</div></div>
+  <div class="kpi"><div class="val warn">1 / 4</div><div class="lbl">Sessions Composite positif</div></div>
+  <div class="kpi"><div class="val warn">~65 %</div><div class="lbl">Taux prédiction carnets</div></div>
+</div>
+
+<h2>Section 1 — Bilan indices de la semaine</h2>
+
+<table>
+  <tr><th>Séance</th><th>BOC N°</th><th>Composite</th><th>Var. jour</th><th>Biais (H/B)</th></tr>
+  <tr><td>Mardi 28/07</td><td>BOC-141</td><td>482,71</td><td class="neg">-0,23 %</td><td><span class="biais-hausse">ACHETEUR</span> (25H / 17B)</td></tr>
+  <tr><td>Mercredi 29/07</td><td>BOC-142</td><td>482,21</td><td class="neg">-0,10 %</td><td><span class="biais-neutre">NEUTRE</span> (22H / 21B)</td></tr>
+  <tr><td>Jeudi 30/07</td><td>BOC-143</td><td>481,48</td><td class="neg">-0,15 %</td><td><span class="biais-vente">VENDEUR</span> (16H / 24B)</td></tr>
+  <tr><td>Vendredi 31/07</td><td>BOC-144</td><td>482,65</td><td class="pos">+0,24 %</td><td><span class="biais-hausse">ACHETEUR</span> (22H / 15B)</td></tr>
+</table>
+
+<p><strong>Performance hebdomadaire Composite (mardi &rarr; vendredi) : <span class="neg">-0,01 %</span></strong> — quasi-stable.<br>
+<strong>YTD clôture vendredi 31/07 :</strong> <span class="pos">+39,60 %</span> | <strong>Niveau clôture :</strong> 482,65 | <strong>Sessions Composite positif :</strong> <span class="warn">1/4</span></p>
+
+<div class="signal-rot">
+  <strong>Lecture de la semaine :</strong> Semaine W31 = semaine "dividende" structurelle. SIBC, SGBC, NSBC, BICB et LNBB sont passés ex-dividende entre mardi et vendredi, générant des volumes élevés et des carnets vendeurs mécaniques. Hors effets calendaires, l'activité réelle reste modérée. La divergence Composite négatif / breadth acheteur (mardi) s'explique intégralement par la distorsion ETIT (88–94 % du volume brut chaque jour). Le seul Composite positif (vendredi +0,24 %) referme la semaine quasi-stable, masquant la vigueur de ORGT (+15 %) et ONTBF (+7 %).
+</div>
+
+<h2>Section 2 — Top 5 actions les plus performantes (mardi 28 &rarr; vendredi 31 juillet)</h2>
+
+<table>
+  <tr><th>Rang</th><th>Titre</th><th>Symbole</th><th>Cours mar. 28</th><th>Cours ven. 31</th><th>Perf. hebdo</th><th>Commentaire</th></tr>
+  <tr><td><span class="medal-gold">#1</span></td><td><strong>ORAGROUP TOGO</strong></td><td>ORGT</td><td>2 730 F</td><td>3 140 F</td><td class="pos"><strong>+15,02 %</strong></td><td>3 séances de hausse consécutives ; carnet 6,25:1 ACH vendredi — momentum durable</td></tr>
+  <tr><td><span class="medal-silver">#2</span></td><td><strong>ONATEL BF</strong></td><td>ONTBF</td><td>2 795 F</td><td>2 995 F</td><td class="pos"><strong>+7,16 %</strong></td><td>Rebond sectoriel Télécoms ; +6,77 % en une séance (vendredi)</td></tr>
+  <tr><td><span class="medal-bronze">#3</span></td><td>LOTERIE NAT. BN</td><td>LNBB</td><td>4 345 F</td><td>4 500 F</td><td class="pos">+3,57 %</td><td>Rapport S1 2026 publié vendredi → spike +7,40 % ponctuel ; carnet 49,6:1 VEN = prise de profit</td></tr>
+  <tr><td><span class="medal-4">#4</span></td><td>CORIS BANK INT.</td><td>CBIBF</td><td>27 200 F</td><td>28 000 F</td><td class="pos">+2,94 %</td><td>Accumulation institutionnelle persistante (26,3:1 ACH mercredi) ; score moyen 6,33/10</td></tr>
+  <tr><td><span class="medal-5">#5</span></td><td>PALM CI</td><td>PALC</td><td>8 750 F</td><td>9 000 F</td><td class="pos">+2,86 %</td><td>Absorption post -4,66 % jeudi ; carnet 18,4:1 ACH clôture vendredi</td></tr>
+</table>
+
+<div class="stock-acheter">
+  <strong>Note STBC (cas particulier) :</strong> Score moyen hebdomadaire le plus élevé (<strong>8,75/10</strong> sur 4 séances) malgré une performance de prix modeste (+0,87 %, 23 000 &rarr; 23 200 F). Titre &agrave; catalyseur fondamental borné (dividende 1 707,2 F net le 13/08) — la valeur créée est dans le dividende, pas dans la plus-value de cours.
+</div>
+
+<div class="note-box">
+  <strong>ORGT vs LNBB :</strong> Distinguer momentum durable (ORGT, 3 séances consécutives, carnet acheteur) vs spike ponctuel (LNBB, +7,40 % en 1 séance sur catalyseur S1 avec carnet 49,6:1 VEN = prise de profit institutionnelle immédiate).
+</div>
+
+<h2>Section 3 — Top 5 recommandations ACHETER (semaine du 4 août 2026)</h2>
+
+<div class="stock-acheter">
+  <h3><span class="medal-gold">#1</span> SITAB CI (STBC) — <span class="acheter">ACHETER</span> — Score moyen 8,75/10</h3>
+  <table>
+    <tr><th>Critère</th><th>Valeur</th></tr>
+    <tr><td>Score moyen hebdo</td><td><strong>8,75/10</strong> (8 → 9 → 9 → 9 sur les 4 séances)</td></tr>
+    <tr><td>PER</td><td>11,42</td></tr>
+    <tr><td>Rdt net PP</td><td class="pos"><strong>7,36 %</strong></td></tr>
+    <tr><td>Carnet vendredi</td><td class="warn">8,4:1 VEN (mur @ 24 000 F — porteurs pré-ex-div)</td></tr>
+    <tr><td>Catalyseur</td><td><strong>Dividende 1 707,2 F net confirmé — paiement 13/08/2026</strong></td></tr>
+    <tr><td>Dernier achat</td><td><strong style="color:#1a7f37;">Lundi 10/08/2026</strong> (T+3, settle = jour de paiement)</td></tr>
+    <tr><td>Cours cible d'entrée</td><td>≤ 23 500 F</td></tr>
+  </table>
+  <p>La fenêtre est bornée (10 séances restantes dès lundi 04/08). Le rendement de 7,36 % est confirmé officiellement (page 10, BOC N°144). Valeur la plus liquide du marché vendredi (151,7 M FCFA / 6 503 titres). Règle anti-aller-retour : seuil 21 535 F &lt;&lt; cours 23 200 F → fenêtre ouverte aux <strong>nouveaux investisseurs uniquement</strong>.</p>
+</div>
+
+<div class="stock-acheter">
+  <h3><span class="medal-silver">#2</span> BOA CI (BOAC) — <span class="acheter">ACHETER</span> — Score moyen 6,88/10</h3>
+  <table>
+    <tr><th>Critère</th><th>Valeur</th></tr>
+    <tr><td>Score moyen hebdo</td><td><strong>6,88/10</strong> (5,5 → 7 → 7 → 8 sur les 4 séances)</td></tr>
+    <tr><td>PER</td><td>12,17</td></tr>
+    <tr><td>Rdt</td><td>5,52 % (div 597,53 F, mai 2026)</td></tr>
+    <tr><td>Carnet vendredi</td><td class="pos"><strong>66:1 ACH</strong> (66 ACH @ 10 815 / 1 VEN @ 11 195)</td></tr>
+    <tr><td>Catalyseur</td><td>Signal institutionnel persistant — 2e séance carnet exceptionnel</td></tr>
+    <tr><td>Cours cible d'entrée</td><td>≤ 11 000 F</td></tr>
+  </table>
+  <p>La trajectoire carnet (117:1 VEN mardi → 1,14:1 VEN mercredi → 29,5:1 ACH jeudi → 66:1 ACH vendredi) est un signal de retournement institutionnel majeur. YTD +50,63 % — position de fond long terme.</p>
+</div>
+
+<div class="stock-acheter">
+  <h3><span class="medal-bronze">#3</span> PALM CI (PALC) — <span class="acheter">ACHETER</span> — Score moyen 6,38/10</h3>
+  <table>
+    <tr><th>Critère</th><th>Valeur</th></tr>
+    <tr><td>Score moyen hebdo</td><td><strong>6,38/10</strong> (5,5 → 5 → 7 → 8 sur les 4 séances)</td></tr>
+    <tr><td>PER</td><td class="pos">8,97 (sous le plancher cible 8–15)</td></tr>
+    <tr><td>Rdt</td><td>4,90 %</td></tr>
+    <tr><td>Carnet vendredi</td><td class="pos"><strong>18,4:1 ACH</strong> (92 ACH @ 8 650 / 5 VEN @ 9 000)</td></tr>
+    <tr><td>Catalyseur</td><td>Valorisation profonde + momentum pivot (+4,65 % vendredi)</td></tr>
+    <tr><td>Cours cible d'entrée</td><td>≤ 9 100 F</td></tr>
+  </table>
+  <p>Pivot technique confirmé : absorption post -4,66 % (jeudi) → +4,65 % (vendredi), carnet 18,4:1 ACH persistent. YTD +11,11 % = sous-performance du marché (+39,60 %) = potentiel de rattrapage.</p>
+</div>
+
+<div class="stock-acheter">
+  <h3><span class="medal-4">#4</span> ORAGROUP TOGO (ORGT) — <span class="acheter">ACHETER</span> — Score moyen 7,0/10 (2 séances)</h3>
+  <table>
+    <tr><th>Critère</th><th>Valeur</th></tr>
+    <tr><td>Score moyen hebdo (2 séances disponibles)</td><td><strong>7,0/10</strong> (7 BOC-142 ; 7 BOC-144)</td></tr>
+    <tr><td>PER</td><td>10,07</td></tr>
+    <tr><td>Rdt</td><td>1,90 %</td></tr>
+    <tr><td>Carnet vendredi</td><td class="pos">6,25:1 ACH (75 ACH @ 3 130 / 12 VEN @ 3 140)</td></tr>
+    <tr><td>Catalyseur</td><td>Momentum structurel (YTD +30,83 %) ; pas de catalyseur daté</td></tr>
+    <tr><td>Cours cible d'entrée</td><td>≤ 3 200 F (confirmer carnet lundi 04/08)</td></tr>
+  </table>
+  <p>Après +15 % hebdo, le carnet reste acheteur — signal que la hausse n'est pas épuisée. Confirmer le carnet lundi avant entrée.</p>
+</div>
+
+<div class="stock-acheter">
+  <h3><span class="medal-5">#5</span> BOA ML (BOAM) — <span class="acheter">ACHETER</span> — Score moyen 6,13/10</h3>
+  <table>
+    <tr><th>Critère</th><th>Valeur</th></tr>
+    <tr><td>Score moyen hebdo</td><td><strong>6,13/10</strong> (5,5 → 6 → 5 → 8 sur les 4 séances)</td></tr>
+    <tr><td>PER</td><td>14,03</td></tr>
+    <tr><td>Rdt</td><td>5,38 % (div 305 F, juin 2026)</td></tr>
+    <tr><td>Carnet vendredi</td><td class="pos"><strong>27,2:1 ACH</strong> (353 ACH @ 5 660 / 13 VEN @ 5 665)</td></tr>
+    <tr><td>Catalyseur</td><td>"Accumulation silencieuse" — profil précurseur de hausse</td></tr>
+    <tr><td>Cours cible d'entrée</td><td>≤ 5 700 F</td></tr>
+  </table>
+  <p>Retournement carnet de 302,4:1 VEN (mardi) &agrave; 27,2:1 ACH (vendredi) sans mouvement de cours significatif = accumulation institutionnelle discrète. Signal précurseur identique &agrave; celui observé sur BOAC avant sa hausse.</p>
+</div>
+
+<h2>Section 4 — Top 5 recommandations VENDRE / ALLÉGER (semaine du 4 août 2026)</h2>
+
+<table>
+  <tr><th>Titre</th><th>Symbole</th><th>Action</th><th>Cours ven. 31</th><th>Justification</th><th>Risque si on reste</th></tr>
+  <tr><td><strong>SMB CI</strong></td><td>SMBC</td><td><span class="vendre">VENDRE</span></td><td>15 495 F</td><td>Mur vendeur 11,3:1 / 10 842 titres ; &ge; 4 séances consécutives</td><td class="neg">Décrochage sous 15 000 F probable</td></tr>
+  <tr><td><strong>SONATEL SN</strong></td><td>SNTS</td><td><span class="vendre">VENDRE</span></td><td>31 000 F</td><td>Explosion carnet 804,5:1 VEN ; dégradation 7,1:1 &rarr; 1 865:1 &rarr; 804,5:1 sur 4 séances</td><td class="neg">Déclassement institutionnel accéléré</td></tr>
+  <tr><td><strong>SICABLE CI</strong></td><td>CABC</td><td><span class="vendre">VENDRE</span></td><td>3 500 F</td><td>Retournement brutal 38,5:1 ACH (jeudi) &rarr; 627:1 VEN (vendredi) en 24h</td><td class="neg">Volatilité extrême ; titre imprévisible</td></tr>
+  <tr><td>TOTALENERGIES MKG CI</td><td>TTLC</td><td><span class="alleger">ALLÉGER</span></td><td>2 975 F</td><td>Carnet 1 614:1 VEN post +7,40 % ; catalyseur épuisé</td><td class="warn">Consolidation mécanique post-spike</td></tr>
+  <tr><td>LOTERIE NAT. BN</td><td>LNBB</td><td><span class="alleger">ALLÉGER</span></td><td>4 500 F</td><td>Carnet 49,6:1 VEN ; ex-div 30/07 passé ; S1 déjà dans le cours</td><td class="warn">Prise de profit institutionnelle en cours</td></tr>
+</table>
+
+<div class="stock-vendre">
+  <strong>SMBC :</strong> Titre piège — PER 9,24 attractif mais mur vendeur institutionnel &ge; 4 séances sans absorption. Progression du mur : 3 409:1 VEN (mardi) &rarr; 162,4:1 VEN (mercredi) &rarr; 285,5:1 VEN (jeudi) &rarr; 11,3:1 VEN / 10 842 titres (vendredi). Sortie totale.
+</div>
+
+<div class="stock-vendre">
+  <strong>SNTS :</strong> Cas "fondamentaux vs technique" — PER 7,50 (le plus bas du marché) et Rdt 5,61 % exceptionnels, mais carnet dégradé chaque séance (7,1:1 &rarr; 92,9:1 &rarr; 1 865,5:1 &rarr; 804,5:1 VEN). La sortie institutionnelle coordonnée liée au risque de gouvernance (changement Direction, BOC-142) prime sur la valorisation. Sortie totale malgré les fondamentaux.
+</div>
+
+<h2>Section 5 — Actions à ÉVITER (semaine du 4 août 2026)</h2>
+
+<table>
+  <tr><th>Titre</th><th>Symbole</th><th>Raison</th><th>Risque chiffré</th></tr>
+  <tr><td style="color:#cf222e;font-weight:700;">ECOBANK TG</td><td>ETIT</td><td>AG Extraordinaire 13/08 ; mur 203 666 VEN (11:1 VEN) ; distorsion 88–94 % du volume brut</td><td class="neg">Dilution ou restructuration ; perte potentielle &gt; 20 %</td></tr>
+  <tr><td style="color:#cf222e;font-weight:700;">SAFCA CI</td><td>SAFC</td><td>Admission nouvelles actions 11/08 ; PER 59,42</td><td class="neg">Dilution mécanique inévitable post-admission</td></tr>
+  <tr><td style="color:#cf222e;font-weight:700;">NESTLE CI</td><td>NTLC</td><td>Dividende 2026 en baisse -49 % (420 F brut vs 721,8 F net 2025) ; Rdt 2,24 % ; PER 19,76</td><td class="neg">Signal fondamental négatif</td></tr>
+  <tr><td style="color:#bf8700;font-weight:700;">AGL CI (AFRICA GL.)</td><td>SDSC</td><td>Anti-aller-retour actif : seuil 2 431 F, cours 2 690 F &gt;&gt; seuil</td><td class="warn">Perte fiscale si rachat au-dessus du seuil</td></tr>
+  <tr><td style="color:#cf222e;font-weight:700;">UNILEVER CI</td><td>UNLC</td><td>Bulle permanente PER 731 ; liquidité quasi-nulle</td><td class="neg">Risque de décrochage brutal</td></tr>
+  <tr><td style="color:#cf222e;font-weight:700;">BERNABE CI</td><td>BNBC</td><td>Bulle permanente PER 561 ; liquidité quasi-nulle</td><td class="neg">Risque de décrochage brutal</td></tr>
+</table>
+
+<h2>Section 6 — Signal structurel de la semaine</h2>
+
+<div class="signal-rot">
+  <h3>Signal 1 — ETIT : Distorsion systémique persistante et amplifiée</h3>
+  <p>Sur les 4 séances W31, ETIT a représenté <strong>88,2 % &agrave; 94,2 % du volume brut journalier</strong> (1,5 M &agrave; 2,8 M titres/jour), pour une valeur de 96 M &agrave; 194 M FCFA = seulement 5,6 &agrave; 12,7 % de la valeur totale. Le mur vendeur résiduel de <strong>203 666 titres</strong> (BOC-144) = ~72 jours de volume moyen (hors ETIT) au rythme actuel — signal de sortie institutionnelle anticipant l'<strong>AG Extraordinaire du 13/08/2026</strong>.</p>
+</div>
+
+<div class="signal-rot">
+  <h3>Signal 2 — SNTS : Dégradation progressive du carnet sur 4 séances</h3>
+  <table>
+    <tr><th>Séance</th><th>BOC</th><th>Ratio carnet SNTS</th><th>Interprétation</th></tr>
+    <tr><td>Mardi 28/07</td><td>BOC-141</td><td class="warn">7,1:1 VEN</td><td>Début de dégradation</td></tr>
+    <tr><td>Mercredi 29/07</td><td>BOC-142</td><td class="neg">92,9:1 VEN</td><td>Explosion</td></tr>
+    <tr><td>Jeudi 30/07</td><td>BOC-143</td><td class="neg"><strong>1 865,5:1 VEN</strong></td><td>Mur catastrophique</td></tr>
+    <tr><td>Vendredi 31/07</td><td>BOC-144</td><td class="neg">804,5:1 VEN</td><td>Légère détente mais mur persistant</td></tr>
+  </table>
+  <p>Dégradation quasi-monotone sur 4 séances + volume élevé vendredi (94,5 M FCFA = vendeurs trouvent preneurs) = signature d'une sortie institutionnelle coordonnée. PER 7,50 et Rdt 5,61 % n'ont pas empêché la dégradation — les vendeurs sortent sur signal non public (gouvernance, restructuration).</p>
+</div>
+
+<div class="signal-rot">
+  <h3>Signal 3 — SENELEC obligataire : Accumulation institutionnelle structurelle</h3>
+  <table>
+    <tr><th>BOC</th><th>Titre</th><th>Volume</th><th>Valeur (FCFA)</th><th>Cours</th></tr>
+    <tr><td>BOC-143 (30/07)</td><td>FSNLC.O1 (SENIOR 8,15 %)</td><td class="pos">157 706 titres</td><td class="pos">1 495 963 338</td><td>~9 486 F</td></tr>
+    <tr><td>BOC-144 (31/07)</td><td>FSNLC.O1 (SENIOR 8,15 %)</td><td>100 titres</td><td>997 500</td><td class="pos"><strong>9 975 F (+5,2 % en 24h)</strong></td></tr>
+  </table>
+  <p>La transaction BOC-143 sur FSNLC.O1 (1,496 Md FCFA en une séance = ~89 % du marché obligataire total) est un phénomène exceptionnel pour le segment obligataire BRVM. Arbitrage acheteurs SENIOR / vendeurs MEZZANINE (FSNLC.O2 @ 9 500 F) : rotation de qualité vers les infrastructures énergétiques. Signal de réallocation institutionnelle sectorielle.</p>
+</div>
+
+<h2>Section 7 — Agenda catalyseurs (semaine du 4 août 2026)</h2>
+
+<table>
+  <tr><th>Date</th><th>Titre</th><th>Événement</th><th>Impact anticipé</th></tr>
+  <tr><td>Lun. 04/08</td><td>NSBC (NSIA BANQUE CI)</td><td>Paiement dividende 675,98 F net (ex-div 31/07)</td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td>Mar. 05/08</td><td>SGBC (SOCIETE GENERALE CI)</td><td>Paiement dividende 1 645,78 F net (ex-div 31/07)</td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td>Mer. 06/08</td><td>SOGC (SOGB CI)</td><td>Paiement dividende 501,6 F net PP (ex-div 03/08)</td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td>Ven. 07/08</td><td>NTLC (NESTLE CI)</td><td>Réaction marché au dividende 2026 réduit (-49 %)</td><td><span class="eviter">ÉVITER</span></td></tr>
+  <tr><td><strong>Lun. 10/08</strong></td><td><strong>STBC (SITAB CI)</strong></td><td><strong>DERNIER ACHAT pour div. 1 707,2 F net (règlement 13/08)</strong></td><td><span class="acheter">ACHETER</span></td></tr>
+  <tr><td>Mar. 11/08</td><td>CFAC (CFAO MOTORS CI)</td><td>Dernier achat pour div. ~55,4 F net (règlement 14/08)</td><td><span class="attendre">ATTENDRE</span> (Rdt 3,33 %)</td></tr>
+  <tr><td>Mar. 11/08</td><td>SAFC (SAFCA CI)</td><td>Admission nouvelles actions — dilution mécanique</td><td><span class="eviter">ÉVITER</span></td></tr>
+  <tr><td>Mar. 11/08</td><td>STBC (SITAB CI)</td><td>Ex-div — drop mécanique attendu le lendemain</td><td><span class="alleger">ALLÉGER</span> (si achat pour div)</td></tr>
+  <tr><td><strong style="color:#cf222e;">Jeu. 13/08</strong></td><td><strong style="color:#cf222e;">ETIT</strong></td><td><strong style="color:#cf222e;">AG EXTRAORDINAIRE — risque dilution / restructuration</strong></td><td><span class="eviter">ÉVITER</span></td></tr>
+  <tr><td>Jeu. 13/08</td><td>STBC (SITAB CI)</td><td>Paiement dividende 1 707,2 F net</td><td>Confirmation règlement</td></tr>
+  <tr><td>Ven. 14/08</td><td>CFAC (CFAO MOTORS CI)</td><td>Paiement dividende ~55,4 F net</td><td>Confirmation règlement</td></tr>
+</table>
+
+<h2>Section 8 — Plan d'action (semaine du 4 août 2026)</h2>
+
+<table>
+  <tr><th>Action</th><th>Titre</th><th>Symbole</th><th>Cours cible</th><th>Timing</th><th>Justification</th></tr>
+  <tr><td><span class="acheter">ACHETER</span></td><td><strong>SITAB CI</strong></td><td>STBC</td><td>&le; 23 500 F</td><td><strong style="color:#1a7f37;">Dès lun. 04/08 — avant lun. 10/08</strong></td><td>Div 1 707,2 F net (7,36 %) ; fenêtre bornée ; score 8,75/10</td></tr>
+  <tr><td><span class="acheter">ACHETER</span></td><td>BOA CI</td><td>BOAC</td><td>&le; 11 000 F</td><td>Semaine du 04/08</td><td>Carnet 66:1 ACH ; PER 12,17 ; Rdt 5,52 %</td></tr>
+  <tr><td><span class="acheter">ACHETER</span></td><td>PALM CI</td><td>PALC</td><td>&le; 9 100 F</td><td>Semaine du 04/08</td><td>PER 8,97 ; carnet 18,4:1 ACH ; momentum validé</td></tr>
+  <tr><td><span class="acheter">ACHETER</span></td><td>ORAGROUP TOGO</td><td>ORGT</td><td>&le; 3 200 F</td><td>Semaine du 04/08 (confirmer carnet lundi)</td><td>+15 % hebdo ; carnet 6,25:1 ACH ; PER 10,07</td></tr>
+  <tr><td><span class="acheter">ACHETER</span></td><td>BOA ML</td><td>BOAM</td><td>&le; 5 700 F</td><td>Semaine du 04/08</td><td>Accumulation silencieuse ; carnet 27,2:1 ACH ; Rdt 5,38 %</td></tr>
+  <tr><td><span class="vendre">VENDRE</span></td><td>SMB CI</td><td>SMBC</td><td>—</td><td><strong class="neg">URGENT dès lun. 04/08</strong></td><td>Mur 11,3:1 VEN ; &ge; 4 séances ; risque de décrochage</td></tr>
+  <tr><td><span class="vendre">VENDRE</span></td><td>SONATEL SN</td><td>SNTS</td><td>—</td><td><strong class="neg">URGENT dès lun. 04/08</strong></td><td>Carnet 804,5:1 VEN ; risque gouvernance non clarifié</td></tr>
+  <tr><td><span class="vendre">VENDRE</span></td><td>SICABLE CI</td><td>CABC</td><td>—</td><td><strong class="neg">URGENT dès lun. 04/08</strong></td><td>Retournement brutal 627:1 VEN en 24h</td></tr>
+  <tr><td><span class="alleger">ALLÉGER</span></td><td>TOTALENERGIES MKG CI</td><td>TTLC</td><td>—</td><td>Dès lun. 04/08</td><td>Carnet 1 614:1 VEN post +7,40 % ; catalyseur épuisé</td></tr>
+  <tr><td><span class="alleger">ALLÉGER</span></td><td>LOTERIE NAT. BN</td><td>LNBB</td><td>—</td><td>Dès lun. 04/08</td><td>Carnet 49,6:1 VEN ; ex-div passé ; S1 dans le cours</td></tr>
+  <tr><td><span class="surveiller">SURVEILLER</span></td><td>SAPH CI</td><td>SPHC</td><td>7 565 F</td><td>Semaine du 04/08</td><td>PER 7,74 (plus bas du marché réel) ; carnet 6,9:1 ACH</td></tr>
+  <tr><td><span class="surveiller">SURVEILLER</span></td><td>CORIS BANK INT.</td><td>CBIBF</td><td>28 000 F</td><td>Semaine du 04/08</td><td>Score 6,33/10 ; carnet légèrement vendeur &agrave; surveiller</td></tr>
+  <tr><td><span class="surveiller">SURVEILLER</span></td><td>BOA BF</td><td>BOABF</td><td>7 100 F</td><td>Semaine du 04/08</td><td>Carnet 5,8:1 ACH ; PER raisonnable</td></tr>
+  <tr><td><span class="eviter">ÉVITER</span></td><td>ECOBANK TG</td><td>ETIT</td><td>—</td><td>Jusqu'après 13/08</td><td>AG Extraordinaire 13/08 ; mur 203 666 VEN</td></tr>
+  <tr><td><span class="eviter">ÉVITER</span></td><td>SAFCA CI</td><td>SAFC</td><td>—</td><td>Jusqu'après 11/08</td><td>Dilution actions nouvelles 11/08</td></tr>
+  <tr><td><span class="eviter">ÉVITER</span></td><td>AGL CI</td><td>SDSC</td><td>—</td><td>Jusqu'à cours &lt; 2 431 F</td><td>Anti-aller-retour (seuil 2 431 F, cours 2 690 F)</td></tr>
+</table>
+
+<div class="disclaimer">
+  <strong>Disclaimer :</strong> Ce document est produit &agrave; des fins d'information et d'analyse pédagogique sur le marché BRVM. Il ne constitue pas un conseil personnalisé en investissement. Les données sont issues exclusivement des Bulletins Officiels de la Cote N°141 &agrave; N°144 (semaine du 28 au 31 juillet 2026). Les performances passées ne préjugent pas des performances futures. Tout investissement comporte un risque de perte en capital.
+</div>
