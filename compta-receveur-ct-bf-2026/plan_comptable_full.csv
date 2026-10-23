@@ -1,0 +1,1007 @@
+Compte,Libelle,Cpte_Ppal,Etat_Passif,Etat_Actif,Passif,Actif,Sens,CpteFinEnc,CpteFinEnc2,Bal_Entree,Recette_Budgetaire,Depense_Budgetaire,Recette_Fiscale,Section_Budget,Origine_Recette,Section_Budget_Tri,Acteur_Tresor,Acteur_Impot,Acteur_Autres,DetailsPlus,DansDetail,Libelle2,Situation_Tresorerie,Rang
+"10","DOTATIONS, SUBVENTIONS, DONS ET LEGS EN CAPITAL",0,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,0,,0,1
+"101","Dotations reçues de l'État",0,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,0,,0,2
+"1010","Dotation globale d'équipement",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,0,,0,3
+"1011","Dotation du domaine de la santé et de l'hygiène",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,0,,0,4
+"1012","Dotation du domaine de l'éducation, de la formation professionnelle et de l'alphabétisation",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,0,,0,5
+"1013","Dotation du domaine de l'eau, de l'assainissement et de l'électricité",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,0,,0,6
+"1014","Dotation du domaine de l'environnement et de la gestion des ressources naturelles",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,0,,0,7
+"1015","Dotation du domaine de la culture, des sports et des loisirs",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,0,,0,8
+"1016","Dotation du domaine de l'aménagement du territoire, de la gestion du domaine du foncier et de l'aménagement urbain",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,0,,0,9
+"1017","Dotation du domaine des marchés, abattoirs et foires",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,0,,0,10
+"1018","Dotation du domaine de la protection civile, de l'assistance et des secours",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,0,,0,11
+"1019","Autres dotations reçues de l'Etat",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,12
+"102","Fonds de concours",0,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,13
+"1020","Fonds de concours n°1",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,14
+"1021","Fonds de concours n°2",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,15
+"1022","Fonds de concours n°3",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,16
+"1023","Fonds de concours n°4",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,17
+"1024","Fonds de concours n°5",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,18
+"1025","Fonds de concours n°6",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,19
+"1026","Fonds de concours n°7",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,20
+"1027","Fonds de concours n°8",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,21
+"1028","Fonds de concours n°9",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,22
+"1029","Autres fonds de concours",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,23
+"103","Dotations complémentaires",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,24
+"104","Dons et legs en capital",0,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,25
+"1040","Dons et legs en capital intérieurs",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,26
+"1041","Dons et legs en capital extérieurs",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,27
+"1049","Autres dons et legs en capital",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,28
+"105","Subventions",0,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,29
+"1050","Subvention n°1",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,30
+"1051","Subvention n°2",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,31
+"1052","Subvention n°3",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,32
+"1053","Subvention n°4",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,33
+"1054","Subvention n°5",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,34
+"1055","Subvention n°6",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,35
+"1056","Subvention n°7",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,36
+"1057","Subvention n° 8",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,37
+"1058","Subvention n°9",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,38
+"1059","Autres subventions",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,39
+"109","Autres dotations, subventions, dons et legs en capita",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I001",0,0,1,,1,,0,40
+"11","RESERVES",0,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I002",0,0,1,,0,,0,41
+"111","Excédent de fonctionnement capitalisé",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I002",0,0,1,,0,,0,42
+"112","Différences sur réalisation de biens meubles et immeubles",1,0,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I002",0,0,1,,0,,0,43
+"12","REPORT À NOUVEAU",0,0,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I003",0,0,1,,0,,0,44
+"121","Résultat ordinaire reporté",1,0,0,1,0,"C",0,0,1,0,0,0,"Investissement","Recettes Externes","I003",0,0,1,,0,,0,45
+"122","Résultat de fonctionnement affecté",1,0,0,0,0,"C",0,0,0,1,1,0,"Investissement","Recettes Externes","I003",0,0,1,,0,,0,46
+"123","Résultat d'investissement reporté",1,0,0,0,0,"C",0,0,0,1,1,0,"Investissement","Recettes Externes","I003",0,0,1,,0,,0,47
+"13","RÉSULTAT DE L'EXERCICE",0,0,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I004",0,0,1,,0,,0,48
+"131","Résultat de fonctionnement",1,0,0,1,0,"C",0,0,1,0,0,0,"Investissement","Recettes Externes","I004",0,0,1,,0,,0,49
+"14","DONS PROJETS ET LEGS",0,0,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I005",0,0,1,,0,,0,50
+"141","Dons projets et legs intérieurs",1,0,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I005",0,0,1,,0,,0,51
+"142","Dons projets et legs extérieurs",1,0,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I005",0,0,1,,0,,0,52
+"149","Autres dons projets et legs",1,0,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I005",0,0,1,,0,,0,53
+"16","EMPRUNTS ET DETTES À COURT, MOYEN ET LONG TERMES ET DETTES ASSIMILÉES",0,0,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I006",0,0,1,,0,,0,54
+"161","Emprunts et dettes à court terme",1,1,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I006",0,0,1,,0,,0,55
+"162","Emprunts et dettes à moyen terme",1,1,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I006",0,0,1,,0,,0,56
+"163","Emprunts et dettes à long terme",1,1,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I006",0,0,1,,0,,0,57
+"164","Dépôts et cautionnements reçus",1,1,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I006",0,0,1,,0,,0,58
+"169","Autres emprunts et dettes",1,1,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I006",0,0,1,,0,,0,59
+"18","DETTES LIÉES AUX COMPTES RATTACHÉS",0,0,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I007",0,0,1,,0,,0,60
+"181","Dettes liées à des participations",1,1,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I007",0,0,1,,0,,0,61
+"182","Dettes liées aux comptes de liaison",1,1,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I007",0,0,1,,0,,0,62
+"189","Autres dettes",1,1,0,1,0,"C",0,0,1,1,1,0,"Investissement","Recettes Externes","I007",0,0,1,,0,,0,63
+"19","PROVISIONS POUR RISQUES ET CHARGES",0,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I008",0,0,1,,0,,0,64
+"191","Provisions pour risques",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I008",0,0,1,,0,,0,65
+"192","Provisions pour charges à repartir sur plusieurs exercices",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I008",0,0,1,,0,,0,66
+"199","Autres provisions pour risques et charges",1,0,0,1,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I008",0,0,1,,0,,0,67
+"20","CHARGES IMMOBILISÉES",0,0,0,0,0,"D",0,0,1,0,1,0,"Investissement","NonApplicable","I009",0,0,0,,0,,0,68
+"201","Frais d'établissement",1,0,1,0,1,"D",0,0,1,0,1,0,"Investissement","NonApplicable","I009",0,0,0,,0,,0,68
+"202","Primes de remboursement des obligations",1,0,1,0,1,"D",0,0,1,0,1,0,"Investissement","NonApplicable","I009",0,0,0,,0,,0,69
+"209","Autres charges immobilisées",1,0,1,0,1,"D",0,0,1,0,1,0,"Investissement","NonApplicable","I009",0,0,0,,0,,0,70
+"21","IMMOBILISATIONS INCORPORELLES",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I010",0,0,1,,0,,0,71
+"211","Frais de recherches et de développement",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I010",0,0,1,,0,,0,72
+"212","Brevets, licences, concessions et droits",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I010",0,0,1,,0,,0,73
+"213","Logiciels",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I010",0,0,1,,0,,0,74
+"214","Marques",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I010",0,0,1,,0,,0,75
+"215","Droit au bail",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I010",0,0,1,,0,,0,76
+"216","Autres droits et valeurs incorporelles",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I010",0,0,1,,0,,0,77
+"218","Immobilisations incorporelles en cours",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I010",0,0,1,,0,,0,78
+"219","Autres immobilisations incorporelles",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I010",0,0,1,,0,,0,79
+"22","ACQUISITIONS ET AMENAGEMENTS DES SOLS ET SOUS-SOLS",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,80
+"221","Terrains",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,81
+"222","Sous-sols, gisements et carrières",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,82
+"223","Plantations et forêts",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,83
+"224","Plan d'eau",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,84
+"225","Aménagement des terrains en cours",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,85
+"2250","Aménagement des bas-fonds agricoles",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,86
+"2251","Aménagement de plaines agricoles",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,87
+"2252","Aménagement des aires de stationnement ou de repos",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,88
+"2253","Aménagement des terrains de sport",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,89
+"2254","Aménagement des parcs, jardins et espaces verts",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,90
+"2259","Autres aménagements des terrains en cours",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,91
+"226","Aménagement des sous-sols en cours",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,92
+"227","Terrains mis en concession",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,93
+"229","Autres acquisitions et aménagements des sols et sous-sols",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I011",0,0,1,,0,,0,94
+"23","ACQUISITIONS,CONSTRUCTIONS ET GROSSES REPARATIONS DES IMMEUBLES",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,95
+"231","Bâtiments administratifs à usage de bureau",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,96
+"232","Bâtiments administratifs à usage de logement",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,97
+"233","Bâtiments administratifs à usage technique",0,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,98
+"2330","Bâtiments administratifs à usage scolaire",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,99
+"2331","Bâtiments administratifs à usage médical",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,100
+"2332","Bâtiments administratifs à usage commercial",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,101
+"2333","Bâtiments administratifs à usage d'entrepôts",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,102
+"2334","Bâtiments administratifs à usage culturel",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,103
+"2335","Bâtiments administratifs à usage sportif",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,104
+"2339","Autres bâtiments administratifs à usage technique",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,105
+"234","Ouvrages",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,106
+"2340","Forages",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,107
+"2341","Adduction d'eau potable",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,108
+"2342","Barrages et digues",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,109
+"2343","Pistes, voiries et réseaux",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,110
+"2344","Ponts et radiers",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,111
+"2345","Ouvrages d'art",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,112
+"2349","Autres ouvrages",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,113
+"235","Infrastructures",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,114
+"2350","Bas-fonds agricoles",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,115
+"2351","Plaines agricoles",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,116
+"2352","Aires de stationnement ou de repos",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,117
+"2353","Terrains de sport",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,118
+"2354","Parcs, jardins et espaces verts",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,119
+"2355","Parcs de vaccination",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,120
+"2356","Abattoirs",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,121
+"2357","Cimetières",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,122
+"2358","Marchés",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,123
+"2359","Autres infrastructures",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,124
+"236","Réseaux informatiques",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,125
+"239","Autres acquisitions, constructions et grosses réparations des immeubles",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I012",0,0,1,,0,,0,126
+"24","ACQUISITIONS ET GROSSES REPARATIONS DU MATERIEL ET MOBILIER",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,127
+"241","Matériel et mobilier de bureau et de logement",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,128
+"2410","Matériel et mobilier de bureau",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,129
+"2411","Matériel et mobilier de logement",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,130
+"242","Matériel informatique de bureau",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,131
+"243","Matériel de transport de service et de fonction",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,132
+"2430","Matériel de transport de service",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,133
+"2431","Matériel de transport de fonction",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,134
+"244","Matériel et outillage technique",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,135
+"2440","Matériel et outillage médical",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,136
+"2441","Matériel et outillage scolaire",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,137
+"2442","Matériel et outillage agricole",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,138
+"2443","Matériel et outillage de police",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,139
+"2444","Matériel et outillage de génie civil",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,140
+"2445","Matériel et outillage des sapeurs-pompiers",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,141
+"2449","Autres matériels et outillages",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,142
+"245","Matériel de transport en commun et de marchandises",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,143
+"2450","Matériel de transport en commun",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,144
+"2451","Matériel de transport de marchandises",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,145
+"246","Collections et œuvres d'art",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,146
+"2460","Collections",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,147
+"2461","Œuvre d’art",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,148
+"248","Cheptel",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,149
+"249","Autres acquisitions et grosses réparations du matériel et mobilier",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I013",0,0,1,,0,,0,150
+"26","PRISES DE PARTICIPATION, DEPOTS ET CAUTIONNEMENTS",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I014",0,0,1,,0,,0,151
+"261","Prises de participations à l'intérieur",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I014",0,0,1,,0,,0,152
+"262","Prises de participations à l'extérieur",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I014",0,0,1,,0,,0,153
+"263","Part dans les associations, syndicats et organismes publics",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I014",0,0,1,,0,,0,154
+"264","Dépôts et cautionnements versés",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I014",0,0,1,,0,,0,155
+"266","Titres déposés en nantissement",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I014",0,0,1,,0,,0,156
+"269","Autres prises de participations",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I014",0,0,1,,0,,0,157
+"27","PRETS, CREANCES, AVANCES ET ACOMPTES",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I015",0,0,1,,0,,0,158
+"271","Prêts, créances et avances",0,0,0,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I015",0,0,1,,0,,0,159
+"2710","Prêts",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I015",0,0,1,,0,,0,160
+"2711","Créances",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I015",0,0,1,,0,,0,161
+"2712","Avances consolidées en prêts",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I015",0,0,1,,0,,0,162
+"272","Avances et acomptes versés sur immobilisations incorporelles",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I015",0,0,1,,0,,0,163
+"273","Avances et acomptes versés sur immobilisations corporelles",1,0,1,0,1,"D",0,0,1,1,1,0,"Investissement","Recettes Externes","I015",0,0,1,,0,,0,164
+"28","AMORTISSEMENTS",0,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,165
+"281","Amortissements des immobilisations incorporelles",0,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,166
+"2810","Amortissements des frais de recherches et de développement",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,167
+"2811","Amortissements des brevets, licences, concessions et droits",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,168
+"2812","Amortissements des logiciels",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,169
+"2813","Amortissements des marques",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,170
+"2814","Amortissements du droit au bail",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,171
+"2815","Amortissement des autres droits et valeurs incorporelles",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,172
+"2819","Amortissements des autres immobilisations incorporelles",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,173
+"282","Amortissements des immobilisations corporelles",0,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,174
+"2820","Amortissements des sous-sols, gisements et carrières",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,175
+"2821","Amortissements des plantations et forêts",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,176
+"2822","Amortissements des bâtiments",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,177
+"2823","Amortissements des ouvrages",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,178
+"2824","Amortissements des infrastructures",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,179
+"2825","Amortissements de l'outillage, du matériel et du mobilier",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,180
+"2826","Amortissements du matériel de transport",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,181
+"2827","Amortissements du matériel informatique",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,182
+"2829","Amortissements des autres immobilisations corporelles",1,0,0,0,0,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I016",0,0,1,,0,,0,183
+"29","PROVISIONS POUR DEPRECIATION",0,0,0,1,1,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I017",0,0,1,,0,,0,184
+"291","Provisions pour dépréciation des immobilisations incorporelles",1,0,1,1,1,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I017",0,0,1,,0,,0,185
+"292","Provisions pour dépréciation des terrains",1,0,1,1,1,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I017",0,0,1,,0,,0,186
+"293","Provisions pour dépréciation des immobilisations financières",1,0,1,1,1,"C",0,0,1,1,0,0,"Investissement","Recettes Externes","I017",0,0,1,,0,,0,187
+"31","MARCHANDISES",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,188
+"32","MATIERES PREMIERES ET FOURNITURES LIEES",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,189
+"33","AUTRES APPROVISIONNEMENTS",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,190
+"331","Matières consommables",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,191
+"3310","Consommables informatiques",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,192
+"3311","Produits vestimentaires",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,193
+"3312","Produits d'entretien ménager",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,194
+"3313","Petit matériel, outillage et mobilier",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,195
+"332","Fournitures consommables",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,196
+"3320","Carburant, lubrifiants et combustibles",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,197
+"3321","Fournitures de bureau",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,198
+"3322","Produits alimentaires",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,199
+"3323","Produits pharmaceutiques",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,200
+"34","PRODUITS ET SERVICES EN COURS",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,201
+"341","Produits en cours",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,202
+"342","Services en cours",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,203
+"35","PRODUITS FINIS",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,204
+"351","Produits finis A",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,205
+"352","Produits finis B",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,206
+"353","Produits intermédiaires",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,207
+"354","Produits résiduels",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,208
+"37","RELATIONS AVEC LES BUDGETS ANNEXES",1,0,0,0,1,"I",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,209
+"38","PROVISIONS POUR DEPRECIATION DES STOCKS",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,210
+"40","FOURNISSEURS ET COMPTES RATTACHÉS",0,0,0,1,1,"I",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,211
+"401","Fournisseurs, dettes en compte",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,212
+"4010","Fournisseurs - achats de biens ou de prestations de service, année courante",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,213
+"4011","Fournisseurs - achats de biens ou de prestations de service, année précédente",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,214
+"4012","Fournisseurs - achats de biens ou de prestations de service, années antérieures",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,215
+"4013","Fournisseurs – pénalités de retard",1,0,0,1,0,"C",0,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,216
+"4014","Fournisseurs – retenues de garantie",1,0,0,1,0,"C",0,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,217
+"402","Fournisseurs d’investissement",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,218
+"4020","Fournisseurs d’investissement, année courante",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,219
+"4021","Fournisseurs d’investissement, année précédente",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,220
+"4022","Fournisseurs d’investissement, années antérieures",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,221
+"4023","Fournisseurs d’investissement - pénalités de retard",1,0,0,1,0,"C",0,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,222
+"4024","Fournisseurs d’investissement - retenues de garantie",1,0,0,1,0,"C",0,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,223
+"403","Fournisseurs, effets à payer",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,224
+"4030","Fournisseurs, effets à payer",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,225
+"408","Fournisseurs, charge à payer",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,226
+"409","Fournisseurs, débiteurs",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,227
+"4090","Fournisseurs, avances et acomptes versés sur achats de biens ou de prestations de service",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,228
+"4091","Fournisseurs, avances et acomptes versés sur acquisition d’immobilisation",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,229
+"4092","retenues de garantie",1,0,0,0,1,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,230
+"4093","pénalités diverses",1,0,0,0,1,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,231
+"4098","Rabais, remises, ristournes et autres avoirs à obtenir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,232
+"41","CLIENTS ET COMPTES RATTACHÉS",0,0,0,1,1,"I",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,233
+"411","Clients",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,234
+"4110","Clients, vente de produits et prestations diverses, année courante",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,235
+"4111","Clients, vente de produits et prestations diverses, année précédente",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,236
+"4112","Clients, vente de produits et prestations diverses, années antérieures",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,237
+"4114","Clients-retenues de garantie",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,238
+"412","Contribuables et redevables d’impôts et taxes locales",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,239
+"4120","Contribuables et redevables d’impôts et taxes locales, année courante",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,240
+"4121","Contribuables et redevables d’impôts et taxes locales, année précédente",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,241
+"4122","Contribuables et redevables d’impôts et taxes locales, années antérieures",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,242
+"413","Locataires",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,243
+"4130","Locataires, année courante",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,244
+"4131","Locataires, année précédente",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,245
+"4132","Locataires, années antérieures",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,246
+"414","Redevables, créances sur cessions d’actifs",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,247
+"4140","Redevables, créances sur cessions d’actifs, année courante",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,248
+"4141","Redevables, créances sur cessions d’actifs, année précédente",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,249
+"4142","Redevables, créances sur cessions d’actifs, années antérieures",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,250
+"415","Redevables, créances liées aux amendes et aux pénalités",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,251
+"4150","Redevables, créances liées aux amendes et aux pénalités, année courante",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,252
+"4151","Redevables, créances liées aux amendes et aux pénalités, année précédente",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,253
+"4152","Redevables, créances liées aux amendes et aux pénalités, années antérieures",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,254
+"416","Clients, contribuables, redevables, effets à recevoir en portefeuille",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,255
+"4160","Clients, contribuables, redevables, effets à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,256
+"4161","Organismes internationaux, effets à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,257
+"418","Clients, contribuables, redevables, produits à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,258
+"419","Clients créditeurs",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,259
+"4190","Clients, avances et acomptes reçus",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,260
+"4191","Clients, retenues de garantie",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,261
+"4198","Rabais, remises, ristournes et autres avoirs à accorder",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,262
+"42","RÉMUNÉRATION DU PERSONNEL",0,0,0,1,1,"I",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,263
+"421","Personnel, avances et acomptes",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,264
+"4210","Personnel, avances",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,265
+"4211","Personnel, acomptes",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,266
+"4212","Frais avancés et fournitures au personnel",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,267
+"422","Personnel, rémunérations dues",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,268
+"423","Personnel, oppositions, saisies arrêts",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,269
+"4230","Personnel, oppositions",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,270
+"4231","Personnel, saisies",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,271
+"4232","Personnel, avis à tiers détenteurs",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,272
+"424","Personnel, œuvres sociales internes",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,273
+"4240","Assistance médicale",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,274
+"4241","Organismes sociaux rattachés à la collectivité",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,275
+"4242","Organismes sociaux rattachés à la collectivité",0,0,0,0,0,"C",0,0,0,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,276
+"4248","Autres œuvres sociales internes",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,277
+"425","Représentants du personnel",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,278
+"4250","Délégués du personnel",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,279
+"4251","Syndicats des travailleurs des collectivités",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,280
+"4258","Autres représentants du personnel",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,281
+"427","Personnel, dépôt",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,282
+"428","Personnel charges à payer et produits à recevoir",0,0,0,1,1,"I",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,283
+"4280","Dettes provisionnées pour congés à payer",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,284
+"4286","Autres charges à payer",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,285
+"4287","Produits à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,286
+"43","ORGANISMES SOCIAUX",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,287
+"431","Sécurité sociale",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,288
+"4310","Cotisation de retraites des agents de la collectivité",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,289
+"4311","Cotisation patronale de la collectivité pour pension des agents",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,290
+"432","Caisse Nationale de retraite des agents publics",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,291
+"4320","Cotisation de retraites des agents de la collectivité",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,292
+"4321","Cotisation patronale de la collectivité pour pension des agents",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,293
+"439","Autres organismes sociaux",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,294
+"44","ETAT ET COLLECTIVITÉS PUBLIQUES",0,0,0,1,1,"I",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,295
+"441","Collectivités territoriales",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,296
+"4410","Région",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,297
+"4411","Commune",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,298
+"4412","Groupement de collectivités territoriales",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,299
+"442","Etablissements publics",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,300
+"443","Etat, impôts et taxes dus",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,301
+"447","Etat, impôts et retenues à la source",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,302
+"4470","Impôts sur le revenu",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,303
+"4471","Impôts sur salaires",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,304
+"4472","Contribution nationale",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,305
+"4473","Contribution nationale de solidarité",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,306
+"4479","Autres impôts et contributions",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,307
+"448","Etat, charges à payer et produits à recevoir",0,0,0,1,1,"I",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,308
+"4486","Charges à payer",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,309
+"4487","Produits à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,310
+"449","Etat, créances et dettes diverses",0,0,0,1,1,"I",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,311
+"4490","Etat, obligations cautionnées",1,0,0,1,1,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,312
+"4491","Etat, avances et acomptes versés sur impôts",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,313
+"4492","Etat, fonds de dotation à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,314
+"4493","Etat, subventions d’équipement à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,315
+"4494","Etat, subventions d’exploitation à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,316
+"4495","Etat, fonds de concours à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,317
+"4496","Etat, subventions d’équilibre à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,318
+"4499","Etat, fonds réglementé provisionné",1,0,0,1,1,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,319
+"45","ORGANISMES INTERNATIONAUX",0,0,0,1,1,"I",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,320
+"451","Opérations avec des organismes africains",0,0,0,1,1,"I",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,321
+"4510","Organismes africains fonds de dotation à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,322
+"4511","Organismes africains fonds de concours à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,323
+"4512","Organismes africains, subventions d’équipement à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,324
+"4513","Organismes africains, dépenses",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,325
+"452","Opérations avec d’autres organismes internationaux",1,0,0,1,1,"I",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,326
+"458","Organismes internationaux, fonds de dotation, fonds de concours et subventions à recevoir",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,327
+"4580","Organismes internationaux, fonds de dotation à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,328
+"4581","Organismes internationaux, fonds de concours à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,329
+"4582","Organismes internationaux, subventions à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,330
+"46","DÉBITEURS ET CRÉDITEURS DIVERS",0,0,0,0,1,"I",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,331
+"461","Tiers débiteurs divers",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,332
+"4610","Tiers débiteurs divers, année courante",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,333
+"4611","Tiers débiteurs divers, année précédente",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,334
+"4612","Tiers débiteurs divers, années antérieures",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,335
+"463","Tiers prêteurs",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,336
+"4630","Emprunts et dettes auprès des établissements financiers nationaux",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,337
+"4631","Emprunts et dettes auprès des établissements financiers internationaux",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,338
+"4632","Emprunts et dettes auprès des partenaires techniques et financiers nationaux",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,339
+"4633","Emprunts et dettes auprès des partenaires techniques et financiers internationaux",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,340
+"464","Dépôts et cautionnements reçus",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,341
+"4640","Dépôts de garanties reçus",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,342
+"4641","Cautionnements reçus",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,343
+"4642","Retenues diverses",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,344
+"4649","Autres dépôts et cautionnements reçus",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,345
+"466","Tiers créditeurs divers",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,346
+"4660","Tiers créditeurs divers, année courante",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,347
+"4661","Tiers créditeurs divers, année précédente",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,348
+"4662","Tiers créditeurs divers, années antérieures",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,349
+"467","Oppositions",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,350
+"468","Ecart de conversion – actif",0,0,0,1,0,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,351
+"4680","Diminution des créances",1,0,0,1,0,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,352
+"4681","Augmentation des dettes",1,0,0,1,0,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,353
+"4688","Différence compensées par couverture de change",1,0,0,1,0,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,354
+"469","Ecart de conversion – passif",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,355
+"4690","Augmentation des créances",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,356
+"4691","Diminution des dettes",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,357
+"4698","Différences compensées par couverture de change",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,358
+"47","COMPTES D’ATTENTE OU D’IMPUTATION PROVISIOIRE",0,0,0,1,1,"I",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,359
+"471","Compte d’attente",0,0,0,1,1,"I",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,360
+"4710","Recettes à classer et à régulariser",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,361
+"4711","Dépenses à classer et à régulariser",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,362
+"4712","Excédent de versement à rembourser",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,363
+"4713","Recettes perçues par anticipation",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,364
+"48","CREANCES ET DETTES HORS ACTIVITES ORDINAIRES",0,0,0,1,1,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,365
+"481","Fournisseurs d’investissement, effets à payer",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,366
+"482","Dettes pour acquisition de titres de placement",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,367
+"483","Autres dettes Hors Activités Ordinaires",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,368
+"484","Créances sur cessions d’immobilisations",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,369
+"4840","En compte",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,370
+"4841","Effets à recevoir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,371
+"4848","Factures à établir",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,372
+"4849","Retenues de garantie",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,373
+"485","Créances sur cession de titres de placement",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,374
+"487","Autres créances Hors Activités Ordinaires",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,375
+"49","DEPRECIATIONS ET RISQUES PROVISIONNES",0,0,0,1,1,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,376
+"490","Dépréciations des comptes fournisseurs",1,0,0,0,1,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,377
+"491","Dépréciations des comptes clients et redevables",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,378
+"4910","Créances litigieuses",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,379
+"4911","Créances douteuses",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,380
+"493","Risques provisionnés",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,381
+"50","TITRES DE PLACEMENTS ET VALEURS ASSIMILEES",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,382
+"501","Titres de placement à l’intérieur",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,383
+"502","Titres de placement à l’extérieur",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,384
+"509","Autres titres de placement et valeurs assimilées",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,385
+"51","VALEURS A ENCAISSER",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,386
+"511","Effets à encaisser",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,387
+"512","Effets à l’encaissement",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,388
+"513","Effets rejetés",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,389
+"514","Chèques à encaisser",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,390
+"515","Chèques à l’encaissement",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,391
+"516","Chèques impayés",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,392
+"517","Cartes de crédit à encaisser",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,393
+"519","Autres valeurs à l’encaissement",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,394
+"52","BANQUES, ETABLISSEMENTS FINANCIERS ET ASSIMILES",0,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,395
+"521","Compte au Trésor",0,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,396
+"5210","Compte principal au Trésor",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,397
+"5211","Compte au Trésor n°1",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,398
+"5212","Compte au Trésor n°2",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,399
+"5213","Compte au Trésor n°3",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,400
+"5214","Compte au Trésor n°4",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,401
+"5215","Compte au Trésor n°5",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,402
+"5216","Compte au Trésor n°6",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,403
+"5217","Compte au Trésor n°7",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,404
+"5218","Compte au Trésor n°8",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,405
+"5219","Autres comptes au Trésor",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,406
+"522","Banques primaires",0,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,407
+"5220","Banque n°1",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,408
+"5221","Banque n°2",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,409
+"5222","Banque n°3",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,410
+"5223","Banque n°4",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,411
+"5224","Banque n°5",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,412
+"5225","Banque n°6",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,413
+"5226","Banque n°7",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,414
+"5227","Banque n°8",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,415
+"5228","Banque n°9",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,416
+"5229","Autres banques",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,417
+"523","Etablissements financiers et assimilés",0,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,418
+"5230","Etablissement financier ou assimilé n°1",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,419
+"5231","Etablissement financier ou assimilé n°2",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,420
+"5239","Autres établissements financiers et assimilés",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,421
+"524","Opérateurs de monnaie électronique",0,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,422
+"5240","Opérateur de monnaie électronique n°1",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,423
+"5241","Opérateur de monnaie électronique n°2",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,424
+"5249","Autres opérateurs de monnaie électronique",1,0,0,0,1,"D",1,1,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,425
+"54","INSTRUMENTS DE TRESORERIE",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,426
+"541","Métaux précieux",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,427
+"5410","Or",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,428
+"5419","Autres métaux précieux",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,429
+"542","Instrument de marchés à terme",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,430
+"55","AVANCES DE TRESORERIE VERSEES",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,431
+"551","Avances aux établissements publics locaux",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,432
+"5510","Avances aux établissements publics locaux n°1",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,433
+"5511","Avances aux établissements publics locaux n°2",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,434
+"5512","Avances aux établissements publics locaux n°3",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,435
+"5519","Avances aux autres établissements publics locaux",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,436
+"552","Avances aux structures à comptabilité distincte",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,437
+"5520","Avances aux structures à comptabilité distincte n°1",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,438
+"5521","Avances aux structures à comptabilité distincte n°2",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,439
+"5522","Avances aux structures à comptabilité distincte n°3",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,440
+"5523","Avances aux structures à comptabilité distincte n°4",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,441
+"5524","Avances aux structures à comptabilité distincte n°5",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,442
+"5525","Avances aux structures à comptabilité distincte n°6",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,443
+"5526","Avances aux structures à comptabilité distincte n°7",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,444
+"5527","Avances aux structures à comptabilité distincte n°8",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,445
+"5528","Avances aux structures à comptabilité distincte n°9",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,446
+"5529","Avances aux autres structures à comptabilité distincte",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,447
+"553","Avances aux autres organismes publics",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,448
+"56","CREDITS DE TRESORERIE",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,449
+"561","Avances de trésorerie reçues de l’Etat",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,450
+"562","Avances de trésorerie reçues d’autres collectivités",0,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,451
+"5620","Avances de trésorerie reçues des régions",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,452
+"5621","Avances de trésorerie reçues des communes",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,453
+"5622","Avances de trésorerie reçues des groupements de collectivités territoriales",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,454
+"563","Avances de trésorerie reçues d’institutions financières",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,455
+"569","Autres avances de trésorerie",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,456
+"58","REGIES ET VIREMENTS INTERNES",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,457
+"581","Régies",0,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,458
+"5810","Régies n°1",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,459
+"5811","Régies n°2",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,460
+"5812","Régies n°3",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,461
+"5813","Régies n°4",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,462
+"5814","Régies n°5",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,463
+"5815","Régies n°6",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,464
+"5816","Régies n°7",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,465
+"5817","Régies n°8",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,466
+"5818","Régies n°9",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,467
+"5819","Autres régies",1,0,0,0,1,"D",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,1,,0,468
+"588","Virements internes",1,0,0,0,0,"I",0,0,0,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,469
+"59","PROVISIONS POUR DEPRECIATION DES COMPTES FINANCIERS",1,0,0,1,0,"C",0,0,1,0,0,0,"NonApplicable","NonApplicable","NonApplicable",0,0,0,,0,,0,470
+"60","ACHATS DE BIENS",0,0,0,0,0,"I",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,471
+"601","Matières, matériels et fournitures",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,472
+"6010","Produits pharmaceutiques",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,473
+"6011","Carburant, lubrifiants et combustibles",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,474
+"6012","Produits alimentaires",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,475
+"6013","Produits et consommables informatiques",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,476
+"6014","Produits vestimentaires",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,477
+"6015","Produits d’entretien ménager",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,478
+"6016","Fournitures de bureau",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,479
+"6017","Acquisition petit matériel, outillage et mobilier",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,480
+"6019","Autres matières, matériels et fournitures",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,481
+"603","Variation des stocks de biens achetés",1,0,0,0,0,"I",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,482
+"605","Eau, électricité, gaz et autres sources d’énergie",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,483
+"6050","Eau",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,484
+"6051","Electricité",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,485
+"6052","Gaz",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,486
+"6059","Autres sources d’énergie",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,487
+"606","Matériels et fournitures spécifiques",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,488
+"6060","Matériels et fournitures médicaux et bio médicaux",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,489
+"6061","Matériels et fournitures scolaires",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,490
+"6062","Matériels et fournitures de voirie",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,491
+"6063","Semences et plants",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,492
+"6064","Produits phytosanitaires",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,493
+"6065","Engrais et fumures organiques",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,494
+"6066","Matériels et fournitures de sport",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,495
+"6067","Matériels et fournitures de culture et de loisirs",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,496
+"6069","Autres matériels et fournitures spécifiques",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,497
+"609","Autres achats de biens",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F001",0,0,0,,0,,0,498
+"61","ACQUISITIONS DE SERVICES",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,499
+"611","Frais de transport et de mission",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,500
+"6110","Frais de transport des élus à l’intérieur",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,501
+"6111","Frais de transport des élus à l’extérieur",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,502
+"6112","Frais de transport des administratifs à l’intérieur",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,503
+"6113","Frais de transport des administratifs à l’extérieur",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,504
+"6114","Frais de transport de matériel et de mobilier",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,505
+"6115","Frais de mission des administratifs à l’intérieur",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,506
+"6116","Frais de mission des administratifs à l’extérieur",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,507
+"6119","Autres frais de transport et de mission",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,508
+"612","Loyers, charges locatives et de copropriété",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,509
+"6120","Location de terrain",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,510
+"6121","Location de bâtiments",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,511
+"6122","Location de matériel, mobilier et outillage",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,512
+"6123","Location de matériel de transport",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,513
+"6124","Location d’engins de génie civil",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,514
+"6125","Charges de copropriété",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,515
+"6126","Crédit-bail",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,516
+"6129","Autres locations et charges locatives",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,517
+"613","Frais de télécommunications",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,518
+"6130","Frais d’hébergement de site WEB",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,519
+"6131","Frais de téléphone",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,520
+"6132","Frais d’abonnement aux TIC",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,521
+"6139","Autres frais de télécommunication",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,522
+"614","Entretien, réparation et maintenance",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,523
+"6140","Entretien de terrains",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,524
+"6141","Entretien de cimetières",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,525
+"6142","Entretien de bâtiments",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,526
+"6143","Menues dépenses",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,527
+"6144","Entretien et réparation de voiries et de réseaux",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,528
+"6145","Entretien et réparation de matériels, outillages et mobiliers",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,529
+"6146","Entretien et réparation de matériels de transport",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,530
+"6147","Maintenance et réparation du matériels informatiques,",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,531
+"6148","Maintenance et réparation de matériels de communication",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,532
+"6149","Autres frais d’entretien, de réparation et de maintenance",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,533
+"615","Assurances",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,534
+"6150","Assurances sur les personnes",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,535
+"6151","Assurances sur le matériel et le mobilier",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,536
+"6152","Assurances sur le matériel de transport",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,537
+"6153","Assurances sur les immeubles",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,538
+"6159","Autres assurances",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,539
+"617","Frais de relations publiques",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,540
+"6170","Publications, catalogues, brochures et imprimés",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,541
+"6171","Réunions et conférences",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,542
+"6172","Cérémonies et réceptions",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,543
+"6179","Autres frais de relations publiques",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,544
+"618","Dépenses de communication",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,545
+"6180","Couvertures médiatiques",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,546
+"6181","Communiqués et annonces",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,547
+"6182","Frais de boîte postale",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,548
+"6183","Frais d’affranchissement",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,549
+"6189","Autres dépenses de communication",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F002",0,0,0,,0,,0,550
+"62","AUTRES SERVICES",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,551
+"621","Frais bancaires",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,552
+"6210","Frais de tenue de comptes",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,553
+"6211","Frais de transferts bancaires",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,554
+"6219","Autres frais bancaires",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,555
+"622","Prestation de services",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,556
+"6220","Frais de gardiennage et de surveillance",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,557
+"6221","Frais de nettoyage",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,558
+"6222","Frais de vacation et de permanence",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,559
+"6223","Honoraires et rémunération d’intermédiaires",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,560
+"6224","Frais de visite technique",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,561
+"6225","Travaux pour le compte de tiers",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,562
+"6226","Frais d’imprimés administratifs et de reliure",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,563
+"6227","Frais d’impression de valeurs inactives",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,564
+"6228","Remises aux collecteurs",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,565
+"6229","Autres prestations de services",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,566
+"623","Frais de formation du personnel",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,567
+"6230","Frais de formation initiale",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,568
+"6231","Frais de perfectionnement",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,569
+"6232","Frais de spécialisation",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,570
+"6233","Frais de séjour à l’extérieur du pays",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,571
+"6234","Frais de formation professionnelle",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,572
+"6239","Autres frais de formation du personnel",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,573
+"624","Redevances pour brevets, licences et logiciels",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,574
+"6240","Redevances pour brevets et licences",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,575
+"6241","Redevances pour logiciel",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,576
+"6249","Autres redevances",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,577
+"625","Travaux d’exploitation à l’entreprise",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,578
+"6250","Frais d’enlèvement et de mise en décharge des déchets",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,579
+"6259","Autres travaux d’exploitation à l’entreprise",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,580
+"626","Etudes, recherches et documentation",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,581
+"6260","Etudes",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,582
+"6261","Recherches",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,583
+"6262","Documentation générale",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,584
+"6263","Documentation technique",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,585
+"6264","Abonnement journaux et revues",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,586
+"6269","Autres frais d’études, recherches et documentation",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,587
+"629","Autres acquisitions de services",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F003",0,0,0,,0,,0,588
+"63","SUBVENTIONS",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,589
+"631","Subventions aux associations de la société civile",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,590
+"6310","Subventions aux associations culturelles",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,591
+"6311","Subventions aux associations sportives",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,592
+"6312","Subventions aux associations de protection de l’environnement",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,593
+"6313","Subventions aux associations de protection des droits humains",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,594
+"6314","Subventions aux associations de santé et de lutte contre le sida et les infections sexuellement transmissibles",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,595
+"6315","Subventions aux associations de promotion de l’éducation",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,596
+"6316","Subventions aux associations sociales",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,597
+"6319","Subventions aux  autres associations",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,598
+"632","Subventions aux entreprises publiques",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,599
+"6320","Subventions aux sociétés d’Etat",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,600
+"6321","Subventions aux Etablissements publics de l’Etat",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,601
+"6322","Subventions aux Etablissements publics locaux",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,602
+"6329","Subventions aux  autres entreprises publiques",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,603
+"633","Subventions aux organisations socio- professionnelles",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,604
+"6330","Subventions aux organisations syndicales",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,605
+"6331","Subventions aux organisations mutualistes",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,606
+"6332","Subventions aux organisations coopératives",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,607
+"6339","Subventions aux  autres organisations socio-professionnelles",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F004",0,0,0,,0,,0,608
+"639","Autres subventions",1,0,0,0,0,,0,0,0,0,1,0,"Fonctionnement",,"F004",0,0,0,,0,,0,609
+"64","TRANSFERTS",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,609
+"641","Transferts aux établissements publics locaux ou nationaux",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,610
+"6410","Transferts aux établissements publics locaux",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,611
+"6411","Transferts aux établissements publics nationaux",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,612
+"642","Transferts à d’autres collectivités territoriales",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,613
+"6420","Transferts aux régions",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,614
+"6421","Transferts aux communes",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,615
+"6422","Transferts aux groupements de collectivités territoriales",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,616
+"6429","Autres transferts aux collectivités territoriales",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,617
+"643","Transferts aux administrations publiques",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,618
+"6430","Transferts aux administrations chargées du recouvrement",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,619
+"6431","Transferts aux administrations de santé",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,620
+"6432","Transferts aux administrations de sécurité",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,621
+"6433","Transferts aux administrations de l’éducation",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,622
+"6434","Transferts aux administrations de l’agriculture et hydraulique",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,623
+"6435","Transferts aux administrations de sport, loisirs et culture",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,624
+"6436","Transferts aux administrations de l’environnement",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,625
+"6437","Transferts aux administrations de l’urbanisme et de l’habitat",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,626
+"6438","Transferts aux autres administrations de l'action sociale",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,627
+"6439","Transferts aux autres administrations publiques",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,628
+"645","Prélèvement sur les recettes de fonctionnement",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,629
+"646","Transferts aux organisations nationales et internationales",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,630
+"6460","Transferts à l’Association des Régions du Burkina Faso",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,631
+"6461","Transferts à l’Association des Municipalités du Burkina Faso",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,632
+"6462","Transferts à l’Association Internationale des Régions Francophones",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,633
+"6463","Transferts à l’Association Internationale des Municipalités Francophones",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,634
+"6464","Transferts à d’autres associations de collectivités territoriales",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,635
+"6469","Transferts aux autres organisations nationales et internationales",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,636
+"647","Transferts à d’autres budgets",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,637
+"6470","Transferts aux budgets annexes",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,638
+"6471","Transferts aux budgets autonomes",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,639
+"648","Pensions de retraites du personnel de la collectivité territoriale",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,640
+"649","Autres transferts",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F005",0,0,0,,0,,0,641
+"65","CHARGES EXCEPTIONNELLES",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,642
+"651","Annulation ou réduction de titres de recettes sur exercices  antérieurs",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,643
+"6510","Remise gracieuse",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,644
+"6511","Admission en non-valeur",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,645
+"6512","Réduction ou annulation de titres de recettes",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,646
+"6513","Titres de recettes prescrits",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,647
+"6519","Autres annulations ou réductions de titres de recettes sur exercices antérieurs",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,648
+"652","Condamnations et transactions",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,649
+"6520","Frais d’actes et de contentieux",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,650
+"6521","Amendes et condamnations",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,651
+"6522","Frais de transactions",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,652
+"6529","Autres frais de condamnations et transactions",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,653
+"653","Restitutions aux tiers de trop perçu et dégrèvement",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,654
+"6530","Restitution de trop perçu",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,655
+"6531","Dégrèvements sur impôts et taxes",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,656
+"6539","Autres restitutions aux tiers de trop perçu et dégrèvement",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,657
+"654","Valeur comptable des immobilisations cédées et mises au rebut",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,658
+"6540","Valeur comptable des immobilisations incorporelles cédées",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,659
+"6541","Valeur comptable des immobilisations corporelles cédées",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,660
+"6542","Valeur comptable des immobilisations financières cédées",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,661
+"6543","Différences positives de réalisation sur cessions d’immobilisations",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,662
+"6544","Valeur comptable des immobilisations mises au rebut",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,663
+"6549","Autres valeurs comptables des immobilisations cédées et mises au rebut",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,664
+"655","Charges des services concédés ou affermés",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,665
+"6550","Charges des services concédés ou affermés 1",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,666
+"6551","Charges des services concédés ou affermés 2",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,667
+"6552","Charges des services concédés ou affermés 3",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,668
+"6553","Charges des services concédés ou affermés 4",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,669
+"6554","Charges des services concédés ou affermés 5",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,670
+"6555","Charges des services concédés ou affermés 6",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,671
+"6556","Charges des services concédés ou affermés 7",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,672
+"6557","Charges des services concédés ou affermés 8",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,673
+"6558","Charges des services concédés ou affermés 9",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,674
+"6559","Autres charges des services concédés ou affermés",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,675
+"656","Déficit des services à comptabilité distincte revenant au budget principal",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,1,,0,676
+"6560","Déficit du service 1",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,1,,0,677
+"6561","Déficit du service 2",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,1,,0,678
+"6562","Déficit du service 3",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,1,,0,679
+"6563","Déficit du service 4",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,1,,0,680
+"6564","Déficit du service 5",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,1,,0,681
+"6565","Déficit du service 6",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,1,,0,682
+"6566","Déficit du service 7",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,1,,0,683
+"6567","Déficit du service 8",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,1,,0,684
+"6568","Déficit du service 9",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,1,,0,685
+"6569","Déficit d’autres services à comptabilité distincte revenant au budget principal",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,686
+"657","Indemnités, frais de mission et de formation dus aux élus locaux",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,687
+"6570","Indemnités dues aux présidents des conseils des collectivités territoriales",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,688
+"6571","Indemnités dues aux adjoints et vices présidents",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,689
+"6572","Indemnités dues aux présidents des commissions",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,690
+"6573","Indemnités de sessions dues aux élus locaux",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,691
+"6574","Frais de mission des élus à l’intérieur",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,692
+"6575","Frais de mission des élus à l’extérieur",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,693
+"6576","Frais de formation des élus locaux",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,694
+"6579","Autres indemnités",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,695
+"658","Rectification sur exercices clos",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,696
+"659","Autres charges exceptionnelles",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,697
+"6590","Déficit de fonctionnement reporté",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,698
+"6591","Restitution de pénalités de retard et retenues de garanties",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,699
+"6592","Prise en charge des commissions",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,700
+"6593","Dépenses imprévues",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,701
+"6594","Sécours aux indigents",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,702
+"6595","Bourses",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,703
+"6596","Prix",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,704
+"6599","Diverses autres charges exceptionnelles",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F006",0,0,0,,0,,0,705
+"66","CHARGES DE PERSONNEL",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,706
+"661","Traitements et salaires",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,707
+"6610","Traitement et salaires des fonctionnaires",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,708
+"6611","Mesures nouvelles des fonctionnaires",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,709
+"6612","Traitement et salaires des contractuels",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,710
+"6613","Mesures nouvelles des contractuels",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,711
+"663","Primes et indemnités",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,712
+"6630","Indemnité de responsabilité",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,713
+"6631","Indemnité d’astreintes",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,714
+"6632","Indemnité de logement",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,715
+"6633","Indemnité de technicité",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,716
+"6634","Indemnité spécifique",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,717
+"6635","Indemnité de session",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,718
+"6636","Indemnité de départ à la retraite et fin d’engagement",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,719
+"6637","Primes d'excellence et de mérite",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,720
+"6638","Indemnité spécifique unique",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,721
+"6639","Autres primes et indemnités",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,721
+"664","Cotisations sociales",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,722
+"6640","Cotisations patronales CARFO",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,723
+"6641","Cotisations patronales CNSS",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,724
+"6642","Cotisations patronales /Compte pension des agents communaux au Trésor",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,725
+"6649","Autres cotisations sociales",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,726
+"665","Avantages en nature au personnel",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,727
+"666","Prestations sociales",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,728
+"6660","Assistance médicale au personnel",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,729
+"6661","Allocations familiales dues au personnel",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,730
+"6662","Versements aux œuvres sociales au profit du personnel",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,731
+"6663","Frais de transport et d'inhumation",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,732
+"6664","Capitale décès",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,733
+"6669","Autres prestations sociales",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,733
+"669","Autres dépenses du personnel",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F007",0,0,0,,0,,0,734
+"67","FRAIS FINANCIERS",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F008",0,0,0,,0,,0,735
+"671","Intérêts et frais financiers sur la dette",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F008",0,0,0,,0,,0,736
+"6710","Intérêts des emprunts",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F008",0,0,0,,0,,0,737
+"6711","Intérêts des avances",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F008",0,0,0,,0,,0,738
+"6712","Intérêts de retard",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F008",0,0,0,,0,,0,739
+"6713","Frais financiers sur la dette",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F008",0,0,0,,0,,0,740
+"6719","Autres intérêts et frais financiers sur la dette",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F008",0,0,0,,0,,0,741
+"672","Pertes sur cession de titres de placement",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F008",0,0,0,,0,,0,742
+"673","Transfert de produits",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F008",0,0,0,,0,,0,743
+"674","Pertes sur autres immobilisations financières",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F008",0,0,0,,0,,0,744
+"676","Pertes de change",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F008",0,0,0,,0,,0,745
+"679","Autres intérêts et frais financiers",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F008",0,0,0,,0,,0,746
+"68","DOTATIONS AUX AMORTISSEMENTS",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,747
+"681","Dotations aux amortissements des immobilisations incorporelles",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,748
+"6810","Dotations aux amortissements des frais de recherches et de développement",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,749
+"6811","Dotations aux amortissements des brevets, licences, concessions et droits",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,750
+"6812","Dotations aux amortissements des logiciels",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,751
+"6813","Dotations aux amortissements des marques",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,752
+"6814","Dotations aux amortissements du droit au bail",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,753
+"6815","Dotations aux amortissements des autres droits et valeurs incorporelles",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,754
+"6819","Dotations aux amortissements des  autres immobilisations incorporelles",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,755
+"682","Dotations aux amortissements des immobilisations corporelles",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,756
+"6820","Dotations aux amortissements des sous-sols, gisements et carrières",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,757
+"6821","Dotations aux amortissements des plantations et forêts",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,758
+"6822","Dotations aux amortissements des bâtiments",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,759
+"6823","Dotations aux amortissements des ouvrages",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,760
+"6824","Dotations aux amortissements des infrastructures",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,761
+"6825","Dotations aux amortissements de l’outillage, du matériel et du mobilier",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,762
+"6826","Dotations aux amortissements du matériel de transport",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,763
+"6827","Dotations aux amortissements du matériel informatique",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,764
+"6829","Dotations aux amortissements des autres immobilisations corporelles",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F009",0,0,0,,0,,0,765
+"69","DOTATIONS AUX PROVISIONS",0,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F010",0,0,0,,0,,0,766
+"691","Dotations aux provisions pour dépréciation",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F010",0,0,0,,0,,0,767
+"692","Dotations aux provisions à caractère financier",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F010",0,0,0,,0,,0,768
+"693","Dotations aux provisions pour grosses réparations",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F010",0,0,0,,0,,0,769
+"699","Autres dotations aux provisions",1,0,0,0,0,"D",0,0,0,0,1,0,"Fonctionnement","NonApplicable","F010",0,0,0,,0,,0,770
+"70","VENTE DE PRODUITS ET DE SERVICES",0,0,0,0,0,"I",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,771
+"701","Vente de produits",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,772
+"7010","Vente de fumier et autres déchets",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,773
+"7011","Vente de vaccins et de livrets de vaccination",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,774
+"7012","Vente d’eau",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,775
+"7013","Vente de bois et autres combustibles",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,776
+"7014","Vente de dossiers d’appel d’offres",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,777
+"7015","Vente d’animaux mis en fourrière",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,778
+"7016","Ventes de produits de jardins",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,779
+"7017","Vente de livrets et cartes de familles",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,780
+"7019","Autres ventes de produits",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,781
+"702","Recettes de prestations de services",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,782
+"7020","Facturation de travaux ou de services",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,783
+"7021","Frais de scolarité",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,784
+"7022","Location de la voiture funéraire",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,785
+"7023","Location de l’ambulance",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,786
+"7024","Location d’engins de génie civil et de vidange",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,787
+"7025","Location des autres matériels de transport",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,788
+"7026","Location de matériel et de mobilier",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,789
+"7027","Droits de fourrière",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,790
+"7028","Produits de maternités",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,791
+"7029","Autres recettes de prestations de services",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,792
+"703","Variation de stocks de produits",1,0,0,0,0,"I",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,793
+"709","Autres ventes de produits et services",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F011",1,0,0,,0,,0,794
+"71","RECETTES FISCALES",0,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,795
+"711","Impôts directs locaux",0,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,796
+"7110","Contribution des patentes",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,797
+"7111","Taxe de résidence",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,798
+"7112","Taxe foncière des sociétés",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,799
+"7113","Taxe sur les armes",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,800
+"7114","Taxe de voirie",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,801
+"7115","Contribution des licences des débits de boisson",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,802
+"7116","Contribution foncière",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,803
+"7117","Taxe sur les véhicules à moteur",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,804
+"7119","Autres impôts directs locaux",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,805
+"712","Impôts indirects locaux",0,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,806
+"7120","Taxe de jouissance",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,807
+"7129","Autres impôts indirects locaux",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,808
+"713","Taxes locales et assimilées",0,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,809
+"7130","Taxe sur les spectacles",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",1,0,0,,0,,0,810
+"7131","Taxe sur la publicité",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",1,0,0,,0,,0,811
+"7132","Taxe sur les jeux",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",1,0,0,,0,,0,812
+"7133","Taxes de visite sanitaire et de transhumance",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",1,0,0,,0,,0,813
+"7134","Taxe sur les tricycles et charrettes",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",1,0,0,,0,,0,814
+"7135","Taxes d’abattage et d’inspection de viande",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",1,0,0,,0,,0,815
+"7136","Taxes d’usage de la chambre froide et du véhicule frigorifique",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",1,0,0,,0,,0,816
+"7137","Taxe de balayage",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",1,0,0,,0,,0,817
+"7138","Redevance pour l’enlèvement des ordures ménagères",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",1,0,0,,0,,0,818
+"7139","Autres taxes locales et assimilées",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",1,0,0,,0,,0,819
+"714","Fiscalité partagée",0,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,820
+"7140","Taxe sur les produits pétroliers",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,0,1,,0,,0,821
+"7141","Taxes superficiaires",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,0,1,,0,,0,822
+"7149","Autre fiscalité partagée",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,0,1,,0,,0,823
+"715","Ristournes, restitutions sur les impôts et taxes d’Etat",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,824
+"716","Centimes additionnels et impôts synthétiques",0,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,825
+"7160","Contribution des micro-entreprises",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,826
+"7169","Autres centimes additionnels et impôts synthétiques",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,827
+"719","Autres recettes fiscales",1,0,0,0,0,"C",0,0,0,1,0,1,"Fonctionnement","Recettes Propres","F012",0,1,0,,0,,0,828
+"72","RECETTES NON FISCALES",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,829
+"721","Revenu du domaine",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,830
+"7210","Location des propriétés domaniales",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,831
+"7211","Concessions dans les cimetières",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,832
+"7212","Droits de séjour dans le caveau provisoire",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,833
+"7213","Contribution au lotissement",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,834
+"7214","Taxe d’indication de parcelle",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,835
+"7215","Frais des Attestations de Possession Foncière Rurale",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,836
+"7216","Taxe sur les cessions provisoires de terrain",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,837
+"7217","Location de bâtiments et assimilés",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,838
+"7219","Autres revenus du domaine",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,839
+"722","Droits et frais administratifs",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,840
+"7220","Droits d’expédition d’actes administratifs et d’état civil",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,841
+"7221","Droits d’inhumation et d’exhumation",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,842
+"7222","Frais d'usage des chambres froides",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,843
+"7223","Frais administratifs",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,844
+"7224","Droits de séjour dans les hôtels",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,845
+"7229","Autres droits et frais administratifs",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,846
+"723","Droits de place dans les marchés, foires et marchands ambulants",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,847
+"7230","Droits de place dans les marchés",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,848
+"7231","Droits de place dans les foires",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,849
+"7232","Droits de place des marchands ambulants",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,850
+"7233","Droits de parc, d’embarquement et de débarquement",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,851
+"7239","Autres droits de place",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,852
+"724","Produits du sol et du sous-sol",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,853
+"7240","Droit d’enlèvements des agrégats",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,854
+"7241","Droit de dégradation du sol et sous-sol",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,855
+"7249","Autres produits du sol et du sous-sol",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,856
+"725","Droits de mutation des biens",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,857
+"726","Droits de stationnement et d’occupation du domaine public",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,858
+"7260","Droits de stationnement",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,859
+"7261","Droits d’occupation du domaine public",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,860
+"727","Amendes forfaitaires de police",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,861
+"7270","Amendes forfaitaires de police municipale",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,862
+"7271","Amendes forfaitaires de police nationale",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,863
+"7272","Amendes de salubrité et d’hygiène",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,864
+"7279","Autres amendes",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,865
+"728","Produits des quêtes et contributions volontaires",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,866
+"7280","Produits des quêtes",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,867
+"7281","Produits des contributions volontaires des résidents",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,868
+"7282","Produits des contributions volontaires des non-résidents",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,869
+"7289","Autres Produits des quêtes et contributions volontaires",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,870
+"729","Autres recettes non fiscales",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F013",1,0,0,,0,,0,871
+"73","DOTATIONS, TRANSFERTS ET SUBVENTIONS",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,872
+"731","Dotations reçues de l'État",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,873
+"7310","Dotation globale de fonctionnement",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,874
+"7311","Dotation du domaine de la santé et de l’hygiène",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,875
+"7312","Dotation du domaine de l’éducation, de la formation professionnelle et de l’alphabétisation",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,876
+"7313","Dotation du domaine de l’eau, de l’assainissement et de l’électricité",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,877
+"7314","Dotation du domaine de l’environnement et de la gestion des ressources naturelles",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,878
+"7315","Dotation du domaine de la culture, des sports et des loisirs",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,879
+"7316","Dotation du domaine de l’aménagement du territoire, de la gestion du domaine du foncier et l’aménagement urbain",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,880
+"7317","Dotation du domaine des marchés, abattoirs et foires",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,881
+"7318","Dotation du domaine de la protection civile, de l’assistance et des secours",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,882
+"7319","Autres dotations reçues de l’Etat",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,883
+"732","Transferts reçus d’autres collectivités territoriales",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,884
+"7320","Transferts reçus des régions",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,885
+"7321","Transferts reçus des communes",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,886
+"7322","Transferts reçus des groupements de collectivités territoriales",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,887
+"733","Transferts reçus des budgets annexes",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,888
+"734","Transferts reçus des établissements publics locaux et nationaux",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,889
+"7340","Transferts reçus des établissements publics locaux",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,890
+"7341","Transferts reçus des établissements publics nationaux",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,0,,0,891
+"735","Subventions",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,1,,0,892
+"7350","Subvention n°1",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,1,,0,893
+"7351","Subvention n°2",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,1,,0,894
+"7352","Subvention n°3",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,1,,0,895
+"7353","Subvention n°4",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,1,,0,896
+"7354","Subvention n°5",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,1,,0,897
+"7355","Subvention n°6",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,1,,0,898
+"7356","Subvention n°7",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,1,,0,899
+"7357","Subvention n°8",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,1,,0,900
+"7358","Subvention n°9",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,1,,0,901
+"7359","Autres subventions",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,1,,0,902
+"739","Autres dotations, transferts et subventions",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F014",0,0,1,,1,,0,903
+"74","DONS PROGRAMMES, LEGS ET FONDS DE CONCOURS",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,0,,0,904
+"741","Dons programmes et legs intérieurs",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,905
+"7410","Dons programmes n°1",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,906
+"7411","Dons programmes n°2",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,907
+"7412","Dons programmes n°3",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,908
+"7413","Dons programmes n°4",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,909
+"7414","Dons programmes n°5",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,910
+"7415","Dons programmes n°6",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,911
+"7416","Dons programmes n°7",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,912
+"7417","Dons programmes n°8",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,913
+"7418","Dons programmes n°9",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,914
+"7419","Autres dons programmes",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,915
+"742","Dons programmes et legs extérieurs",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,916
+"7420","Dons programmes n°1",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,917
+"7421","Dons programmes n°2",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,918
+"7422","Dons programmes n°3",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,919
+"7423","Dons programmes n°4",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,920
+"7424","Dons programmes n°5",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,921
+"7425","Dons programmes n°6",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,922
+"7426","Dons programmes n°7",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,923
+"7427","Dons programmes n°8",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,924
+"7428","Dons programmes n°9",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,925
+"7429","Autres dons programmes",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,926
+"743","Fonds de concours",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,927
+"7430","Fonds de concours n°1",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,928
+"7431","Fonds de concours n°2",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,929
+"7432","Fonds de concours n°3",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,930
+"7433","Fonds de concours n°4",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,931
+"7434","Fonds de concours n°5",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,932
+"7435","Fonds de concours n°6",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,933
+"7436","Fonds de concours n°7",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,934
+"7437","Fonds de concours n°8",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,935
+"7438","Fonds de concours n°9",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,936
+"7439","Autres fonds de concours",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,937
+"749","Autres dons programmes, legs et fonds de concours",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Externes","F015",0,0,1,,1,,0,938
+"75","RECETTES EXCEPTIONNELLES",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,939
+"751","Remises, annulations, réduction de titres de paiement ou titres de paiement atteints de déchéance",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,940
+"7510","Remises de dettes",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,941
+"7511","Annulation de dettes",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,942
+"7512","Réduction ou annulation de titres de paiement",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,943
+"7513","Titres de paiement atteints de déchéance",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,944
+"7519","Autres remises, annulations, réduction de titres de paiement ou titres de paiement atteints de déchéance",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,945
+"752","Ventes aux enchères publiques des éléments du patrimoine de la collectivité territoriale",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,946
+"753","Restitution à la collectivité territoriale des sommes indûment payées",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,947
+"754","Produits de cession d’immobilisations",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,948
+"7540","Produits de cession d’immobilisations incorporelles",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,949
+"7541","Produits de cession d’immobilisations corporelles",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,950
+"7542","Produits de cession d’immobilisations financières",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,951
+"7543","Différences négatives de réalisation sur cessions d’immobilisations",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,952
+"7549","Autres produits de cession d’immobilisations",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,953
+"755","Redevances des services concédés ou affermés",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,954
+"7550","Redevances des services concédés ou affermés 1",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,955
+"7551","Redevances des services concédés ou affermés 2",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,956
+"7552","Redevances des services concédés ou affermés 3",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,957
+"7553","Redevances des services concédés ou affermés 4",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,958
+"7554","Redevances des services concédés ou affermés 5",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,959
+"7555","Redevances des services concédés ou affermés 6",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,960
+"7556","Redevances des services concédés ou affermés 7",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,961
+"7557","Redevances des services concédés ou affermés 8",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,962
+"7558","Redevances des services concédés ou affermés 9",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,963
+"7559","Autres redevances des services concédés ou affermés",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,964
+"756","Excédents des services à comptabilité distincte revenant au budget principal",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,965
+"7560","Excédent du service 1",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,966
+"7561","Excédent du service 2",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,967
+"7562","Excédent du service 3",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,968
+"7563","Excédent du service 4",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,969
+"7564","Excédent du service 5",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,970
+"7565","Excédent du service 6",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,971
+"7566","Excédent du service 7",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,972
+"7567","Excédent du service 8",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,973
+"7568","Excédent du service 9",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,974
+"7569","Excédent d’autres services à comptabilité distincte revenant au budget principal",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,1,,0,975
+"757","Subventions exceptionnelles",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,976
+"7570","Subventions exceptionnelles publiques",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,977
+"7571","Subventions exceptionnelles des partenaires",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,978
+"7579","Autres subventions exceptionnelles",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,979
+"758","Rectification sur exercice clos",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,980
+"759","Autres recettes exceptionnelles",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,981
+"7590","Excédent de fonctionnement reporté",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,982
+"7591","Pénalités de retard",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,983
+"7592","Reliquat des ressources affectées",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,984
+"7593","Reversement de reliquats sur ordonnances/mandats payés",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,985
+"7594","Reversement de retenues de garantie",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,986
+"7599","Diverses autres recettes exceptionnelles",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F016",0,0,1,,0,,0,987
+"77","PRODUITS FINANCIERS ET PRODUITS ASSIMILES",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F017",0,0,1,,0,,0,988
+"771","Intérêts sur dépôt à terme",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F017",0,0,1,,0,,0,989
+"772","Revenus des titres de placements",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F017",0,0,1,,0,,0,990
+"773","Intérêts des prêts et créances",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F017",0,0,1,,0,,0,991
+"774","Revenus des autres immobilisations financières",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F017",0,0,1,,0,,0,992
+"776","Gains de change",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F017",0,0,1,,0,,0,993
+"777","Gains sur cession de titres de placement",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F017",0,0,1,,0,,0,994
+"779","Autres produits financiers",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F017",0,0,1,,0,,0,995
+"78","TRANSFERT DE CHARGES",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F018",0,0,1,,0,,0,996
+"781","Transfert de charges courantes",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F018",0,0,1,,0,,0,997
+"782","Transfert de charges financières",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F018",0,0,1,,0,,0,998
+"789","Autres transferts de charges",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F018",0,0,1,,0,,0,999
+"79","REPRISE SUR PROVISIONS",0,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F019",0,0,1,,0,,0,1000
+"791","Reprise sur provisions pour dépréciation",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F019",0,0,1,,0,,0,1001
+"792","Reprise sur provisions à caractère financier",1,0,0,0,0,"C",0,0,0,1,0,0,"Fonctionnement","Recettes Propres","F019",0,0,1,,0,,0,1002
