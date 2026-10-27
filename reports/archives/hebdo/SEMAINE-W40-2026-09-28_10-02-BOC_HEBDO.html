@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>BOC_HEBDO — Semaine W40 — 28 sept. au 2 oct. 2026</title>
+<style>
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f8f9fa; color: #24292f; margin: 0; padding: 0; font-size: 14px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+  h1 { color: #fff; background: #0b3d91; padding: 18px 24px; border-radius: 6px; font-size: 1.5em; margin-bottom: 8px; }
+  h2 { color: #0b3d91; border-bottom: 2px solid #0b3d91; padding-bottom: 6px; margin-top: 32px; font-size: 1.15em; }
+  h3 { color: #0b3d91; font-size: 1em; margin-top: 20px; margin-bottom: 8px; }
+  .subtitle { color: #57606a; font-size: 13px; margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th { background: #0b3d91; color: #fff; padding: 8px 10px; text-align: left; }
+  td { padding: 7px 10px; border-bottom: 1px solid #e1e4e8; }
+  tr:nth-child(even) td { background: #f6f8fa; }
+  tr:hover td { background: #eef3fb; }
+  .pos { color: #1a7f37; font-weight: 700; }
+  .neg { color: #cf222e; font-weight: 700; }
+  .warn { color: #bf8700; font-weight: 700; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; color: #fff; }
+  .acheter { background: #1a7f37; }
+  .accumuler { background: #1a7f37; }
+  .alleger { background: #e36209; }
+  .vendre { background: #8b0000; }
+  .attendre { background: #bf8700; }
+  .eviter { background: #cf222e; }
+  .surveiller { background: #0b3d91; }
+  .maintenir { background: #6f42c1; }
+  .conserver { background: #0b3d91; }
+  .renforcer { background: #1a7f37; }
+  .npe { background: #57606a; }
+  .kpi-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 18px 0; }
+  .kpi { background: #eef3fb; border: 1px solid #cdd9ea; border-radius: 6px; padding: 12px 16px; text-align: center; min-width: 110px; flex: 1; }
+  .kpi .val { font-size: 1.4em; font-weight: 800; color: #0b3d91; }
+  .kpi .val.pos { color: #1a7f37; }
+  .kpi .val.neg { color: #cf222e; }
+  .kpi .lbl { font-size: 11px; color: #57606a; text-transform: uppercase; letter-spacing: .04em; margin-top: 4px; }
+  .section { background: #fff; border: 1px solid #e1e4e8; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px; }
+  .alert-box { background: #fff8dc; border-left: 4px solid #bf8700; padding: 10px 14px; border-radius: 0 4px 4px 0; margin: 10px 0; font-size: 13px; }
+  .danger-box { background: #fdecea; border-left: 4px solid #cf222e; padding: 10px 14px; border-radius: 0 4px 4px 0; margin: 10px 0; font-size: 13px; }
+  .info-box { background: #f0f4ff; border-left: 4px solid #0b3d91; padding: 10px 14px; border-radius: 0 4px 4px 0; margin: 10px 0; font-size: 13px; }
+  .success-box { background: #f0faf3; border-left: 4px solid #1a7f37; padding: 10px 14px; border-radius: 0 4px 4px 0; margin: 10px 0; font-size: 13px; }
+  .signal-rot { background: #f0f4ff; border: 2px solid #0b3d91; border-radius: 6px; padding: 12px 16px; margin: 12px 0; }
+  .stock-acheter { border-left: 4px solid #1a7f37; background: #f0faf3; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-vendre { border-left: 4px solid #8b0000; background: #fff0f0; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-alleger { border-left: 4px solid #e36209; background: #fff5ec; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-eviter { border-left: 4px solid #cf222e; background: #fdecea; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .top3-item { padding: 10px 14px; margin: 8px 0; border-radius: 4px; }
+  .top3-1 { border-left: 4px solid #ffd700; background: #fffdf0; }
+  .top3-2 { border-left: 4px solid #c0c0c0; background: #f8f8f8; }
+  .top3-3 { border-left: 4px solid #cd7f32; background: #fdf5ec; }
+  .top3-4 { border-left: 4px solid #57606a; background: #f6f8fa; }
+  .top3-5 { border-left: 4px solid #57606a; background: #f6f8fa; }
+  .medal { display: inline-block; padding: 1px 8px; border-radius: 3px; font-weight: 700; font-size: 12px; margin-right: 6px; }
+  .medal-gold { background: #ffd700; color: #333; }
+  .medal-silver { background: #c0c0c0; color: #333; }
+  .medal-bronze { background: #cd7f32; color: #fff; }
+  .medal-4, .medal-5 { background: #57606a; color: #fff; }
+  .biais-hausse { background: #1a7f37; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-vente { background: #cf222e; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-neutre { background: #57606a; color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .disclaimer { font-size: 11px; color: #57606a; border-top: 1px solid #e1e4e8; padding-top: 12px; margin-top: 24px; font-style: italic; }
+  ul { padding-left: 20px; margin: 8px 0; }
+  li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>BOC_HEBDO &mdash; Semaine W40 &mdash; 28 septembre au 2 octobre 2026</h1>
+<div class="subtitle">BRVM &mdash; Synth&egrave;se hebdomadaire &bull; BOC 183 &agrave; 187 &bull; 4 s&eacute;ances (jeudi 01/10 non publi&eacute;)</div>
+
+<!-- KPI ROW -->
+<div class="kpi-row">
+  <div class="kpi"><div class="val pos">546,78</div><div class="lbl">Composite clôture</div></div>
+  <div class="kpi"><div class="val pos">+0,25 %</div><div class="lbl">Perf W40</div></div>
+  <div class="kpi"><div class="val pos">+58,14 %</div><div class="lbl">YTD</div></div>
+  <div class="kpi"><div class="val pos">3 / 4</div><div class="lbl">Séances positives</div></div>
+  <div class="kpi"><div class="val" style="color:#bf8700;">NEUTRE</div><div class="lbl">Biais semaine</div></div>
+  <div class="kpi"><div class="val" style="color:#0b3d91;">17,54</div><div class="lbl">PER moyen clôture</div></div>
+</div>
+
+<!-- SECTION 1 -->
+<div class="section">
+<h2>Section 1 &mdash; Bilan indices de la semaine</h2>
+<table>
+  <tr><th>S&eacute;ance</th><th>BOC N&deg;</th><th>Composite</th><th>Var. Jour</th><th>BRVM 30</th><th>Prestige</th><th>PER Moyen</th><th>Biais</th></tr>
+  <tr><td>Lun 28/09</td><td>183</td><td>545,41</td><td class="pos">+0,86 %</td><td>264,21</td><td>200,78</td><td>18,15</td><td><span class="biais-hausse">ACHETEUR</span> 22H/17B</td></tr>
+  <tr><td>Mar 29/09</td><td>184</td><td>548,04</td><td class="pos">+0,48 %</td><td>265,14</td><td>202,14</td><td>18,09</td><td><span class="biais-hausse">ACHETEUR</span> 22H/16B</td></tr>
+  <tr><td>Mer 30/09</td><td>185</td><td>548,38</td><td class="pos">+0,06 %</td><td>266,08</td><td>203,79</td><td>17,92</td><td><span class="biais-vente">VENDEUR</span> 16H/22B</td></tr>
+  <tr><td>Ven 02/10</td><td>187</td><td>546,78</td><td class="neg">-0,41 %</td><td>264,57</td><td>202,83</td><td>17,54</td><td><span class="biais-neutre">NEUTRE</span> 22H/19B</td></tr>
+</table>
+
+<ul>
+  <li><strong>Perf W40 Composite :</strong> 545,41 &rarr; 546,78 = <span class="pos"><strong>+0,25 %</strong></span> (quasi-stable apr&egrave;s rebond post-W39)</li>
+  <li><strong>Pic intra-semaine :</strong> 548,38 le mercredi 30/09 (port&eacute; par SNTS +4,66 %)</li>
+  <li><strong>Dynamique :</strong> 3 s&eacute;ances positives / 4 &mdash; rebond technique confirm&eacute; apr&egrave;s Composite &agrave; 535,90 (22/09)</li>
+  <li><strong>PER moyen :</strong> en baisse 18,15 &rarr; 17,54 &mdash; compression des valorisations, rotation vers des valeurs moins ch&egrave;res</li>
+</ul>
+
+<table>
+  <tr><th>Secteur</th><th>Perf Semaine</th><th>PER Moy Vendredi</th><th>Signal</th></tr>
+  <tr><td>T&eacute;l&eacute;communications</td><td class="pos">+0,81 %</td><td class="pos">13,98</td><td class="pos">Fort &mdash; SNTS breakout 45 000 F</td></tr>
+  <tr><td><strong>Consommation de Base</strong></td><td class="pos">+0,19 %</td><td class="pos"><strong>12,73</strong></td><td class="pos"><strong>Meilleure valorisation</strong></td></tr>
+  <tr><td>Services Financiers</td><td class="pos">+0,85 %</td><td>15,25</td><td class="pos">Port&eacute; par SGBC + BOAC</td></tr>
+  <tr><td>Services Publics</td><td class="pos">+1,01 %</td><td>25,66</td><td class="pos">Momentum solide</td></tr>
+  <tr><td>&Eacute;nergie</td><td class="neg">-2,03 %</td><td>18,59</td><td class="neg">Retournement</td></tr>
+  <tr><td><strong>Cons. Discr&eacute;tionnaire</strong></td><td class="neg"><strong>-7,58 %</strong></td><td class="neg">41,67</td><td class="neg"><strong>Secteur le plus faible &mdash; ORAC -4,16 %</strong></td></tr>
+  <tr><td>Industriels</td><td class="neg">-2,96 %</td><td class="neg">143,85</td><td class="neg">Bulle structurelle persistante</td></tr>
+</table>
+</div>
+
+<!-- SECTION 2 -->
+<div class="section">
+<h2>Section 2 &mdash; Top 5 actions les plus performantes W40</h2>
+
+<div class="top3-item top3-1">
+  <span class="medal medal-gold">#1</span> <strong>Bridge Bank Group CI (BBGC)</strong> &mdash; <span class="pos">+7,40 %</span> &mdash; 8 375 &rarr; 8 995 F<br>
+  IPO lundi 28/09 : limite hausse +7,44 % jour 1. Demande forte, stabilisation &agrave; 9 000 F. Flottant tr&egrave;s contraint &mdash; liquidit&eacute; &agrave; v&eacute;rifier avant tout achat.
+</div>
+
+<div class="top3-item top3-2">
+  <span class="medal medal-silver">#2</span> <strong>Sonatel SN (SNTS)</strong> &mdash; <span class="pos">+4,65 %</span> &mdash; 43 000 &rarr; 45 000 F<br>
+  Breakout mercredi 30/09 +4,66 %. Seuil 45 000 F tenu 2 s&eacute;ances. 4e semaine cons&eacute;cutive > 44 % valeur hors ETIT. Signal institutionnel long terme.
+</div>
+
+<div class="top3-item top3-3">
+  <span class="medal medal-bronze">#3</span> <strong>Soci&eacute;t&eacute; G&eacute;n&eacute;rale CI (SGBC)</strong> &mdash; <span class="pos">+4,15 %</span> &mdash; 38 400 &rarr; 39 995 F<br>
+  Continuation du breakout BOC 179 (38 495 F). 4 s&eacute;ances cons&eacute;cutives positives. PER 11,82, Rdt 5,97 %. Signal le plus r&eacute;gulier de la semaine.
+</div>
+
+<div class="top3-item top3-4">
+  <span class="medal medal-4">#4</span> <strong>BICI CI (BICC)</strong> &mdash; <span class="pos">+4,00 %</span> &mdash; 32 500 &rarr; 33 800 F<br>
+  Tr&egrave;s volatile : +7,37 % mardi &rarr; -6,56 % mercredi &rarr; +3,67 % vendredi. Signal mixte &mdash; sp&eacute;culatif.
+</div>
+
+<div class="top3-item top3-5">
+  <span class="medal medal-5">#5</span> <strong>SAPH CI (SPHC)</strong> &mdash; <span class="pos">+3,27 %</span> &mdash; 7 650 &rarr; 7 900 F<br>
+  Valorisation fondamentale confirm&eacute;e (PER 7,88, Rdt 5,59 %). Reprise progressive apr&egrave;s BOC 179.
+</div>
+
+<p><strong>Sous-performeurs notables :</strong><br>
+<span class="neg">BOAN -10,17 %</span> (5 510 &rarr; 4 950) &bull;
+<span class="neg">ABJC -9,09 %</span> (3 850 &rarr; 3 500, ex-div 29/09) &bull;
+<span class="neg">SCRC -7,38 %</span> (2 980 &rarr; 2 760) &bull;
+<span class="neg">ORAC -4,16 %</span> (21 500 &rarr; 20 605)
+</p>
+</div>
+
+<!-- SECTION 3 -->
+<div class="section">
+<h2>Section 3 &mdash; Top 5 recommandations ACHETER (semaine W41)</h2>
+
+<div class="stock-acheter">
+  <strong><span class="medal medal-gold">#1</span> Sonatel SN (SNTS) &mdash; <span class="badge maintenir">MAINTENIR ABSOLUMENT</span></strong><br>
+  Cours : 45 000 F &bull; Score moyen W40 : <strong>9/10</strong> &bull; PER 10,15 &bull; PV latente : <span class="pos">+32,4 %</span> (prix revient 34 000 F)<br>
+  Carnet vendredi : 280 / 44 995 &mdash; 45 000 / 1 951 (pression vente l&eacute;g&egrave;re)<br>
+  Catalyseur W41 : seuil 45 000 F &agrave; consolider. Suivi du flux institutionnel.<br>
+  <strong>Plan : MAINTENIR 20 ans. Nouvel acheteur : attendre sous 44 000 F.</strong>
+</div>
+
+<div class="stock-acheter">
+  <strong><span class="medal medal-silver">#2</span> Soci&eacute;t&eacute; G&eacute;n&eacute;rale CI (SGBC) &mdash; <span class="badge renforcer">RENFORCER</span></strong><br>
+  Cours : 39 995 F &bull; Score moyen W40 : <strong>8/10</strong> &bull; PER 11,82 &bull; Rdt 5,97 %<br>
+  Carnet vendredi : 100 / 39 980 &mdash; 39 995 / 424 (l&eacute;ger vendeur r&eacute;siduel)<br>
+  Catalyseur : 4 s&eacute;ances cons&eacute;cutives positives depuis le breakout. Momentum non bris&eacute;.<br>
+  <strong>Plan : Renforcer la position ouverte &agrave; 38 495 F (BOC 179). Stop : 38 000 F.</strong>
+</div>
+
+<div class="stock-acheter">
+  <strong><span class="medal medal-bronze">#3</span> Palm CI (PALC) &mdash; <span class="badge accumuler">ACCUMULER</span></strong><br>
+  Cours : 8 345 F &bull; Score moyen W40 : <strong>7/10</strong> &bull; PER 8,17 &bull; Rdt 5,38 %<br>
+  Carnet vendredi : 65 / 8 300 &mdash; 8 350 / 1 137 (vendeur mod&eacute;r&eacute;)<br>
+  Valorisation fondamentale : meilleur PER/rendement hors T&eacute;l&eacute;coms.<br>
+  <strong>Plan : Accumuler sur les creux sous 8 250 F. Mur vendeur 1 137 &agrave; surveiller.</strong>
+</div>
+
+<div class="stock-acheter">
+  <strong><span class="medal medal-4">#4</span> SAPH CI (SPHC) &mdash; <span class="badge surveiller">SURVEILLER / ACCUMULER</span></strong><br>
+  Cours : 7 900 F &bull; Score moyen W40 : <strong>7/10</strong> &bull; PER 7,88 &bull; Rdt 5,59 %<br>
+  Carnet vendredi : 59 / 7 900 &mdash; 7 995 / 1 548 (vendeur mod&eacute;r&eacute;)<br>
+  PER le plus attractif du march&eacute;. Reprise +3,27 % W40 confirm&eacute;e.<br>
+  <strong>Plan : Accumuler progressivement. Mur 1 548 &agrave; absorber avant signal plein.</strong>
+</div>
+
+<div class="alert-box">
+  <strong><span class="medal medal-5">#5</span> NSIA Banque CI (NSBC) &mdash; <span class="badge surveiller">SURVEILLER</span> &mdash; fen&ecirc;tre anti-aller-retour r&eacute;ouverte</strong><br>
+  Cours : 22 000 F (02/10) &bull; PER 13,66 &bull; Rdt 6,06 %<br>
+  Seuil anti-aller-retour : <strong>22 276 F</strong> &bull; Cours 22 000 &lt; 22 276 &rarr; <span class="pos"><strong>fen&ecirc;tre ouverte</strong></span><br>
+  Carnet vendredi : 10 / 21 950 &mdash; 22 000 / 4 764 (vendeur mod&eacute;r&eacute; &agrave; absorber)<br>
+  <strong>Plan : Ex-vendeurs &rarr; r&eacute;entr&eacute;e possible. Attendre mur &lt; 1 000. Porteurs : CONSERVER.</strong>
+</div>
+</div>
+
+<!-- SECTION 4 -->
+<div class="section">
+<h2>Section 4 &mdash; Top 5 recommandations VENDRE / ALL&Eacute;GER (semaine W41)</h2>
+
+<div class="stock-vendre">
+  <strong>BOA Nigeria (BOAN) &mdash; <span class="badge vendre">VENDRE</span></strong><br>
+  Cours : 4 950 F &bull; Perf W40 : <span class="neg"><strong>-10,17 %</strong></span> (5 510 &rarr; 4 950)<br>
+  Carnet vendredi : 91 / 4 950 &mdash; 5 000 / 2 773 (mur vendeur fort)<br>
+  Pattern : +7,41 % lundi &rarr; -2,91 % &rarr; -0,93 % &rarr; -6,60 %. Retournement complet.<br>
+  <strong>Porteurs : VENDRE &mdash; sortie totale recommand&eacute;e.</strong>
+</div>
+
+<div class="stock-alleger">
+  <strong>Servair Abidjan CI (ABJC) &mdash; <span class="badge alleger">ALL&Eacute;GER 50 %</span></strong><br>
+  Cours : 3 500 F &bull; Perf W40 : <span class="neg"><strong>-9,09 %</strong></span> (3 850 &rarr; 3 500)<br>
+  Ex-div 29/09 ex&eacute;cut&eacute; : drop -200 F pr&eacute;cis vs div 201,52 F net. Catalyseur &eacute;puis&eacute;.<br>
+  PER 32,42 &mdash; hors cible fondamentale. Carnet vendredi : 30 / 3 405 &mdash; 3 500 / 580<br>
+  <strong>All&eacute;ger 50 % pour s&eacute;curiser &mdash; conserver le solde en cas de rebond technique.</strong>
+</div>
+
+<div class="stock-alleger">
+  <strong>Sucrivoire CI (SCRC) &mdash; <span class="badge alleger">ALL&Eacute;GER</span></strong><br>
+  Cours : 2 760 F &bull; Perf W40 : <span class="neg"><strong>-7,38 %</strong></span> (2 980 &rarr; 2 760)<br>
+  Baisse continue depuis retour suspension. Raison suspension inconnue. PER 40,5.<br>
+  <strong>All&eacute;ger pour les porteurs. Ne pas initier de nouvelle position.</strong>
+</div>
+
+<div class="stock-eviter">
+  <strong>SAFCA CI (SAFC) &mdash; <span class="badge eviter">&Eacute;VITER</span></strong><br>
+  Cours : 4 385 F &bull; Perf W40 : <span class="neg"><strong>-5,09 %</strong></span> (4 620 &rarr; 4 385)<br>
+  5e semaine de volatilit&eacute; extr&ecirc;me sans fondamental. Trap sp&eacute;culative.<br>
+  <strong>FUIR ABSOLUMENT &mdash; pas de signal de stabilisation.</strong>
+</div>
+
+<div class="alert-box">
+  <strong>Coris Bank International (CBIBF) &mdash; <span class="badge surveiller">SURVEILLER</span></strong><br>
+  Cours : 31 500 F &bull; Perf W40 : <span class="neg"><strong>-3,05 %</strong></span> (32 490 &rarr; 31 500)<br>
+  Tr&egrave;s volatile W40 : -7,48 % mercredi &rarr; +3,96 % vendredi. Carnet quasi-&eacute;quilibr&eacute; (31/11).<br>
+  <strong>Porteurs : SURVEILLER. All&eacute;ger si on cherche &agrave; s&eacute;curiser des gains.</strong>
+</div>
+</div>
+
+<!-- SECTION 5 -->
+<div class="section">
+<h2>Section 5 &mdash; Actions &agrave; &Eacute;VITER (semaine W41)</h2>
+<table>
+  <tr><th>Titre</th><th>Symbole</th><th>Raison</th><th>Risque chiffr&eacute;</th></tr>
+  <tr><td>Ecobank Togo</td><td class="warn">ETIT</td><td class="neg">Distorsion volumétrique systémique &mdash; cours baissé 69&rarr;67 F</td><td class="neg">73-93 % vol brut. Illusion de liquidit&eacute;</td></tr>
+  <tr><td>Unilever CI</td><td class="neg">UNLC</td><td class="neg">Bulle permanente &mdash; chute -7,42 % mar 29/09</td><td class="neg">Bulle structurelle &mdash; PER irrationnel</td></tr>
+  <tr><td>Bernab&eacute; CI</td><td class="neg">BNBC</td><td class="neg">Bulle structurelle permanente</td><td class="neg">PER 563 &mdash; 0 valeur fondamentale</td></tr>
+  <tr><td>BOA Nigeria</td><td class="neg">BOAN</td><td class="neg">Retournement brutal -10,17 % W40</td><td class="neg">Mur vendeur 2 773, momentum n&eacute;gatif</td></tr>
+  <tr><td>BICI CI</td><td class="warn">BICC</td><td class="neg">Volatilit&eacute; sp&eacute;culative extr&ecirc;me : +7,37 % &rarr; -6,56 % en 24h</td><td class="neg">PER disproportionn&eacute;</td></tr>
+  <tr><td>CFAO Motors</td><td class="neg">CFAC</td><td class="neg">-4,61 % vendredi sans raison apparente</td><td class="neg">Momentum cass&eacute;</td></tr>
+  <tr><td>AGL CI</td><td class="neg">SDSC</td><td class="neg">Anti-aller-retour actif &mdash; cours 2 950 &gt;&gt; seuil 2 431 F</td><td class="neg">NE PAS RE-ENTRER</td></tr>
+  <tr><td>SAFCA CI</td><td class="neg">SAFC</td><td class="neg">5e semaine de volatilit&eacute; sans fondamental</td><td class="neg">Trap sp&eacute;culative</td></tr>
+</table>
+</div>
+
+<!-- SECTION 6 -->
+<div class="section">
+<h2>Section 6 &mdash; Signaux structurels de la semaine</h2>
+
+<div class="signal-rot">
+  <strong>Signal #1 &mdash; SNTS : Acc&eacute;l&eacute;ration institutionnelle</strong><br>
+  SNTS a repr&eacute;sent&eacute; plus de <strong>44 % de la valeur hors ETIT pour la 4e semaine cons&eacute;cutive</strong>. Le breakout brutal +4,66 % le mercredi 30/09 &agrave; 45 000 F (+7,18 % en 8 s&eacute;ances depuis BOC 179 = 41 985 F) confirme un flux acheteur institutionnel disciplin&eacute;. Carnet vendredi normalis&eacute; (280/1 951). Pas de mur vendeur. <strong>Seuil 45 000 F = nouveau support technique &agrave; surveiller.</strong><br>
+  Lundi 28/09 Telecom sector : 75 345 titres = 2 826 M FCFA (~72 % valeur totale journali&egrave;re).
+</div>
+
+<div class="signal-rot">
+  <strong>Signal #2 &mdash; ETIT : Distorsion aggrav&eacute;e + baisse de cours</strong><br>
+  Carnets r&eacute;siduels ETIT W40 : 35 507/62 556 (28/09) &rarr; 294 947/1 085 604 (29/09) &rarr; 429 912/337 432 (30/09) &rarr; 872 298/547 040 (02/10). Plus grave : <strong>cours baiss&eacute; de 69 F &agrave; 67 F le mercredi 30/09 (-2,90 %)</strong>. Les volumes bruts secteur SF repr&eacute;sentaient 83-94 % du total brut selon les s&eacute;ances. Tout ratio calcul&eacute; sur volumes bruts est inutilisable sans exclusion ETIT.
+</div>
+
+<div class="signal-rot">
+  <strong>Signal #3 &mdash; IPO Bridge Bank Group : Premi&egrave;re cotation r&eacute;ussie</strong><br>
+  BBGC a cot&eacute; le lundi 28/09 &agrave; 8 375 F (+7,44 % jour 1 = limite hauts). Stabilisation &agrave; 9 000 F d&egrave;s le mardi, maintenu &agrave; 8 995 F vendredi. Signal positif pour la confiance dans les nouvelles cotations BRVM. <strong>Att : flottant tr&egrave;s contraint &mdash; ne pas confondre momentum IPO et valeur fondamentale.</strong>
+</div>
+
+<div class="signal-rot">
+  <strong>Signal #4 &mdash; Obligations : Rééquilibrage fin de trimestre</strong><br>
+  Vendredi 02/10 : 66 942 titres / 666 780 110 FCFA (+906 % volume vs moyenne). 13 lignes transig&eacute;es. Signal de rééquilibrage institutionnel actions &rarr; obligations en cl&ocirc;ture du trimestre Q3. &Agrave; surveiller en W41.
+</div>
+</div>
+
+<!-- SECTION 7 -->
+<div class="section">
+<h2>Section 7 &mdash; Agenda catalyseurs (semaine W41)</h2>
+<table>
+  <tr><th>Date approx.</th><th>Titre</th><th>&Eacute;v&eacute;nement</th><th>Impact anticip&eacute;</th></tr>
+  <tr><td>05-09/10</td><td>SNTS</td><td>Suivi momentum &mdash; seuil 45 000 F</td><td><span class="badge maintenir">MAINTENIR</span> si tenu</td></tr>
+  <tr><td>05-09/10</td><td>SGBC</td><td>Continuation breakout</td><td><span class="badge renforcer">RENFORCER</span> si &gt; 39 995 F</td></tr>
+  <tr><td>05-09/10</td><td>STBC</td><td>Suivi seuil anti-aller-retour 21 534 F &mdash; cours 21 800 &gt; seuil</td><td><span class="badge surveiller">SURVEILLER</span> fen&ecirc;tre ferm&eacute;e</td></tr>
+  <tr><td>05-09/10</td><td>NSBC</td><td>Suivi seuil 22 276 F &mdash; cours 22 000 &lt; seuil</td><td><span class="badge surveiller">SURVEILLER</span> fen&ecirc;tre ouverte</td></tr>
+  <tr><td>05-09/10</td><td>BOAN</td><td>Suivi retournement</td><td><span class="badge eviter">&Eacute;VITER</span> mur vendeur persistant</td></tr>
+  <tr><td>05-09/10</td><td>BBGC</td><td>Stabilisation post-IPO</td><td><span class="badge surveiller">SURVEILLER</span> flottant contraint</td></tr>
+  <tr><td>07-10/10</td><td>PALC</td><td>R&eacute;sultats semestriels potentiels</td><td><span class="badge accumuler">ACCUMULER</span> avant publication</td></tr>
+  <tr><td>09-10/10</td><td>March&eacute; g&eacute;n&eacute;ral</td><td>Cl&ocirc;ture Q3 &mdash; rotation possible</td><td><span class="badge attendre">ATTENDRE</span> valorisations</td></tr>
+</table>
+</div>
+
+<!-- SECTION 8 -->
+<div class="section">
+<h2>Section 8 &mdash; Plan d&rsquo;action W41</h2>
+<table>
+  <tr><th>Action</th><th>Titre</th><th>Symbole</th><th>Cours cible</th><th>Timing</th><th>Justification</th></tr>
+  <tr><td><span class="badge maintenir">MAINTENIR</span></td><td>Sonatel SN</td><td>SNTS</td><td>45 000 F</td><td>Long terme (20 ans)</td><td>PV +32,4 % &mdash; breakout institutionnel confirm&eacute;</td></tr>
+  <tr><td><span class="badge renforcer">RENFORCER</span></td><td>Soci&eacute;t&eacute; G&eacute;n&eacute;rale CI</td><td>SGBC</td><td>~39 500 F</td><td>Imm&eacute;diat</td><td>Continuation breakout &mdash; PER 11,82, Rdt 5,97 %</td></tr>
+  <tr><td><span class="badge accumuler">ACCUMULER</span></td><td>Palm CI</td><td>PALC</td><td>&lt; 8 300 F</td><td>Progressif</td><td>PER 8,17 &mdash; meilleure valorisation pure</td></tr>
+  <tr><td><span class="badge surveiller">SURVEILLER</span></td><td>SAPH CI</td><td>SPHC</td><td>&lt; 7 900 F</td><td>1&ndash;3 s&eacute;ances</td><td>PER 7,88 &mdash; mur 1 548 &agrave; absorber</td></tr>
+  <tr><td><span class="badge surveiller">SURVEILLER</span></td><td>NSIA Banque CI</td><td>NSBC</td><td>&lt; 22 276 F</td><td>Si mur &lt; 1 000</td><td>Seuil anti-aller-retour franchi &mdash; fen&ecirc;tre ouverte</td></tr>
+  <tr><td><span class="badge surveiller">SURVEILLER</span></td><td>SITAB CI</td><td>STBC</td><td>&lt; 21 534 F</td><td>Si cours repasse sous seuil</td><td>Cours 21 800 &gt; 21 534 &mdash; fen&ecirc;tre actuellement ferm&eacute;e</td></tr>
+  <tr><td><span class="badge conserver">CONSERVER</span></td><td>BOA CI</td><td>BOAC</td><td>11 450 F</td><td>Continu</td><td>PER 12,83, Rdt 5,24 % &mdash; stable</td></tr>
+  <tr><td><span class="badge conserver">CONSERVER</span></td><td>ONATEL BF</td><td>ONTBF</td><td>2 920 F</td><td>Porteurs uniquement</td><td>PER 13,58, Rdt 5,01 % &mdash; consolidation saine</td></tr>
+  <tr><td><span class="badge vendre">VENDRE</span></td><td>BOA Nigeria</td><td>BOAN</td><td>&mdash;</td><td>Urgent</td><td>Retournement -10,17 % W40 &mdash; mur vendeur 2 773</td></tr>
+  <tr><td><span class="badge alleger">ALL&Eacute;GER 50 %</span></td><td>Servair Abidjan</td><td>ABJC</td><td>&mdash;</td><td>Cette semaine</td><td>Catalyseur &eacute;puis&eacute; post-ex-div</td></tr>
+  <tr><td><span class="badge npe">NE PAS RE-ENTRER</span></td><td>AGL CI</td><td>SDSC</td><td>&mdash;</td><td>Permanent</td><td>Anti-aller-retour : 2 950 &gt;&gt; seuil 2 431 F</td></tr>
+  <tr><td><span class="badge eviter">&Eacute;VITER</span></td><td>UNLC / BNBC</td><td>&mdash;</td><td>&mdash;</td><td>Permanent</td><td>Bulles structurelles</td></tr>
+  <tr><td><span class="badge eviter">&Eacute;VITER</span></td><td>Ecobank TG</td><td>ETIT</td><td>&mdash;</td><td>Permanent</td><td>Distorsion syst&eacute;mique &mdash; cours en baisse 67 F</td></tr>
+</table>
+
+<div class="disclaimer">
+  <strong>Disclaimer l&eacute;gal :</strong> Ce document est produit &agrave; titre p&eacute;dagogique et informatif uniquement. Il ne constitue pas un conseil en investissement personnalis&eacute;. Les performances pass&eacute;es ne pr&eacute;jugent pas des performances futures. Tout investissement comporte des risques de perte en capital. Consulter un conseiller financier agr&eacute;&eacute; avant toute d&eacute;cision d&rsquo;investissement.
+</div>
+</div>
+
+</div>
+</body>
+</html>

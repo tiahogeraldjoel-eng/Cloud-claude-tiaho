@@ -1,0 +1,486 @@
+<meta charset="UTF-8">
+<title>BOC_REVU N°141 — 28 juillet 2026</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #24292f; margin: 0; padding: 20px 30px; background: #fff; }
+  h1 { color: #0b3d91; font-size: 1.6em; border-bottom: 3px solid #0b3d91; padding-bottom: 8px; margin-top: 24px; }
+  h2 { color: #0b3d91; font-size: 1.2em; border-left: 4px solid #0b3d91; padding-left: 10px; margin-top: 20px; }
+  h3 { color: #0b3d91; font-size: 1.05em; margin-top: 16px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 12px; }
+  th { background: #0b3d91; color: #fff; padding: 7px 10px; text-align: left; font-weight: 700; }
+  td { padding: 6px 10px; border-bottom: 1px solid #e0e0e0; vertical-align: top; }
+  tr:nth-child(even) td { background: #f6f8fa; }
+  tr:nth-child(odd) td { background: #fff; }
+  .pos { color: #1a7f37; font-weight: 700; }
+  .neg { color: #cf222e; font-weight: 700; }
+  .neutral { color: #57606a; }
+  /* Badges recommandation */
+  .acheter   { background: #1a7f37; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; white-space: nowrap; }
+  .alleger   { background: #e36209; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; white-space: nowrap; }
+  .vendre    { background: #8b0000; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; white-space: nowrap; }
+  .attendre  { background: #bf8700; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; white-space: nowrap; }
+  .eviter    { background: #cf222e; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; white-space: nowrap; }
+  .surveiller{ background: #0b3d91; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; white-space: nowrap; }
+  .conserver { background: #57606a; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; white-space: nowrap; }
+  /* Médailles */
+  .medal-gold   { background: #ffd700; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; display: inline-block; }
+  .medal-silver { background: #c0c0c0; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; display: inline-block; }
+  .medal-bronze { background: #cd7f32; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; display: inline-block; }
+  /* Biais */
+  .biais-hausse { background: #1a7f37; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .biais-vente  { background: #cf222e; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  .biais-neutre { background: #57606a; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+  /* Blocs stock */
+  .stock-acheter { border-left: 4px solid #1a7f37; background: #f0faf3; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .stock-vendre  { border-left: 4px solid #8b0000; background: #fff0f0; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .stock-eviter  { border-left: 4px solid #cf222e; background: #fdecea; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .stock-neutre  { border-left: 4px solid #57606a; background: #f6f8fa; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  .stock-alleger { border-left: 4px solid #e36209; background: #fff5ec; padding: 10px 14px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  /* Alerte */
+  .alerte { background: #fff8e6; border: 2px solid #bf8700; border-radius: 5px; padding: 10px 14px; margin: 10px 0; }
+  .alerte strong { color: #bf8700; }
+  /* KPI row */
+  .kpi-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
+  .kpi { background: #eef3fb; border: 1px solid #cdd9ea; border-radius: 6px; padding: 10px 16px; text-align: center; min-width: 110px; flex: 1; }
+  .kpi .val { font-size: 1.5em; font-weight: 800; color: #0b3d91; }
+  .kpi .val.pos { color: #1a7f37; }
+  .kpi .val.neg { color: #cf222e; }
+  .kpi .lbl { font-size: 10px; color: #57606a; text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+  .disclaimer { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 5px; padding: 12px 16px; margin-top: 24px; font-size: 11px; color: #57606a; font-style: italic; }
+  p { margin: 6px 0; line-height: 1.5; }
+  .overflow-x { overflow-x: auto; }
+  strong.sect-fort { color: #1a7f37; }
+  strong.sect-faible { color: #cf222e; }
+  .warn { color: #bf8700; font-weight: 700; }
+</style>
+
+<h1>BOC_REVU &mdash; N&deg;141 | Mardi 28 juillet 2026</h1>
+
+<!-- KPI row -->
+<div class="kpi-row">
+  <div class="kpi"><div class="val neg">482,71</div><div class="lbl">Composite</div></div>
+  <div class="kpi"><div class="val neg">-0,23 %</div><div class="lbl">Var. jour</div></div>
+  <div class="kpi"><div class="val pos">+39,61 %</div><div class="lbl">YTD</div></div>
+  <div class="kpi"><div class="val pos">25 H / 17 B</div><div class="lbl">Breadth</div></div>
+  <div class="kpi"><div class="val">14,59</div><div class="lbl">PER moyen</div></div>
+  <div class="kpi"><div class="val pos">6,27 %</div><div class="lbl">Rdt moyen</div></div>
+</div>
+
+<!-- ===== ÉTAPE 1 ===== -->
+<h1>Étape 1 &mdash; Vue d'ensemble du marché</h1>
+
+<h2>Indices principaux</h2>
+<div class="overflow-x">
+<table>
+  <tr><th>Indice</th><th>Niveau</th><th>Variation jour</th><th>YTD</th></tr>
+  <tr><td>BRVM Composite</td><td><strong>482,71</strong></td><td class="neg">-0,23 %</td><td class="pos">+39,61 %</td></tr>
+  <tr><td>BRVM 30</td><td><strong>229,74</strong></td><td class="neg">-0,39 %</td><td class="pos">+38,20 %</td></tr>
+  <tr><td>BRVM Prestige</td><td><strong>176,95</strong></td><td class="pos">+0,01 %</td><td class="pos">+22,67 %</td></tr>
+  <tr><td>BRVM Principal</td><td><strong>367,17</strong></td><td class="neg">-0,50 %</td><td class="pos">+68,70 %</td></tr>
+</table>
+</div>
+
+<p><strong>PER moyen :</strong> 14,59 &mdash; légèrement au-dessus de la cible (8&ndash;15), marché globalement équilibré.
+<strong>Rendement moyen :</strong> <span class="pos">6,27 %</span> &mdash; attractif pour les investisseurs revenu.
+<strong>Capitalisation actions :</strong> 18 595 482 265 208 FCFA.</p>
+
+<h2>Breadth du marché</h2>
+<p><span class="biais-hausse">BIAIS ACHETEUR</span> &mdash; <strong>25 hausses / 17 baisses / 5 inchangés</strong></p>
+<p><strong>Divergence clé :</strong> Le Composite recule de <span class="neg">-0,23 %</span> tandis que le breadth est nettement positif. Cette anomalie s'explique par ETIT qui chute de <span class="neg">-6,76 %</span> sur 1 813 321 titres, distordant les indices pondérés. <strong>Hors ETIT, le marché est franchement acheteur</strong> &mdash; 53 % des titres progressent.</p>
+
+<h2>Indices sectoriels &mdash; Classement par force</h2>
+<div class="overflow-x">
+<table>
+  <tr><th>Rang</th><th>Secteur</th><th>Indice</th><th>Variation</th><th>PER</th><th>Signal</th></tr>
+  <tr><td>1</td><td><strong class="sect-fort">Services Publics</strong></td><td>234,58</td><td class="pos">+2,44 %</td><td>21,71</td><td>CIE CI rebond post-ex-div</td></tr>
+  <tr><td>2</td><td><strong class="sect-fort">Consommation de Base</strong></td><td>282,91</td><td class="pos">+0,76 %</td><td><strong>10,62</strong></td><td>SOGB CI + PALM CI tirent</td></tr>
+  <tr><td>3</td><td>Énergie</td><td>160,06</td><td class="pos">+0,28 %</td><td>18,04</td><td>VIVO ENERGY CI stable</td></tr>
+  <tr><td>4</td><td>Télécoms</td><td>111,90</td><td>0,00 %</td><td><strong>10,94</strong></td><td>SONATEL quasi-stable</td></tr>
+  <tr><td>5</td><td>Industriels</td><td>215,55</td><td>+0,01 %</td><td>22,13</td><td>Quasi-stable</td></tr>
+  <tr><td>6</td><td class="neg">Consommation Discrétionnaire</td><td>202,31</td><td class="neg">-0,10 %</td><td class="neg"><strong>39,08</strong></td><td class="neg">PER bulle &mdash; ÉVITER</td></tr>
+  <tr><td>7</td><td class="neg"><strong class="sect-faible">Services Financiers</strong></td><td>234,93</td><td class="neg">-0,84 %</td><td>15,84</td><td class="neg">ETIT + BICB pèsent</td></tr>
+</table>
+</div>
+
+<p><strong style="color:#1a7f37;">Secteur le plus solide :</strong> Consommation de Base (PER 10,62 + momentum +0,76 %). Valorisation et momentum positifs combinés.</p>
+<p><strong style="color:#cf222e;">Secteur le plus faible :</strong> Services Financiers (-0,84 %), plombé par BICB (-3,18 %) et ETIT (-6,76 %).</p>
+<p><strong>Biais de marché global : </strong><span class="biais-hausse">ACHETEUR</span> &mdash; le breadth 25H/17B prime sur la variation indicielle.</p>
+
+<!-- ===== ÉTAPE 2 ===== -->
+<h1>Étape 2 &mdash; Filtrage des actions</h1>
+
+<h2>2A. Valorisation &mdash; PER 8&ndash;15 et Rendement &ge; 5 %</h2>
+
+<h3>Titres dans la zone de valeur</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Symbole</th><th>Titre</th><th>Cours</th><th>PER</th><th>Rdt</th><th>Signal</th></tr>
+  <tr><td><strong>STBC</strong></td><td>SITAB CI</td><td>23 000 F</td><td>11,33</td><td class="pos"><strong>9,11 %</strong></td><td>Valeur de rendement exceptionnelle &mdash; meilleur Rdt du marché</td></tr>
+  <tr><td><strong>SNTS</strong></td><td>SONATEL SN</td><td>31 005 F</td><td class="pos"><strong>7,50</strong></td><td class="pos">5,61 %</td><td>PER &lt; 8 = zone de valeur profonde (rare sur la BRVM)</td></tr>
+  <tr><td><strong>PALC</strong></td><td>PALM CI</td><td>8 800 F</td><td class="pos"><strong>8,77</strong></td><td class="pos">5,01 %</td><td>Valorisation attractive</td></tr>
+  <tr><td><strong>BOAC</strong></td><td>BOA CI</td><td>10 895 F</td><td>12,26</td><td class="pos">5,48 %</td><td>Fondamentaux solides mais distribution &mdash; ALLÉGER</td></tr>
+  <tr><td><strong>BOAM</strong></td><td>BOA ML</td><td>5 630 F</td><td>13,95</td><td class="pos">5,42 %</td><td>Rally mais carnet vendeur 302:1 &mdash; SURVEILLER</td></tr>
+  <tr><td><strong>ONTBF</strong></td><td>ONATEL BF</td><td>2 795 F</td><td>13,09</td><td class="pos">5,20 %</td><td>Dans la cible mais carnet 265:1 vendeur</td></tr>
+  <tr><td><strong>SOGC</strong></td><td>SOGB CI</td><td>8 380 F</td><td>14,49</td><td class="pos">6,30 %</td><td>Dividende 570 F le 06/08 &mdash; fenêtre ouverte</td></tr>
+  <tr><td><strong>BOAS</strong></td><td>BOA SN</td><td>7 945 F</td><td>13,06</td><td class="pos">5,66 %</td><td class="neg">Fondamentaux solides mais carnet retourné &mdash; SORTIR</td></tr>
+  <tr><td><strong>CBIBF</strong></td><td>CORIS BANK BF</td><td>27 200 F</td><td>13,29</td><td>3,31 %</td><td>PER attractif, Rdt sous 5 % &mdash; entrée progressive</td></tr>
+</table>
+</div>
+
+<h3 style="color:#cf222e;">Titres chers à éviter &mdash; Risque de bulle</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Symbole</th><th>Titre</th><th>Cours</th><th>PER</th><th>Risque</th></tr>
+  <tr><td><strong class="neg">UNLC</strong></td><td>UNILEVER CI</td><td>51 980 F</td><td class="neg"><strong>745,47</strong></td><td class="neg">Bulle absolue &mdash; PER déconnecté de toute réalité économique</td></tr>
+  <tr><td><strong class="neg">BNBC</strong></td><td>BERNABE CI</td><td>1 875 F</td><td class="neg"><strong>556,50</strong></td><td class="neg">Bulle extrême &mdash; dividende fictif par rapport aux bénéfices</td></tr>
+  <tr><td><strong class="neg">BOAN</strong></td><td>BOA NG</td><td>5 400 F</td><td class="neg"><strong>274,44</strong></td><td class="neg">Anomalie PER &mdash; cours déconnecté des bénéfices</td></tr>
+  <tr><td><strong class="neg">SIVC</strong></td><td>ERIUM CI</td><td>2 185 F</td><td class="neg"><strong>106,44</strong></td><td class="neg">PER largement au-dessus de tout seuil de valeur</td></tr>
+  <tr><td><strong class="neg">SAFC</strong></td><td>SAFCA CI</td><td>4 985 F</td><td class="neg"><strong>57,74</strong></td><td class="neg">Dilution imminente : admission actions nouvelles le 11/08</td></tr>
+  <tr><td><strong class="neg">CFAC</strong></td><td>CFAO MOTORS CI</td><td>1 660 F</td><td class="neg"><strong>35,77</strong></td><td class="neg">Surévalué &mdash; intérêt spéculatif uniquement</td></tr>
+  <tr><td><strong class="neg">SEMC</strong></td><td>EVIOSYS PACK. CI</td><td>1 500 F</td><td class="neg"><strong>37,33</strong></td><td class="neg">Surévalué malgré +114 % YTD</td></tr>
+</table>
+</div>
+
+<h2>2B. Momentum &mdash; Hausses/Baisses croisées avec les volumes</h2>
+
+<h3 class="pos">Plus fortes hausses du jour</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Symbole</th><th>Cours</th><th>Variation</th><th>Volume</th><th>Valeur (FCFA)</th><th>Signal momentum</th></tr>
+  <tr><td><strong>SICC</strong></td><td>5 900 F</td><td class="pos"><strong>+7,27 %</strong></td><td>15</td><td>88 505</td><td class="warn">MICRO-VOLUME &mdash; spike spéculatif non validé</td></tr>
+  <tr><td><strong>STAC</strong></td><td>2 850 F</td><td class="pos"><strong>+5,95 %</strong></td><td>4 634</td><td>13 167 185</td><td>Volume modéré, carnet vendeur &mdash; momentum fragile</td></tr>
+  <tr><td><strong>BOAM</strong></td><td>5 630 F</td><td class="pos"><strong>+5,23 %</strong></td><td>8 125</td><td>44 623 150</td><td>Volume solide mais distribution 302:1 VEN post-rally</td></tr>
+  <tr><td><strong>SAFC</strong></td><td>4 985 F</td><td class="pos"><strong>+5,17 %</strong></td><td>7 800</td><td>37 930 440</td><td>Volume solide &mdash; <span class="warn">attention dilution 11/08</span></td></tr>
+  <tr><td><strong>SOGC</strong></td><td>8 380 F</td><td class="pos"><strong>+3,46 %</strong></td><td>3 170</td><td>26 260 565</td><td class="pos">Volume solide, carnet 2:1 ACH &mdash; ACHETER</td></tr>
+  <tr><td><strong>BOABF</strong></td><td>7 145 F</td><td class="pos"><strong>+3,55 %</strong></td><td>1 419</td><td>10 067 725</td><td>Volume correct, carnet quasi-équilibré</td></tr>
+  <tr><td><strong>CIEC</strong></td><td>5 375 F</td><td class="pos"><strong>+3,37 %</strong></td><td>3 683</td><td>19 292 510</td><td class="pos">Rebond post-paiement dividende 234 F aujourd'hui</td></tr>
+  <tr><td><strong>LNBB</strong></td><td>4 350 F</td><td class="pos"><strong>+3,20 %</strong></td><td>2 488</td><td>10 716 560</td><td class="neg">Hausse ex-div &mdash; PIÈGE (carnet 2 316:1 VEN)</td></tr>
+</table>
+</div>
+
+<h3 class="neg">Plus fortes baisses du jour</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Symbole</th><th>Cours</th><th>Variation</th><th>Volume</th><th>Signal</th></tr>
+  <tr><td class="neg"><strong>ETIT</strong></td><td>69 F</td><td class="neg"><strong>-6,76 %</strong></td><td>1 813 321</td><td class="neg"><strong>Distorsion systémique &mdash; EXCLURE de l'analyse</strong></td></tr>
+  <tr><td class="neg"><strong>BICB</strong></td><td>7 600 F</td><td class="neg"><strong>-3,18 %</strong></td><td>10 419</td><td class="neg">Post-ex-div retournement &mdash; piège dividende</td></tr>
+  <tr><td class="neg"><strong>SIVC</strong></td><td>2 185 F</td><td class="neg"><strong>-2,46 %</strong></td><td>2 614</td><td class="neg">Momentum négatif structurel</td></tr>
+  <tr><td class="neg"><strong>TTLS</strong></td><td>3 650 F</td><td class="neg">-1,35 %</td><td>4 799</td><td class="pos">Carnet retourné 53,9:1 ACH &mdash; accumulation en cours !</td></tr>
+  <tr><td class="neg"><strong>BNBC</strong></td><td>1 875 F</td><td class="neg">-1,32 %</td><td>1 365</td><td class="neg">Bulle en décompression lente</td></tr>
+</table>
+</div>
+
+<h2>2C. Catalyseurs détectés</h2>
+
+<h3>Calendrier ex-dividendes &mdash; Semaine du 28 juillet 2026</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Émetteur</th><th>Symbole</th><th>Dividende</th><th>Paiement</th><th>Ex-div</th><th>Dernier achat</th><th>Statut</th></tr>
+  <tr><td>CIE CI</td><td>CIEC</td><td>234 F net</td><td>28/07 (auj.)</td><td>25/07</td><td>24/07</td><td class="pos">Déjà payé &mdash; rebond validé</td></tr>
+  <tr><td>SOLIBRA</td><td>SLBC</td><td>2 127 F brut / ~1 872 F net</td><td>30/07</td><td>28/07 (auj.)</td><td>27/07</td><td class="neutral">Ex-div aujourd'hui &mdash; (d) confirmé</td></tr>
+  <tr><td><strong>BIIC BN</strong></td><td><strong>BICB</strong></td><td>254,6 F net</td><td>31/07</td><td>29/07</td><td class="neg"><strong>28/07 (auj.)</strong></td><td class="neg">DERNIER JOUR &mdash; PIÈGE carnet 500:1 VEN</td></tr>
+  <tr><td><strong>SIB</strong></td><td><strong>SIBC</strong></td><td>425 F brut / ~374 F net</td><td>31/07</td><td>29/07</td><td class="warn"><strong>28/07 (auj.)</strong></td><td class="warn">DERNIER JOUR &mdash; carnet 6:1 VEN, Rdt 4,11 %</td></tr>
+  <tr><td><strong>LNB</strong></td><td><strong>LNBB</strong></td><td>164,17 F net</td><td>03/08</td><td>31/07</td><td class="neg"><strong>28/07 (auj.)</strong></td><td class="neg">DERNIER JOUR &mdash; PIÈGE catastrophique 2 316:1 VEN</td></tr>
+  <tr><td><strong>NSBC</strong></td><td><strong>NSBC</strong></td><td>768,16 F</td><td>04/08</td><td>31/07</td><td class="warn"><strong>29/07 (demain)</strong></td><td class="warn">Dernier achat demain &mdash; vérifier carnet</td></tr>
+  <tr><td><strong>SOGB</strong></td><td><strong>SOGC</strong></td><td>570 F brut</td><td>06/08</td><td>01/08</td><td class="pos"><strong>30/07 (jeudi)</strong></td><td class="pos">Fenêtre ouverte &mdash; carnet ACH &mdash; <span class="acheter">ACHETER</span></td></tr>
+</table>
+</div>
+
+<div class="alerte">
+  <strong>[!] Alerte : Réduction de dividende LNBB &mdash;40 %</strong><br>
+  Le dividende LNB 2026 est de <strong>164,17 F net</strong> contre <strong>275,5 F</strong> versé en 2025 &mdash; soit une baisse de <strong>40 %</strong>.
+  Le rendement réel est de 164,17 / 4 350 = <strong>3,77 %</strong> (et non 6,33 % affiché dans le BOC sur la base de l'ancien dividende).
+  Cette détérioration fondamentale aggrave le signal de sortie sur LNBB.
+</div>
+
+<p><strong>Autres catalyseurs :</strong></p>
+<ul>
+  <li><strong>SAFCA CI (SAFC) :</strong> Admission actions nouvelles le <strong>11 août 2026</strong> &rarr; risque de dilution. Éviter jusqu'après le 11/08.</li>
+  <li><strong>ECOBANK TG (ETIT) :</strong> AG Extraordinaire prévue le <strong>13 août 2026</strong> &rarr; surveiller l'ordre du jour.</li>
+</ul>
+
+<h2>2D. Recommandations de vente</h2>
+
+<div class="stock-vendre">
+  <strong>SMB CI (SMBC) &mdash; <span class="vendre">VENDRE</span></strong><br>
+  Carnet 5A / 17 045V = <strong>3 409:1 vendeur</strong> &mdash; 4ème séance consécutive avec un mur institutionnel extrême. Aucune absorption en vue. Sortie totale obligatoire. Critère 3 déclenché (mur &gt; 5 000 titres depuis &ge; 3 séances consécutives).
+</div>
+
+<div class="stock-vendre">
+  <strong>BOA SN (BOAS) &mdash; <span class="vendre">VENDRE</span></strong><br>
+  Carnet retourné 1A / 283V = <strong>283:1 vendeur</strong>. Le signal d'achat émis en W30 est invalidé &mdash; retournement complet du flux institutionnel. Les porteurs doivent sortir avant que le mur s'intensifie. Critères 2 + 3 déclenchés.
+</div>
+
+<div class="stock-alleger">
+  <strong>BOA CI (BOAC) &mdash; <span class="alleger">ALLÉGER</span></strong><br>
+  Hausse de +0,93 % mais carnet 1A / 117V = <strong>117:1 vendeur</strong>. La distribution institutionnelle suit immédiatement le rally. Réduire la position de 50 %, conserver le solde. Critères 1 + 4 partiellement déclenchés.
+</div>
+
+<div class="stock-alleger">
+  <strong>ONATEL BF (ONTBF) &mdash; <span class="alleger">ALLÉGER</span></strong><br>
+  Carnet 5A / 1 329V = <strong>265,8:1 vendeur</strong>. Malgré des fondamentaux attractifs (PER 13,09, Rdt 5,20 %), la distribution institutionnelle persistante impose un allègement de 50 %. Critère 3 déclenché.
+</div>
+
+<div class="stock-alleger">
+  <strong>BOA ML (BOAM) &mdash; <span class="surveiller">SURVEILLER</span> / <span class="alleger">ALLÉGER dès demain</span></strong><br>
+  Hausse +5,23 % validée par le volume (8 125 titres, 44,6M FCFA) mais carnet immédiatement vendeur 5A / 1 512V = <strong>302:1</strong> post-rally. Si le mur vendeur persiste demain, réduire de 50 %. Critère 4 en formation.
+</div>
+
+<div class="stock-eviter">
+  <strong>BIIC BN (BICB) &mdash; <span class="eviter">ÉVITER</span> / Porteurs : <span class="vendre">SORTIR</span></strong><br>
+  Carnet 2A / 1 000V = <strong>500:1 vendeur</strong>. Ex-div imminent demain 29/07 &rarr; drop mécanique sur le cours. Le dividende de 254,6 F ne compense pas le risque de chute &gt; 400 F lié à la pression vendeuse. Critères 3 + 6 déclenchés.
+</div>
+
+<div class="stock-eviter">
+  <strong>LNB / LNBB &mdash; <span class="eviter">ÉVITER</span></strong><br>
+  Carnet 3A / 6 949V = <strong>2 316:1 vendeur</strong>. Ex-div demain 29/07. Dividende réduit à 164,17 F net (&minus;40 % vs 2025). Le mur vendeur signale une sortie institutionnelle massive anticipant le drop ex-div. Critères 3 + 5 + 6 déclenchés.
+</div>
+
+<div class="stock-eviter">
+  <strong>AGL CI (SDSC) &mdash; <span class="eviter">ÉVITER</span> (anti-aller-retour)</strong><br>
+  Vendu précédemment à 2 510 F. Seuil de réachat = 2 510 &times; 0,9685 = <strong>2 431 F</strong>. Cours actuel 2 640 F &gt;&gt; 2 431 F. ÉVITER jusqu'au retour sous 2 431 F. Carnet 5A / 268V = 53,6:1 vendeur en prime.
+</div>
+
+<!-- ===== ÉTAPE 3 ===== -->
+<h1>Étape 3 &mdash; Sélection des actions clés</h1>
+
+<div class="stock-acheter">
+  <strong>SITAB CI (STBC) &mdash; Cours 23 000 F</strong> | PER 11,33 | Rdt <strong class="pos">9,11 %</strong><br>
+  Carnet quasi-équilibré 161A/143V = 1,13:1 (amélioration spectaculaire depuis plusieurs séances dominées par la vente). La normalisation du carnet confirme la stabilisation à 23 000 F. Meilleur rendement du marché. <strong>Pour les porteurs existants :</strong> <span class="conserver">CONSERVER</span>. <strong>Pour les nouveaux investisseurs n'ayant pas vendu à 22 235 F :</strong> <span class="acheter">ACHETER</span> progressivement. Anti-aller-retour : seuil 21 535 F pour les ex-porteurs (cours 23 000 F &gt;&gt; seuil).
+</div>
+
+<div class="stock-acheter">
+  <strong>SOGB CI (SOGC) &mdash; Cours 8 380 F</strong> | PER 14,49 | Rdt 6,30 %<br>
+  Rebond de +3,46 % avec 3 170 titres (26,3M FCFA). Carnet rééquilibré 20A/10V = 2:1 acheteur. <strong>Catalyseur immédiat :</strong> dividende 570 F brut payable le 06/08, ex-div le 01/08, <strong>dernier achat jeudi 30/07</strong>. Thèse dividende parfaitement reconstituée. <span class="acheter">ACHETER</span> avant la clôture de jeudi.
+</div>
+
+<div class="stock-acheter">
+  <strong>SGB CI (SGBC) &mdash; Cours 37 950 F</strong> | PER 11,65 | Rdt 4,34 %<br>
+  Légère baisse de -0,39 % mais carnet <strong>714A/25V = 28,56:1 acheteur</strong> &mdash; pression institutionnelle acheteuse massive. Ce volume en carnet représente 27,1M FCFA de demande potentielle non satisfaite. Signal d'accumulation durable. <span class="surveiller">SURVEILLER</span> / Entrée progressive sur faiblesses.
+</div>
+
+<div class="stock-neutre">
+  <strong>BOA ML (BOAM) &mdash; Cours 5 630 F</strong> | PER 13,95 | Rdt 5,42 %<br>
+  Forte hausse de +5,23 % avec 8 125 titres / 44,6M FCFA &mdash; momentum validé. Mais carnet post-séance 5A/1 512V = 302:1 vendeur &mdash; distribution institutionnelle immédiate. Cas classique de "sell the news". <span class="surveiller">SURVEILLER</span> &mdash; si mur persiste demain, <span class="alleger">ALLÉGER 50 %</span>.
+</div>
+
+<div class="stock-neutre">
+  <strong>SONATEL SN (SNTS) &mdash; Cours 31 005 F</strong> | PER <strong>7,50</strong> | Rdt 5,61 %<br>
+  Zone de valeur profonde, PER sous le plancher cible (rare sur la BRVM). Quasi-stable (-0,02 %) avec 4 654 titres (145,6M FCFA). Carnet 49A/348V = 7,1:1 vendeur &mdash; pression modérée. Valeur long terme par excellence. <span class="surveiller">SURVEILLER</span> en entrée progressive sur repli.
+</div>
+
+<div class="stock-neutre">
+  <strong>CORIS BANK BF (CBIBF) &mdash; Cours 27 200 F</strong> | PER 13,29 | Rdt 3,31 %<br>
+  Légère progression de +0,44 % avec carnet 176A/48V = 3,67:1 acheteur. Signal d'accumulation progressif persistant depuis plusieurs séances. PER dans la zone valeur. <span class="surveiller">SURVEILLER</span>.
+</div>
+
+<div class="stock-neutre">
+  <strong>TOTALENERGIES SN (TTLS) &mdash; Cours 3 650 F</strong> | PER 17,54 | Rdt 4,84 %<br>
+  Baisse de -1,35 % mais <strong>retournement spectaculaire du carnet</strong> : 1 186A/22V = <strong>53,9:1 acheteur</strong> (vs 1 226:1 vendeur en BOC 139). Absorption complète de la pression vendeuse. <span class="surveiller">SURVEILLER</span> &mdash; signal à confirmer demain.
+</div>
+
+<div class="stock-neutre">
+  <strong>PALM CI (PALC) &mdash; Cours 8 800 F</strong> | PER 8,77 | Rdt 5,01 %<br>
+  Progression de +1,62 % avec carnet 50A/323V = 6,46:1 vendeur. Valorisation dans la cible basse mais flux vendeur dominant. <span class="attendre">ATTENDRE</span> une amélioration du carnet avant d'entrer.
+</div>
+
+<div class="stock-neutre">
+  <strong>NSIA BANQUE CI (NSBC) &mdash; Cours 23 390 F</strong> | PER 14,21 | Rdt 2,86 %<br>
+  Stable (0,00 %) avec carnet 224A/241V = 1,07:1 quasi-équilibré. <strong>Catalyseur :</strong> dividende 768,16 F payable le 04/08, ex-div le 31/07 &mdash; <strong>dernier achat demain 29/07</strong>. Rdt sur ce dividende : 768,16/23 390 = 3,29 %. <span class="surveiller">SURVEILLER</span>.
+</div>
+
+<div class="stock-eviter">
+  <strong>ORANGE CI (ORAC) &mdash; Cours 16 725 F</strong> | PER 15,02 | Rdt 4,21 %<br>
+  Stable (0,00 %), carnet 3A/1V = 3:1 acheteur (amélioration). PER légèrement au-dessus de la cible, Rdt sous 5 %. Valeur de fonds de portefeuille. <span class="attendre">ATTENDRE</span>.
+</div>
+
+<div class="stock-eviter">
+  <strong>BERNABE CI (BNBC) &mdash; Cours 1 875 F</strong> | PER <strong class="neg">556,50</strong><br>
+  Bulle absolue. Le PER de 556 signifie que le cours est déconnecté de 37&times; la valeur normale. <span class="eviter">ÉVITER</span> catégoriquement.
+</div>
+
+<div class="stock-eviter">
+  <strong>CFAO MOTORS CI (CFAC) &mdash; Cours 1 660 F</strong> | PER <strong class="neg">35,77</strong> | Rdt 0,42 %<br>
+  PER élevé et Rdt quasi-nul &mdash; candidature valeur écartée. Intérêt spéculatif uniquement (carnet 937A/206V = 4,55:1 acheteur). <span class="eviter">ÉVITER</span> (PER).
+</div>
+
+<div class="stock-eviter">
+  <strong>SAFCA CI (SAFC) &mdash; Cours 4 985 F</strong> | PER <strong class="neg">57,74</strong><br>
+  Hausse de +5,17 % mais PER de bulle et admission d'actions nouvelles le 11/08 = dilution du capital. <span class="eviter">ÉVITER</span> jusqu'après le 11/08.
+</div>
+
+<!-- ===== ÉTAPE 4 ===== -->
+<h1>Étape 4 &mdash; Scoring (/10)</h1>
+
+<div class="overflow-x">
+<table>
+  <tr><th>Action</th><th>Symbole</th><th>PER</th><th>Rdt</th><th style="text-align:center;">Val. /3</th><th style="text-align:center;">Mmt. /3</th><th style="text-align:center;">Cat. /4</th><th style="text-align:center;">Total /10</th><th>Recommandation</th></tr>
+  <tr><td><strong>SITAB CI</strong></td><td>STBC</td><td>11,33</td><td class="pos">9,11 %</td><td style="text-align:center;">3</td><td style="text-align:center;">2</td><td style="text-align:center;">3</td><td style="text-align:center;"><strong class="pos">8</strong></td><td><span class="conserver">CONSERVER</span> / <span class="acheter">ACHETER*</span></td></tr>
+  <tr><td><strong>SOGB CI</strong></td><td>SOGC</td><td>14,49</td><td class="pos">6,30 %</td><td style="text-align:center;">2,5</td><td style="text-align:center;">2,5</td><td style="text-align:center;">3</td><td style="text-align:center;"><strong class="pos">8</strong></td><td><span class="acheter">ACHETER</span> (av. 30/07)</td></tr>
+  <tr><td><strong>SGB CI</strong></td><td>SGBC</td><td>11,65</td><td>4,34 %</td><td style="text-align:center;">2,5</td><td style="text-align:center;">2</td><td style="text-align:center;">2,5</td><td style="text-align:center;"><strong class="pos">7</strong></td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td><strong>SONATEL SN</strong></td><td>SNTS</td><td>7,50</td><td class="pos">5,61 %</td><td style="text-align:center;">3</td><td style="text-align:center;">1,5</td><td style="text-align:center;">2</td><td style="text-align:center;"><strong>6,5</strong></td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td><strong>TOTAL. SN</strong></td><td>TTLS</td><td>17,54</td><td>4,84 %</td><td style="text-align:center;">1,5</td><td style="text-align:center;">2,5</td><td style="text-align:center;">2</td><td style="text-align:center;"><strong>6</strong></td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td><strong>CORIS BANK</strong></td><td>CBIBF</td><td>13,29</td><td>3,31 %</td><td style="text-align:center;">2</td><td style="text-align:center;">2</td><td style="text-align:center;">2</td><td style="text-align:center;"><strong>6</strong></td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td><strong>BOA ML</strong></td><td>BOAM</td><td>13,95</td><td class="pos">5,42 %</td><td style="text-align:center;">2,5</td><td style="text-align:center;">2,5</td><td style="text-align:center;">0,5</td><td style="text-align:center;"><strong>5,5</strong></td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td><strong>BOA CI</strong></td><td>BOAC</td><td>12,26</td><td class="pos">5,48 %</td><td style="text-align:center;">2,5</td><td style="text-align:center;">2</td><td style="text-align:center;">1</td><td style="text-align:center;"><strong>5,5</strong></td><td><span class="alleger">ALLÉGER</span></td></tr>
+  <tr><td><strong>PALM CI</strong></td><td>PALC</td><td>8,77</td><td class="pos">5,01 %</td><td style="text-align:center;">2,5</td><td style="text-align:center;">1,5</td><td style="text-align:center;">1,5</td><td style="text-align:center;"><strong>5,5</strong></td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td><strong>NSIA BANQUE</strong></td><td>NSBC</td><td>14,21</td><td>2,86 %</td><td style="text-align:center;">2</td><td style="text-align:center;">1,5</td><td style="text-align:center;">2</td><td style="text-align:center;"><strong>5,5</strong></td><td><span class="surveiller">SURVEILLER</span></td></tr>
+  <tr><td><strong>ORANGE CI</strong></td><td>ORAC</td><td>15,02</td><td>4,21 %</td><td style="text-align:center;">1,5</td><td style="text-align:center;">1,5</td><td style="text-align:center;">1,5</td><td style="text-align:center;"><strong>4,5</strong></td><td><span class="attendre">ATTENDRE</span></td></tr>
+  <tr><td><strong>ONATEL BF</strong></td><td>ONTBF</td><td>13,09</td><td class="pos">5,20 %</td><td style="text-align:center;">2</td><td style="text-align:center;">1</td><td style="text-align:center;">1,5</td><td style="text-align:center;"><strong>4,5</strong></td><td><span class="alleger">ALLÉGER</span></td></tr>
+  <tr><td><strong>BOA SN</strong></td><td>BOAS</td><td>13,06</td><td class="pos">5,66 %</td><td style="text-align:center;">2,5</td><td style="text-align:center;">0,5</td><td style="text-align:center;">0</td><td style="text-align:center;"><strong>3</strong></td><td><span class="vendre">VENDRE</span></td></tr>
+  <tr><td><strong>CFAO MOTORS</strong></td><td>CFAC</td><td class="neg">35,77</td><td>0,42 %</td><td style="text-align:center;">0,5</td><td style="text-align:center;">1,5</td><td style="text-align:center;">1,5</td><td style="text-align:center;"><strong>3,5</strong></td><td><span class="eviter">ÉVITER</span> (PER)</td></tr>
+  <tr><td><strong>AGL CI</strong></td><td>SDSC</td><td>6,82</td><td>3,48 %</td><td style="text-align:center;">2</td><td style="text-align:center;">0,5</td><td style="text-align:center;">0</td><td style="text-align:center;"><strong>2,5</strong></td><td><span class="eviter">ÉVITER</span> (AAR)</td></tr>
+  <tr><td><strong>SMB CI</strong></td><td>SMBC</td><td>9,54</td><td>3,85 %</td><td style="text-align:center;">1,5</td><td style="text-align:center;">0</td><td style="text-align:center;">0</td><td style="text-align:center;"><strong>1,5</strong></td><td><span class="vendre">VENDRE</span></td></tr>
+  <tr><td><strong>SAFCA CI</strong></td><td>SAFC</td><td class="neg">57,74</td><td>&mdash;</td><td style="text-align:center;">0</td><td style="text-align:center;">2</td><td style="text-align:center;">0,5</td><td style="text-align:center;"><strong>2,5</strong></td><td><span class="eviter">ÉVITER</span> (dilution)</td></tr>
+  <tr><td><strong>BERNABE CI</strong></td><td>BNBC</td><td class="neg">556,50</td><td>&mdash;</td><td style="text-align:center;">0</td><td style="text-align:center;">0,5</td><td style="text-align:center;">0</td><td style="text-align:center;"><strong class="neg">0,5</strong></td><td><span class="eviter">ÉVITER</span> (bulle)</td></tr>
+</table>
+</div>
+<p><em>*STBC : CONSERVER pour les porteurs existants. ACHETER pour les nouveaux investisseurs n'ayant pas vendu précédemment à 22 235 F.</em></p>
+
+<!-- ===== ÉTAPE 5 ===== -->
+<h1>Étape 5 &mdash; Validation par le marché</h1>
+
+<h2>Volumes et valeurs transigées</h2>
+<div class="overflow-x">
+<table>
+  <tr><th>Métrique</th><th>Valeur brute (avec ETIT)</th><th>Hors ETIT</th></tr>
+  <tr><td>Nombre de titres échangés</td><td>2 011 993</td><td><strong>198 672</strong></td></tr>
+  <tr><td>Valeur transigée</td><td>2 017 756 259 FCFA</td><td><strong>1 892 637 110 FCFA</strong></td></tr>
+  <tr><td>Part ETIT (volume)</td><td class="neg"><strong>90,1 %</strong></td><td>&mdash;</td></tr>
+  <tr><td>Part ETIT (valeur)</td><td class="neg"><strong>6,2 %</strong></td><td>&mdash;</td></tr>
+  <tr><td>Valeur ETIT</td><td>125 119 149 FCFA</td><td>&mdash;</td></tr>
+</table>
+</div>
+
+<div class="alerte">
+  <strong>[!] Distorsion ETIT &mdash; Alerte systémique permanente :</strong> ETIT a échangé 1 813 321 titres pour 125 119 149 FCFA (69 F/titre).
+  Ce titre représente 90 % du volume en unités mais seulement 6,2 % de la valeur.
+  <strong>Toute analyse de volume doit systématiquement exclure ETIT.</strong>
+  Hors ETIT : 198 672 titres / 1,893 Md FCFA &rarr; valeur moyenne de ~9 526 FCFA/titre.
+</div>
+
+<h2>Divergences significatives</h2>
+<ul>
+  <li><strong>BOAM (+5,23 %) :</strong> 44,6M FCFA avec carnet immédiatement vendeur (302:1) post-séance &mdash; "sell the news" institutionnel.</li>
+  <li><strong>BOAC (+0,93 %) :</strong> 49,6M FCFA (plus gros volume hors ETIT) avec carnet 117:1 vendeur. Distribution institutionnelle progressive.</li>
+  <li><strong>SLBC :</strong> 518M FCFA sur 13 111 titres (39 500 F/titre) &mdash; ex-div confirmé aujourd'hui, prix maintenu.</li>
+  <li><strong>SGBC :</strong> 274,6M FCFA sur 7 204 titres, carnet 714A/25V &mdash; "argent intelligent" en accumulation.</li>
+</ul>
+
+<h2>Marché obligataire</h2>
+<p><strong>1 037 titres / 10 197 733 FCFA</strong> &mdash; journée très calme. Échanges notables :</p>
+<ul>
+  <li><strong>TPBF.O16</strong> (Burkina Faso 6 % 2023-2028) : 501 titres &times; 10 000 = <strong>5 010 000 FCFA</strong> &mdash; 49 % du volume obligataire sur une seule ligne souveraine burkinabè.</li>
+  <li><strong>FSNBBF.O1</strong> (FCTC SONABHY 8,10 % 2025-2031) : 313 titres &times; 10 000 = 3 130 000 FCFA.</li>
+</ul>
+
+<!-- ===== ÉTAPE 6 ===== -->
+<h1>Étape 6 &mdash; Quantités résiduelles</h1>
+
+<h2>Carnet d'ordres résiduel &mdash; Marché des actions</h2>
+
+<h3 style="color:#cf222e;">Titres à pression vendeuse dominante</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Symbole</th><th>Titre</th><th style="text-align:right;">Qtité Achat</th><th>Cours Achat</th><th>Cours Vente</th><th style="text-align:right;">Qtité Vente</th><th>Ratio</th><th>Signal</th></tr>
+  <tr><td class="neg"><strong>SMBC</strong></td><td>SMB CI</td><td style="text-align:right;">5</td><td>15 950</td><td>16 000</td><td style="text-align:right;" class="neg"><strong>17 045</strong></td><td class="neg"><strong>3 409:1 VEN</strong></td><td class="neg">VENDRE &mdash; mur institutionnel (4ème séance)</td></tr>
+  <tr><td class="neg"><strong>LNBB</strong></td><td>Loterie Nat. BN</td><td style="text-align:right;">3</td><td>4 345</td><td>4 350</td><td style="text-align:right;" class="neg"><strong>6 949</strong></td><td class="neg"><strong>2 316:1 VEN</strong></td><td class="neg">PIÈGE ex-div &mdash; sortie massive</td></tr>
+  <tr><td class="neg"><strong>ETIT</strong></td><td>Ecobank Trans. TG</td><td style="text-align:right;">0</td><td>&mdash;</td><td>Marché</td><td style="text-align:right;" class="neg"><strong>2 581 114</strong></td><td class="neg">Absolu VEN</td><td class="neg">Distorsion &mdash; exclure</td></tr>
+  <tr><td class="neg"><strong>BICB</strong></td><td>BIIC BN</td><td style="text-align:right;">2</td><td>7 600</td><td>7 750</td><td style="text-align:right;" class="neg"><strong>1 000</strong></td><td class="neg"><strong>500:1 VEN</strong></td><td class="neg">PIÈGE ex-div demain</td></tr>
+  <tr><td class="neg"><strong>ONTBF</strong></td><td>ONATEL BF</td><td style="text-align:right;">5</td><td>2 700</td><td>2 795</td><td style="text-align:right;" class="neg"><strong>1 329</strong></td><td class="neg"><strong>265,8:1 VEN</strong></td><td class="neg">ALLÉGER &mdash; distribution persistante</td></tr>
+  <tr><td class="neg"><strong>SHEC</strong></td><td>VIVO ENERGY CI</td><td style="text-align:right;">4</td><td>2 110</td><td>2 150</td><td style="text-align:right;" class="neg"><strong>1 148</strong></td><td class="neg"><strong>287:1 VEN</strong></td><td class="neg">Pression vendeuse soutenue</td></tr>
+  <tr><td class="neg"><strong>BOAM</strong></td><td>BOA ML</td><td style="text-align:right;">5</td><td>5 600</td><td>5 630</td><td style="text-align:right;" class="neg"><strong>1 512</strong></td><td class="neg"><strong>302,4:1 VEN</strong></td><td class="neg">Distribution post-rally</td></tr>
+  <tr><td class="neg"><strong>UNXC</strong></td><td>UNIWAX CI</td><td style="text-align:right;">100</td><td>1 945</td><td>1 950</td><td style="text-align:right;" class="neg"><strong>1 134</strong></td><td class="neg">11,34:1 VEN</td><td class="neg">Retournement depuis 145:1 ACH</td></tr>
+  <tr><td class="neg"><strong>TTLC</strong></td><td>TOTAL. Mktg CI</td><td style="text-align:right;">33</td><td>2 995</td><td>3 000</td><td style="text-align:right;" class="neg"><strong>3 723</strong></td><td class="neg">112,8:1 VEN</td><td class="neg">Pression vendeuse persistante</td></tr>
+  <tr><td class="neg"><strong>BOAS</strong></td><td>BOA SN</td><td style="text-align:right;">1</td><td>7 950</td><td>7 950</td><td style="text-align:right;" class="neg"><strong>283</strong></td><td class="neg">283:1 VEN</td><td class="neg">Retournement total &mdash; VENDRE</td></tr>
+  <tr><td class="neg"><strong>BOAC</strong></td><td>BOA CI</td><td style="text-align:right;">1</td><td>10 850</td><td>10 895</td><td style="text-align:right;" class="neg"><strong>117</strong></td><td class="neg">117:1 VEN</td><td class="neg">Distribution &mdash; ALLÉGER</td></tr>
+  <tr><td class="neg"><strong>SDSC</strong></td><td>AGL CI</td><td style="text-align:right;">5</td><td>2 620</td><td>2 640</td><td style="text-align:right;" class="neg"><strong>268</strong></td><td class="neg">53,6:1 VEN</td><td class="neg">Anti-aller-retour + pression</td></tr>
+  <tr><td class="neg"><strong>SEMC</strong></td><td>EVIOSYS PACK.</td><td style="text-align:right;">10</td><td>1 490</td><td>1 500</td><td style="text-align:right;" class="neg"><strong>775</strong></td><td class="neg">77,5:1 VEN</td><td class="neg">Post +114 % YTD</td></tr>
+  <tr><td class="neg"><strong>SDCC</strong></td><td>SODE CI</td><td style="text-align:right;">37</td><td>11 925</td><td>11 930</td><td style="text-align:right;" class="neg"><strong>520</strong></td><td class="neg">14,05:1 VEN</td><td class="neg">Vendeur dominant</td></tr>
+  <tr><td class="neg"><strong>SNTS</strong></td><td>SONATEL SN</td><td style="text-align:right;">49</td><td>31 005</td><td>31 300</td><td style="text-align:right;" class="neg">348</td><td class="neg">7,1:1 VEN</td><td class="neutral">Pression modérée</td></tr>
+</table>
+</div>
+
+<h3 style="color:#1a7f37;">Titres à pression acheteuse dominante</h3>
+<div class="overflow-x">
+<table>
+  <tr><th>Symbole</th><th>Titre</th><th style="text-align:right;">Qtité Achat</th><th>Cours Achat</th><th>Cours Vente</th><th style="text-align:right;">Qtité Vente</th><th>Ratio</th><th>Signal</th></tr>
+  <tr><td class="pos"><strong>SGBC</strong></td><td>SGB CI</td><td style="text-align:right;" class="pos"><strong>714</strong></td><td>37 950</td><td>38 005</td><td style="text-align:right;">25</td><td class="pos"><strong>28,56:1 ACH</strong></td><td class="pos">Accumulation institutionnelle majeure</td></tr>
+  <tr><td class="pos"><strong>TTLS</strong></td><td>TOTAL. Mktg SN</td><td style="text-align:right;" class="pos"><strong>1 186</strong></td><td>3 600</td><td>3 650</td><td style="text-align:right;">22</td><td class="pos"><strong>53,9:1 ACH</strong></td><td class="pos">Retournement massif depuis 1 226:1 VEN</td></tr>
+  <tr><td class="pos"><strong>CABC</strong></td><td>SICABLE CI</td><td style="text-align:right;" class="pos"><strong>265</strong></td><td>3 700</td><td>3 750</td><td style="text-align:right;">10</td><td class="pos">26,5:1 ACH</td><td class="pos">Accumulation forte</td></tr>
+  <tr><td class="pos"><strong>NTLC</strong></td><td>NESTLE CI</td><td style="text-align:right;" class="pos"><strong>232</strong></td><td>16 500</td><td>16 550</td><td style="text-align:right;">20</td><td class="pos">11,6:1 ACH</td><td class="pos">Signal acheteur solide</td></tr>
+  <tr><td class="pos"><strong>CFAC</strong></td><td>CFAO MOTORS</td><td style="text-align:right;" class="pos"><strong>937</strong></td><td>1 660</td><td>1 670</td><td style="text-align:right;">206</td><td class="pos">4,55:1 ACH</td><td class="neutral">Demande notable (spéculatif)</td></tr>
+  <tr><td class="pos"><strong>CBIBF</strong></td><td>CORIS BANK BF</td><td style="text-align:right;" class="pos"><strong>176</strong></td><td>27 200</td><td>28 200</td><td style="text-align:right;">48</td><td class="pos">3,67:1 ACH</td><td class="pos">Accumulation persistante</td></tr>
+  <tr><td class="pos"><strong>ORAC</strong></td><td>ORANGE CI</td><td style="text-align:right;" class="pos"><strong>3</strong></td><td>16 660</td><td>16 725</td><td style="text-align:right;">1</td><td class="pos">3:1 ACH</td><td class="pos">Amélioration</td></tr>
+  <tr><td class="pos"><strong>SOGC</strong></td><td>SOGB CI</td><td style="text-align:right;" class="pos"><strong>20</strong></td><td>8 200</td><td>8 380</td><td style="text-align:right;">10</td><td class="pos">2:1 ACH</td><td class="pos">Rééquilibrage &mdash; dividende 06/08</td></tr>
+  <tr><td class="pos"><strong>CIEC</strong></td><td>CIE CI</td><td style="text-align:right;" class="pos"><strong>39</strong></td><td>5 350</td><td>5 375</td><td style="text-align:right;">25</td><td class="pos">1,56:1 ACH</td><td class="pos">Rebond post-ex-div validé</td></tr>
+  <tr><td class="pos"><strong>SICC</strong></td><td>SICOR CI</td><td style="text-align:right;" class="pos"><strong>32</strong></td><td>5 900</td><td>&mdash;</td><td style="text-align:right;">0</td><td class="pos">Pur ACH</td><td class="pos">Aucun vendeur résiduel</td></tr>
+  <tr><td><strong>STBC</strong></td><td>SITAB CI</td><td style="text-align:right;"><strong>161</strong></td><td>23 000</td><td>23 190</td><td style="text-align:right;">143</td><td>1,13:1 ACH</td><td class="pos">Quasi-équilibré &mdash; normalisation</td></tr>
+  <tr><td><strong>FTSC</strong></td><td>FILTISAC CI</td><td style="text-align:right;"><strong>225</strong></td><td>1 920</td><td>1 950</td><td style="text-align:right;">9</td><td class="pos">25:1 ACH</td><td>Pression acheteuse</td></tr>
+  <tr><td><strong>BOAN</strong></td><td>BOA NG</td><td style="text-align:right;"><strong>4 075</strong></td><td>5 400</td><td>5 450</td><td style="text-align:right;">7</td><td class="warn">582:1 ACH</td><td class="warn">Anomalie (PER 274) &mdash; ne pas extrapoler</td></tr>
+</table>
+</div>
+
+<!-- ===== ÉTAPE 7 ===== -->
+<h1>Étape 7 &mdash; Conclusion stratégique</h1>
+
+<h2>Top 3 des opportunités globales</h2>
+
+<div class="stock-acheter">
+  <span class="medal-gold">#1</span> <strong>SOGB CI (SOGC) &mdash; Dividende imminente + carnet acheteur</strong><br>
+  Dividende 570 F brut payable le 06/08, ex-div le 01/08. <strong>Dernier achat : jeudi 30/07.</strong>
+  Carnet rééquilibré 20A/10V = 2:1 acheteur. PER 14,49, Rdt 6,30 %.
+  Fenêtre d'entrée rare et bornée dans le temps. <span class="acheter">ACHETER</span>
+</div>
+
+<div class="stock-acheter">
+  <span class="medal-silver">#2</span> <strong>SITAB CI (STBC) &mdash; Valeur de rendement &mdash; meilleur Rdt du marché</strong><br>
+  PER 11,33, Rdt <strong>9,11 %</strong>. Carnet quasi-équilibré 161A/143V. Valeur de portefeuille long terme.
+  Attractif pour tout nouvel investisseur en quête de rendement. Les porteurs conservent.
+  <span class="conserver">CONSERVER</span> / <span class="acheter">ACHETER*</span>
+</div>
+
+<div class="stock-acheter">
+  <span class="medal-bronze">#3</span> <strong>SGB CI (SGBC) &mdash; Accumulation institutionnelle persistante</strong><br>
+  Carnet 714A/25V = 28,56:1 acheteur. PER 11,65 &mdash; dans la zone de valeur.
+  L'accumulation institutionnelle (714 titres = 27,1M FCFA en carnet d'achat) représente un signal technique fort.
+  <span class="surveiller">SURVEILLER</span> / Entrée progressive sur replis.
+</div>
+
+<h2 style="color:#cf222e;">Risques identifiés à court terme</h2>
+<ul>
+  <li class="neg"><strong>Pièges ex-dividendes (aujourd'hui et demain) :</strong> LNBB (2 316:1 VEN, dividende réduit &minus;40 %), BICB (500:1 VEN, ex-div demain) &mdash; risque de chute mécanique post-ex-div.</li>
+  <li class="neg"><strong>Distribution institutionnelle en cascade sur les BOA :</strong> BOAM (302:1), BOAC (117:1), BOAS (283:1), ONTBF (265:1) &mdash; sortie coordonnée sur les valeurs financières.</li>
+  <li class="neg"><strong>SMBC (SMB CI) :</strong> mur vendeur 3 409:1 &mdash; 4ème séance consécutive &mdash; baisse structurelle probable.</li>
+  <li class="neg"><strong>ETIT persistant :</strong> distorsion systémique du Composite (75 &rarr; 69 F, normalisation potentielle vers 60 F).</li>
+  <li class="warn"><strong>Dilution SAFCA :</strong> admission d'actions nouvelles le 11/08 &mdash; éviter jusqu'à clarification.</li>
+</ul>
+
+<h2>Plan d'action immédiat</h2>
+<div class="overflow-x">
+<table>
+  <tr><th>Titre</th><th>Symbole</th><th>Action</th><th>Cours</th><th>Timing</th><th>Justification</th></tr>
+  <tr><td><strong>SOGB CI</strong></td><td>SOGC</td><td><span class="acheter">ACHETER</span></td><td>8 380 F</td><td><strong>Avant 30/07 clôture</strong></td><td>Dividende 570 F, ex-div 01/08, carnet 2:1 ACH</td></tr>
+  <tr><td><strong>SITAB CI</strong></td><td>STBC</td><td><span class="conserver">CONSERVER</span></td><td>23 000 F</td><td>Position longue</td><td>PER 11,33, Rdt 9,11 %, carnet équilibré</td></tr>
+  <tr><td><strong>SGB CI</strong></td><td>SGBC</td><td><span class="surveiller">SURVEILLER</span></td><td>37 950 F</td><td>Entrée progressive</td><td>Accumulation institutionnelle 28,56:1 ACH</td></tr>
+  <tr><td><strong>TOTAL. SN</strong></td><td>TTLS</td><td><span class="surveiller">SURVEILLER</span></td><td>3 650 F</td><td>Confirmer demain</td><td>Retournement 53,9:1 ACH &mdash; signal à valider</td></tr>
+  <tr><td><strong>CORIS BK</strong></td><td>CBIBF</td><td><span class="surveiller">SURVEILLER</span></td><td>27 200 F</td><td>Accumulation</td><td>Signal persistant 3,67:1 ACH</td></tr>
+  <tr><td><strong>NSIA BANQUE</strong></td><td>NSBC</td><td><span class="attendre">ATTENDRE</span></td><td>23 390 F</td><td>Avant 29/07 matin</td><td>Dernier achat demain pour div. 768 F &mdash; vérifier carnet</td></tr>
+  <tr><td><strong>PALM CI</strong></td><td>PALC</td><td><span class="attendre">ATTENDRE</span></td><td>8 800 F</td><td>Après amélioration carnet</td><td>PER attractif mais carnet 6,46:1 VEN</td></tr>
+  <tr><td><strong>ORANGE CI</strong></td><td>ORAC</td><td><span class="attendre">ATTENDRE</span></td><td>16 725 F</td><td>Long terme</td><td>PER et Rdt dans la cible</td></tr>
+  <tr><td><strong>SMB CI</strong></td><td>SMBC</td><td><span class="vendre">VENDRE</span></td><td>16 000 F</td><td><strong>Immédiat</strong></td><td>Mur 3 409:1 VEN &mdash; 4ème séance consécutive</td></tr>
+  <tr><td><strong>BOA SN</strong></td><td>BOAS</td><td><span class="vendre">VENDRE</span></td><td>7 945 F</td><td><strong>Immédiat</strong></td><td>Retournement 283:1 VEN depuis signal ACH</td></tr>
+  <tr><td><strong>ONATEL BF</strong></td><td>ONTBF</td><td><span class="alleger">ALLÉGER</span></td><td>2 795 F</td><td>Aujourd'hui</td><td>Distribution 265,8:1 VEN</td></tr>
+  <tr><td><strong>BOA CI</strong></td><td>BOAC</td><td><span class="alleger">ALLÉGER</span></td><td>10 895 F</td><td>Aujourd'hui</td><td>Distribution 117:1 VEN post-rally</td></tr>
+  <tr><td><strong>BOA ML</strong></td><td>BOAM</td><td><span class="surveiller">SURVEILLER</span></td><td>5 630 F</td><td>24h &mdash; décision demain</td><td>Si carnet VEN persiste demain &rarr; ALLÉGER 50 %</td></tr>
+  <tr><td><strong>LNBB</strong></td><td>LNBB</td><td><span class="eviter">ÉVITER</span></td><td>4 350 F</td><td><strong>Immédiat</strong></td><td>Piège ex-div &mdash; carnet 2 316:1 VEN, div. réduit &minus;40 %</td></tr>
+  <tr><td><strong>BIIC BN</strong></td><td>BICB</td><td><span class="eviter">ÉVITER</span></td><td>7 600 F</td><td><strong>Immédiat</strong></td><td>Piège ex-div demain &mdash; carnet 500:1 VEN</td></tr>
+  <tr><td><strong>AGL CI</strong></td><td>SDSC</td><td><span class="eviter">ÉVITER</span></td><td>2 640 F</td><td>Jusqu'à &lt; 2 431 F</td><td>Anti-aller-retour (seuil 2 431 F)</td></tr>
+  <tr><td><strong>SAFCA CI</strong></td><td>SAFC</td><td><span class="eviter">ÉVITER</span></td><td>4 985 F</td><td>Post-11/08</td><td>Dilution actions nouvelles</td></tr>
+  <tr><td><strong>BERNABE CI</strong></td><td>BNBC</td><td><span class="eviter">ÉVITER</span></td><td>1 875 F</td><td>Permanent</td><td>Bulle PER 556,50</td></tr>
+  <tr><td><strong>UNILEVER CI</strong></td><td>UNLC</td><td><span class="eviter">ÉVITER</span></td><td>51 980 F</td><td>Permanent</td><td>Bulle PER 745,47</td></tr>
+</table>
+</div>
+
+<div class="disclaimer">
+  <strong>Disclaimer légal :</strong> Ce document est produit à titre pédagogique et informatif uniquement. Il ne constitue pas un conseil personnalisé en investissement au sens des réglementations en vigueur dans l'UEMOA. Les performances passées ne préjugent pas des performances futures. Tout investissement comporte un risque de perte en capital. L'investisseur est seul responsable de ses décisions d'investissement.
+</div>

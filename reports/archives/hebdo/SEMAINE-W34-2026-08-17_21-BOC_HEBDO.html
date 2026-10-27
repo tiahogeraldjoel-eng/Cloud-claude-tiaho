@@ -1,0 +1,306 @@
+<meta charset="UTF-8">
+<title>BOC_HEBDO W34 — Semaine 17-21 août 2026</title>
+<style>
+  :root {
+    --vert: #1a7f37;
+    --rouge: #cf222e;
+    --ambre: #bf8700;
+    --bleu: #0b3d91;
+    --rouge-fonce: #8b0000;
+    --orange-brule: #e36209;
+    --gris: #57606a;
+    --bg: #ffffff;
+    --bg-alt: #f6f8fa;
+    --border: #d0d7de;
+    --text: #1f2328;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1117; --bg-alt: #161b22; --border: #30363d; --text: #e6edf3;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117; --bg-alt: #161b22; --border: #30363d; --text: #e6edf3;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: var(--text); background: var(--bg); padding: 24px; max-width: 1100px; margin: 0 auto; }
+  h1 { color: var(--bleu); font-size: 1.6em; border-bottom: 3px solid var(--bleu); padding-bottom: 8px; margin-bottom: 16px; }
+  h2 { color: #fff; font-size: 1.15em; background: var(--bleu); padding: 6px 12px; margin: 26px 0 12px; border-radius: 4px; }
+  h3 { color: var(--bleu); font-size: 1.02em; margin: 16px 0 8px; border-left: 4px solid var(--bleu); padding-left: 10px; }
+  p, li { margin: 6px 0; }
+  ul { margin: 8px 0 8px 20px; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; overflow-x: auto; display: block; }
+  th { background: var(--bleu); color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--bg-alt); }
+
+  /* KPI row */
+  .kpi-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 16px 0 22px; }
+  .kpi { background: #eef3fb; border: 1px solid #cdd9ea; border-radius: 6px; padding: 10px 16px; text-align: center; min-width: 110px; flex: 1; }
+  .kpi .val { font-size: 1.5em; font-weight: 800; color: var(--bleu); }
+  .kpi .val.pos { color: var(--vert); }
+  .kpi .val.neg { color: var(--rouge); }
+  .kpi .lbl { font-size: 11px; color: var(--gris); text-transform: uppercase; letter-spacing: .04em; }
+
+  /* Badges */
+  .acheter    { background: var(--vert); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .alleger    { background: var(--orange-brule); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .vendre     { background: var(--rouge-fonce); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .attendre   { background: var(--ambre); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .eviter     { background: var(--rouge); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .surveiller { background: var(--bleu); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .maintenir  { background: var(--gris); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+  .npe        { background: #5a0080; color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; white-space: nowrap; }
+
+  /* Biais */
+  .biais-hausse { background: var(--vert); color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-neutre { background: var(--gris); color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+  .biais-mixte  { background: var(--ambre); color: #fff; padding: 1px 9px; border-radius: 3px; font-size: 12px; font-weight: 700; display: inline-block; }
+
+  /* Médailles */
+  .medal-gold   { background: #ffd700; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-silver { background: #c0c0c0; color: #333; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-bronze { background: #cd7f32; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-4 { background: var(--gris); color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+  .medal-5 { background: var(--gris); color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; }
+
+  /* Blocs stock */
+  .stock-acheter   { border-left: 4px solid var(--vert); background: #f0faf3; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-surveiller{ border-left: 4px solid var(--bleu); background: #eef3fb; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-vendre    { border-left: 4px solid var(--rouge-fonce); background: #fff0f0; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-alleger   { border-left: 4px solid var(--orange-brule); background: #fff5ec; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  .stock-eviter    { border-left: 4px solid var(--rouge); background: #fdecea; padding: 12px 16px; margin: 10px 0; border-radius: 0 4px 4px 0; }
+
+  /* Signal structurel */
+  .signal-rot { background: #f0f4ff; border: 2px solid var(--bleu); border-radius: 6px; padding: 12px 16px; margin: 12px 0; }
+
+  /* Alerte calendrier */
+  .calendrier { background: #fff9e6; border: 2px solid var(--ambre); border-radius: 6px; padding: 14px 18px; margin: 14px 0; }
+  .ferie      { background: var(--rouge); color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: 700; display: inline-block; font-size: 12px; }
+
+  .pos { color: var(--vert); font-weight: 700; }
+  .neg { color: var(--rouge); font-weight: 700; }
+
+  .disclaimer { background: var(--bg-alt); border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin-top: 28px; font-size: 12px; color: var(--gris); }
+</style>
+
+<h1>BOC_HEBDO — Synthèse Hebdomadaire BRVM | Semaine W34 — 17 au 21 août 2026</h1>
+<p><strong>Séances analysées :</strong> 5 (BOC 154 à BOC 158) &nbsp;|&nbsp; <strong>Lundi 17/08 &rarr; Vendredi 21/08 2026</strong></p>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="val pos">+5,55 %</div><div class="lbl">Perf. hebdo Composite</div></div>
+  <div class="kpi"><div class="val pos">529,15</div><div class="lbl">Composite vendredi</div></div>
+  <div class="kpi"><div class="val pos">+53,04 %</div><div class="lbl">YTD vendredi 21/08</div></div>
+  <div class="kpi"><div class="val">5/5</div><div class="lbl">Séances positives</div></div>
+  <div class="kpi"><div class="val">4/5</div><div class="lbl">Biais ACHETEUR</div></div>
+  <div class="kpi"><div class="val pos">17,38</div><div class="lbl">PER marché vendredi</div></div>
+</div>
+
+<h2>Section 1 — Bilan indices de la semaine</h2>
+
+<table>
+  <tr><th>Séance</th><th>BOC N°</th><th>Composite</th><th>Var. jour</th><th>YTD</th><th>Biais (H/B)</th></tr>
+  <tr><td>Lundi 17/08</td><td>154</td><td>501,30</td><td class="pos">+0,73 %</td><td class="pos">+44,99 %</td><td><span class="biais-hausse">ACHETEUR</span> (26H/17B)</td></tr>
+  <tr><td>Mardi 18/08</td><td>155</td><td>507,13</td><td class="pos">+1,16 %</td><td class="pos">+46,68 %</td><td><span class="biais-hausse">ACHETEUR</span> (24H/17B)</td></tr>
+  <tr><td>Mercredi 19/08</td><td>156</td><td>515,72</td><td class="pos">+1,69 %</td><td class="pos">+49,16 %</td><td><span class="biais-hausse">ACHETEUR</span> (27H/13B)</td></tr>
+  <tr><td>Jeudi 20/08</td><td>157</td><td>519,59</td><td class="pos">+0,75 %</td><td class="pos">+50,28 %</td><td><span class="biais-hausse">ACHETEUR MOD.</span> (26H/16B)</td></tr>
+  <tr><td>Vendredi 21/08</td><td>158</td><td>529,15</td><td class="pos">+1,84 %</td><td class="pos">+53,04 %</td><td><span class="biais-neutre">NEUTRE-DIVERGENCE</span> (17H/22B)</td></tr>
+</table>
+
+<p><strong>Performance hebdomadaire du Composite :</strong> (529,15 &minus; 501,30) / 501,30 &times; 100 = <span class="pos">+5,55 %</span></p>
+
+<div class="signal-rot">
+  <strong>Divergence breadth/indices vendredi :</strong> Le marché a progressé pendant 4 séances sur une base large et cohérente (24-27 hausses/jour). Le vendredi introduit un signal de prudence : Composite +1,84 % tandis que le breadth se retourne (17H/22B). Cause identifiée : SNTS (+7,50 % en une séance, sans catalyseur) porte mécaniquement l'indice. Ce signal ne traduit pas un marché acheteur — il traduit un spike concentré sur un poids lourd.
+</div>
+
+<h2>Section 2 — Top 5 actions les plus performantes (17 &rarr; 21 août)</h2>
+
+<table>
+  <tr><th>Rang</th><th>Titre</th><th>Symbole</th><th>Cours lundi 17/08</th><th>Cours vendredi 21/08</th><th>Perf. hebdo</th><th>Commentaire</th></tr>
+  <tr>
+    <td><span class="medal-gold">#1</span></td>
+    <td><strong>Sonatel</strong></td><td>SNTS</td>
+    <td>31 900 F</td><td>36 980 F</td>
+    <td class="pos"><strong>+15,92 %</strong></td>
+    <td>Spike vendredi +7,50 % sans catalyseur. Carnet 1:12,5 VENDEUR vendredi. Momentum <em>ponctuel</em>, non confirmé</td>
+  </tr>
+  <tr>
+    <td><span class="medal-silver">#2</span></td>
+    <td><strong>SAPH CI</strong></td><td>SPHC</td>
+    <td>8 400 F</td><td>9 440 F</td>
+    <td class="pos"><strong>+12,38 %</strong></td>
+    <td>Hausse progressive sur 5 jours catalysée par ex-div 27/08. Score 7,6/10 moyen. Opportunité la plus rationnelle</td>
+  </tr>
+  <tr>
+    <td><span class="medal-bronze">#3</span></td>
+    <td><strong>Palm CI</strong></td><td>PALC</td>
+    <td>9 300 F</td><td>9 630 F</td>
+    <td class="pos"><strong>+3,55 %</strong></td>
+    <td>Progression régulière, carnet acheteur 4/5 séances. PER ~9,3. Rendement ~6,2 %</td>
+  </tr>
+  <tr>
+    <td><span class="medal-4">#4</span></td>
+    <td><strong>AGL CI</strong></td><td>SDSC</td>
+    <td>2 700 F</td><td>2 780 F</td>
+    <td class="pos">+2,96 %</td>
+    <td><span style="color:var(--rouge);font-weight:700;">[!]</span> Titre sous garde-fou anti-aller-retour. Ne pas interpréter comme signal d'achat</td>
+  </tr>
+  <tr>
+    <td><span class="medal-5">#5</span></td>
+    <td><strong>BOA Sénégal</strong></td><td>BOAS</td>
+    <td>~5 800 F</td><td>~5 960 F</td>
+    <td class="pos">~+2,8 %</td>
+    <td>Progression discrète sur fondamentaux solides. PER ~11,5, rendement ~5,8 %</td>
+  </tr>
+</table>
+
+<h2>Section 3 — Top 5 recommandations ACHETER (semaine W35)</h2>
+
+<div class="stock-acheter">
+  <span class="medal-gold">#1</span> <strong>SPHC — Société Pharmaceutique de CI</strong> &nbsp; <span class="acheter">ACHETER URGENT</span><br>
+  Score moyen W34 : <strong>7,6/10</strong> | PER : ~8,5 | Rdt net PP : <strong>4,56 %</strong> (brut 489 F / net 430,32 F)<br>
+  Carnet vendredi : 1,5:1 ACHETEUR | Cours cible : <strong>9 440–9 600 F</strong><br>
+  <div class="calendrier" style="margin-top:8px;">
+    <strong>Catalyseur daté :</strong> Ex-dividende jeudi 27/08. <strong>DERNIER JOUR CUM-DIV : MARDI 26/08</strong><br>
+    Marché <span class="ferie">FERMÉ lundi 25/08</span> (férié). Unique fenêtre = mardi 26/08 avant clôture.<br>
+    Drop mécanique attendu : ~489 F (brut) — cours théorique ex-div ~8 951 F.
+  </div>
+</div>
+
+<div class="stock-acheter">
+  <span class="medal-silver">#2</span> <strong>BICB — Banque Internationale Commerce et Industrie Burkina</strong> &nbsp; <span class="acheter">ACHETER</span><br>
+  Score moyen W34 : 5,0/10 (présent 2 séances) | PER : 13,07 | Rdt : ~5,5 %<br>
+  Carnet vendredi : <strong>226:1 ACHETEUR</strong> (679 achat / 3 vente) — signal carnet le plus fort de la semaine<br>
+  Cours cible : <strong>Cours actuel (~8 200–8 400 F)</strong><br>
+  Divergence cours (-2,38 % vendredi) / carnet (226:1 A) = vente forcée absorbée par institutionnels. Signal d'accumulation.
+</div>
+
+<div class="stock-acheter">
+  <span class="medal-bronze">#3</span> <strong>SGBC — Société Générale de Banque en CI</strong> &nbsp; <span class="surveiller">SURVEILLER</span><br>
+  Score moyen W34 : <strong>8,0/10</strong> (9-9-9-8-5) | PER post-ex-div : ~10,2 | Rdt : ~5,8 %<br>
+  Carnet vendredi : ~1:1 NEUTRE (ex-div day)<br>
+  Cours vendredi (39 195 F) &gt; prix théorique ex-div (~37 394 F) &rarr; confiance du marché post-détachement<br>
+  Cours cible : <strong>38 500–39 200 F</strong> — attendre stabilisation post-ex-div semaine W35
+</div>
+
+<div class="stock-acheter">
+  <span class="medal-4">#4</span> <strong>PALC — Palm Côte d'Ivoire</strong> &nbsp; <span class="surveiller">SURVEILLER / ACHETER</span><br>
+  Score moyen W34 : <strong>6,4/10</strong> (5-6-7-8-6) | PER : ~9,3 | Rdt : ~6,2 %<br>
+  Carnet vendredi : 6,9:1 ACHETEUR (normalisé)<br>
+  Progression régulière +3,55 % hebdo. Présent Top 5 tous les jours. Cours cible : <strong>9 500–9 700 F</strong>
+</div>
+
+<div class="stock-acheter">
+  <span class="medal-5">#5</span> <strong>BOAS — Bank of Africa Sénégal</strong> &nbsp; <span class="acheter">ACHETER</span><br>
+  Score moyen W34 : 6,0/10 (BOC157-158) | PER : ~11,5 | Rdt : ~5,8 %<br>
+  Fondamentaux solides, rendement attractif, valorisation dans la zone cible.
+</div>
+
+<h2>Section 4 — Top 5 recommandations VENDRE / ALLÉGER (semaine W35)</h2>
+
+<table>
+  <tr><th>Rang</th><th>Titre</th><th>Symbole</th><th>Action</th><th>Cours vendredi</th><th>Justification</th><th>Risque si on reste</th></tr>
+  <tr>
+    <td>1</td><td><strong>NSIA Banque CI</strong></td><td>NSBC</td>
+    <td><span class="vendre">VENDRE</span></td><td>—</td>
+    <td>PER &gt; 30, -5 % vendredi, carnet vendeur. Signal VENDRE 3/5 jours de la semaine</td>
+    <td class="neg">Accélération baisse — pas de plancher technique</td>
+  </tr>
+  <tr>
+    <td>2</td><td><strong>SAFCA</strong></td><td>SAFC</td>
+    <td><span class="alleger">ALLÉGER</span></td><td>—</td>
+    <td>PER &gt; 40 — bulle manifeste. Apparu 4/5 jours en ÉVITER. Aucun catalyseur positif</td>
+    <td class="neg">Drop 30-50 % possible si dégonflement</td>
+  </tr>
+  <tr>
+    <td>3</td><td><strong>BOA Bénin</strong></td><td>BOAB</td>
+    <td><span class="alleger">ALLÉGER</span></td><td>~9 100 F</td>
+    <td>Catalyseur épuisé. Score 8/10 lundi → 3/10 mercredi → 4/10 jeudi-vendredi. Momentum dégradé</td>
+    <td class="neg">Piège à porteurs — titre fort début W34 mais épuisé</td>
+  </tr>
+  <tr>
+    <td>4</td><td><strong>CBIBF</strong></td><td>CBIBF</td>
+    <td><span class="surveiller">SURVEILLER</span></td><td>~28 500 F</td>
+    <td>Score en baisse (6-4-4). BOC157 : ALLÉGER. Carnet vendeur croissant</td>
+    <td>Dégradation lente mais régulière</td>
+  </tr>
+  <tr>
+    <td>5</td><td><strong>AGL CI</strong></td><td>SDSC</td>
+    <td><span class="npe">NE PAS RE-ENTRER</span></td><td>2 780 F</td>
+    <td>Garde-fou actif. Seuil 2 431 F pour ex-vendeurs à 2 510 F. Cours &gt;&gt; seuil</td>
+    <td class="neg">Aller-retour perdant garanti (&gt;3,2 % de frais)</td>
+  </tr>
+</table>
+
+<h2>Section 5 — Actions à ÉVITER (semaine W35)</h2>
+
+<table>
+  <tr><th>Titre</th><th>Symbole</th><th>Raison</th><th>Risque chiffré</th></tr>
+  <tr><td><strong>SAFCA</strong></td><td>SAFC</td><td>Bulle — PER &gt; 40. 4/5 jours ÉVITER</td><td class="neg">Drop -30 à -50 % potentiel</td></tr>
+  <tr><td><strong>AGL CI</strong></td><td>SDSC</td><td>Garde-fou anti-aller-retour : seuil 2 431 F. PER aberrant (&gt;100)</td><td class="neg">Aller-retour perdant &gt; 3,2 %</td></tr>
+  <tr><td><strong>NSIA Banque CI</strong></td><td>NSBC</td><td>PER &gt; 30, tendance baissière. VENDRE 3 jours sur 5</td><td class="neg">Continuation baisse</td></tr>
+  <tr><td><strong>STBC (ex-vendeurs)</strong></td><td>STBC</td><td>Garde-fou : seuil 21 535 F pour ex-vendeurs à 22 235 F</td><td class="neg">Aller-retour perdant</td></tr>
+  <tr><td><strong>SPHC (post 26/08)</strong></td><td>SPHC</td><td>Ex-div jeudi 27/08 — drop mécanique ~489 F inévitable</td><td class="neg">-5,2 % mécanique sur cours</td></tr>
+  <tr><td><strong>UNLC / BNBC</strong></td><td>—</td><td>Bulles permanentes (PER &gt; 200)</td><td class="neg">Destruction de capital MT</td></tr>
+</table>
+
+<h2>Section 6 — Signaux structurels de la semaine W34</h2>
+
+<div class="signal-rot">
+  <strong>Signal 1 — Distorsion ETIT (systémique, tous les jours de W34)</strong><br>
+  ETIT (~65-66 F/titre) a représenté 60-70 % du volume nominal brut chaque séance. La valeur transigée réelle d'ETIT est inférieure à 5 % de la valeur totale. Ce phénomène est systémique à la BRVM — exclure ETIT de toute analyse de volume sans exception.
+</div>
+
+<div class="signal-rot">
+  <strong>Signal 2 — Accumulation SNTS lundi→jeudi puis spike vendredi</strong><br>
+  Dès le BOC154 (lundi), SNTS montrait un signal d'accumulation : 26 510 titres échangés / 845 M FCFA avec cours stable à 31 900 F et carnet 35:1 ACHETEUR. Le BOC157 (jeudi) a confirmé avec un carnet 4 800:1 ACHETEUR. Le spike vendredi (+7,50 % à 36 980 F) en est la résultante. <strong>Enseignement :</strong> carnet fort + volume élevé + cours stable = signal d'accumulation institutionnelle précurseur de spike.
+</div>
+
+<div class="signal-rot">
+  <strong>Signal 3 — SGBC cycle ex-div complet sur 5 jours</strong><br>
+  Score 9/10 (lundi à mercredi) &rarr; 8/10 "fenêtre quasi-fermée" (jeudi) &rarr; 5/10 post-ex-div (vendredi). Le cours vendredi (39 195 F) reste <strong>au-dessus du prix théorique ex-div (~37 394 F)</strong>, signal de confiance du marché post-détachement. Cycle parfaitement tracé et anticipé.
+</div>
+
+<div class="signal-rot">
+  <strong>Signal 4 — Renversement breadth vendredi (post-semaine haussière)</strong><br>
+  Après 4 séances à 24-27 hausses/jour, le vendredi enregistre 17H/22B malgré un Composite en hausse de +1,84 %. Ce retournement breadth après une semaine forte (+5,55 %) peut précéder une phase de consolidation ou de correction partielle en début de W35.
+</div>
+
+<h2>Section 7 — Agenda catalyseurs (semaine W35 : 25-28 août 2026)</h2>
+
+<div class="calendrier">
+  <strong>Rappel :</strong> Semaine W35 = <span class="ferie">4 séances seulement</span> (lundi 25/08 FERMÉ).<br>
+  Mardi 26, Mercredi 27, Jeudi 28, Vendredi 29 août.
+</div>
+
+<table>
+  <tr><th>Date</th><th>Titre</th><th>Événement</th><th>Impact anticipé</th></tr>
+  <tr><td><span class="ferie">Lundi 25/08</span></td><td>MARCHÉ</td><td><strong>FÉRIÉ — marché fermé</strong></td><td>Pas de cotation</td></tr>
+  <tr><td><strong>Mardi 26/08</strong></td><td>SPHC</td><td><strong>DERNIER JOUR CUM-DIVIDENDE</strong> (net PP 430,32 F)</td><td><span class="acheter">ACHETER</span> — dernière fenêtre absolue</td></tr>
+  <tr><td>Jeudi 27/08</td><td>SPHC</td><td>Ex-dividende — drop mécanique ~489 F (~5,2 %)</td><td><span class="eviter">ÉVITER</span> d'acheter ce jour</td></tr>
+  <tr><td>Dim. 24/08</td><td>SGBC</td><td>Paiement dividende aux porteurs</td><td>Information — aucune action requise</td></tr>
+  <tr><td>Sem. W35</td><td>BICB</td><td>Confirmation signal carnet 226:1 A</td><td><span class="acheter">ACHETER</span> — surveiller l'absorption</td></tr>
+  <tr><td>Sem. W35</td><td>SGBC</td><td>Stabilisation post-ex-div</td><td><span class="surveiller">SURVEILLER</span> — point d'entrée potentiel</td></tr>
+</table>
+
+<h2>Section 8 — Plan d'action semaine W35</h2>
+
+<table>
+  <tr><th>Action</th><th>Titre</th><th>Symbole</th><th>Cours cible</th><th>Timing</th><th>Justification</th></tr>
+  <tr><td><span class="acheter">ACHETER URGENT</span></td><td>SAPH CI</td><td>SPHC</td><td>9 440–9 600 F</td><td style="color:var(--rouge);font-weight:700;">Mardi 26/08 avant clôture</td><td>Dernier jour cum-div — ex-div jeudi 27/08</td></tr>
+  <tr><td><span class="acheter">ACHETER</span></td><td>BICB</td><td>BICB</td><td>Cours actuel</td><td>Mardi 26/08</td><td>Carnet 226:1 A — signal institutionnel fort</td></tr>
+  <tr><td><span class="surveiller">SURVEILLER</span></td><td>SGBC</td><td>SGBC</td><td>38 500–39 200 F</td><td>Mi-W35</td><td>Post-ex-div attractif — attendre stabilisation</td></tr>
+  <tr><td><span class="surveiller">SURVEILLER</span></td><td>Palm CI</td><td>PALC</td><td>9 500–9 700 F</td><td>W35</td><td>Carnet normalisé, fondamentaux solides</td></tr>
+  <tr><td><span class="surveiller">SURVEILLER</span></td><td>BOA Sénégal</td><td>BOAS</td><td>Cours actuel</td><td>W35</td><td>Rendement attractif, fondamentaux région Sénégal</td></tr>
+  <tr><td><span class="surveiller">SURVEILLER</span></td><td>Orange CI</td><td>ORAC</td><td>—</td><td>Sur pullback</td><td>Momentum sectoriel Télécoms — attendre consolidation</td></tr>
+  <tr><td><span class="maintenir">MAINTENIR</span></td><td>Sonatel</td><td>SNTS</td><td>36 980 F</td><td>LT 20 ans</td><td>Position PR 34 000 F (+8,76 %) — ne pas trader le spike</td></tr>
+  <tr><td><span class="alleger">ALLÉGER</span></td><td>SAFCA</td><td>SAFC</td><td>—</td><td>Dès mardi 26/08</td><td>Bulle manifeste PER &gt; 40</td></tr>
+  <tr><td><span class="alleger">ALLÉGER</span></td><td>BOA Bénin</td><td>BOAB</td><td>~9 100 F</td><td>Dès mardi 26/08</td><td>Catalyseur épuisé, score dégradé</td></tr>
+  <tr><td><span class="vendre">VENDRE</span></td><td>NSIA Banque CI</td><td>NSBC</td><td>—</td><td>Dès mardi 26/08</td><td>Tendance baissière, PER &gt; 30</td></tr>
+  <tr><td><span class="npe">NE PAS RE-ENTRER</span></td><td>AGL CI</td><td>SDSC</td><td>—</td><td>Seuil : 2 431 F</td><td>Garde-fou anti-aller-retour actif</td></tr>
+  <tr><td><span class="eviter">ÉVITER</span></td><td>STBC (ex-vendeurs)</td><td>STBC</td><td>—</td><td>Seuil : 21 535 F</td><td>Garde-fou anti-aller-retour actif</td></tr>
+</table>
+
+<div class="disclaimer">
+  <strong>Disclaimer :</strong> Ce document est une synthèse hebdomadaire produite à titre pédagogique et informatif à partir des données des BOC N°154 à 158 (semaine du 17 au 21 août 2026). Il ne constitue pas un conseil personnalisé en investissement au sens réglementaire. Toute décision d'investissement reste sous la responsabilité exclusive de l'investisseur. Les données proviennent des Bulletins Officiels de la Cote publiés par la BRVM.
+</div>
