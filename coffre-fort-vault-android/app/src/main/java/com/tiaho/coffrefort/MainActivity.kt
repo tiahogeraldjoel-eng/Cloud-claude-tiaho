@@ -31,6 +31,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
@@ -147,6 +151,19 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.root.visibility = View.INVISIBLE
+
+        // Android 15+ (ciblé par compileSdk/targetSdk 35, dont le S25 Ultra) impose l'affichage
+        // "edge-to-edge" par défaut : sans ce réglage des marges, la barre d'outils et le bas de
+        // la liste se retrouveraient sous la barre de statut/la barre de navigation gestuelle.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.toolbar) { view, insets ->
+            view.updatePadding(top = insets.getInsets(WindowInsetsCompat.Type.systemBars()).top)
+            insets
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(binding.documentList) { view, insets ->
+            view.updatePadding(bottom = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom)
+            insets
+        }
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.title = getString(R.string.app_name)

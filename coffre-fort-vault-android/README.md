@@ -12,7 +12,11 @@ mêmes fonctionnalités avec les briques natives Android correspondantes.
 ## Fonctionnalités
 
 - **Verrouillage de l'application** : empreinte digitale, visage, ou code/schéma
-  de l'appareil en secours, requis à chaque ouverture ou retour au premier plan
+  de l'appareil en secours, requis à chaque ouverture ou retour au premier plan.
+  Repose sur l'API Android `BiometricPrompt`, indépendante du fabricant : sur un
+  Samsung Galaxy S25 Ultra par exemple, elle reconnaît nativement l'empreinte
+  sous l'écran et la reconnaissance faciale du téléphone, sans code spécifique
+  à Samsung (Knox expose ces capteurs à cette même API standard)
 - **Import de documents** par scanner intégré (détection des bords, recadrage
   et amélioration automatiques via ML Kit) ou depuis la galerie/un gestionnaire
   de fichiers (images ou PDF — la première page d'un PDF est convertie en
@@ -54,8 +58,20 @@ mêmes fonctionnalités avec les briques natives Android correspondantes.
 ## Prérequis
 
 - Android Studio Hedgehog (2023.1.1) ou supérieur
-- Android SDK API 26 minimum, API 34 cible
+- Android SDK API 26 minimum, API 35 cible (Android 15, génération du Galaxy S25 Ultra)
 - JDK 17
+
+## Interface et affichage moderne
+
+- **Material 3** : thème basé sur `Theme.Material3.DayNight`, qui adapte
+  automatiquement les surfaces/le fond/le texte au mode sombre du système
+  (confortable sur l'écran AMOLED du S25 Ultra) — seule la couleur de marque
+  (navy/teal) reste volontairement identique en clair comme en sombre, pour
+  une identité visuelle stable.
+- **Affichage "edge-to-edge"** : la barre d'outils et le bas de la liste de
+  documents s'ajustent automatiquement à la barre de statut et à la zone de
+  geste de navigation (plutôt que du contenu cachant/caché par ces barres),
+  conforme au comportement imposé par Android 15+.
 
 ## Compiler l'APK
 
