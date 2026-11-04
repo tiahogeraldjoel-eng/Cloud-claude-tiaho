@@ -1,0 +1,21 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+      Material 3 : surfaces/fonds/texte s'adaptent automatiquement au thème clair/sombre du
+      système via la base DayNight (AMOLED du S25 Ultra notamment). La couleur de marque
+      (navy/teal) reste volontairement identique dans les deux modes pour une identité visuelle
+      cohérente ; seuls les rôles de surface varient, gérés par le thème de base.
+    -->
+    <style name="Theme.CoffreFortVault" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorPrimaryContainer">@color/colorPrimaryContainer</item>
+        <item name="colorOnPrimaryContainer">@color/colorOnPrimaryContainer</item>
+        <item name="colorSecondary">@color/colorSecondary</item>
+        <item name="colorOnSecondary">@android:color/white</item>
+        <item name="colorSecondaryContainer">@color/colorSecondaryContainer</item>
+        <item name="colorOnSecondaryContainer">@color/colorOnSecondaryContainer</item>
+        <!-- Le bandeau du haut reste navy foncé dans les deux modes (voir activity_main.xml) :
+             icônes de la barre de statut claires en permanence pour rester lisibles dessus. -->
+        <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
+    </style>
+</resources>

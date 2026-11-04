@@ -1,0 +1,9 @@
+<resources>
+    <color name="colorPrimary">#1E3A5F</color>
+    <color name="colorPrimaryContainer">#D7E3F5</color>
+    <color name="colorOnPrimaryContainer">#0B1F35</color>
+    <color name="colorSecondary">#009688</color>
+    <color name="colorSecondaryContainer">#B2DFDB</color>
+    <color name="colorOnSecondaryContainer">#00251F</color>
+    <color name="ic_launcher_background">#1E3A5F</color>
+</resources>
